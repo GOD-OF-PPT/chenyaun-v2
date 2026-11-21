@@ -1,1 +1,0 @@
-export const ascensionMatrix = ['help','trade','leave'].flatMap(choice=>['sword','talisman'].flatMap(school=>['craft','purchase'].flatMap(strategy=>['transmit','depart'].map(ending=>({choice,school,strategy,ending,id:[choice,school,strategy,ending].join('/')})))));
