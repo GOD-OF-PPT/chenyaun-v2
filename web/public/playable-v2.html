@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>尘缘问道 · 剑阵万象</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2307151b'/%3E%3Crect x='4' y='4' width='56' height='56' rx='11' fill='none' stroke='%23d8b36a' stroke-width='2.5'/%3E%3Cpath d='M32 10 L38 30 L34 36 L34 52 L30 52 L30 36 L26 30 Z' fill='%234ad2b8' stroke='%23f8e3ac' stroke-width='1.5'/%3E%3Ccircle cx='32' cy='35' r='3' fill='%23f8e3ac'/%3E%3C/svg%3E" />
 <style>
   :root {
     --bg-deep: #050c0e;
@@ -2012,6 +2013,414 @@
     font-family: monospace;
     font-size: 11px;
   }
+
+  /* ================= V25 GUOFENG ART & HUD ARCHITECTURE REFINEMENT ================= */
+  /* 1. Welcome Screen: Liberate Hero Key Art with Ink-Wash Lower-Third Composition */
+  #welcome-screen {
+    justify-content: flex-end !important;
+    padding-bottom: clamp(28px, 6.2vh, 64px) !important;
+  }
+  #welcome-screen::before {
+    background:
+      radial-gradient(ellipse 85% 60% at 50% 34%, rgba(6, 14, 18, 0.04) 0%, rgba(4, 10, 14, 0.38) 62%, rgba(2, 7, 10, 0.88) 100%),
+      linear-gradient(180deg, rgba(3, 9, 12, 0.14) 0%, rgba(3, 9, 12, 0.05) 38%, rgba(4, 12, 16, 0.72) 72%, rgba(3, 9, 12, 0.96) 100%) !important;
+  }
+  .title-centerpiece {
+    background: linear-gradient(180deg, rgba(6, 16, 20, 0.22) 0%, rgba(5, 13, 17, 0.74) 48%, rgba(4, 11, 15, 0.88) 100%) !important;
+    border: none !important;
+    border-top: 1px solid rgba(216, 179, 106, 0.34) !important;
+    border-bottom: 1px solid rgba(216, 179, 106, 0.22) !important;
+    border-radius: 18px !important;
+    padding: 22px 44px 20px !important;
+    gap: 13px !important;
+    backdrop-filter: blur(7px) !important;
+    box-shadow: 0 24px 68px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 240, 200, 0.14) !important;
+    max-width: min(680px, 92vw);
+  }
+  .title-centerpiece::before,
+  .title-centerpiece::after {
+    content: "";
+    position: absolute;
+    left: 14%;
+    right: 14%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(248, 227, 172, 0.55), transparent);
+    pointer-events: none;
+  }
+  .title-centerpiece::before { top: 6px; }
+  .title-centerpiece::after { bottom: 6px; opacity: 0.55; }
+  .welcome-title {
+    font-size: clamp(44px, 5.4vw, 64px) !important;
+    letter-spacing: 20px !important;
+    margin-left: 20px !important;
+    line-height: 1.08 !important;
+    filter: drop-shadow(0 6px 26px rgba(0, 0, 0, 0.96)) drop-shadow(0 0 18px rgba(216, 179, 106, 0.28)) !important;
+  }
+  .title-visual-icons {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px 12px !important;
+    width: 100%;
+    max-width: 520px;
+  }
+  .title-mini-badge {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 12px !important;
+    font-size: 11.5px !important;
+    background: rgba(8, 22, 27, 0.72) !important;
+    border: 1px solid rgba(216, 179, 106, 0.34) !important;
+    color: #efe2be !important;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+  .title-mini-badge .badge-key {
+    color: var(--jade);
+    font-weight: 800;
+    margin-right: 3px;
+  }
+
+  /* 2. Top HUD Refinement: Crisp Guofeng Controls + Pavilion Popover */
+  .hud-right {
+    position: relative;
+    padding: 4px 7px !important;
+    gap: 4px !important;
+    background: linear-gradient(180deg, rgba(8, 20, 25, 0.88), rgba(5, 13, 17, 0.92)) !important;
+    border: 1px solid rgba(216, 179, 106, 0.36) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.52) !important;
+  }
+  .hud-right > button {
+    padding: 5px 10px !important;
+    font-size: 11.5px !important;
+    border-radius: 999px !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .pavilion-trigger-btn {
+    border: 1px solid rgba(216, 179, 106, 0.45) !important;
+    background: linear-gradient(135deg, rgba(36, 54, 48, 0.9), rgba(14, 28, 32, 0.94)) !important;
+    color: #f8e5b2 !important;
+    font-family: var(--font-serif);
+    font-weight: 700;
+  }
+  .pavilion-trigger-btn:hover,
+  .pavilion-trigger-btn.open {
+    border-color: #fff0be !important;
+    box-shadow: 0 0 14px rgba(248, 227, 172, 0.35);
+  }
+  #pavilion-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 256px;
+    padding: 10px;
+    border-radius: 14px;
+    background: linear-gradient(175deg, rgba(9, 23, 29, 0.96), rgba(5, 13, 18, 0.98));
+    border: 1px solid rgba(216, 179, 106, 0.55);
+    box-shadow: 0 20px 54px rgba(0, 0, 0, 0.84), inset 0 1px 0 rgba(255, 245, 210, 0.1);
+    backdrop-filter: blur(12px);
+    display: none;
+    flex-direction: column;
+    gap: 7px;
+    z-index: 65;
+    pointer-events: auto;
+  }
+  #pavilion-popover.open { display: flex; }
+  .pavilion-sec-lbl {
+    font-family: var(--font-serif);
+    font-size: 10.5px;
+    letter-spacing: 1.5px;
+    color: var(--gold);
+    opacity: 0.85;
+    padding: 2px 4px 0;
+  }
+  .pavilion-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+  }
+  .pavilion-item-btn {
+    padding: 6px 8px !important;
+    border-radius: 9px !important;
+    background: rgba(13, 30, 36, 0.86) !important;
+    border: 1px solid rgba(172, 208, 200, 0.2) !important;
+    color: #e4f2ee !important;
+    font-size: 11px !important;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    justify-content: flex-start;
+    text-align: left;
+  }
+  .pavilion-item-btn:hover {
+    border-color: var(--gold-bright) !important;
+    background: rgba(34, 56, 58, 0.92) !important;
+    color: var(--gold-bright) !important;
+  }
+  .pavilion-item-btn.active-toggle {
+    border-color: #70ffe6 !important;
+    color: #80ffea !important;
+    background: rgba(20, 62, 62, 0.9) !important;
+  }
+
+  /* 3. Collapsible Arcana Vault (Replaces 3-row 9-button clutter on bottom-right) */
+  #arcana-vault-wrap {
+    position: fixed;
+    right: 16px;
+    bottom: 18px;
+    z-index: 28;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    pointer-events: none;
+  }
+  #arcana-vault-drawer {
+    display: none;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 16px;
+    background: linear-gradient(175deg, rgba(7, 19, 25, 0.95), rgba(4, 11, 16, 0.97));
+    border: 1px solid rgba(216, 179, 106, 0.52);
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.84);
+    backdrop-filter: blur(10px);
+    pointer-events: auto;
+  }
+  #arcana-vault-wrap.open #arcana-vault-drawer { display: flex; }
+  #arcana-vault-drawer #v24-genesis-dock,
+  #arcana-vault-drawer #v23-epoch-dock,
+  #arcana-vault-drawer #v22-tactical-dock {
+    position: static !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    box-shadow: none !important;
+    background: rgba(8, 22, 28, 0.72) !important;
+    padding: 4px 6px !important;
+    border-radius: 11px !important;
+  }
+  .arcana-vault-hdr {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 4px 4px;
+    border-bottom: 1px solid rgba(216, 179, 106, 0.22);
+    font-size: 11px;
+    color: var(--gold-bright);
+    font-family: var(--font-serif);
+  }
+  #btn-toggle-arcana {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(16, 40, 44, 0.94), rgba(8, 20, 26, 0.96));
+    border: 1px solid rgba(216, 179, 106, 0.58);
+    color: #f8e5b2;
+    font-family: var(--font-serif);
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(8px);
+  }
+  #btn-toggle-arcana:hover {
+    border-color: #fff2c2;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.78), 0 0 16px rgba(216, 179, 106, 0.35);
+  }
+  #btn-toggle-arcana.has-live-buff {
+    border-color: #70ffe6;
+    box-shadow: 0 0 18px rgba(112, 255, 230, 0.42);
+  }
+  .arcana-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--jade);
+    box-shadow: 0 0 8px var(--jade);
+  }
+  #btn-toggle-arcana.locked-hint {
+    opacity: 0.78;
+    border-color: rgba(172, 208, 200, 0.32);
+    color: #a8c7c0;
+  }
+  #btn-toggle-arcana.locked-hint .arcana-dot {
+    background: var(--gold);
+    box-shadow: none;
+  }
+
+  /* 4. Sanctum Dojo Control Pavilion: Zero Overflow & Zero Overlap with Quest Tracker */
+  #dojo-control-bar {
+    position: fixed !important;
+    top: 76px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 47 !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    border-radius: 14px !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    max-width: min(760px, 76vw) !important;
+  }
+  .dojo-bar-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 16px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(10, 26, 32, 0.94), rgba(6, 15, 20, 0.96));
+    border: 1px solid rgba(216, 179, 106, 0.62);
+    color: #f8e5b2;
+    font-family: var(--font-serif);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+  }
+  .dojo-bar-toggle:hover { border-color: #fff3c8; }
+  .dojo-drawer-panel {
+    display: none;
+    margin-top: 7px;
+    width: min(720px, 74vw);
+    padding: 11px 13px;
+    border-radius: 14px;
+    background: linear-gradient(175deg, rgba(8, 21, 27, 0.96), rgba(4, 12, 16, 0.98));
+    border: 1px solid rgba(216, 179, 106, 0.52);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.84);
+    backdrop-filter: blur(12px);
+    flex-direction: column;
+    gap: 9px;
+  }
+  #dojo-control-bar.expanded .dojo-drawer-panel { display: flex; }
+  .dojo-group-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .dojo-group-lbl {
+    width: 68px;
+    flex-shrink: 0;
+    padding-top: 4px;
+    font-family: var(--font-serif);
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 0.8px;
+  }
+  .dojo-group-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    flex: 1;
+  }
+  #dojo-control-bar .dojo-pill-btn {
+    padding: 4px 9px !important;
+    font-size: 11px !important;
+    border-radius: 8px !important;
+  }
+  body:has(#dojo-control-bar.active) #combo-rank-seal {
+    top: 86px !important;
+  }
+
+  /* 5. Progressive Skill Tiers & Clean Bottom Dock */
+  #action-skill-dock {
+    padding: 8px 14px !important;
+    gap: 9px !important;
+    background: linear-gradient(180deg, rgba(8, 20, 25, 0.88), rgba(4, 12, 16, 0.94)) !important;
+    border: 1px solid rgba(216, 179, 106, 0.54) !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.78), inset 0 1px 0 rgba(255, 244, 210, 0.14) !important;
+  }
+  .skill-locked-tier {
+    display: none !important;
+  }
+  .hud-tier-hidden {
+    display: none !important;
+  }
+  @keyframes skillUnlockBurst {
+    0% { transform: scale(0.72); box-shadow: 0 0 0 rgba(255, 226, 138, 0); }
+    50% { transform: scale(1.14); box-shadow: 0 0 28px rgba(255, 226, 138, 0.95); }
+    100% { transform: scale(1); box-shadow: 0 0 10px rgba(216, 179, 106, 0.35); }
+  }
+  .skill-newly-unlocked {
+    animation: skillUnlockBurst 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* 6. Deterministic Pity Bar & Affix Engrave Picker */
+  .pity-bar-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 9px;
+    border-radius: 9px;
+    background: rgba(12, 30, 35, 0.82);
+    border: 1px solid rgba(216, 179, 106, 0.28);
+    font-size: 10.8px;
+    color: #d6ece6;
+  }
+  .pity-meter-track {
+    width: 72px;
+    height: 5px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 5px;
+  }
+  .pity-meter-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #4ad2b8, #ffe28a);
+  }
+  .affix-pick-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .affix-pick-card {
+    padding: 9px 11px;
+    border-radius: 10px;
+    background: rgba(9, 23, 29, 0.92);
+    border: 1px solid rgba(216, 179, 106, 0.32);
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .affix-pick-card:hover {
+    border-color: #ffe28a;
+    background: rgba(24, 46, 50, 0.95);
+    transform: translateY(-1px);
+  }
+  .affix-pick-card.current-affix {
+    border-color: #70ffe6;
+    background: rgba(16, 48, 50, 0.92);
+  }
+  .draft-reroll-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(216, 179, 106, 0.22);
+    font-size: 11.5px;
+    color: var(--text-sub);
+  }
 </style>
 </head>
 <body>
@@ -2028,10 +2437,10 @@
         <span>凡人</span><i>→</i><span>炼气</span><i>→</i><span>筑基</span><i>→</i><span>金丹</span><i>→</i><span>元婴</span><i>→</i><span>化神</span><i>→</i><span style="color:#ffe28a;font-weight:700;">飞升真仙</span>
       </div>
       <div class="title-visual-icons">
-        <span class="title-mini-badge">⚔ 三段剑轮连招</span>
-        <span class="title-mini-badge">🗡 C键三阵变幻</span>
-        <span class="title-mini-badge">💥 右键爆剑破势</span>
-        <span class="title-mini-badge">☯ E键太虚剑域</span>
+        <span class="title-mini-badge"><b class="badge-key">左键</b>四段剑舞 · 末段必暴</span>
+        <span class="title-mini-badge"><b class="badge-key">右键</b>切手派生 · 爆剑破势</span>
+        <span class="title-mini-badge"><b class="badge-key">空格</b>金芒识破 · 凝时闪避</span>
+        <span class="title-mini-badge"><b class="badge-key">B 键</b>周天吐纳 · 满修渡劫</span>
       </div>
 
       <div class="welcome-actions">
@@ -2091,7 +2500,7 @@
       <div id="quest-tracker-hud">
         <div class="qt-header">
           <button type="button" id="btn-open-goals-hdr" class="qt-title" data-tip="九霄问道录 (T)|点击展开七卷主线、宗门悬赏令、九州15星秘宝与飞升终极道标！">
-            <span>🎯 问道目标</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;"><svg class="svg-ico" style="width:13px;height:13px;color:var(--gold);" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>问道目标</span>
             <span id="qt-overall-pct" class="qt-pct-pill">12%</span>
           </button>
           <button type="button" id="btn-toggle-qt" style="font-size:11px;color:var(--text-sub);padding:0 4px;" data-tip="折叠/展开目标追踪|保持视野清爽">▾</button>
@@ -2105,7 +2514,7 @@
       <button id="btn-mainline-compass" class="hud-compass stage-wave-hud"><div class="wave-title-row"><span id="stage-title"></span><span id="wave-sub-tag" class="tag-chip done"></span></div><div id="wave-dots-row" class="wave-dots"></div><span id="compass-vol-label" class="sr-only">第一卷 · 山雨入道</span> <span id="compass-step-label" class="sr-only">破庙抉择：回应沈清禾求药</span> <span class="sr-only">主线指引 →</span></button>
 
       <div id="tribulation-live-banner">
-        <span id="trib-live-txt">⚡ 九霄紫霄雷劫 · 空格一闪逆斩天雷！</span>
+        <span id="trib-live-txt">九霄紫霄雷劫 · 空格一闪逆斩天雷</span>
       </div>
       <div id="boss-hud-banner">
         <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;">
@@ -2116,40 +2525,55 @@
         <div class="boss-posture-track"><div id="boss-posture-fill" class="boss-posture-fill" style="width:100%"></div></div>
         <div id="titan-parts-hud">
           <button type="button" class="titan-part-chip" data-lock-titan-part="left_claw">
-            <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#ffd89b;"><span>🦾 左覆海魔爪</span><span id="titan-pct-left">100%</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#ffd89b;"><span>左覆海魔爪</span><span id="titan-pct-left">100%</span></div>
             <div class="titan-part-bar"><div id="titan-bar-left" class="titan-part-fill" style="width:100%"></div></div>
           </button>
           <button type="button" class="titan-part-chip" data-lock-titan-part="brow_eye">
-            <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#80ffea;"><span>👁 眉心天道竖眼</span><span id="titan-pct-eye">100%</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#80ffea;"><span>眉心天道竖眼</span><span id="titan-pct-eye">100%</span></div>
             <div class="titan-part-bar"><div id="titan-bar-eye" class="titan-part-fill" style="width:100%;background:linear-gradient(90deg,#70ffe6,#ffe28a);"></div></div>
           </button>
           <button type="button" class="titan-part-chip" data-lock-titan-part="right_halberd">
-            <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#e2b8ff;"><span>⚡ 右裂天雷戟</span><span id="titan-pct-right">100%</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#e2b8ff;"><span>右裂天雷戟</span><span id="titan-pct-right">100%</span></div>
             <div class="titan-part-bar"><div id="titan-bar-right" class="titan-part-fill" style="width:100%;background:linear-gradient(90deg,#b983ff,#ffd89b);"></div></div>
           </button>
         </div>
-        <button type="button" id="titan-climb-btn" data-action="titan-climb-finisher">⚡ 双臂崩碎巨神伏地 · 点此或按 F/出剑 触发【御剑登天·踏躯逆鳞斩】！</button>
+        <button type="button" id="titan-climb-btn" data-action="titan-climb-finisher">双臂崩碎巨神伏地 · 点此或出剑触发【御剑登天·踏躯逆鳞斩】</button>
       </div>
     </div>
 
     <div class="hud-right">
       <button id="btn-omen-banner" class="icon-btn active" data-tip="天时星象|点击耗20灵石改换星象加成">
-        <span id="omen-label-txt">天时：灵潮涌动（吐纳+45%）</span>
+        <span id="omen-label-txt">灵潮</span>
       </button>
-      <button id="btn-goals-modal" class="goal-btn-pill" data-tip="九霄问道录 (T)|查看并领取主线卷宗、宗门悬赏令与九州15星秘宝奖励！">🎯 目标 <span id="goal-hud-dot" class="goal-red-dot"></span></button>
-      <button id="btn-world-map" class="map-btn-pill" data-tip="九州山海舆图 (M)|展开千里青绿山海卷：自由选择五大秘境悬赏、镇妖古塔或返回听雨洞府！">🗺 舆图</button>
-      <button id="btn-sanctum-hub" class="hub-btn-pill" data-tip="听雨洞府主城 · 演武论剑坪 (H)|随时返回安全宗门洞府：体验机关木人试剑道场、3倍灵眼吐纳、控火炼丹与神兵淬炼！">🏠 洞府</button>
-      <button id="btn-boss-rush" class="rush-btn-pill" data-tip="万剑冢 · 踏天连战 (Boss Rush)|连续迎战五大强化妖王与压轴【太虚心魔镜像】，自选问道劫律冲击 S+ 万古剑尊与【太虚劫光】飞剑幻化！">⚔ 万剑冢</button>
-      <button id="btn-star-chart" class="photo-btn-pill" style="border-color:rgba(255,220,130,0.68);color:#fff3c4;" data-tip="太虚周天星图 · 二十八星宿天命盘 (N)|点亮东方苍龙、西方白虎、南方朱雀、北方玄武二十八星宿节点，激活四大星魂本源共鸣！">🌟 星图</button>
-      <button id="btn-photo-mode" class="photo-btn-pill" data-tip="太虚绘卷 · 自由摄影模式 (P)|随时冻结高燃战斗瞬间：自由缩放平移镜头、切换四款国风调色滤镜、隐去UI并一键导出高清画卷 PNG！">📷 绘卷</button>
-      <button id="btn-toggle-telemetry" class="icon-btn" data-tip="3A动作遥测与判定框 (F3)|实时查看140ms预输入连招链、秒伤DPS、60FPS帧耗时波动条及Hitbox/无敌帧框线！"><span>📊 遥测</span></button>
-      <button id="btn-quick-map" class="loc-badge-btn" data-tip="太虚锁妖古塔|直接挑战无尽镇妖塔试炼"><span class="sr-only">📍 </span><span id="quick-map-lbl">青岚山野</span></button>
+      <button id="btn-goals-modal" class="goal-btn-pill" data-tip="九霄问道录 (T)|查看并领取主线卷宗、宗门悬赏令与九州15星秘宝奖励！"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg><span>目标</span><span id="goal-hud-dot" class="goal-red-dot"></span></button>
+      <button id="btn-world-map" class="map-btn-pill" data-tip="九州山海舆图 (M)|展开千里青绿山海卷：自由选择五大秘境悬赏、镇妖古塔或返回听雨洞府！"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/><path d="M9 4v14M15 6v14"/></svg><span>舆图</span></button>
+      <button id="btn-sanctum-hub" class="hub-btn-pill" data-tip="听雨洞府主城 · 演武论剑坪 (H)|随时返回安全宗门洞府：休整、控火炼丹、神兵淬炼与木桩演武！"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></svg><span>洞府</span></button>
+      <button type="button" id="btn-pavilion-menu" class="pavilion-trigger-btn" data-action="toggle-pavilion" data-tip="太虚仙阁|展开万剑冢、周天星图、锁妖塔、自由绘卷、动作遥测与全神通演武开关"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.2L18.5 21 12 16.8 5.5 21l2-7.8L2 9h7l3-7z"/></svg><span>仙阁 ▾</span></button>
       <button id="btn-speed-1" class="speed-btn active sr-only" data-speed="1">1x</button>
       <button id="btn-speed-2" class="speed-btn sr-only" data-speed="2">2x</button>
       <button id="btn-speed-4" class="speed-btn sr-only" data-speed="4">4x</button>
-      <button id="btn-toggle-bgm" class="icon-btn active"><svg class="svg-ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span class="sr-only">🎵 仙乐</span></button>
-      <button id="btn-mute-audio" class="icon-btn"><svg class="svg-ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><span class="sr-only">🔊 琴音</span></button>
-      <button id="btn-open-settings" class="icon-btn"><svg class="svg-ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M8 9h7M8 13h7"/></svg><span class="sr-only">⚙ </span><span>卷轴</span></button>
+      <button id="btn-toggle-bgm" class="icon-btn active" data-tip="仙乐伴奏|开关国风古琴背景音乐"><svg class="svg-ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span class="sr-only">仙乐</span></button>
+      <button id="btn-mute-audio" class="icon-btn" data-tip="音效开关|开关剑鸣鼓点等战斗音效"><svg class="svg-ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><span class="sr-only">琴音</span></button>
+      <button id="btn-open-settings" class="icon-btn" data-tip="卷轴设置|改键位、存档导出与辅助选项"><svg class="svg-ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M8 9h7M8 13h7"/></svg><span>卷轴</span></button>
+
+      <div id="pavilion-popover">
+        <div class="pavilion-sec-lbl">秘境与道场</div>
+        <div class="pavilion-grid">
+          <button type="button" id="btn-boss-rush" class="pavilion-item-btn" data-tip="万剑冢 · 踏天连战 (Boss Rush)|连续迎战五大强化妖王与心魔镜像"><svg class="svg-ico" style="width:13px;height:13px;color:#ff9a8b;" viewBox="0 0 24 24"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/></svg><span>万剑冢</span></button>
+          <button type="button" id="btn-quick-map" class="pavilion-item-btn" data-tip="太虚锁妖古塔|直接挑战无尽镇妖塔试炼"><svg class="svg-ico" style="width:13px;height:13px;color:var(--jade);" viewBox="0 0 24 24"><path d="M6 21h12M8 21V9l4-5 4 5v12M9 14h6"/></svg><span id="quick-map-lbl">锁妖塔</span></button>
+          <button type="button" id="btn-star-chart" class="pavilion-item-btn" data-tip="太虚周天星图 (N)|点亮二十八星宿激活星魂共鸣"><svg class="svg-ico" style="width:13px;height:13px;color:var(--gold-bright);" viewBox="0 0 24 24"><polygon points="12 2 15 9 22 9.5 16.5 14 18 21 12 17.5 6 21 7.5 14 2 9.5 9 9 12 2"/></svg><span>周天星图</span></button>
+          <button type="button" class="pavilion-item-btn" data-action="open-celestial-spire" data-tip="太虚登仙台 (L)|九重天宫肉鸽奇物深渊"><svg class="svg-ico" style="width:13px;height:13px;color:#d69eff;" viewBox="0 0 24 24"><path d="M12 3l8 5-8 5-8-5 8-5z"/><path d="M4 13l8 5 8-5"/></svg><span>登仙台</span></button>
+        </div>
+        <div class="pavilion-sec-lbl">绘卷与演武工具</div>
+        <div class="pavilion-grid">
+          <button type="button" id="btn-photo-mode" class="pavilion-item-btn" data-tip="太虚绘卷 · 自由摄影模式 (P)|冻结战斗定格画面并导出国风画卷"><svg class="svg-ico" style="width:13px;height:13px;color:var(--gold);" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/></svg><span>绘卷摄影</span></button>
+          <button type="button" id="btn-toggle-telemetry" class="pavilion-item-btn" data-tip="3A动作遥测与判定框 (F3)|查看预输入链、秒伤与判定框线"><svg class="svg-ico" style="width:13px;height:13px;color:var(--jade);" viewBox="0 0 24 24"><path d="M4 19h16M7 15v-4M12 15V7M17 15v-6"/></svg><span>动作遥测</span></button>
+        </div>
+        <button type="button" id="btn-toggle-arcana-all" class="pavilion-item-btn" style="width:100%;justify-content:space-between;" data-action="toggle-arcana-all" data-tip="境界渐进解锁开关|默认随凡人→炼气→筑基→金丹逐步解封招式；开启后可提前演武体验全部高阶神通！">
+          <span>全神通演武解锁</span>
+          <b id="lbl-arcana-all-state" style="color:var(--gold-bright);">随境解封</b>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -2188,17 +2612,17 @@
   </main>
 
   <!-- BOTTOM TACTILE ARPG SKILL DOCK (DYNAMIC KB/GAMEPAD GLYPHS + STYLE ULTIMATE ORB) -->
-  <div id="tag-team-hud-pill" data-tip="太虚同心 · 道侣瞬切操控 (V键) & 剑匣三器 (1/2/3)|按 V 键或点击头像在主角与道侣间【无缝换人操控】并释放【换人入场连携技】（受控或残血亦可紧急换人救场净厄）！点右侧剑匣切换【飞剑/龙胆枪/剑轮】！">
+  <div id="tag-team-hud-pill" data-unlock-rank="3" data-tip="太虚同心 · 道侣瞬切操控 (V键) & 剑匣三器 (1/2/3)|按 V 键或点击头像在主角与道侣间【无缝换人操控】并释放【换人入场连携技】（受控或残血亦可紧急换人救场净厄）！点右侧剑匣切换【飞剑/龙胆枪/剑轮】！">
     <span class="tag-key-cap" data-bind-cap="tagSwitch">V</span>
     <div id="tag-roster-icons" style="display:flex;align-items:center;gap:4px;"></div>
-    <button type="button" id="btn-cycle-arsenal" class="tag-key-cap" style="cursor:pointer;color:#80ffea;border-color:rgba(112,255,230,0.55);" data-action="cycle-weapon-form">🗡飞剑</button>
-    <button type="button" id="btn-dual-bond-ult" data-action="cast-dual-bond-ult" data-tip="双人同框羁绊合体奥义 (同心100%)|主角与当前出战道侣双立绘交辉，释放全屏合击大阵！">💞合璧</button>
+    <button type="button" id="btn-cycle-arsenal" class="tag-key-cap" style="cursor:pointer;color:#80ffea;border-color:rgba(112,255,230,0.55);" data-action="cycle-weapon-form">飞剑</button>
+    <button type="button" id="btn-dual-bond-ult" data-action="cast-dual-bond-ult" data-tip="双人同框羁绊合体奥义 (同心100%)|主角与当前出战道侣双立绘交辉，释放全屏合击大阵！">合璧</button>
   </div>
-  <button type="button" id="karma-hud-pill" data-action="open-karma-dilemma" data-tip="清虚正道 ↔ 劫煞魔心 (红尘因果谱系)|点击展开【红尘因果问心抉择】！正道激活【太清镇世诀】净世莲盾，魔心激活【血煞狂剑诀】燃血高爆噬血！">
+  <button type="button" id="karma-hud-pill" data-unlock-rank="2" data-action="open-karma-dilemma" data-tip="清虚正道 ↔ 劫煞魔心 (红尘因果谱系)|点击展开【红尘因果问心抉择】！正道激活【太清镇世诀】净世莲盾，魔心激活【血煞狂剑诀】燃血高爆噬血！">
     <span id="karma-hud-icon">☯</span>
     <strong id="karma-hud-title" style="font-family:var(--font-serif);">本真中正 · 0</strong>
   </button>
-  <button type="button" id="posture-switch-badge" data-arena-skill="posture" data-tip="双剑意姿态切换 · 太虚易剑斩 (Tab / LB)|实时切换【青莲疾剑式(高频迅捷)】与【玄重巨阙式(霸体破盾碎核)】；在收招或闪避瞬间按下立即触发突进破势【太虚易剑斩】！">
+  <button type="button" id="posture-switch-badge" data-unlock-rank="2" data-arena-skill="posture" data-tip="双剑意姿态切换 · 太虚易剑斩 (Tab / LB)|实时切换【青莲疾剑式(高频迅捷)】与【玄重巨阙式(霸体破盾碎核)】；在收招或闪避瞬间按下立即触发突进破势【太虚易剑斩】！">
     <img id="posture-emblem-img" class="posture-emblem-ico" alt="姿态" />
     <div style="display:flex;flex-direction:column;gap:2px;flex:1;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
@@ -2208,174 +2632,188 @@
       <span id="posture-sub-txt" style="font-size:10px;color:#b8dcd5;">攻速+28% · 迅捷叠印游身</span>
     </div>
   </button>
-  <div id="v24-genesis-dock">
-    <button type="button" id="btn-sanqing-clones" class="v24-gen-btn" data-action="cast-sanqing-clones" data-tip="一气化三清 · 身外法身三影同击 (4键激活 / 二段按4移形归元爆)|凝练【玉清青莲法身(80ms)】与【上清紫电法身(160ms)】完全同步复刻一切普攻、三器混编、六象特技、空连与易剑斩！存续中再按 4 键瞬发【移形换位·三清归元十字斩】！">
-      <img id="img-sanqing-ico" alt="一气三清" />
-      <div style="display:flex;flex-direction:column;gap:1px;">
-        <strong id="lbl-sanqing-title" style="font-family:var(--font-serif);font-size:11px;color:#80ffea;">一气三清</strong>
-        <span id="lbl-sanqing-sub" style="font-size:9.2px;color:#cfe8e2;">三影同步斩</span>
+
+  <div id="arcana-vault-wrap">
+    <div id="arcana-vault-drawer">
+      <div class="arcana-vault-hdr">
+        <span>太虚仙法秘匣 · 高阶神通</span>
+        <button type="button" class="btn-ghost" style="padding:1px 8px;font-size:10.5px;" data-action="toggle-arcana-vault">收起 ▾</button>
       </div>
-      <span class="v22-key-badge">4</span>
-    </button>
-    <button type="button" id="btn-shanhe-domain" class="v24-gen-btn" data-action="cast-shanhe-domain" data-tip="山河社稷图 · 画中水墨降维领域 (5键展开宣纸青绿山水界)|将首领与群妖摄入10秒【太古青绿山水画中界】（敌减速42%且破防+45%）；每次挥剑烙印【临·兵·斗·者·皆·阵·列·在·前】九字真言，叠满触发【笔落惊风雨·破画万钧斩】！">
-      <img id="img-shanhe-ico" alt="山河社稷" />
-      <div style="display:flex;flex-direction:column;gap:1px;">
-        <strong id="lbl-shanhe-title" style="font-family:var(--font-serif);font-size:11px;color:#ffe89e;">山河社稷</strong>
-        <span id="lbl-shanhe-sub" style="font-size:9.2px;color:#9effec;">画中界九字</span>
+      <div id="v24-genesis-dock">
+        <button type="button" id="btn-sanqing-clones" class="v24-gen-btn" data-action="cast-sanqing-clones" data-tip="一气化三清 · 身外法身三影同击 (4键激活 / 二段按4移形归元爆)|凝练【玉清青莲法身(80ms)】与【上清紫电法身(160ms)】完全同步复刻一切普攻、三器混编、六象特技、空连与易剑斩！存续中再按 4 键瞬发【移形换位·三清归元十字斩】！">
+          <img id="img-sanqing-ico" alt="一气三清" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-sanqing-title" style="font-family:var(--font-serif);font-size:11px;color:#80ffea;">一气三清</strong>
+            <span id="lbl-sanqing-sub" style="font-size:9.2px;color:#cfe8e2;">三影同步斩</span>
+          </div>
+          <span class="v22-key-badge">4</span>
+        </button>
+        <button type="button" id="btn-shanhe-domain" class="v24-gen-btn" data-action="cast-shanhe-domain" data-tip="山河社稷图 · 画中水墨降维领域 (5键展开宣纸青绿山水界)|将首领与群妖摄入10秒【太古青绿山水画中界】（敌减速42%且破防+45%）；每次挥剑烙印【临·兵·斗·者·皆·阵·列·在·前】九字真言，叠满触发【笔落惊风雨·破画万钧斩】！">
+          <img id="img-shanhe-ico" alt="山河社稷" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-shanhe-title" style="font-family:var(--font-serif);font-size:11px;color:#ffe89e;">山河社稷</strong>
+            <span id="lbl-shanhe-sub" style="font-size:9.2px;color:#9effec;">画中界九字</span>
+          </div>
+          <span class="v22-key-badge">5</span>
+        </button>
+        <button type="button" id="btn-warship-strike" class="v24-gen-btn" data-action="cast-warship-strike" data-tip="凌霄仙舟 · 破界天基轰炸 (6键召唤母舰 · 7自创剑谱 · 8九州远征)|召唤宗门浮空母舰【听雨凌霄仙舟】掠空投下镇妖锁链锚定敌酋，倾泻【十二门徒御剑空降剑雨 + 太初灵晶主炮轰击】！">
+          <img id="img-warship-ico" alt="凌霄仙舟" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-warship-title" style="font-family:var(--font-serif);font-size:11px;color:#ffd166;">凌霄仙舟</strong>
+            <span id="lbl-warship-sub" style="font-size:9.2px;color:#ffe89e;">天基主炮齐射</span>
+          </div>
+          <span class="v22-key-badge">6</span>
+        </button>
       </div>
-      <span class="v22-key-badge">5</span>
-    </button>
-    <button type="button" id="btn-warship-strike" class="v24-gen-btn" data-action="cast-warship-strike" data-tip="凌霄仙舟 · 破界天基轰炸 (6键召唤母舰 · 7自创剑谱 · 8九州远征)|召唤宗门浮空母舰【听雨凌霄仙舟】掠空投下镇妖锁链锚定敌酋，倾泻【十二门徒御剑空降剑雨 + 太初灵晶主炮轰击】！">
-      <img id="img-warship-ico" alt="凌霄仙舟" />
-      <div style="display:flex;flex-direction:column;gap:1px;">
-        <strong id="lbl-warship-title" style="font-family:var(--font-serif);font-size:11px;color:#ffd166;">凌霄仙舟</strong>
-        <span id="lbl-warship-sub" style="font-size:9.2px;color:#ffe89e;">天基主炮齐射</span>
+      <div id="v23-epoch-dock">
+        <button type="button" id="btn-coop-2p" class="v23-ep-btn" data-action="toggle-coop-2p" data-tip="太虚同游 · 本地双人同屏共斗 (]键开启 · [键换2P伙伴)|开启 1P+2P 同屏双剑联机（2P支持 IJKL/方向键/小键盘/手柄 + 智能协战兜底）：双人拉线激活【同心剑网切割线】、破势夹击触发【2.5x 双人同步处决】、力竭触发【渡气化劫瞬身救援】！">
+          <img id="img-coop-2p-ico" alt="双人同游" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-coop-2p-title" style="font-family:var(--font-serif);font-size:11px;color:#80ffea;">双人同游</strong>
+            <span id="lbl-coop-2p-sub" style="font-size:9.2px;color:#cfe8e2;">点此开启2P</span>
+          </div>
+          <span class="v22-key-badge">]</span>
+        </button>
+        <button type="button" id="btn-celestial-time" class="v23-ep-btn" data-action="cycle-celestial-time" data-tip="太虚天时 · 四相昼夜流转 (`键切换晨曦/烈阳/血暮/星河)|实时流转或一键切换四相天光与倒影法则：【晨曦紫气】正道回灵护盾、【烈阳当空】剑意暴涨、【残阳血暮】魔心火血+42%、【极夜星河】二十八星宿翻倍 + 首领月华夜煞与必掉星魄！">
+          <img id="img-celestial-ico" alt="四相天时" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-celestial-title" style="font-family:var(--font-serif);font-size:11px;color:#ffe89e;">晨曦紫气</strong>
+            <span id="lbl-celestial-sub" style="font-size:9.2px;color:#9effec;">正道回灵+盾</span>
+          </div>
+          <span class="v22-key-badge">~</span>
+        </button>
+        <button type="button" id="btn-comic-scroll" class="v23-ep-btn" data-action="open-comic-scroll" data-tip="太虚剑意录 · 四格水墨连环画战报|自动抓拍本局最惊艳的 4 帧高光瞬间（识破剑反/双神角力/踏躯逆鳞/双剑诛仙），一键生成宣纸朱砂题跋【四格水墨连环画长卷】并导出高清 PNG！">
+          <img id="img-comic-ico" alt="剑意战报" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong style="font-family:var(--font-serif);font-size:11px;color:#ffd166;">剑意战报</strong>
+            <span id="lbl-comic-count" style="font-size:9.2px;color:#ffe89e;">四格抓拍 0/4</span>
+          </div>
+          <span class="v22-key-badge">画</span>
+        </button>
       </div>
-      <span class="v22-key-badge">6</span>
+      <div id="v22-tactical-dock">
+        <button type="button" id="btn-astral-form" class="v22-tac-btn" data-arena-skill="astral" data-tip="法天象地 · 十丈元神真身 (O键 / 满元神或SSS激发)|依正魔道心化为【太清金阙剑仙真身】或【九幽修罗魔剑真身】：全程霸体免控，施展裂穹巨剑与星河剑指；迎击烛龙/首领直接触发【双巨神跨屏角力】瞬碎护甲！">
+          <img id="img-astral-ico" alt="法天象地" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-astral-title" style="font-family:var(--font-serif);font-size:11.5px;color:#ffe89e;">法天象地</strong>
+            <span id="lbl-astral-pct" style="font-size:9.5px;color:#80ffea;">元神 0%</span>
+          </div>
+          <span class="v22-key-badge" data-bind-cap="astral">O</span>
+        </button>
+        <button type="button" id="btn-mount-call" class="v22-tac-btn" data-arena-skill="mount" data-tip="山海灵骑 · 神兽骑乘冲锋 (J键呼哨/冲锋 · Z/右键跃马坠劈)|呼哨召出【踏云墨麒麟 / 九天青鸾凤 / 玄冥白泽兽】破阵冲锋撞飞群妖！骑乘中按 Z 或右键施展【飞身跃马·凌空坠星劈】无缝接空连！">
+          <img id="img-mount-ico" alt="灵骑" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-mount-name" style="font-family:var(--font-serif);font-size:11.5px;color:#70ffe6;">踏云麒麟</strong>
+            <span id="lbl-mount-state" style="font-size:9.5px;color:#cfe8e2;">呼哨冲锋</span>
+          </div>
+          <span class="v22-key-badge" data-bind-cap="mount">J</span>
+        </button>
+        <button type="button" id="btn-qimen-array" class="v22-tac-btn" data-arena-skill="qimen" data-tip="奇门遁甲 · 八门随身风水阵盘 (U键布阵与轮转四门)|脚下瞬展奇门风水盘并轮换【生门回春 / 景门离火附魔 / 惊门震雷聚怪 / 死门剑狱双倍破甲】；阵内放六象或合璧触发【阵眼扩域爆破】！">
+          <img id="img-qimen-ico" alt="奇门" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-qimen-gate" style="font-family:var(--font-serif);font-size:11.5px;color:#ffd166;">奇门·生门</strong>
+            <span id="lbl-qimen-sub" style="font-size:9.5px;color:#9effec;">布阵轮转</span>
+          </div>
+          <span class="v22-key-badge" data-bind-cap="qimen">U</span>
+        </button>
+      </div>
+    </div>
+    <button type="button" id="btn-toggle-arcana" data-action="toggle-arcana-vault" data-tip="太虚仙法秘匣|收合奇门阵盘、山海灵骑、法天象地、一气三清、山河社稷图、凌霄仙舟等高阶神通（金丹期解封，或于右上【仙阁】提前开启全神通演武）">
+      <span class="arcana-dot"></span>
+      <span id="lbl-arcana-toggle">太虚秘匣</span>
     </button>
   </div>
-  <div id="v23-epoch-dock">
-    <button type="button" id="btn-coop-2p" class="v23-ep-btn" data-action="toggle-coop-2p" data-tip="太虚同游 · 本地双人同屏共斗 (]键开启 · [键换2P伙伴)|开启 1P+2P 同屏双剑联机（2P支持 IJKL/方向键/小键盘/手柄 + 智能协战兜底）：双人拉线激活【同心剑网切割线】、破势夹击触发【2.5x 双人同步处决】、力竭触发【渡气化劫瞬身救援】！">
-      <img id="img-coop-2p-ico" alt="双人同游" />
-      <div style="display:flex;flex-direction:column;gap:1px;">
-        <strong id="lbl-coop-2p-title" style="font-family:var(--font-serif);font-size:11px;color:#80ffea;">双人同游</strong>
-        <span id="lbl-coop-2p-sub" style="font-size:9.2px;color:#cfe8e2;">点此开启2P</span>
-      </div>
-      <span class="v22-key-badge">]</span>
-    </button>
-    <button type="button" id="btn-celestial-time" class="v23-ep-btn" data-action="cycle-celestial-time" data-tip="太虚天时 · 四相昼夜流转 (`键切换晨曦/烈阳/血暮/星河)|实时流转或一键切换四相天光与倒影法则：【晨曦紫气】正道回灵护盾、【烈阳当空】剑意暴涨、【残阳血暮】魔心火血+42%、【极夜星河】二十八星宿翻倍 + 首领月华夜煞与必掉星魄！">
-      <img id="img-celestial-ico" alt="四相天时" />
-      <div style="display:flex;flex-direction:column;gap:1px;">
-        <strong id="lbl-celestial-title" style="font-family:var(--font-serif);font-size:11px;color:#ffe89e;">晨曦紫气</strong>
-        <span id="lbl-celestial-sub" style="font-size:9.2px;color:#9effec;">正道回灵+盾</span>
-      </div>
-      <span class="v22-key-badge">~</span>
-    </button>
-    <button type="button" id="btn-comic-scroll" class="v23-ep-btn" data-action="open-comic-scroll" data-tip="太虚剑意录 · 四格水墨连环画战报|自动抓拍本局最惊艳的 4 帧高光瞬间（识破剑反/双神角力/踏躯逆鳞/双剑诛仙），一键生成宣纸朱砂题跋【四格水墨连环画长卷】并导出高清 PNG！">
-      <img id="img-comic-ico" alt="剑意战报" />
-      <div style="display:flex;flex-direction:column;gap:1px;">
-        <strong style="font-family:var(--font-serif);font-size:11px;color:#ffd166;">剑意战报</strong>
-        <span id="lbl-comic-count" style="font-size:9.2px;color:#ffe89e;">四格抓拍 0/4</span>
-      </div>
-      <span class="v22-key-badge">画</span>
-    </button>
-  </div>
-  <div id="v22-tactical-dock">
-    <button type="button" id="btn-astral-form" class="v22-tac-btn" data-arena-skill="astral" data-tip="法天象地 · 十丈元神真身 (O键 / 满元神或SSS激发)|依正魔道心化为【太清金阙剑仙真身】或【九幽修罗魔剑真身】：全程霸体免控，施展裂穹巨剑与星河剑指；迎击烛龙/首领直接触发【双巨神跨屏角力】瞬碎护甲！">
-      <img id="img-astral-ico" alt="法天象地" />
-      <div style="display:flex;flex-direction:column;gap:1px;">
-        <strong id="lbl-astral-title" style="font-family:var(--font-serif);font-size:11.5px;color:#ffe89e;">法天象地</strong>
-        <span id="lbl-astral-pct" style="font-size:9.5px;color:#80ffea;">元神 0%</span>
-      </div>
-      <span class="v22-key-badge" data-bind-cap="astral">O</span>
-    </button>
-    <button type="button" id="btn-mount-call" class="v22-tac-btn" data-arena-skill="mount" data-tip="山海灵骑 · 神兽骑乘冲锋 (J键呼哨/冲锋 · Z/右键跃马坠劈)|呼哨召出【踏云墨麒麟 / 九天青鸾凤 / 玄冥白泽兽】破阵冲锋撞飞群妖！骑乘中按 Z 或右键施展【飞身跃马·凌空坠星劈】无缝接空连！">
-      <img id="img-mount-ico" alt="灵骑" />
-      <div style="display:flex;flex-direction:column;gap:1px;">
-        <strong id="lbl-mount-name" style="font-family:var(--font-serif);font-size:11.5px;color:#70ffe6;">踏云麒麟</strong>
-        <span id="lbl-mount-state" style="font-size:9.5px;color:#cfe8e2;">呼哨冲锋</span>
-      </div>
-      <span class="v22-key-badge" data-bind-cap="mount">J</span>
-    </button>
-    <button type="button" id="btn-qimen-array" class="v22-tac-btn" data-arena-skill="qimen" data-tip="奇门遁甲 · 八门随身风水阵盘 (U键布阵与轮转四门)|脚下瞬展奇门风水盘并轮换【生门回春 / 景门离火附魔 / 惊门震雷聚怪 / 死门剑狱双倍破甲】；阵内放六象或合璧触发【阵眼扩域爆破】！">
-      <img id="img-qimen-ico" alt="奇门" />
-      <div style="display:flex;flex-direction:column;gap:1px;">
-        <strong id="lbl-qimen-gate" style="font-family:var(--font-serif);font-size:11.5px;color:#ffd166;">奇门·生门</strong>
-        <span id="lbl-qimen-sub" style="font-size:9.5px;color:#9effec;">布阵轮转</span>
-      </div>
-      <span class="v22-key-badge" data-bind-cap="qimen">U</span>
-    </button>
-  </div>
+
   <div id="action-skill-dock">
-    <button type="button" id="orb-slash" class="skill-orb-btn" data-arena-skill="slash" data-tip="四段青霜剑舞 / 蓄力万剑|点按施展【斜月→双龙→剑轮→青莲落星】四段剑舞；出剑瞬间接重击触发【切手重派生】！">
+    <button type="button" id="orb-slash" class="skill-orb-btn" data-unlock-rank="0" data-arena-skill="slash" data-tip="四段青霜剑舞 / 蓄力万剑 (左键)|点按施展【斜月→双龙→剑轮→青莲落星】四段剑舞，第四段必定暴击！出剑瞬间接右键触发【切手重派生】！">
       <img id="orb-img-slash" alt="剑气" />
       <span class="skill-key-cap" data-bind-cap="slash">左键</span>
       <span class="skill-orb-lbl">剑气</span>
     </button>
 
-    <button type="button" id="orb-soul" class="skill-orb-btn soul-seal-orb" data-arena-skill="soul" data-tip="太虚镇妖魂印 · 精魄化身技 (C / RB)|召唤并融汇已炼化的妖王精魄法相出击！自带55%霸体减伤与强力破招，可在任意剑招后摇中【无缝取消硬直(Soul-Cancel)】并触发跨系元素聚变！">
-      <img id="orb-img-soul" alt="魂印" />
-      <span class="skill-key-cap" data-bind-cap="soul">C</span>
-      <span class="skill-orb-lbl" id="lbl-soul-name">血魔印</span>
-      <div id="cd-soul" class="skill-cd-mask"></div>
-    </button>
-
-    <button type="button" id="orb-stance" class="skill-orb-btn stance-hunt" data-arena-skill="stance" data-tip="三才剑阵变幻 (Y / B)|实时切换【游龙阵(追猎叠印) → 剑轮阵(护体斩弹幕) → 巨阙阵(玄天巨剑重劈破势)】！">
-      <img id="orb-img-stance" alt="剑阵" />
-      <span class="skill-key-cap" data-bind-cap="stance">C</span>
-      <span class="skill-orb-lbl" id="lbl-stance-mode">游龙阵</span>
-    </button>
-
-    <button type="button" id="orb-recall" class="skill-orb-btn" data-arena-skill="recall" data-tip="切手重派生 · 识破剑反 · 爆印|普攻后瞬按派生【挑月破军/十字裂空/太虚剑莲】；迎着首领【金芒招】按右键或一闪直接触发【识破·剑反】！">
+    <button type="button" id="orb-recall" class="skill-orb-btn" data-unlock-rank="0" data-arena-skill="recall" data-tip="切手重派生 · 识破剑反 · 爆印 (右键)|普攻后瞬按派生【挑月破军/十字裂空/太虚剑莲】（必定暴击）；引爆敌身剑印造成高额破势！">
       <img id="orb-img-recall" alt="爆剑" />
       <span class="skill-key-cap" data-bind-cap="recall">右键</span>
       <span class="skill-orb-lbl" id="lbl-recall-marks">爆剑</span>
       <div id="cd-recall" class="skill-cd-mask"></div>
     </button>
 
-    <button type="button" id="orb-dash" class="skill-orb-btn glow-jade" data-arena-skill="dash" data-tip="识破剑反 / 极限闪避凝时|迎击【✦金光招】触发万钧剑反碎势；闪避【危·红光杀招】触发1.5秒【太虚凝时】慢镜并留爆裂残影！">
+    <button type="button" id="orb-dash" class="skill-orb-btn glow-jade" data-unlock-rank="0" data-arena-skill="dash" data-tip="识破剑反 / 极限闪避凝时 (空格)|迎击【✦金光招】触发万钧剑反碎势；闪避【危·红光杀招】触发1.5秒【太虚凝时】慢镜并留爆裂残影！">
       <img id="orb-img-dash" alt="一闪" />
       <span class="skill-key-cap" data-bind-cap="dash">空格</span>
       <span class="skill-orb-lbl">一闪</span>
       <div id="cd-dash" class="skill-cd-mask"></div>
     </button>
 
-    <button type="button" id="orb-jump" class="skill-orb-btn" data-arena-skill="jump" data-tip="御风腾跃 · 踏剑借力 (Z / Shift)|主动拔地凌空跃起躲避【下段裂地危招】并踩头触发【踏剑借力】破势反震！滞空点左键施展【升龙三连斩】，点右键施展【陨星千钧坠地劈】！">
+    <button type="button" id="orb-stance" class="skill-orb-btn stance-hunt" data-unlock-rank="1" data-arena-skill="stance" data-tip="三才剑阵变幻 (Y / B)|炼气期解封：实时切换【游龙阵(追猎叠印) → 剑轮阵(护体斩弹幕) → 巨阙阵(玄天巨剑重劈破势)】！">
+      <img id="orb-img-stance" alt="剑阵" />
+      <span class="skill-key-cap" data-bind-cap="stance">Y</span>
+      <span class="skill-orb-lbl" id="lbl-stance-mode">游龙阵</span>
+    </button>
+
+    <button type="button" id="orb-jump" class="skill-orb-btn" data-unlock-rank="1" data-arena-skill="jump" data-tip="御风腾跃 · 踏剑借力 (Z / Shift)|炼气期解封：拔地凌空跃起躲避【下段裂地危招】并踩头触发【踏剑借力】；滞空点左键升龙三连斩，点右键陨星坠劈！">
       <img id="orb-img-jump" alt="御空" />
       <span class="skill-key-cap" data-bind-cap="jump">Z</span>
       <span class="skill-orb-lbl" id="lbl-jump-state">御空</span>
       <div id="cd-jump" class="skill-cd-mask"></div>
     </button>
 
-    <button type="button" id="orb-blink" class="skill-orb-btn" data-arena-skill="swordBlink" data-tip="飞剑索敌 · 缩地瞬身 (F / 中键)|远距投射锚定灵剑瞬身突袭妖兽或阵柱，若目标浮空则直接凌空追击衔接升龙连斩！">
-      <img id="orb-img-blink" alt="缩地" />
-      <span class="skill-key-cap" data-bind-cap="swordBlink">F</span>
-      <span class="skill-orb-lbl">缩地</span>
-      <div id="cd-blink" class="skill-cd-mask"></div>
-    </button>
-
-    <button type="button" id="orb-meditate" class="skill-orb-btn" data-arena-skill="meditate" data-tip="周天吐纳 · 聚气凝神|盘膝悬浮引天地灵气入体：全屏吸纳掉落、飞速积攒渡劫修为与剑元，叠满3层【剑心通明】！">
-      <img id="orb-img-meditate" alt="吐纳" />
-      <span class="skill-key-cap" data-bind-cap="meditate">V</span>
-      <span class="skill-orb-lbl" id="lbl-meditate">吐纳</span>
-    </button>
-
-    <button type="button" id="tribulation-trigger-btn" data-arena-skill="tribulation">
-      ⚡ 引动天劫
-    </button>
-
-    <button type="button" id="orb-ult" class="skill-orb-btn" data-arena-skill="ult" data-tip="本命法宝剑域|展开本命法宝全屏八卦莲华法轮轰击道场并叠满剑印！">
+    <button type="button" id="orb-ult" class="skill-orb-btn" data-unlock-rank="1" data-arena-skill="ult" data-tip="本命法宝剑域 (E)|炼气期解封：展开本命法宝全屏八卦莲华法轮轰击道场并叠满剑印！">
       <img id="orb-img-ult" alt="万剑" />
       <span class="skill-key-cap" data-bind-cap="ult">E</span>
       <span class="skill-orb-lbl">万剑</span>
       <div id="cd-ult" class="skill-cd-mask"></div>
     </button>
 
-    <button type="button" id="orb-finisher" class="skill-orb-btn" data-arena-skill="finisher" data-tip="流派终极奥义 (蓄满100%剑意)|电影黑边特写释放流派真传绝学：【太虚万剑朝宗 / 九霄紫雷神罚 / 三才同心诛仙剑阵】！">
-      <img id="orb-img-finisher" alt="奥义" />
-      <span class="skill-key-cap" data-bind-cap="finisher">X</span>
-      <span class="skill-orb-lbl" id="lbl-finisher-intent">剑意0%</span>
-      <div id="cd-finisher" class="skill-cd-mask"></div>
-    </button>
-
-    <button type="button" id="orb-ally" class="skill-orb-btn" data-arena-skill="ally" data-tip="故人真身降临|召唤已结契道侣真身降临战场结成【三才同心剑链】协同御敌！">
+    <button type="button" id="orb-ally" class="skill-orb-btn" data-unlock-rank="1" data-arena-skill="ally" data-tip="故人真身降临 (R)|结识故人或炼气期解封：召唤已结契道侣真身降临战场结成【三才同心剑链】协同御敌！">
       <img id="orb-img-ally" alt="助阵" />
       <span class="skill-key-cap" data-bind-cap="ally">R</span>
       <span class="skill-orb-lbl" id="lbl-ally-count">助阵</span>
       <div id="cd-ally" class="skill-cd-mask"></div>
     </button>
 
-    <button type="button" id="orb-pet" class="skill-orb-btn" data-arena-skill="pet_ult" data-tip="灵宠觉醒神通|催动随行本命灵兽释放全屏本源绝技！">
+    <button type="button" id="orb-soul" class="skill-orb-btn soul-seal-orb" data-unlock-rank="2" data-arena-skill="soul" data-tip="太虚镇妖魂印 · 精魄化身技 (C / RB)|筑基期解封：召唤已炼化妖王精魄法相出击，自带55%霸体减伤并可无缝取消剑招后摇！">
+      <img id="orb-img-soul" alt="魂印" />
+      <span class="skill-key-cap" data-bind-cap="soul">C</span>
+      <span class="skill-orb-lbl" id="lbl-soul-name">血魔印</span>
+      <div id="cd-soul" class="skill-cd-mask"></div>
+    </button>
+
+    <button type="button" id="orb-blink" class="skill-orb-btn" data-unlock-rank="2" data-arena-skill="swordBlink" data-tip="飞剑索敌 · 缩地瞬身 (F / 中键)|筑基期解封：远距投射锚定灵剑瞬身突袭妖兽或阵柱，若目标浮空则凌空追击！">
+      <img id="orb-img-blink" alt="缩地" />
+      <span class="skill-key-cap" data-bind-cap="swordBlink">中键</span>
+      <span class="skill-orb-lbl">缩地</span>
+      <div id="cd-blink" class="skill-cd-mask"></div>
+    </button>
+
+    <button type="button" id="orb-finisher" class="skill-orb-btn" data-unlock-rank="2" data-arena-skill="finisher" data-tip="流派终极奥义 (X · 蓄满100%剑意)|筑基期解封：电影黑边特写释放流派真传绝学：【太虚万剑朝宗 / 九霄紫雷神罚 / 三才同心诛仙剑阵】！">
+      <img id="orb-img-finisher" alt="奥义" />
+      <span class="skill-key-cap" data-bind-cap="finisher">X</span>
+      <span class="skill-orb-lbl" id="lbl-finisher-intent">剑意0%</span>
+      <div id="cd-finisher" class="skill-cd-mask"></div>
+    </button>
+
+    <button type="button" id="orb-pet" class="skill-orb-btn" data-unlock-rank="2" data-arena-skill="pet_ult" data-tip="灵宠觉醒神通 (G)|结契灵兽或筑基期解封：催动随行本命灵兽释放全屏本源绝技！">
       <img id="orb-img-pet" alt="灵兽" />
       <span class="skill-key-cap" data-bind-cap="pet">G</span>
       <span class="skill-orb-lbl" id="lbl-pet-orb">灵宠</span>
       <div id="cd-pet" class="skill-cd-mask"></div>
     </button>
 
-    <button type="button" id="orb-pill" class="skill-orb-btn" data-arena-skill="pill" data-tip="本命九转仙葫 · 三槽泡酒灵粹 (Q)|畅饮本命仙葫瞬间回血并触发已镶嵌的三槽泡酒神效（金刚霸体 / 三昧真火重劈 / 识破回酿 / 紫霄落雷等）！回洞府自动满酿">
+    <button type="button" id="orb-meditate" class="skill-orb-btn" data-unlock-rank="0" data-arena-skill="meditate" data-tip="周天吐纳 · 满修渡劫 (B)|盘膝悬浮引天地灵气入体：全屏吸纳掉落、积攒渡劫修为与剑心通明；修为圆满后按 B 直接引动天劫破境！">
+      <img id="orb-img-meditate" alt="吐纳" />
+      <span class="skill-key-cap" data-bind-cap="meditate">B</span>
+      <span class="skill-orb-lbl" id="lbl-meditate">吐纳</span>
+    </button>
+
+    <button type="button" id="tribulation-trigger-btn" data-arena-skill="tribulation">
+      引动天劫 (B)
+    </button>
+
+    <button type="button" id="orb-pill" class="skill-orb-btn" data-unlock-rank="0" data-arena-skill="pill" data-tip="本命九转仙葫 · 三槽泡酒灵粹 (Q)|畅饮本命仙葫瞬间回血并触发已镶嵌的三槽泡酒神效！回洞府自动满酿">
       <img id="orb-img-pill" alt="仙葫" />
       <span class="skill-key-cap" data-bind-cap="pill">Q</span>
-      <span class="skill-orb-lbl" id="lbl-pill-count">丹×1</span>
+      <span class="skill-orb-lbl" id="lbl-pill-count">葫5/5</span>
     </button>
   </div>
 
@@ -2454,29 +2892,50 @@
       <div id="boss-cutin-mech" style="font-size:11.5px;color:#84ffea;margin-top:2px;font-weight:700;">【护山金阵】重击或爆剑破除金盾！</div>
     </div>
   </div>
-  <!-- V16 SANCTUM DOJO BAR, 3A TELEMETRY PANEL, CINEMA LETTERBOX & DAMAGE RECAP -->
+  <!-- V25 COMPACT SANCTUM DOJO PAVILION (ZERO OVERFLOW, ZERO OVERLAP) -->
   <div id="dojo-control-bar">
-    <span class="cinnabar-seal" style="font-size:10.5px;padding:2px 8px;white-space:nowrap;flex-shrink:0;">演武论剑坪</span>
-    <button type="button" class="dojo-pill-btn active" data-dojo-mode="static">🪵 定身测伤桩</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-mode="gold_parry">✦ 金芒识破练功</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-mode="red_peril">【危】凝时闪避练功</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-mode="low_sweep">🌊 下段踏剑练功</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-mode="blade_clash">🤜 拼刀破擒练功</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-mode="mixed_ward">⚡ 五行阵眼演武</button>
-    <button type="button" class="dojo-pill-btn" id="btn-ghost-record" data-dojo-act="record-ghost">⏺ 剑道留影(8s)</button>
-    <button type="button" class="dojo-pill-btn" id="btn-ghost-play" data-dojo-act="toggle-ghost">👻 残影陪练</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-act="fill-intent">🔥 满剑意试奥义</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-act="start-cloud-sky" style="border-color:rgba(128,236,255,0.68);color:#b8f7ff;">☁ 九霄空战</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-act="open-spire" style="border-color:rgba(235,158,255,0.68);color:#f3d1ff;">🏯 登仙台</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-act="open-workshop" style="border-color:rgba(255,220,120,0.72);color:#fff2b2;">🛠 造化工坊</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-act="open-taixu-craft" style="border-color:rgba(255,154,92,0.78);color:#ffd8a8;">🔥 丹剑微操</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-act="toggle-coop-2p" style="border-color:rgba(112,255,230,0.72);color:#9effec;">👥 双人同游</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-act="open-sequencer" style="border-color:rgba(255,214,120,0.78);color:#fff2b2;">🎼 自创剑谱</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-act="open-expedition" style="border-color:rgba(144,230,255,0.78);color:#c4f5ff;">⛵ 九州远征</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-act="start-defense" style="border-color:rgba(112,255,230,0.55);color:#9effec;">🛡 护山妖潮</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-act="start-titan" style="border-color:rgba(255,190,92,0.65);color:#ffe6a3;">🐉 烛龙巨神</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-act="toggle-recap">📊 伤害复盘</button>
-    <button type="button" class="dojo-pill-btn" data-dojo-act="open-rush" style="border-color:#ff9a8b;color:#ffe6dc;">⚔ 万剑冢连战</button>
+    <button type="button" id="btn-toggle-dojo-bar" class="dojo-bar-toggle" data-action="toggle-dojo-drawer">
+      <span class="cinnabar-seal" style="font-size:10px;padding:1px 7px;">演武论剑坪</span>
+      <span id="lbl-dojo-cur-mode">定身测伤桩</span>
+      <span id="lbl-dojo-caret" style="opacity:0.75;">▾</span>
+    </button>
+    <div class="dojo-drawer-panel">
+      <div class="dojo-group-row">
+        <span class="dojo-group-lbl">木桩演武</span>
+        <div class="dojo-group-btns">
+          <button type="button" class="dojo-pill-btn active" data-dojo-mode="static">定身测伤桩</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-mode="gold_parry">金芒识破</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-mode="red_peril">红危凝时</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-mode="low_sweep">下段踏剑</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-mode="blade_clash">拼刀破擒</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-mode="mixed_ward">五行阵眼</button>
+        </div>
+      </div>
+      <div class="dojo-group-row">
+        <span class="dojo-group-lbl">剑道留影</span>
+        <div class="dojo-group-btns">
+          <button type="button" class="dojo-pill-btn" id="btn-ghost-record" data-dojo-act="record-ghost">剑道留影 (8s)</button>
+          <button type="button" class="dojo-pill-btn" id="btn-ghost-play" data-dojo-act="toggle-ghost">残影陪练</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="fill-intent">满剑意试奥义</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="toggle-recap">伤害复盘</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="open-sequencer">自创剑谱</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="toggle-coop-2p">双人同游</button>
+        </div>
+      </div>
+      <div class="dojo-group-row">
+        <span class="dojo-group-lbl">诸天试炼</span>
+        <div class="dojo-group-btns">
+          <button type="button" class="dojo-pill-btn" data-dojo-act="open-taixu-craft" style="border-color:rgba(255,176,112,0.55);color:#ffd8a8;">丹剑微操</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="start-defense" style="border-color:rgba(112,255,230,0.55);color:#9effec;">护山妖潮</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="open-rush" style="border-color:rgba(255,154,139,0.65);color:#ffe6dc;">万剑冢连战</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="start-cloud-sky" style="border-color:rgba(128,236,255,0.58);color:#b8f7ff;">九霄空战</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="open-spire" style="border-color:rgba(235,158,255,0.58);color:#f3d1ff;">太虚登仙台</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="start-titan" style="border-color:rgba(255,196,102,0.65);color:#ffe6a3;">太古烛龙</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="open-workshop" style="border-color:rgba(255,220,120,0.58);color:#fff2b2;">造化工坊</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="open-expedition" style="border-color:rgba(144,230,255,0.58);color:#c4f5ff;">九州远征</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <aside id="action-telemetry-panel">
@@ -3705,9 +4164,9 @@ const ART = {
 
   // ==================== V14 AAA FORGE AFFIXES, SET RESONANCES, PACT OF CALAMITY & CINEMA CARDS ====================
   const SACRED_AFFIXES = [
-    { id: "vamp_blade",   name: "噬灵剑魄", desc: "剑气命中汲取 2 点气血" },
+    { id: "vamp_blade",   name: "噬灵剑魄", desc: "每第 2 次剑气命中必定汲取 3 点气血" },
     { id: "posture_crush",name: "破岳重锋", desc: "削减妖兽白金架势效率 +30%" },
-    { id: "sky_thunder",  name: "紫电惊雷", desc: "攻击 22% 概率引落一道九霄紫雷" },
+    { id: "sky_thunder",  name: "紫电惊雷", desc: "每第 4 次轻剑攻击必定引落九霄紫雷" },
     { id: "wind_rider",   name: "御风剑意", desc: "移动与飞剑攻速额外 +12%" },
     { id: "greed_wolf",   name: "贪狼聚宝", desc: "斩妖灵石收益额外 +35%" },
     { id: "xuanwu_ward",  name: "玄武护心", desc: "所受妖兽伤害额外减免 14%" }
@@ -3862,9 +4321,38 @@ const ART = {
     arena.currentDmgBucket = prevLB;
   }
 
-  function rollGearItem(stageTier = 0, minRarity = 0, forcedSlot = null) {
+  function shuffleFisherYates(arr) {
+    const out = arr.slice();
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = out[i]; out[i] = out[j]; out[j] = tmp;
+    }
+    return out;
+  }
+
+  function ensureDeterministicPity(g) {
+    if (!g) return { epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 };
+    if (!g.pity || typeof g.pity !== "object") {
+      g.pity = { epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 };
+    }
+    ["epic", "mythic", "critAcc", "vampHits", "thunderHits", "gearDrops"].forEach(k => {
+      if (typeof g.pity[k] !== "number" || isNaN(g.pity[k])) g.pity[k] = 0;
+    });
+    return g.pity;
+  }
+
+  function pickBalancedGearSlot(g) {
     const slots = ["weapon", "armor", "ring"];
-    const slot = forcedSlot || slots[Math.floor(Math.random() * slots.length)];
+    if (!g || !g.equippedGear) return slots[Math.floor(Math.random() * slots.length)];
+    const emptySlots = slots.filter(s => !g.equippedGear[s]);
+    if (emptySlots.length > 0) return emptySlots[0];
+    const sorted = slots.slice().sort((a, b) => ((g.equippedGear[a] && g.equippedGear[a].power) || 0) - ((g.equippedGear[b] && g.equippedGear[b].power) || 0));
+    return Math.random() < 0.72 ? sorted[0] : sorted[1 + Math.floor(Math.random() * 2)];
+  }
+
+  function rollGearItem(stageTier = 0, minRarity = 0, forcedSlot = null, opts = {}) {
+    const usePity = opts && opts.usePity !== false;
+    const slot = forcedSlot || pickBalancedGearSlot(game);
     const pactBoost = game ? getActivePactCount(game) * 0.055 : 0;
     const styleBoost = (arena && (arena.styleScore || 0) >= 850) ? 0.22 : (arena && (arena.styleScore || 0) >= 580) ? 0.12 : 0;
     const luckBoost = ((game && hasDestinyFruit(game, "hongmeng_luck")) ? 0.16 : 0) + pactBoost + styleBoost;
@@ -3875,6 +4363,22 @@ const ART = {
     else if (rRoll > 0.42) rarity = Math.max(rarity, 2);
     else if (rRoll > 0.16) rarity = Math.max(rarity, 1);
     rarity = Math.min(4, Math.max(minRarity, rarity + (stageTier >= 3 ? 1 : 0)));
+
+    let pityTriggered = null;
+    if (usePity && game) {
+      const pt = ensureDeterministicPity(game);
+      if (pt.mythic >= 7 && rarity < 4) {
+        rarity = 4;
+        pityTriggered = "mythic";
+      } else if (pt.epic >= 3 && rarity < 3) {
+        rarity = 3;
+        pityTriggered = "epic";
+      }
+      if (rarity >= 4) { pt.mythic = 0; pt.epic = 0; }
+      else if (rarity >= 3) { pt.epic = 0; pt.mythic += 1; }
+      else { pt.epic += 1; pt.mythic += 1; }
+      pt.gearDrops += 1;
+    }
 
     const rSpec = RARITIES[rarity];
     const tmpl = GEAR_TEMPLATES[slot][Math.min(4, rarity)];
@@ -3887,6 +4391,7 @@ const ART = {
       name: `${rSpec.name}·${tmpl.baseName}`,
       art: tmpl.art,
       atk: 0, hp: 0, dr: 0, crit: 0, spd: 0, bonusSword: 0,
+      pityTriggered,
       price: Math.round(rSpec.sell * 2.4 * (1 + stageTier * 0.25)),
       sell: Math.round(rSpec.sell * (1 + stageTier * 0.2))
     };
@@ -3904,13 +4409,52 @@ const ART = {
       item.crit = Number((0.025 * (rarity + 1)).toFixed(2));
     }
     item.lvl = 0;
-    if (rarity >= 2 && Math.random() < 0.65) {
-      item.affix = SACRED_AFFIXES[Math.floor(Math.random() * SACRED_AFFIXES.length)].id;
+    if (rarity >= 2) {
+      const ownedAffixes = game && game.equippedGear
+        ? Object.values(game.equippedGear).map(g => g && g.affix).filter(Boolean)
+        : [];
+      const freshPool = SACRED_AFFIXES.filter(a => !ownedAffixes.includes(a.id));
+      const pool = freshPool.length ? freshPool : SACRED_AFFIXES;
+      item.affix = pool[Math.floor(Math.random() * pool.length)].id;
     } else {
       item.affix = null;
     }
     item.power = item.atk * 3 + Math.round(item.hp * 0.4) + item.dr * 5 + Math.round(item.crit * 240) + item.bonusSword * 85 + (item.affix ? 45 : 0);
     return item;
+  }
+
+  function openAffixEngraveModal(slot) {
+    if (!game || !game.equippedGear || !game.equippedGear[slot]) return;
+    const eq = game.equippedGear[slot];
+    const slotNames = { weapon: "本命佩剑", armor: "护身仙衣", ring: "乾坤灵佩" };
+    arena.paused = true;
+    openModal(`
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <div>
+          <span class="cinnabar-seal">定向铭刻</span>
+          <strong style="font-family:var(--font-serif);font-size:19px;color:var(--gold-bright);margin-left:8px;">${slotNames[slot] || "神兵"} · 自选圣品词条</strong>
+        </div>
+        <button type="button" class="btn-ghost" data-modal-close="1">关闭 ×</button>
+      </div>
+      <div style="font-size:12px;color:var(--text-sub);display:flex;justify-content:space-between;align-items:center;">
+        <span>当前装备：<b class="txt-r${eq.rarity}">${eq.name}</b>（${formatGearStats(eq)}）</span>
+        <span style="color:var(--gold-bright);">定向刻录消耗：35 灵石（100% 确定生效）</span>
+      </div>
+      <div class="affix-pick-grid">
+        ${SACRED_AFFIXES.map(af => {
+          const isCur = eq.affix === af.id;
+          return `
+            <button type="button" class="affix-pick-card ${isCur ? "current-affix" : ""}" data-engrave-slot="${slot}" data-engrave-affix="${af.id}" ${isCur ? "disabled" : ""}>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <strong style="font-family:var(--font-serif);font-size:14px;color:#ffe89e;">${af.name}</strong>
+                <span class="tag-chip ${isCur ? "done" : ""}">${isCur ? "当前已刻" : "35石定刻"}</span>
+              </div>
+              <span style="font-size:11.5px;color:var(--text-sub);line-height:1.45;">${af.desc}</span>
+            </button>
+          `;
+        }).join("")}
+      </div>
+    `, true);
   }
 
   function formatGearStats(it) {
@@ -3938,9 +4482,9 @@ const ART = {
     if (!game) return;
     const tier = Math.max(arena.stageIdx, rankOf(game.realm));
     game.marketStock = [
-      rollGearItem(tier, Math.min(3, 1 + Math.floor(tier / 2)), "weapon"),
-      rollGearItem(tier, Math.min(3, 1 + Math.floor(tier / 2)), "armor"),
-      rollGearItem(tier, Math.min(4, 2 + Math.floor(tier / 2)), "ring")
+      rollGearItem(tier, Math.min(3, 1 + Math.floor(tier / 2)), "weapon", { usePity: false }),
+      rollGearItem(tier, Math.min(3, 1 + Math.floor(tier / 2)), "armor", { usePity: false }),
+      rollGearItem(tier, Math.min(4, 2 + Math.floor(tier / 2)), "ring", { usePity: false })
     ];
   }
 
@@ -10346,7 +10890,12 @@ const ART = {
     else if (act === "pet") castPetUltimate();
     else if (act === "jump") triggerSkyJump();
     else if (act === "swordBlink") triggerSwordBlink();
-    else if (act === "meditate") toggleMeditation();
+    else if (act === "meditate") {
+      const rNow = game && REALMS[game.realm];
+      const xpFull = rNow && rNow.xpCap > 0 && game.xp >= rNow.xpCap && !arena.tribulation && game.status === "active";
+      if (xpFull) startLiveTribulation();
+      else toggleMeditation();
+    }
     else if (act === "pill") useQuickHealingPill();
   }
 
@@ -11188,6 +11737,8 @@ const ART = {
       equippedSoul: "blood_warden",
       litStars: [],
       bonusStarPts: 0,
+      pity: { epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 },
+      unlockAllArcana: false,
       journal: ["十八岁山雨倾盆，仗剑踏入青岚破庙。"]
     };
     const st = getCombatStats(g);
@@ -11235,6 +11786,8 @@ const ART = {
     if (!Array.isArray(g.unlockedSouls) || !g.unlockedSouls.length) g.unlockedSouls = ["blood_warden"];
     if (!g.equippedSoul || !SOUL_SPIRITS[g.equippedSoul]) g.equippedSoul = g.unlockedSouls[0];
     if (!Array.isArray(g.litStars)) g.litStars = [];
+    ensureDeterministicPity(g);
+    g.unlockAllArcana = !!raw.unlockAllArcana;
     const st = getCombatStats(g);
     if (typeof g.hp !== "number" || isNaN(g.hp) || g.hp <= 0) g.hp = st.maxHp;
     else g.hp = Math.min(st.maxHp, g.hp);
@@ -11332,19 +11885,35 @@ const ART = {
   }
 
   function addFloat(text, x, y, color = "#f8e3ac", size = 17, isCrit = false) {
-    // 5-Lane Radial Stagger so rapid multi-hit numbers NEVER overlap on the same pixel!
-    floatRadialSeq = (floatRadialSeq + 1) % 5;
-    const laneX = [-34, 34, -18, 18, 0][floatRadialSeq];
-    const laneY = [0, -8, -16, -22, -10][floatRadialSeq];
     const isBannerFloat = size >= 15 && text.length >= 5 && !/^[+-]?\d|^暴\s*-?\d/.test(text);
+    const ttl = isBannerFloat ? 1.42 : isCrit ? 1.05 : 0.84;
+    let fx = isBannerFloat ? (arena.player ? arena.player.x : x) : x;
+    let fy = isBannerFloat ? ((arena.player ? arena.player.y : y) - 76) : y;
+
     if (isBannerFloat) {
       let activeBanners = 0;
       for (let fi = arena.floats.length - 1; fi >= 0; fi--) {
         const fl = arena.floats[fi];
-        if (fl.isBannerFloat && fl.age < 0.95) {
-          fl.y -= 30;
+        if (fl.isBannerFloat && fl.age < 1.1) {
+          fl.y -= 28;
           activeBanners++;
-          if (activeBanners >= 3) fl.age = Math.max(fl.age, fl.ttl - 0.12);
+          if (activeBanners >= 3) {
+            fl.age = Math.max(fl.age, (fl.ttl || 1.2) - 0.14);
+          }
+        }
+      }
+    } else {
+      floatRadialSeq = (floatRadialSeq + 1) % 6;
+      const laneX = [-38, 38, -22, 22, -48, 48][floatRadialSeq];
+      const laneY = [-4, -12, -22, -28, -16, -24][floatRadialSeq];
+      fx += laneX;
+      fy += laneY;
+      // Local collision repulsion against recently spawned numbers
+      for (let fi = arena.floats.length - 1; fi >= 0; fi--) {
+        const fl = arena.floats[fi];
+        if (!fl.isBannerFloat && fl.age < 0.35 && Math.abs(fl.x - fx) < 34 && Math.abs(fl.y - fy) < 18) {
+          fy -= 20;
+          fx += (floatRadialSeq % 2 === 0 ? -14 : 14);
         }
       }
     }
@@ -11353,9 +11922,10 @@ const ART = {
     }
     arena.floats.push({
       isBannerFloat,
-      text, x: isBannerFloat ? (arena.player ? arena.player.x : x) : (x + laneX), y: isBannerFloat ? ((arena.player ? arena.player.y : y) - 74) : (y + laneY),
-      vx: laneX * 0.018, vy: isCrit ? -1.55 : -1.15,
-      alpha: 1.0, age: 0, color, size, isCrit
+      text, x: fx, y: fy,
+      vx: isBannerFloat ? 0 : ((fx - x) * 0.015),
+      vy: isBannerFloat ? -0.58 : (isCrit ? -1.42 : -1.05),
+      alpha: 1.0, age: 0, ttl, color, size, isCrit
     });
     if (arena.floats.length > 26) arena.floats.shift();
   }
@@ -12078,46 +12648,47 @@ const ART = {
       arena.player.shieldHp = Math.max(arena.player.shieldHp || 0, Math.round(st.maxHp * 0.35));
     }
 
-    const startPos = clampToPlaza(w * 0.48, h * 0.56, w, h);
+    const startPos = clampToPlaza(w * 0.47, h * 0.54, w, h);
     arena.player.x = startPos.x;
     arena.player.y = startPos.y;
     initScarfRibbon();
     syncFlyingSwords();
-    // V23 Sanctum Masterwork Interactive Stations (`八卦太虚丹炉` & `天工淬剑剑炉`)
-    const alchPos = clampToPlaza(w * 0.34, h * 0.48, w, h);
-    const forgePos = clampToPlaza(w * 0.63, h * 0.48, w, h);
+
+    // Well-spaced isometric courtyard layout (zero vertical stacking!)
+    const merchPos  = clampToPlaza(w * 0.50, h * 0.29, w, h);
+    const caulPos   = clampToPlaza(w * 0.34, h * 0.38, w, h);
+    const boardPos  = clampToPlaza(w * 0.66, h * 0.37, w, h);
+    const alchPos   = clampToPlaza(w * 0.23, h * 0.52, w, h);
+    const gatePos   = clampToPlaza(w * 0.77, h * 0.51, w, h);
+    const shenPos   = clampToPlaza(w * 0.31, h * 0.68, w, h);
+    const defPos    = clampToPlaza(w * 0.50, h * 0.75, w, h);
+    const forgePos  = clampToPlaza(w * 0.69, h * 0.66, w, h);
+    const jadePos   = clampToPlaza(w * 0.38, h * 0.51, w, h);
+    const peiPos    = clampToPlaza(w * 0.61, h * 0.75, w, h);
+
     arena.props.push({
       id: "sanctum_taixu_furnace", kind: "taixu_craft_alchemy", destructible: false, art: "furnace_taixu_alchemy",
-      name: "八卦太虚丹炉", badge: "点击控火炼九色丹雷 · 铸金甲丹童", x: alchPos.x, y: alchPos.y, r: 42
+      name: "八卦太虚丹炉", badge: "点击控火炼九色丹雷 · 铸金甲丹童", x: alchPos.x, y: alchPos.y, r: 40
     });
     arena.props.push({
       id: "sanctum_tiangong_forge", kind: "taixu_craft_forge", destructible: false, art: "anvil_tiangong_forge",
-      name: "天工星火剑炉", badge: "点击落锤锻紫气鸿蒙 · 开裂空剑痕", x: forgePos.x, y: forgePos.y, r: 42
+      name: "天工星火剑炉", badge: "点击落锤锻紫气鸿蒙 · 开裂空剑痕", x: forgePos.x, y: forgePos.y, r: 40
     });
-
-    const caulPos   = clampToPlaza(w * 0.33, h * 0.43, w, h);
-    const merchPos  = clampToPlaza(w * 0.50, h * 0.34, w, h);
-    const boardPos  = clampToPlaza(w * 0.65, h * 0.40, w, h);
-    const jadePos   = clampToPlaza(w * 0.34, h * 0.54, w, h);
-    const shenPos  = clampToPlaza(w * 0.33, h * 0.64, w, h);
-    const peiPos   = clampToPlaza(w * 0.63, h * 0.66, w, h);
-    const gatePos  = clampToPlaza(w * 0.72, h * 0.52, w, h);
-
     arena.props.push({
       id: "cauldron_main", kind: "cauldron", art: "furnace", name: "紫微丹鼎", badge: "点击或踏入控火炼丹",
-      x: caulPos.x, y: caulPos.y, r: 42, progress: 0
+      x: caulPos.x, y: caulPos.y, r: 40, progress: 0
     });
     arena.props.push({
-      id: "hub_merchant", kind: "merchant_npc", art: "actor_lu", onLotus: true, name: "云岚百宝商 · 陆执事", badge: "踏入选购仙装灵丹",
+      id: "hub_merchant", kind: "merchant_npc", art: "actor_lu", onLotus: true, name: "云岚百宝商 · 陆执事", badge: "点击或踏入选购仙装灵丹",
       x: merchPos.x, y: merchPos.y, r: 42, progress: 0
     });
     arena.props.push({
-      id: "hub_bounty_board", kind: "bounty_board", art: "bounty_jade_board", name: "青云天命悬赏榜", badge: "踏入或按 T 领悬赏秘宝",
+      id: "hub_bounty_board", kind: "bounty_board", art: "bounty_jade_board", name: "青云天命悬赏榜", badge: "点击或按 T 领悬赏秘宝",
       x: boardPos.x, y: boardPos.y, r: 42, progress: 0
     });
     arena.props.push({
       id: "hub_jade_" + Date.now(), kind: "rough_jade", art: "item_rough_jade", name: "试剑鸿蒙石", badge: "飞剑自动切玉爆仙装",
-      x: jadePos.x, y: jadePos.y, r: 32, hp: 3, maxHp: 3
+      x: jadePos.x, y: jadePos.y, r: 30, hp: 3, maxHp: 3
     });
     const hubKs = getKarmaState(game);
     arena.props.push({
@@ -12135,24 +12706,26 @@ const ART = {
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.celestialSpire = null;
-    const defPos = clampToPlaza(w * 0.50, h * 0.68, w, h);
     arena.props.push({
       id: "hub_sect_defense", kind: "sect_defense_trigger", art: "prop_guardian_sword_pylon",
-      name: "护山大阵 · 百鬼守卫台", badge: "踏入开启三波妖潮守卫战 · 赢鸿蒙星魄！",
+      name: "护山大阵 · 守卫台", badge: "点击或踏入开启三波妖潮守卫战",
       x: defPos.x, y: defPos.y, r: 38, progress: 0
     });
     arena.props.push({
-      id: "hub_depart", kind: "portal", portalArt: "portal_golden_lantern", name: `出征 · ${STAGES[arena.stageIdx].name}`, badge: "踏入仙门或按 M 选域出征",
-      nextIdx: arena.stageIdx, toTower: false, x: gatePos.x, y: gatePos.y, r: 52, progress: 0
+      id: "hub_depart", kind: "portal", portalArt: "portal_golden_lantern", name: `出征 · ${STAGES[arena.stageIdx].name}`, badge: "点击或按 M 选域出征",
+      nextIdx: arena.stageIdx, toTower: false, x: gatePos.x, y: gatePos.y, r: 50, progress: 0
     });
 
     spawnDojoDummy(arena.dojoMode || "static");
     const dojoBar = document.getElementById("dojo-control-bar");
-    if (dojoBar) dojoBar.classList.add("active");
+    if (dojoBar) {
+      dojoBar.classList.add("active");
+      dojoBar.classList.remove("expanded");
+    }
     const recapCard = document.getElementById("stage-recap-card");
     if (recapCard) recapCard.classList.remove("open");
     Sound.qiOrb(3);
-    showToast("🏠 已返【听雨洞府】：新增【演武论剑坪·机关木人桩】，可随时练剑反与凝时！");
+    showToast("已返【听雨洞府】· 点击上方【演武论剑坪】可切换木桩与诸天试炼");
     saveGame();
     updateHud();
   }
@@ -13610,11 +14183,22 @@ const ART = {
   }
 
   // ==================== 8. LIVE TRIBULATION, ASCENSION CHOICE & UPGRADE CARDS ====================
+  let activeFruitRerolls = 1;
+  let activeFruitMeta = { isHeaven: false, lastIds: [] };
+  let activeDraftRerolls = 1;
+  let activeDraftMeta = { titleText: "", lastIds: [] };
+
+  const REALM_UNLOCK_NOTICES = {
+    qi: "新境解封：三才剑阵 (Y)、御风腾跃 (Z)、法宝剑域 (E)、故人助阵 (R)",
+    foundation: "新境解封：双剑姿态 (Tab)、镇妖魂印 (C)、飞剑缩地 (中键)、流派奥义 (X)、因果问心",
+    golden: "新境解封：太虚秘匣全阶神通（奇门八阵/山海灵骑/法天象地/一气三清/山河图/凌霄仙舟/同心瞬切）"
+  };
+
   function startLiveTribulation() {
     if (!game || arena.tribulation) return;
     const r = REALMS[game.realm];
     if (game.realm === "ascended") { openEndingModal(); return; }
-    if (r.xpCap > 0 && game.xp < r.xpCap) { showToast("按 V 周天吐纳或斩妖攒满修为槽即可渡劫！"); return; }
+    if (r.xpCap > 0 && game.xp < r.xpCap) { showToast("按 B 周天吐纳或斩妖攒满修为槽即可渡劫！"); return; }
     const nextRealmId = r.next || "ascended";
     arena.player.meditating = false;
 
@@ -13636,7 +14220,7 @@ const ART = {
       strikes: []
     };
     showBossCutIn("banner_tribulation", `九霄紫霄雷劫 · 冲击【${REALMS[nextRealmId].name}】`, "走位躲避紫电雷圈，或按【空格一闪】迎雷弹反凝天道金丹！");
-    addFloat(`⚡ 九霄紫霄雷劫降临 · 逆天破境！`, arena.player.x, arena.player.y - 64, "#ffe89e", 22, true);
+    addFloat(`九霄紫霄雷劫降临 · 逆天破境！`, arena.player.x, arena.player.y - 64, "#ffe89e", 22, true);
     updateHud();
   }
 
@@ -13682,22 +14266,35 @@ const ART = {
     if (game.realm === "qi") unlockAchievement("ach_qi");
     if (isHeaven) unlockAchievement("ach_heaven_core");
 
+    const unlockMsg = REALM_UNLOCK_NOTICES[game.realm];
+    if (unlockMsg) showToast(`★ ${unlockMsg}`);
+
     addFloat(`${isHeaven ? "★ 天道一品 · " : ""}破境【${REALMS[game.realm].name}】· 飞剑×${getSwordCount(game)}！`, arena.player.x, arena.player.y - 64, "#fff4c2", 22, true);
     arena.enemies.slice().forEach(e => damageEnemy(e, Math.round(st.atk * 2.6), true, 48, 0, 9, true));
-    saveGame(); updateHud();
-    openDestinyFruitModal(isHeaven);
+    saveGame(); updateHud(true);
+    activeFruitRerolls = 1;
+    openDestinyFruitModal(isHeaven, false);
   }
 
-  function openDestinyFruitModal(isHeaven) {
+  function openDestinyFruitModal(isHeaven, isReroll = false) {
     if (!game) return;
-    const avail = Object.values(DESTINY_FRUITS).filter(f => !hasDestinyFruit(game, f.id)).sort(() => Math.random() - 0.5).slice(0, 3);
-    if (!avail.length) {
+    if (!isReroll) { activeFruitRerolls = 1; activeFruitMeta = { isHeaven, lastIds: [] }; }
+    const allUnowned = Object.values(DESTINY_FRUITS).filter(f => !hasDestinyFruit(game, f.id));
+    if (!allUnowned.length) {
       openIconicUpgradeDraft(`${REALMS[game.realm].name}功成 · 参悟大道神通`);
       return;
     }
+    const freshPool = isReroll ? allUnowned.filter(f => !activeFruitMeta.lastIds.includes(f.id)) : allUnowned;
+    const pool = freshPool.length >= 3 ? freshPool : allUnowned;
+    const avail = shuffleFisherYates(pool).slice(0, 3);
+    activeFruitMeta = { isHeaven, lastIds: avail.map(f => f.id) };
+    const unlockBanner = REALM_UNLOCK_NOTICES[game.realm]
+      ? `<div class="pity-bar-card" style="border-color:rgba(112,255,230,0.45);color:#9effec;"><span>★ ${REALM_UNLOCK_NOTICES[game.realm]}</span></div>`
+      : "";
+
     arena.paused = true;
     openModal(`
-      <div class="drawer-mural-banner" style="height:108px;">
+      <div class="drawer-mural-banner" style="height:104px;">
         <img src="${ART.banner_tribulation}" alt="逆天改命" />
         <div class="drawer-mural-overlay">
           <div>
@@ -13707,6 +14304,7 @@ const ART = {
           <span class="tag-chip mythic">本世永久先天神通</span>
         </div>
       </div>
+      ${unlockBanner}
       <div class="law-draft-grid">
         ${avail.map(f => `
           <button class="law-card-btn" data-destiny-fruit="${f.id}">
@@ -13716,6 +14314,10 @@ const ART = {
             <span style="font-size:11.5px;color:var(--text-sub);line-height:1.45;">${f.desc}</span>
           </button>
         `).join("")}
+      </div>
+      <div class="draft-reroll-bar">
+        <span>天机推演：可自选定格本世流派核心道果</span>
+        ${activeFruitRerolls > 0 && allUnowned.length > 3 ? `<button type="button" class="btn-jade" data-action="reroll-destiny-fruit">天机重演（免费剩余 ${activeFruitRerolls} 次）</button>` : `<span style="color:var(--gold);">本次天机已定</span>`}
       </div>
     `, false);
   }
@@ -13802,29 +14404,45 @@ const ART = {
     `, false);
   }
 
-  function openIconicUpgradeDraft(titleText) {
+  function openIconicUpgradeDraft(titleText, isReroll = false) {
     if (!game) return;
+    if (!isReroll) { activeDraftRerolls = 1; activeDraftMeta = { titleText, lastIds: [] }; }
     arena.paused = true;
-    const candidates = [];
+    const petCandidates = [];
     if (!game.pet.id) {
-      Object.values(SPIRIT_PETS).slice(0, 2).forEach(sp => {
-        candidates.push({
+      shuffleFisherYates(Object.values(SPIRIT_PETS)).slice(0, 2).forEach(sp => {
+        petCandidates.push({
           pickType: "pet", id: sp.id, art: sp.art, name: sp.name,
           badge: sp.skill,
-          sub: sp.desc.slice(0, 22)
+          sub: sp.desc,
+          completesSyn: false
         });
       });
     }
-    Object.values(DAO_LAWS).filter(l => !game.laws.includes(l.id)).sort(() => Math.random() - 0.5).forEach(l => {
+    const unownedLaws = Object.values(DAO_LAWS).filter(l => !game.laws.includes(l.id));
+    const freshLaws = isReroll ? unownedLaws.filter(l => !activeDraftMeta.lastIds.includes(l.id)) : unownedLaws;
+    const lawPool = shuffleFisherYates(freshLaws.length >= 2 ? freshLaws : unownedLaws).map(l => {
       const completesSyn = SYNERGIES.find(syn => !syn.active(game) && syn.active(Object.assign({}, game, { laws: game.laws.concat(l.id) })));
-      candidates.push({
+      return {
         pickType: "law", id: l.id, art: LAW_ICONS[l.id] || "icon_blade", name: l.name,
-        badge: completesSyn ? `★ 激活羁绊【${completesSyn.name}】` : (LAW_SHORT_BADGE[l.id] || l.cat),
-        sub: l.desc.slice(0, 24)
-      });
+        badge: completesSyn ? `★ 必成羁绊【${completesSyn.name}】` : (LAW_SHORT_BADGE[l.id] || l.cat),
+        sub: l.desc,
+        completesSyn: !!completesSyn
+      };
     });
 
-    const picks = candidates.slice(0, 3);
+    // Deterministic Synergy Pity: if any unowned law completes a synergy, guarantee it in slot 1!
+    const synLaws = lawPool.filter(c => c.completesSyn);
+    const otherLaws = lawPool.filter(c => !c.completesSyn);
+    const picks = [];
+    if (synLaws.length > 0) picks.push(synLaws[0]);
+    if (petCandidates.length > 0 && picks.length < 3) picks.push(petCandidates[0]);
+    for (const c of [...synLaws.slice(1), ...otherLaws, ...petCandidates.slice(1)]) {
+      if (picks.length >= 3) break;
+      if (!picks.some(p => p.id === c.id)) picks.push(c);
+    }
+    activeDraftMeta = { titleText, lastIds: picks.map(c => c.id) };
+
     if (picks.length === 0) {
       arena.paused = drawerOpen;
       game.stones += 120;
@@ -13833,6 +14451,7 @@ const ART = {
       return;
     }
 
+    const totalAvail = unownedLaws.length + petCandidates.length;
     openModal(`
       <div class="drawer-mural-banner" style="height:82px;">
         <img src="${ART.banner_sanctum}" alt="大道顿悟" />
@@ -13841,7 +14460,7 @@ const ART = {
             <span class="cinnabar-seal">大道顿悟</span>
             <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">${titleText}</h2>
           </div>
-          <span class="tag-chip mythic">集齐双法则激活共鸣羁绊</span>
+          <span class="tag-chip mythic">${synLaws.length > 0 ? "已定格双法则羁绊保底" : "集齐双法则激活共鸣羁绊"}</span>
         </div>
       </div>
       <div class="law-draft-grid">
@@ -13853,6 +14472,10 @@ const ART = {
             <span style="font-size:11px;color:var(--text-sub);">${c.sub}</span>
           </button>
         `).join("")}
+      </div>
+      <div class="draft-reroll-bar">
+        <span>${synLaws.length > 0 ? "★ 天机共鸣：已优先呈现可成羁绊之大道法则" : "择一法则塑成剑阵流派，后续升级将保底推送羁绊配对"}</span>
+        ${activeDraftRerolls > 0 && totalAvail > 3 ? `<button type="button" class="btn-jade" data-action="reroll-law-draft">天机重演（免费剩余 ${activeDraftRerolls} 次）</button>` : `<span style="color:var(--gold);">本次天机已定</span>`}
       </div>
     `, false);
   }
@@ -14058,7 +14681,19 @@ const ART = {
     if (celNow.id === "blood_dusk" && isHeavySkill && game) {
       game.hp = Math.min(st.maxHp, game.hp + Math.max(2, Math.round(st.maxHp * 0.025)));
     }
-    const isCrit = forceCrit || inSiGate || e.state === "stun" || Math.random() < st.crit;
+    const ptCombat = ensureDeterministicPity(game);
+    let isCrit = forceCrit || inSiGate || e.state === "stun";
+    if (!isCrit) {
+      const effCritRate = Math.min(1, st.crit + ptCombat.critAcc);
+      if (Math.random() < effCritRate) {
+        isCrit = true;
+        ptCombat.critAcc = 0;
+      } else {
+        ptCombat.critAcc = Math.min(0.85, ptCombat.critAcc + Math.max(0.08, st.crit * 0.52));
+      }
+    } else {
+      ptCombat.critAcc = 0;
+    }
     const omniLv = getCurioStacks(game, "curio_hongmeng_omni");
     const effCritMult = st.critMult + omniLv * 0.35;
     let dmg = Math.max(1, Math.round(rawDmg * brokenMult * (isCrit ? effCritMult : 1.0)));
@@ -14080,12 +14715,20 @@ const ART = {
     recordDamageTelemetry(dmg);
     arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + (isHeavySkill ? 3.2 : 1.6));
 
-    if (hasGearAffix(game, "vamp_blade") && Math.random() < 0.45) {
-      game.hp = Math.min(st.maxHp, game.hp + 2);
+    if (hasGearAffix(game, "vamp_blade")) {
+      ptCombat.vampHits += 1;
+      if (ptCombat.vampHits >= 2) {
+        ptCombat.vampHits = 0;
+        game.hp = Math.min(st.maxHp, game.hp + 3);
+      }
     }
-    if (hasGearAffix(game, "sky_thunder") && !isHeavySkill && Math.random() < 0.20) {
-      arena.skyBolts.push({ x: e.x, y: e.y, t: 0, color: "#d69eff" });
-      e.hp -= Math.round(st.atk * 0.45);
+    if (hasGearAffix(game, "sky_thunder") && !isHeavySkill) {
+      ptCombat.thunderHits += 1;
+      if (ptCombat.thunderHits >= 4) {
+        ptCombat.thunderHits = 0;
+        arena.skyBolts.push({ x: e.x, y: e.y, t: 0, color: "#d69eff" });
+        e.hp -= Math.round(st.atk * 0.55);
+      }
     }
     e.hitFlash = 0.14;
     bumpCombo(1);
@@ -15743,10 +16386,14 @@ const ART = {
     }
     for (let i = arena.floats.length - 1; i >= 0; i--) {
       const f = arena.floats[i];
+      const ttl = f.ttl || 1.0;
       f.age += dt;
-      f.x += (f.vx || 0);
-      f.y += f.vy; f.alpha -= dt * 1.08;
-      if (f.alpha <= 0) arena.floats.splice(i, 1);
+      const damp = Math.max(0.22, 1 - (f.age / ttl) * 0.72);
+      f.x += (f.vx || 0) * damp;
+      f.y += f.vy * damp;
+      const prog = f.age / ttl;
+      f.alpha = prog < 0.62 ? 1.0 : Math.max(0, 1 - (prog - 0.62) / 0.38);
+      if (f.age >= ttl || f.alpha <= 0) arena.floats.splice(i, 1);
     }
 
     updateBossBannerAndRecallOrb();
@@ -16155,41 +16802,105 @@ const ART = {
     ctx.restore();
   }
 
-  function drawNameplatePill(text, subText, x, y, accentCol = "#ffe89e", showSub = false) {
+  const GROUND_SHADOW_STAMP = (() => {
+    const c = document.createElement("canvas");
+    c.width = 128; c.height = 64;
+    const gctx = c.getContext("2d");
+    const g = gctx.createRadialGradient(64, 32, 4, 64, 32, 60);
+    g.addColorStop(0, "rgba(2, 7, 10, 0.74)");
+    g.addColorStop(0.45, "rgba(3, 10, 14, 0.44)");
+    g.addColorStop(0.78, "rgba(4, 12, 16, 0.14)");
+    g.addColorStop(1, "rgba(4, 12, 16, 0)");
+    gctx.fillStyle = g;
+    gctx.fillRect(0, 0, 128, 64);
+    return c;
+  })();
+
+  function drawGroundedShadow(x, y, rx, ry, alpha = 1.0) {
     ctx.save();
-    ctx.font = 'bold 12px "Noto Serif CJK SC", "Songti SC", serif';
-    const wMain = ctx.measureText(text).width;
-    let wSub = 0;
-    if (showSub && subText) {
-      ctx.font = "bold 10.5px sans-serif";
-      wSub = ctx.measureText(subText).width;
+    ctx.globalAlpha *= alpha;
+    ctx.drawImage(GROUND_SHADOW_STAMP, x - rx * 1.32, y - ry * 1.32, rx * 2.64, ry * 2.64);
+    ctx.restore();
+  }
+
+  let frameNameplates = [];
+  function drawNameplatePill(text, subText, x, y, accentCol = "#ffe89e", showSub = false) {
+    frameNameplates.push({ text, subText, x, y, accentCol, showSub });
+  }
+
+  function flushNameplates() {
+    if (!frameNameplates.length) return;
+    const placed = [];
+    // Measure all plates first
+    const items = frameNameplates.map(np => {
+      ctx.font = 'bold 12px "Noto Serif CJK SC", "Songti SC", serif';
+      const wMain = ctx.measureText(np.text).width;
+      let wSub = 0;
+      if (np.showSub && np.subText) {
+        ctx.font = "bold 10px sans-serif";
+        wSub = ctx.measureText(np.subText).width;
+      }
+      const boxW = Math.max(wMain, wSub) + 26;
+      const boxH = (np.showSub && np.subText) ? 35 : 22;
+      return Object.assign({}, np, { boxW, boxH, drawX: np.x, drawY: np.y });
+    });
+
+    // Sort top-to-bottom and resolve vertical overlaps cleanly
+    items.sort((a, b) => a.drawY - b.drawY);
+    for (const it of items) {
+      for (let pass = 0; pass < 4; pass++) {
+        let shifted = false;
+        for (const p of placed) {
+          const ax1 = it.drawX - it.boxW / 2 - 4, ax2 = it.drawX + it.boxW / 2 + 4;
+          const ay1 = it.drawY - it.boxH - 3, ay2 = it.drawY + 3;
+          const bx1 = p.drawX - p.boxW / 2 - 4, bx2 = p.drawX + p.boxW / 2 + 4;
+          const by1 = p.drawY - p.boxH - 3, by2 = p.drawY + 3;
+          if (ax1 < bx2 && ax2 > bx1 && ay1 < by2 && ay2 > by1) {
+            it.drawY = by1 - 2;
+            shifted = true;
+          }
+        }
+        if (!shifted) break;
+      }
+      placed.push(it);
     }
-    const boxW = Math.max(wMain, wSub) + 20;
-    const boxH = (showSub && subText) ? 34 : 20;
-    const bx = x - boxW / 2;
-    const by = y - boxH;
 
-    ctx.fillStyle = "rgba(5, 14, 18, 0.86)";
-    ctx.strokeStyle = accentCol;
-    ctx.lineWidth = 1.1;
-    ctx.beginPath();
-    if (ctx.roundRect) ctx.roundRect(bx, by, boxW, boxH, 9);
-    else ctx.rect(bx, by, boxW, boxH);
-    ctx.fill();
-    ctx.stroke();
+    ctx.save();
+    for (const it of placed) {
+      const bx = it.drawX - it.boxW / 2;
+      const by = it.drawY - it.boxH;
+      const grad = ctx.createLinearGradient(bx, by, bx, by + it.boxH);
+      grad.addColorStop(0, "rgba(9, 24, 30, 0.90)");
+      grad.addColorStop(1, "rgba(4, 12, 16, 0.92)");
+      ctx.fillStyle = grad;
+      ctx.strokeStyle = it.accentCol;
+      ctx.lineWidth = 1.05;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(bx, by, it.boxW, it.boxH, 8);
+      else ctx.rect(bx, by, it.boxW, it.boxH);
+      ctx.fill();
+      ctx.stroke();
 
-    ctx.font = 'bold 12px "Noto Serif CJK SC", "Songti SC", serif';
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#fff8e6";
-    ctx.fillText(text, x, by + 10.5);
+      // Subtle diamond finial accents on left & right edges
+      ctx.fillStyle = it.accentCol;
+      const midY = by + it.boxH / 2;
+      ctx.beginPath(); ctx.arc(bx + 6, midY, 1.8, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx + it.boxW - 6, midY, 1.8, 0, Math.PI * 2); ctx.fill();
 
-    if (showSub && subText) {
-      ctx.font = "bold 10px sans-serif";
-      ctx.fillStyle = accentCol;
-      ctx.fillText(subText, x, by + 25);
+      ctx.font = 'bold 12px "Noto Serif CJK SC", "Songti SC", serif';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fff8e8";
+      ctx.fillText(it.text, it.drawX, by + (it.showSub && it.subText ? 11.5 : it.boxH / 2 + 0.5));
+
+      if (it.showSub && it.subText) {
+        ctx.font = "bold 10px sans-serif";
+        ctx.fillStyle = it.accentCol;
+        ctx.fillText(it.subText, it.drawX, by + 25.5);
+      }
     }
     ctx.restore();
+    frameNameplates.length = 0;
   }
 
   function drawSkyLightningBolt(x, y, progress, color = "#e2b8ff") {
@@ -17031,13 +17742,12 @@ const ART = {
       if (ac.kind === "prop") {
         const pr = ac.obj;
         const pDist = game ? Math.hypot(arena.player.x - pr.x, arena.player.y - pr.y) : 999;
-        const showSub = pDist < 175 || pr.kind === "branch_portal" || pr.kind === "pedestal";
+        const showSub = pDist < 126 || pr.kind === "branch_portal" || pr.kind === "pedestal";
         const accentCol = (pr.kind === "blood_altar" || pr.branch === "elite_loot") ? "#ff8780"
           : (pr.kind === "branch_portal" || pr.kind === "sanctum_portal") ? "#70ffe6" : "#ffe89e";
 
         ctx.save();
-        ctx.fillStyle = "rgba(0, 0, 0, 0.52)";
-        ctx.beginPath(); ctx.ellipse(pr.x, pr.y + 24, pr.r * 0.92, pr.r * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+        drawGroundedShadow(pr.x, pr.y + 24, pr.r * 0.96, pr.r * 0.44, 0.92);
 
         if (pr.kind === "branch_portal" || pr.kind === "portal" || pr.kind === "tower_next" || pr.kind === "sanctum_portal") {
           const pArt = pr.portalArt || (pr.kind === "tower_next" ? "portal_crimson_sword" : "portal_golden_lantern");
@@ -17080,7 +17790,7 @@ const ART = {
           ctx.fillRect(pbx - 1, pby - 1, pbw + 2, 6);
           ctx.fillStyle = pr.kind === "frost_crystal" ? "#80ecff" : pr.kind === "ward_pylon" ? "#ffd166" : "#ff9f43";
           ctx.fillRect(pbx, pby, pbw * Math.max(0, pr.hp / pr.maxHp), 4);
-          drawNameplatePill(pr.name, pr.badge, pr.x, pby - 4, pr.kind === "ward_pylon" ? "#ffd166" : "#80ecff", pDist < 190 || pr.kind === "ward_pylon");
+          drawNameplatePill(pr.name, pr.badge, pr.x, pby - 4, pr.kind === "ward_pylon" ? "#ffd166" : "#80ecff", pDist < 140 || pr.kind === "ward_pylon");
         } else {
           if (pr.art) drawSprite(pr.art, pr.x, pr.y - (pr.kind === "bounty_board" ? 20 : 6), pr.kind === "bounty_board" ? 116 : pr.kind === "cauldron" ? 86 : 66);
           const subTxt = (pr.kind === "cauldron" && game)
@@ -17092,8 +17802,7 @@ const ART = {
       } else if (ac.kind === "ally") {
         const al = ac.obj;
         ctx.save();
-        ctx.fillStyle = "rgba(0, 0, 0, 0.50)";
-        ctx.beginPath(); ctx.ellipse(al.x, al.y + 32, 28, 12, 0, 0, Math.PI * 2); ctx.fill();
+        drawGroundedShadow(al.x, al.y + 32, 30, 13, 0.90);
         drawBaguaCircle(al.x, al.y + 30, 36, al.color, -nowSec * 2.2, 0.72, false);
         drawPointLight(al.x, al.y - 6, 78, "rgba(112, 255, 230, 0.16)");
         drawSprite(al.art, al.x, al.y - 14 + Math.sin(nowSec * 5 + al.x) * 3, 102, al.facing < 0);
@@ -17102,8 +17811,7 @@ const ART = {
       } else if (ac.kind === "enemy") {
         const e = ac.obj;
         ctx.save();
-        ctx.fillStyle = "rgba(0, 0, 0, 0.54)";
-        ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r * 0.68, e.r * 0.85 * e.sx, e.r * 0.34, 0, 0, Math.PI * 2); ctx.fill();
+        drawGroundedShadow(e.x, e.y + e.r * 0.68, e.r * 0.96 * e.sx, e.r * 0.40, 0.95);
 
         if (e.enraged) {
           drawPointLight(e.x, e.y, e.r * 1.7, "rgba(255, 65, 55, 0.25)");
@@ -17262,69 +17970,89 @@ const ART = {
           drawLuminousSword(e.x + Math.cos(ma) * 20, e.y - 18 - m * 4, ma + Math.PI, "thunder", 0.85);
         }
 
-        const bw = e.isBoss ? 94 : 56;
-        const bx = e.x - bw / 2, by = e.y - (e.isBoss ? 82 : 56);
-        ctx.fillStyle = "rgba(4, 10, 12, 0.88)";
-        ctx.fillRect(bx - 1, by - 1, bw + 2, (e.wardHp > 0 ? 13 : 10));
-        ctx.fillStyle = e.isTreasure ? "#ffd166" : e.enraged ? "#ff3b30" : "#e6524c";
-        ctx.fillRect(bx, by, bw * Math.max(0, e.hp / e.maxHp), 5);
-        ctx.fillStyle = "#f8d878";
-        ctx.fillRect(bx, by + 6, bw * Math.max(0, e.posture / e.maxPosture), 2.5);
+        const bw = e.isBoss ? 98 : 60;
+        const bx = e.x - bw / 2, by = e.y - (e.isBoss ? 84 : 58);
+        const hasExtraBar = ((e.wardHp || 0) > 0 && e.maxWardHp > 0)
+          || (e.isBoss && !e.partSevered && (e.maxPartHp || 0) > 0)
+          || ((e.frontShieldHp || 0) > 0 && e.maxFrontShieldHp > 0);
+        const bhTotal = hasExtraBar ? 15 : 11.5;
+        ctx.fillStyle = "rgba(4, 11, 15, 0.86)";
+        ctx.strokeStyle = e.isBoss ? "rgba(216, 179, 106, 0.65)" : "rgba(172, 208, 200, 0.34)";
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(bx - 2, by - 2, bw + 4, bhTotal, 4);
+        else ctx.rect(bx - 2, by - 2, bw + 4, bhTotal);
+        ctx.fill();
+        ctx.stroke();
+
+        const hpRatio = Math.max(0, Math.min(1, e.hp / Math.max(1, e.maxHp)));
+        const hpGrad = ctx.createLinearGradient(bx, by, bx + bw, by);
+        if (e.isTreasure) { hpGrad.addColorStop(0, "#d89e36"); hpGrad.addColorStop(1, "#ffe680"); }
+        else if (e.enraged) { hpGrad.addColorStop(0, "#b81d24"); hpGrad.addColorStop(1, "#ff5e57"); }
+        else { hpGrad.addColorStop(0, "#c83b3b"); hpGrad.addColorStop(1, "#ff7870"); }
+        ctx.fillStyle = hpGrad;
+        ctx.fillRect(bx, by, bw * hpRatio, 5);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+        ctx.fillRect(bx, by, bw * hpRatio, 1.5);
+
+        ctx.fillStyle = "#f2cf72";
+        ctx.fillRect(bx, by + 6.5, bw * Math.max(0, Math.min(1, e.posture / Math.max(1, e.maxPosture))), 2.5);
         if ((e.wardHp || 0) > 0 && e.maxWardHp > 0) {
           ctx.fillStyle = "#80ecff";
-          ctx.fillRect(bx, by + 9.5, bw * Math.max(0, e.wardHp / e.maxWardHp), 2.2);
+          ctx.fillRect(bx, by + 10, bw * Math.max(0, e.wardHp / e.maxWardHp), 2.2);
         } else if (e.isBoss && !e.partSevered && (e.maxPartHp || 0) > 0) {
           ctx.fillStyle = "#ff78c4";
-          ctx.fillRect(bx, by + 9.5, bw * Math.max(0, e.partHp / e.maxPartHp), 2.4);
+          ctx.fillRect(bx, by + 10, bw * Math.max(0, e.partHp / e.maxPartHp), 2.4);
         } else if ((e.frontShieldHp || 0) > 0 && e.maxFrontShieldHp > 0) {
           ctx.fillStyle = "#ffcc66";
-          ctx.fillRect(bx, by + 9.5, bw * Math.max(0, e.frontShieldHp / e.maxFrontShieldHp), 2.4);
+          ctx.fillRect(bx, by + 10, bw * Math.max(0, e.frontShieldHp / e.maxFrontShieldHp), 2.4);
         }
 
         if (e.isTreasure) {
           ctx.font = "bold 11.5px sans-serif";
           ctx.fillStyle = "#ffe680";
           ctx.textAlign = "center";
-          ctx.fillText(`💰 聚宝金灵 (${Math.ceil(e.timer)}s)`, e.x, by - 6);
+          ctx.fillText(`聚宝金灵 (${Math.ceil(e.timer)}s)`, e.x, by - 6);
         } else if (e.mirrorTimer > 0) {
           ctx.font = "bold 11.5px sans-serif";
           ctx.fillStyle = "#ffe28a";
           ctx.textAlign = "center";
-          ctx.fillText("🪞 镜反架势 · 一闪破镜!", e.x, by - 6);
+          ctx.fillText("镜反架势 · 一闪破镜", e.x, by - 6);
         } else if ((e.wardHp || 0) > 0) {
           ctx.font = "bold 11px sans-serif";
           ctx.fillStyle = "#ffe89e";
           ctx.textAlign = "center";
-          ctx.fillText("🛡 护山金阵 · 重击破盾", e.x, by - 6);
+          ctx.fillText("护山金阵 · 重击破盾", e.x, by - 6);
         } else if (e.state === "windup") {
           const cb = a11ySettings.colorblindGlyphs;
-          let wTxt = "✦ 金芒 · 识破剑反!", wCol = "#ffe680";
-          if (e.grabWindup) { wTxt = cb ? "⬢【暗金·擒】重击拼刀!" : "【擒】拼刀反制!"; wCol = "#ffbe5c"; }
-          else if (e.lowSweepWindup) { wTxt = cb ? "〰【青危·跃】按Z踏剑!" : "【下危】踏剑跃破!"; wCol = "#38f9d7"; }
-          else if (e.perilous) { wTxt = cb ? "▲【红危·闪】极限闪避!" : "【危】极限闪避!"; wCol = "#ff7890"; }
-          else if (cb) { wTxt = "◆【金招·反】空格剑反!"; wCol = "#fff3a8"; }
+          let wTxt = "✦ 金芒 · 空格识破", wCol = "#ffe680";
+          if (e.grabWindup) { wTxt = cb ? "⬢【暗金·擒】重击拼刀" : "【擒】右键拼刀"; wCol = "#ffbe5c"; }
+          else if (e.lowSweepWindup) { wTxt = cb ? "〰【青危·跃】按Z踏剑" : "【下危】Z 键踏剑"; wCol = "#38f9d7"; }
+          else if (e.perilous) { wTxt = cb ? "▲【红危·闪】极限闪避" : "【危】空格闪避"; wCol = "#ff7890"; }
+          else if (cb) { wTxt = "◆【金招·反】空格剑反"; wCol = "#fff3a8"; }
           ctx.font = "bold 11.5px sans-serif";
           ctx.textAlign = "center";
-          if (cb) {
-            const tw = ctx.measureText(wTxt).width + 14;
-            ctx.fillStyle = "rgba(4, 10, 16, 0.92)";
-            ctx.fillRect(e.x - tw / 2, by - 20, tw, 17);
-            ctx.strokeStyle = wCol;
-            ctx.lineWidth = 1.4;
-            ctx.strokeRect(e.x - tw / 2, by - 20, tw, 17);
-          }
+          const tw = ctx.measureText(wTxt).width + 14;
+          ctx.fillStyle = "rgba(4, 10, 16, 0.88)";
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(e.x - tw / 2, by - 21, tw, 17, 5);
+          else ctx.rect(e.x - tw / 2, by - 21, tw, 17);
+          ctx.fill();
+          ctx.strokeStyle = wCol;
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
           ctx.fillStyle = wCol;
-          ctx.fillText(wTxt, e.x, by - 7);
+          ctx.fillText(wTxt, e.x, by - 8.5);
         } else if (e.state === "stun") {
           ctx.font = "bold 11.5px sans-serif";
           ctx.fillStyle = "#70ffe6";
           ctx.textAlign = "center";
-          ctx.fillText("★ 破势绞杀!", e.x, by - 6);
+          ctx.fillText("★ 破势绞杀！", e.x, by - 6);
         } else if (marks >= 3) {
           ctx.font = "bold 11px sans-serif";
           ctx.fillStyle = "#ffb86c";
           ctx.textAlign = "center";
-          ctx.fillText(`剑印×${marks} 右键引爆!`, e.x, by - 6);
+          ctx.fillText(`剑印×${marks} 右键引爆`, e.x, by - 6);
         }
         ctx.restore();
       } else {
@@ -17349,8 +18077,7 @@ const ART = {
         const liftP = p.z || 0;
         const shadowScale = Math.max(0.45, 1 - liftP / 150);
         ctx.save();
-        ctx.fillStyle = `rgba(0, 0, 0, ${(0.55 * shadowScale).toFixed(2)})`;
-        ctx.beginPath(); ctx.ellipse(p.x, p.y + 34, 30 * shadowScale, 12 * shadowScale, 0, 0, Math.PI * 2); ctx.fill();
+        drawGroundedShadow(p.x, p.y + 34, 34 * shadowScale, 14 * shadowScale, 0.95 * shadowScale);
         if (liftP > 8) {
           ctx.strokeStyle = "rgba(128, 236, 255, 0.55)";
           ctx.setLineDash([4, 4]);
@@ -17937,16 +18664,23 @@ const ART = {
       ctx.restore();
     }
 
+    flushNameplates();
+
     for (const f of arena.floats) {
       ctx.save();
       ctx.globalAlpha = Math.max(0, f.alpha);
-      const pop = f.isCrit && f.age < 0.14 ? (1.36 - (f.age / 0.14) * 0.36) : 1.0;
+      const pop = f.isCrit && f.age < 0.14 ? (1.34 - (f.age / 0.14) * 0.34) : 1.0;
       ctx.translate(f.x, f.y);
       ctx.scale(pop, pop);
-      ctx.font = `900 ${f.size}px "Noto Serif CJK SC", "Songti SC", serif`;
+      ctx.font = `${f.isCrit || f.isBannerFloat ? "900" : "700"} ${f.size}px "Noto Serif CJK SC", "Songti SC", serif`;
       ctx.textAlign = "center";
-      ctx.lineWidth = 3.6;
-      ctx.strokeStyle = "rgba(4, 10, 13, 0.94)";
+      ctx.lineJoin = "round";
+      if (f.isCrit || f.isBannerFloat) {
+        ctx.shadowColor = f.isBannerFloat ? "rgba(0, 0, 0, 0.85)" : "rgba(255, 210, 90, 0.55)";
+        ctx.shadowBlur = f.isBannerFloat ? 8 : 10;
+      }
+      ctx.lineWidth = f.isCrit ? 4.0 : 3.2;
+      ctx.strokeStyle = "rgba(4, 10, 14, 0.94)";
       ctx.strokeText(f.text, 0, 0);
       ctx.fillStyle = f.color;
       ctx.fillText(f.text, 0, 0);
@@ -18245,7 +18979,7 @@ const ART = {
     }
   }
 
-  function updateHud() {
+  function updateHud(animateNewUnlocks = false) {
     if (!game) return;
     const r = REALMS[game.realm];
     const st = getCombatStats(game);
@@ -18272,7 +19006,9 @@ const ART = {
 
     const hubBtn = document.getElementById("btn-sanctum-hub");
     if (hubBtn) {
-      hubBtn.innerHTML = arena.sanctumMode ? `⚔ 出征` : `🏠 洞府`;
+      hubBtn.innerHTML = arena.sanctumMode
+        ? `<svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/></svg><span>出征</span>`
+        : `<svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></svg><span>洞府</span>`;
     }
 
     const chInfo = getActiveChapterInfo(game);
@@ -18404,7 +19140,7 @@ const ART = {
       if (arena.tribulation) {
         tribLive.classList.add("active");
         const done = Math.max(1, (arena.tribulation.totalBolts || 3) - arena.tribulation.boltsLeft);
-        tribLiveTxt.textContent = `⚡ 九霄紫霄雷劫（第 ${Math.min(arena.tribulation.totalBolts || 3, done)}/${arena.tribulation.totalBolts || 3} 重）· 空格一闪迎雷弹反凝天道一品！`;
+        tribLiveTxt.textContent = `九霄紫霄雷劫（第 ${Math.min(arena.tribulation.totalBolts || 3, done)}/${arena.tribulation.totalBolts || 3} 重）· 空格一闪迎雷弹反凝天道一品`;
       } else {
         tribLive.classList.remove("active");
       }
@@ -18413,10 +19149,71 @@ const ART = {
     const tribBtn = document.getElementById("tribulation-trigger-btn");
     const xpReady = (r.next && game.xp >= r.xpCap && !arena.tribulation) || (!r.next && game.status === "active" && r.xpCap > 0 && game.xp >= r.xpCap && !arena.tribulation);
     tribBtn.style.display = xpReady ? "inline-flex" : "none";
-    tribBtn.textContent = !r.next ? "⚡ 渡劫飞升 (B)" : `⚡ 渡劫入${REALMS[r.next].name} (B)`;
+    tribBtn.textContent = !r.next ? "渡劫飞升 (B)" : `渡劫入${REALMS[r.next].name} (B)`;
 
+    syncProgressiveSkillVisibility(animateNewUnlocks);
     renderQuestTrackerHud();
     updateNavNotificationBadges();
+  }
+
+  function syncProgressiveSkillVisibility(animateNew = false) {
+    if (!game) return;
+    const curRank = rankOf(game.realm);
+    const fullOpen = !!game.unlockAllArcana;
+    const hasAlly = countBondedAllies(game) > 0;
+    const hasPet = !!(game.pet && game.pet.id);
+
+    document.querySelectorAll("#action-skill-dock .skill-orb-btn[data-unlock-rank]").forEach(btn => {
+      const req = Number(btn.getAttribute("data-unlock-rank") || 0);
+      let unlocked = fullOpen || curRank >= req;
+      if (btn.id === "orb-ally" && hasAlly) unlocked = true;
+      if (btn.id === "orb-pet" && hasPet) unlocked = true;
+      const wasLocked = btn.classList.contains("skill-locked-tier");
+      btn.classList.toggle("skill-locked-tier", !unlocked);
+      if (animateNew && wasLocked && unlocked) {
+        btn.classList.remove("skill-newly-unlocked");
+        void btn.offsetWidth;
+        btn.classList.add("skill-newly-unlocked");
+      }
+    });
+
+    ["posture-switch-badge", "karma-hud-pill", "tag-team-hud-pill"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const req = Number(el.getAttribute("data-unlock-rank") || 0);
+      const unlocked = fullOpen || curRank >= req;
+      el.classList.toggle("hud-tier-hidden", !unlocked);
+    });
+
+    const arcBtn = document.getElementById("btn-toggle-arcana");
+    const arcLbl = document.getElementById("lbl-arcana-toggle");
+    const arcWrap = document.getElementById("arcana-vault-wrap");
+    const arcanaUnlocked = fullOpen || curRank >= 3;
+    if (arcBtn && arcLbl) {
+      arcBtn.classList.toggle("locked-hint", !arcanaUnlocked);
+      const hasLive = !!(
+        (arena.astralForm && arena.astralForm.active) ||
+        (arena.mountState && arena.mountState.active) ||
+        (arena.qimenArray && arena.qimenArray.active) ||
+        (arena.sanqingState && arena.sanqingState.active) ||
+        (arena.shanheDomain && arena.shanheDomain.active) ||
+        (arena.coop2P && arena.coop2P.active)
+      );
+      arcBtn.classList.toggle("has-live-buff", arcanaUnlocked && hasLive);
+      arcLbl.textContent = arcanaUnlocked
+        ? (arcWrap && arcWrap.classList.contains("open") ? "收起秘匣" : "太虚秘匣")
+        : "太虚秘匣 · 金丹启";
+    }
+    if (!arcanaUnlocked && arcWrap) {
+      arcWrap.classList.remove("open");
+    }
+
+    const allToggleBtn = document.getElementById("btn-toggle-arcana-all");
+    const allToggleLbl = document.getElementById("lbl-arcana-all-state");
+    if (allToggleBtn && allToggleLbl) {
+      allToggleBtn.classList.toggle("active-toggle", fullOpen);
+      allToggleLbl.textContent = fullOpen ? "已全开" : "随境解封";
+    }
   }
 
   function updateCooldownMasks() {
@@ -18461,6 +19258,8 @@ const ART = {
 
   function openModal(html, closeable = true) {
     clearTransientInputs();
+    const tipEl = document.getElementById("ling-tooltip");
+    if (tipEl) tipEl.style.display = "none";
     modalCloseable = closeable;
     arena.paused = true;
     const bd = document.getElementById("modal-backdrop");
@@ -18477,6 +19276,8 @@ const ART = {
   }
 
   function toggleDrawer(tab) {
+    const tipEl = document.getElementById("ling-tooltip");
+    if (tipEl) tipEl.style.display = "none";
     if (drawerOpen && currentTab === tab) { closeDrawer(); return; }
     clearTransientInputs();
     currentTab = tab;
@@ -18550,12 +19351,21 @@ const ART = {
         <!-- 4-Slot Immortal Gear Loadout + AAA Enhance/Reforge & Set Resonance -->
         <div class="jade-card">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
-            <strong style="font-size:12px;color:var(--gold-bright);">四格神兵仙装 · 淬火洗炼</strong>
+            <strong style="font-size:12px;color:var(--gold-bright);">四格神兵仙装 · 淬火定刻</strong>
             <div style="display:flex;gap:5px;align-items:center;">
               ${getActiveSetBonus(game) ? `<span class="tag-chip mythic" data-tip="${escTip(getActiveSetBonus(game).name, getActiveSetBonus(game).desc)}">✦ ${getActiveSetBonus(game).name}</span>` : `<span class="tag-chip">凑齐3件激活套装</span>`}
               ${game.gearBag.length > 0 ? `<button class="btn-jade" style="padding:2px 8px;font-size:10.5px;" data-action="smelt-all-gear">熔炼(${game.gearBag.length})</button>` : ""}
             </div>
           </div>
+          ${(() => {
+            const pt = ensureDeterministicPity(game);
+            const epicPct = Math.min(100, Math.round((pt.epic / 4) * 100));
+            const mythicPct = Math.min(100, Math.round((pt.mythic / 8) * 100));
+            return `<div class="pity-bar-card" data-tip="天机掉落保底|每 4 件装备必出紫品以上，每 8 件必出仙品橙装；掉落自动倾向弱槽，紫/橙装 100% 附带词条">
+              <span>紫品保底 <b style="color:#d69eff;">${pt.epic}/4</b><span class="pity-meter-track"><span class="pity-meter-fill" style="width:${epicPct}%"></span></span></span>
+              <span>仙品保底 <b style="color:#ffe28a;">${pt.mythic}/8</b><span class="pity-meter-track"><span class="pity-meter-fill" style="width:${mythicPct}%"></span></span></span>
+            </div>`;
+          })()}
           <div class="grid-2">
             ${[
               { slot: "weapon", label: "本命佩剑", emptyArt: "icon_blade" },
@@ -18576,8 +19386,8 @@ const ART = {
                   ${eq ? `
                     <div style="display:flex;gap:4px;justify-content:flex-end;">
                       <button type="button" class="gear-action-mini" data-enhance-slot="${meta.slot}" data-tip="神兵淬火强化|消耗 ${enhCost} 灵石提升基础属性 +14%（最高+10）">${(eq.lvl || 0) >= 10 ? "已满+10" : `淬火+${(eq.lvl || 0) + 1}(${enhCost}石)`}</button>
-                      <button type="button" class="gear-action-mini" data-reforge-slot="${meta.slot}" data-tip="圣品词条铭刻洗炼|消耗 35 灵石随机铭刻噬灵/破岳/紫电/御风/贪狼/玄武词条">洗炼(35石)</button>
-                      ${eq.rarity >= 5 ? `<span class="tag-chip mythic" style="font-size:9.5px;">★紫气已醒</span>` : `<button type="button" class="gear-action-mini" style="border-color:#ff9eff;color:#ffd6ff;" data-awaken-primordial="${meta.slot}" data-tip="鸿蒙紫气突破 (圣品之上)|消耗 120 灵石将神兵晋升为【紫气鸿蒙】至高品阶并觉醒专属太初本源词条！">🌌紫气突破(120石)</button>`}
+                      <button type="button" class="gear-action-mini" data-reforge-slot="${meta.slot}" data-tip="定向词条刻录|消耗 35 灵石 100% 确定自选心仪圣品神通词条">定刻(35石)</button>
+                      ${eq.rarity >= 5 ? `<span class="tag-chip mythic" style="font-size:9.5px;">★紫气已醒</span>` : `<button type="button" class="gear-action-mini" style="border-color:#ff9eff;color:#ffd6ff;" data-awaken-primordial="${meta.slot}" data-tip="鸿蒙紫气突破 (圣品之上)|消耗 120 灵石将神兵晋升为【紫气鸿蒙】至高品阶并觉醒专属太初本源词条！">紫气突破(120石)</button>`}
                     </div>
                   ` : ""}
                 </div>`;
@@ -19689,7 +20499,12 @@ const ART = {
     const pel = (ev.target && ev.target.nodeType === 1) ? ev.target : (ev.target && ev.target.parentElement ? ev.target.parentElement : null);
     const tipNode = pel ? pel.closest("[data-tip]") : null;
     const tipEl = document.getElementById("ling-tooltip");
-    if (tipNode && tipEl) {
+    const suppressTip = !!(tipNode && (
+      (tipNode.id === "btn-pavilion-menu" && tipNode.classList.contains("open")) ||
+      (tipNode.id === "btn-toggle-dojo-bar" && tipNode.closest("#dojo-control-bar.expanded")) ||
+      (tipNode.id === "btn-toggle-arcana" && tipNode.closest("#arcana-vault-wrap.open"))
+    ));
+    if (tipNode && tipEl && !suppressTip) {
       const [hd, bd] = (tipNode.getAttribute("data-tip") || "").split("|");
       document.getElementById("ling-tip-title").textContent = hd || "";
       document.getElementById("ling-tip-desc").textContent = bd || "";
@@ -19707,6 +20522,18 @@ const ART = {
     if (cutscene.active) return;
     const isCanvas = ev.target && ev.target.id === "fx-canvas";
     if (isCanvas) {
+      const pav = document.getElementById("pavilion-popover");
+      const pavBtn = document.getElementById("btn-pavilion-menu");
+      if (pav && pav.classList.contains("open")) {
+        pav.classList.remove("open");
+        if (pavBtn) pavBtn.classList.remove("open");
+      }
+      const dojoB = document.getElementById("dojo-control-bar");
+      if (dojoB && dojoB.classList.contains("expanded")) {
+        dojoB.classList.remove("expanded");
+        const caret = document.getElementById("lbl-dojo-caret");
+        if (caret) caret.textContent = "▾";
+      }
       if (photoMode.active) {
         photoMode.dragging = true;
         photoMode.dragStartX = ev.clientX - photoMode.panX;
@@ -19728,7 +20555,7 @@ const ART = {
       pointer.holdTime = 0;
       pointer.worldActive = true;
       for (const pr of arena.props) {
-        if (Math.hypot(ev.clientX - pr.x, ev.clientY - pr.y) < pr.r + 24) {
+        if (Math.hypot(ev.clientX - pr.x, ev.clientY - pr.y) < pr.r + 26) {
           if (pr.kind === "pedestal") { activatePedestalChoice(pr); return; }
           if (pr.kind === "branch_portal") { enterChosenBranchRoom(pr.branch); return; }
           if (pr.kind === "sanctum_portal") { enterSanctumHub(); return; }
@@ -19736,6 +20563,9 @@ const ART = {
           if (pr.kind === "companion_npc") { toggleDrawer("story"); return; }
           if (pr.kind === "bounty_board") { openObjectivesModal("bounties"); return; }
           if (pr.kind === "cauldron" && arena.sanctumMode) { toggleDrawer("alchemy"); return; }
+          if (pr.kind === "taixu_craft_alchemy") { openTaixuCraftMinigameModal("alchemy"); return; }
+          if (pr.kind === "taixu_craft_forge") { openTaixuCraftMinigameModal("forge"); return; }
+          if (pr.kind === "sect_defense_trigger") { startSectDefenseSiege(); return; }
           if (pr.kind === "encounter_stele") { arena.props = arena.props.filter(x => x !== pr); openEncounterModal(); return; }
           if (pr.kind === "portal") { initArenaStage(pr.nextIdx, !!pr.toTower); return; }
           if (pr.kind === "tower_next") { arena.props = arena.props.filter(x => x !== pr); spawnCurrentWave(); return; }
@@ -20308,6 +21138,78 @@ const ART = {
       enterSanctumHub();
       return;
     }
+    const dActVal = t.getAttribute("data-action");
+    if (dActVal === "toggle-pavilion") {
+      const tipEl = document.getElementById("ling-tooltip");
+      if (tipEl) tipEl.style.display = "none";
+      const pav = document.getElementById("pavilion-popover");
+      const pavBtn = document.getElementById("btn-pavilion-menu");
+      if (pav) {
+        const next = !pav.classList.contains("open");
+        pav.classList.toggle("open", next);
+        if (pavBtn) pavBtn.classList.toggle("open", next);
+      }
+      return;
+    }
+    if (dActVal === "toggle-arcana-vault") {
+      const tipEl = document.getElementById("ling-tooltip");
+      if (tipEl) tipEl.style.display = "none";
+      if (!game) return;
+      const unlocked = !!game.unlockAllArcana || rankOf(game.realm) >= 3;
+      if (!unlocked) {
+        showToast("太虚秘匣将于【金丹期】解封；也可于右上【仙阁】开启全神通演武提前体验！");
+        return;
+      }
+      const wrap = document.getElementById("arcana-vault-wrap");
+      if (wrap) {
+        wrap.classList.toggle("open");
+        syncProgressiveSkillVisibility(false);
+      }
+      return;
+    }
+    if (dActVal === "toggle-arcana-all") {
+      if (!game) return;
+      game.unlockAllArcana = !game.unlockAllArcana;
+      Sound.clang(1.25, 0.10);
+      showToast(game.unlockAllArcana ? "★ 已开启【全神通演武】：全部招式与太虚秘匣提前解封！" : "已恢复【随境解封】：按凡人→炼气→筑基→金丹渐进成长");
+      saveGame();
+      updateHud(true);
+      return;
+    }
+    if (dActVal === "toggle-dojo-drawer") {
+      const tipEl = document.getElementById("ling-tooltip");
+      if (tipEl) tipEl.style.display = "none";
+      const db = document.getElementById("dojo-control-bar");
+      if (db) {
+        const exp = !db.classList.contains("expanded");
+        db.classList.toggle("expanded", exp);
+        const caret = document.getElementById("lbl-dojo-caret");
+        if (caret) caret.textContent = exp ? "▴" : "▾";
+      }
+      return;
+    }
+    if (dActVal === "reroll-destiny-fruit") {
+      if (activeFruitRerolls > 0) {
+        activeFruitRerolls -= 1;
+        Sound.clang(1.3, 0.09);
+        openDestinyFruitModal(activeFruitMeta.isHeaven, true);
+      }
+      return;
+    }
+    if (dActVal === "reroll-law-draft") {
+      if (activeDraftRerolls > 0) {
+        activeDraftRerolls -= 1;
+        Sound.clang(1.3, 0.09);
+        openIconicUpgradeDraft(activeDraftMeta.titleText || "大道顿悟", true);
+      }
+      return;
+    }
+    if (t.closest && t.closest("#pavilion-popover")) {
+      const pav = document.getElementById("pavilion-popover");
+      const pavBtn = document.getElementById("btn-pavilion-menu");
+      if (pav) pav.classList.remove("open");
+      if (pavBtn) pavBtn.classList.remove("open");
+    }
     if (t.id === "btn-toggle-telemetry") { toggleTelemetryPanel(); return; }
     if (t.id === "btn-toggle-hitbox") {
       arena.showHitboxes = !arena.showHitboxes;
@@ -20318,17 +21220,28 @@ const ART = {
     if (t.id === "btn-reset-telemetry") { resetDamageTelemetry(); return; }
     if (t.id === "btn-close-recap") { renderStageDamageRecap(false); return; }
     if (t.hasAttribute("data-dojo-mode")) {
-      spawnDojoDummy(t.getAttribute("data-dojo-mode"));
+      const mId = t.getAttribute("data-dojo-mode");
+      spawnDojoDummy(mId);
+      const curLbl = document.getElementById("lbl-dojo-cur-mode");
+      if (curLbl) curLbl.textContent = t.textContent.trim();
+      const db = document.getElementById("dojo-control-bar");
+      if (db) db.classList.remove("expanded");
+      const caret = document.getElementById("lbl-dojo-caret");
+      if (caret) caret.textContent = "▾";
       Sound.clang(1.2, 0.09);
       return;
     }
     if (t.hasAttribute("data-dojo-act")) {
       const dAct = t.getAttribute("data-dojo-act");
+      const db = document.getElementById("dojo-control-bar");
+      if (db) db.classList.remove("expanded");
+      const caret = document.getElementById("lbl-dojo-caret");
+      if (caret) caret.textContent = "▾";
       if (dAct === "fill-intent") {
         arena.swordIntent = 100;
         arena.player.ultCd = 0; arena.player.allyCd = 0; arena.player.dashCd = 0; arena.player.recallCd = 0;
         Sound.fanfare();
-        showToast("🔥 演武赐福：无上剑意已蓄满 100%！按 X 键或点击【★奥义】体验流派终极演出！");
+        showToast("演武赐福：无上剑意已蓄满 100%！按 X 键释放流派终极演出！");
         updateCooldownMasks();
       } else if (dAct === "toggle-recap") {
         renderStageDamageRecap();
@@ -20472,22 +21385,30 @@ const ART = {
       if (game.goalStats) game.goalStats.craftOrLoot = (game.goalStats.craftOrLoot || 0) + 1;
       Sound.clang(1.35, 0.14);
       Sound.fanfare();
-      showToast(`🔥 淬火功成！【${eq.name} +${eq.lvl}】基础属性大幅跃升！`);
+      showToast(`淬火功成！【${eq.name} +${eq.lvl}】基础属性大幅跃升！`);
       saveGame(); updateHud(); renderDrawerContent();
       return;
     }
     if (t.hasAttribute("data-reforge-slot")) {
       const sl = t.getAttribute("data-reforge-slot");
+      openAffixEngraveModal(sl);
+      return;
+    }
+    if (t.hasAttribute("data-engrave-slot")) {
+      const sl = t.getAttribute("data-engrave-slot");
+      const afId = t.getAttribute("data-engrave-affix");
       const eq = game && game.equippedGear ? game.equippedGear[sl] : null;
-      if (!eq) return;
-      if (game.stones < 35) { showToast("洗炼词条需 35 灵石"); return; }
+      const picked = SACRED_AFFIXES.find(a => a.id === afId);
+      if (!eq || !picked) return;
+      if (game.stones < 35) { showToast("定向刻录词条需 35 灵石"); return; }
       game.stones -= 35;
-      const pool = SACRED_AFFIXES.filter(a => a.id !== eq.affix);
-      const picked = pool[Math.floor(Math.random() * pool.length)] || SACRED_AFFIXES[0];
       eq.affix = picked.id;
+      eq.power = eq.atk * 3 + Math.round(eq.hp * 0.4) + eq.dr * 5 + Math.round(eq.crit * 240) + eq.bonusSword * 85 + 45;
       if (game.goalStats) game.goalStats.craftOrLoot = (game.goalStats.craftOrLoot || 0) + 1;
       Sound.bianzhong(659.25, 0.09);
-      showToast(`✦ 词条铭刻！【${eq.name}】觉醒圣品词条【${picked.name}】（${picked.desc}）！`);
+      Sound.fanfare();
+      showToast(`✦ 定向铭刻！【${eq.name}】已刻录【${picked.name}】（${picked.desc}）！`);
+      closeModal();
       saveGame(); updateHud(); renderDrawerContent();
       return;
     }
@@ -20988,6 +21909,23 @@ const ART = {
     }
   });
 
+  window.__CHENYUAN_V25__ = {
+    getState: () => ({
+      game,
+      arena,
+      pity: ensureDeterministicPity(game),
+      drawerOpen,
+      realmSpec: game ? REALMS[game.realm] : null
+    }),
+    rollGearItem,
+    openAffixEngraveModal,
+    openIconicUpgradeDraft,
+    openDestinyFruitModal,
+    syncProgressiveSkillVisibility,
+    updateHud,
+    closeModal,
+    closeDrawer
+  };
   window.__CHENYUAN_V24__ = {
     getState: () => ({
       game,
