@@ -2562,6 +2562,230 @@
     opacity: 0.48;
     cursor: not-allowed;
   }
+
+  /* ==================== M2 EXPEDITION STAR-MAP, RUN BOONS & GEAR COMPARE UI ==================== */
+  .dungeon-route-btn {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(10, 30, 36, 0.92), rgba(5, 16, 21, 0.96));
+    border: 1px solid rgba(112, 255, 230, 0.52);
+    color: #b8fff0;
+    font-size: 11px;
+    font-weight: 700;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.48);
+    transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+  }
+  .dungeon-route-btn:hover {
+    border-color: #ffe28a;
+    color: #fff3c4;
+    transform: translateY(-1px);
+  }
+  .dungeon-route-btn.ready-pulse {
+    border-color: #ffe28a;
+    background: linear-gradient(135deg, rgba(42, 34, 12, 0.95), rgba(14, 42, 46, 0.96));
+    color: #fff3c4;
+    box-shadow: 0 0 18px rgba(255, 226, 138, 0.36);
+  }
+  #run-boon-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    max-width: 318px;
+    margin-top: 2px;
+    pointer-events: auto;
+  }
+  .run-boon-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(14, 40, 44, 0.9), rgba(32, 24, 12, 0.9));
+    border: 1px solid rgba(248, 220, 144, 0.52);
+    color: #fff1c2;
+    font-size: 10px;
+    font-weight: 700;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.42);
+  }
+  #gear-compare-card {
+    position: fixed;
+    right: 76px;
+    bottom: 102px;
+    width: min(352px, 90vw);
+    z-index: 60;
+    pointer-events: auto;
+    padding: 11px 13px;
+    border-radius: 13px;
+    background: linear-gradient(180deg, rgba(9, 24, 30, 0.96), rgba(5, 13, 18, 0.98));
+    border: 1px solid rgba(248, 220, 144, 0.72);
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.76), 0 0 22px rgba(248, 220, 144, 0.16);
+    backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: var(--text-main);
+  }
+  body:has(#modal-backdrop.open) #gear-compare-card,
+  body:has(#jade-panel.drawer-open) #gear-compare-card {
+    display: none !important;
+  }
+  .gear-cmp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .gear-cmp-col {
+    padding: 7px 8px;
+    border-radius: 9px;
+    background: rgba(14, 32, 38, 0.78);
+    border: 1px solid rgba(216, 179, 106, 0.28);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+  .gear-cmp-col.new-item {
+    border-color: rgba(112, 255, 230, 0.56);
+    background: rgba(12, 38, 42, 0.85);
+  }
+  .gear-delta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    font-size: 10.5px;
+  }
+  .gear-delta-pos { color: #70ffe6; font-weight: 700; }
+  .gear-delta-neg { color: #ff8e86; font-weight: 700; }
+  .gear-cmp-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+  .modal-box:has(.dmap-stage) {
+    width: min(930px, 96vw);
+  }
+  .dmap-stage {
+    position: relative;
+    padding: 18px 18px;
+    border-radius: 14px;
+    background: radial-gradient(circle at 50% 45%, rgba(22, 54, 62, 0.65), rgba(6, 16, 22, 0.96));
+    border: 1px solid rgba(216, 179, 106, 0.42);
+    overflow: hidden;
+  }
+  .dmap-svg-edges {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .dmap-layers-grid {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    column-gap: 28px;
+    align-items: center;
+    min-height: 248px;
+  }
+  .dmap-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  .dmap-col-hdr {
+    text-align: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--text-sub);
+    letter-spacing: 1px;
+    margin-bottom: -4px;
+    white-space: nowrap;
+  }
+  .dmap-node-card {
+    padding: 10px 10px;
+    border-radius: 11px;
+    background: #0a1b22;
+    border: 1px solid rgba(216, 179, 106, 0.34);
+    text-align: left;
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+  }
+  .dmap-node-card:disabled {
+    opacity: 1;
+    cursor: default;
+  }
+  .dmap-node-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+  .dmap-node-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .dmap-node-status {
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .dmap-node-card.cleared {
+    border-color: rgba(248, 220, 144, 0.56);
+    background: linear-gradient(180deg, #16261f, #0d1814);
+    opacity: 0.86;
+  }
+  .dmap-node-card.current {
+    border-color: #70ffe6;
+    background: linear-gradient(180deg, #123b43, #092128);
+    box-shadow: 0 0 20px rgba(112, 255, 230, 0.34);
+    opacity: 1;
+  }
+  .dmap-node-card.selectable {
+    border-color: #ffe28a;
+    background: linear-gradient(180deg, #2d2c15, #11262c);
+    box-shadow: 0 0 20px rgba(255, 226, 138, 0.32);
+    cursor: pointer;
+    opacity: 1;
+  }
+  .dmap-node-card.selectable:hover {
+    transform: translateY(-2px);
+    border-color: #fff2b2;
+    box-shadow: 0 8px 22px rgba(255, 226, 138, 0.38);
+  }
+  .dmap-node-card.locked {
+    background: #0a171e;
+    border-color: rgba(216, 179, 106, 0.22);
+    opacity: 0.62;
+    cursor: default;
+  }
+  .dmap-climate-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1.5px 7px;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(112, 255, 230, 0.12);
+    border: 1px solid rgba(112, 255, 230, 0.34);
+    color: #9effec;
+    width: fit-content;
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -2638,6 +2862,7 @@
 
       <!-- Visual Build Icon Chain -->
       <div id="hud-build-strip"></div>
+      <div id="run-boon-strip" aria-label="本趟秘境道韵"></div>
 
       <!-- V13 Live 4-Tier Goal & Quest Jade-Slip Tracker -->
       <div id="quest-tracker-hud">
@@ -2655,6 +2880,7 @@
     <!-- Center Stage Wave + Boss HP/Posture Banner -->
     <div class="hud-center-stack">
       <button id="btn-mainline-compass" class="hud-compass stage-wave-hud"><div class="wave-title-row"><span id="stage-title"></span><span id="wave-sub-tag" class="tag-chip done"></span></div><div id="wave-dots-row" class="wave-dots"></div><span id="compass-vol-label" class="sr-only">第一卷 · 山雨入道</span> <span id="compass-step-label" class="sr-only">破庙抉择：回应沈清禾求药</span> <span class="sr-only">主线指引 →</span></button>
+      <button type="button" id="btn-dungeon-route" class="dungeon-route-btn" data-action="open-dungeon-map" style="display:none;" data-tip="秘境五层星图 (9)|查看本趟秘境 5 层分支路线、天候气候与奖励预览；清房后点击可择路前行！"></button>
 
       <div id="tribulation-live-banner">
         <span id="trib-live-txt">九霄紫霄雷劫 · 空格一闪逆斩天雷</span>
@@ -3168,6 +3394,7 @@
 
   <div id="hud-save-alert" role="alert" style="display:none;"></div>
   <div id="prop-interact-hud" aria-live="polite" style="display:none;"></div>
+  <div id="gear-compare-card" role="region" aria-label="仙装拾取对比" style="display:none;"></div>
   <div id="modal-backdrop" role="dialog" aria-modal="true" aria-label="系统与抉择弹窗">
     <div id="modal-content" class="modal-box" tabindex="-1"></div>
   </div>
@@ -4190,13 +4417,49 @@ const ART = {
 
   const CONSTELLATION_IDS = [{ id: "c0_0" }, { id: "c1_0" }, { id: "c1_1" }, { id: "c2_0" }, { id: "c2_1" }, { id: "c2_2" }, { id: "c3_0" }, { id: "c3_1" }, { id: "c4_0" }];
 
-  // 5 Chapter Regions
+  // 5 Chapter Regions (All 5 mainline chapters decoupled from Endless Demon-Lock Tower!)
   const STAGES = [
-    { id: "wilderness", min: "mortal",     loc: "wilderness", arenaArt: "arena_wilderness", particleKind: "rain_mist",   shape: "diamond", rx: 0.37, ry: 0.31, cy: 0.54, name: "青岚破庙石坪", waves: [["wolf", "wolf", "wolf"], ["wolf", "wolf", "warden"], ["warden", "wolf", "wolf"]], boss: "warden" },
-    { id: "sect",       min: "qi",         loc: "sect",       arenaArt: "arena_sect",       particleKind: "cloud_leaf",  shape: "diamond", rx: 0.36, ry: 0.30, cy: 0.52, name: "青云八卦仙台", waves: [["wolf", "warden", "warden"], ["serpent", "warden"], ["serpent", "serpent", "warden"]], boss: "serpent" },
-    { id: "secret",     min: "foundation", loc: "secret",     arenaArt: "arena_secret",     particleKind: "lotus_glow",  shape: "diamond", rx: 0.36, ry: 0.30, cy: 0.53, name: "照影寒潭剑台", waves: [["serpent", "serpent", "puppet"], ["puppet", "puppet"], ["puppet", "shadow", "serpent"]], boss: "puppet" },
-    { id: "tower",      min: "qi",         loc: "secret",     arenaArt: "arena_tower",      particleKind: "ghost_ember", shape: "ellipse", rx: 0.33, ry: 0.28, cy: 0.54, name: "太虚锁妖内坛", waves: [["puppet", "shadow", "shadow"], ["shadow", "sentinel"], ["sentinel", "puppet"]], boss: "shadow" },
-    { id: "terrace",    min: "spirit",     loc: "terrace",    arenaArt: "arena_terrace",    particleKind: "star_dust",   shape: "ellipse", rx: 0.36, ry: 0.30, cy: 0.53, name: "九霄星盘仙台", waves: [["sentinel", "trial_heart"], ["trial_thunder", "sentinel"], ["trial_heart", "trial_thunder"]], boss: "trial_gate" }
+    { id: "wilderness",  min: "mortal",     loc: "wilderness", arenaArt: "arena_wilderness", particleKind: "rain_mist",   shape: "diamond", rx: 0.37, ry: 0.31, cy: 0.54, name: "青岚破庙石坪", waves: [["wolf", "wolf", "wolf"], ["wolf", "wolf", "warden"], ["warden", "wolf", "wolf"]], boss: "warden", bossTitle: "荒山妖魁 · 守山石卫" },
+    { id: "sect",        min: "qi",         loc: "sect",       arenaArt: "arena_sect",       particleKind: "cloud_leaf",  shape: "diamond", rx: 0.36, ry: 0.30, cy: 0.52, name: "青云八卦仙台", waves: [["wolf", "warden", "warden"], ["serpent", "warden", "wolf"], ["serpent", "serpent", "warden"]], boss: "serpent", bossTitle: "寒鳞妖尊 · 寒潭玄蛇" },
+    { id: "secret",      min: "foundation", loc: "secret",     arenaArt: "arena_secret",     particleKind: "lotus_glow",  shape: "diamond", rx: 0.36, ry: 0.30, cy: 0.53, name: "照影寒潭剑台", waves: [["serpent", "serpent", "puppet"], ["puppet", "puppet", "serpent"], ["puppet", "shadow", "serpent"]], boss: "puppet", bossTitle: "镜阵剑祖 · 古境剑傀" },
+    { id: "sword_mound", min: "golden",     loc: "secret",     arenaArt: "arena_tower",      particleKind: "ghost_ember", shape: "ellipse", rx: 0.34, ry: 0.28, cy: 0.54, name: "古修剑冢 · 剑墟遗阵", waves: [["puppet", "shadow", "warden"], ["shadow", "sentinel", "puppet"], ["sentinel", "shadow", "puppet"]], boss: "shadow", bossTitle: "剑冢镇魂煞 · 照影心魇" },
+    { id: "terrace",     min: "nascent",    loc: "terrace",    arenaArt: "arena_terrace",    particleKind: "star_dust",   shape: "ellipse", rx: 0.36, ry: 0.30, cy: 0.53, name: "九霄星盘仙台", waves: [["sentinel", "trial_heart", "puppet"], ["trial_thunder", "sentinel", "shadow"], ["trial_heart", "trial_thunder", "sentinel"]], boss: "trial_gate", bossTitle: "九霄守门者 · 天门道影" }
+  ];
+
+  const STAGE_SCALING = [1.0, 1.15, 1.35, 1.60, 1.85];
+
+  // ==================== 5A-M2. 5-LAYER EXPEDITION STAR-MAP, CLIMATES & 12 RUN-SCOPED BOONS ====================
+  const DUNGEON_CLIMATES = {
+    sword_wind:   { id: "sword_wind",   name: "剑风呼啸", icon: "🌪", badge: "攻速+15% · 移速+10%", desc: "剑风贯阵：挥剑攻速 +15%、身法移速 +10%" },
+    spirit_mist:  { id: "spirit_mist",  name: "灵雾滋养", icon: "🌫", badge: "灵草翻倍 · 回灵+35%", desc: "灵雾充盈：灵气与灵草掉落翻倍，剑元恢复 +35%" },
+    thunder_loom: { id: "thunder_loom", name: "雷云压境", icon: "⛈", badge: "暴伤+18% · 易引链雷", desc: "雷云低垂：暴击伤害 +18%，每次暴击易引紫电链雷" },
+    blood_haze:   { id: "blood_haze",   name: "煞气凝重", icon: "🩸", badge: "敌我伤+18% · 仙装高爆", desc: "凶煞翻涌：敌我伤害均 +18%，精英仙装爆率大增" }
+  };
+
+  const DUNGEON_ROOM_TYPES = {
+    outpost:         { id: "outpost",         icon: "⚔", name: "前哨试剑",   short: "妖潮", reward: "灵石与妖材 · 探明秘境", peaceful: false, grantsBoon: false },
+    elite_loot:      { id: "elite_loot",      icon: "🔥", name: "凶煞剑冢",   short: "精英", reward: "必爆高品仙装 + 秘境道韵", peaceful: false, grantsBoon: true },
+    merchant_event:  { id: "merchant_event",  icon: "🏮", name: "奇遇仙商",   short: "商遇", reward: "云游仙商 · 丹鼎 · 机缘碑", peaceful: true,  grantsBoon: false },
+    spirit_spring:   { id: "spirit_spring",   icon: "💧", name: "太初灵泉",   short: "灵泉", reward: "满态恢复 + 秘境道韵玉简", peaceful: true,  grantsBoon: true },
+    elemental_vault: { id: "elemental_vault", icon: "⚡", name: "五行秘窟",   short: "秘窟", reward: "五行剑碑 · 双倍灵材 + 道韵", peaceful: false, grantsBoon: true },
+    vanguard_clash:  { id: "vanguard_clash",  icon: "🛡", name: "妖卫剑阵",   short: "战阵", reward: "战术三兵种 · 高修为 + 道韵", peaceful: false, grantsBoon: true },
+    mystery_shrine:  { id: "mystery_shrine",  icon: "🩸", name: "血坛机缘",   short: "血坛", reward: "心魔血剑坛 · 原石 · 奇遇碑", peaceful: true,  grantsBoon: false },
+    boss:            { id: "boss",            icon: "👑", name: "镇守妖王",   short: "首领", reward: "三星秘宝 · 贯通下一章节", peaceful: false, grantsBoon: false }
+  };
+
+  const RUN_BOONS = [
+    { id: "frost_splash",   name: "玄霜剑爆", badge: "寒霜溅射", art: "relic_frost_sword", desc: "本趟秘境：剑击命中 38% 迸发寒霜冲击波，冰缓并重创周围妖兽。" },
+    { id: "parry_reset",    name: "镜花水月", badge: "识破刷冷", art: "icon_seal",         desc: "本趟秘境：空格完美一闪/识破剑反立即重置爆剑冷却、减 4s 大招冷却并 +25% 剑意。" },
+    { id: "blood_intent",   name: "背水剑意", badge: "残血暴击", art: "icon_blade",        desc: "本趟秘境：气血低于 55% 时暴击率 +25%，剑意获取速度翻倍！" },
+    { id: "lightning_chain",name: "九霄链雷", badge: "暴击链雷", art: "relic_soul_lamp",   desc: "本趟秘境：每次暴击引动 2 道九霄紫电跳跃连锁打击周围妖兽。" },
+    { id: "sword_echo",     name: "剑影回响", badge: "三剑齐射", art: "icon_blade",        desc: "本趟秘境：每第 3 次挥剑额外激射 3 道贯穿敌阵的灵剑残影！" },
+    { id: "posture_shatter",name: "崩岳破势", badge: "破势真伤", art: "relic_jade_seal",   desc: "本趟秘境：削势效率 +55%；击破敌方架势瞬间引爆目标 18% 最大气血真伤！" },
+    { id: "gourd_overload", name: "仙酿剑狂", badge: "饮葫狂暴", art: "item_immortal_gourd", desc: "本趟秘境：饮用仙葫后 7 秒内剑攻 +38%、攻速 +30% 并获霸体护身！" },
+    { id: "vampiric_qi",    name: "噬灵归元", badge: "斩妖回血", art: "item_lotus",        desc: "本趟秘境：每次斩杀妖兽或破势立即回复 8% 最大气血与 12 点真元。" },
+    { id: "recall_nova",    name: "万剑归墟", badge: "爆剑清弹", art: "relic_frost_sword", desc: "本趟秘境：右键爆剑引爆印记时清散周身妖丹并绽放范围剑莲震爆！" },
+    { id: "dash_clone",     name: "残影剑分身",badge: "闪避留影", art: "clone_yuqing_cyan", desc: "本趟秘境：空格闪避在原地留下剑影分身，0.85 秒后自动爆裂重创群妖！" },
+    { id: "aerial_reign",   name: "御风凌霄", badge: "空战增伤", art: "vfx_sky_meteor_plunge", desc: "本趟秘境：腾空斩与下坠陨星劈伤害 +65%，命中令目标额外失衡眩晕！" },
+    { id: "gold_alchemist", name: "点石成剑", badge: "灵石增威", art: "item_jade",         desc: "本趟秘境：灵石掉落 +45%，每持有 100 灵石额外提供 +4% 秘境攻击（上限 +36%）。" }
   ];
 
   // ==================== 5B. IMMORTAL GEAR & MARKET SYSTEM (4-SLOT LOOT ENGINE) ====================
@@ -4797,6 +5060,9 @@ const ART = {
   }
   window.addEventListener("blur", clearTransientInputs);
 
+  let pendingCompareGear = null;
+  let activeRunBoonChoices = [];
+
   const arena = {
     paused: false,
     stageEpoch: 0,
@@ -4808,7 +5074,11 @@ const ART = {
     flashColor: "#fff6d6",
     stageIdx: 0,
     waveIdx: 0,
-    roomBranch: "combat",   // 'combat' | 'elite_loot' | 'merchant_event'
+    roomBranch: "combat",   // 'combat' | 'elite_loot' | 'merchant_event' | ...
+    dungeonMap: null,       // M2 5-layer branching expedition star-map
+    runBoons: [],           // M2 run-scoped roguelite boons
+    boonRerollsLeft: 1,
+    slashEchoCounter: 0,
     sanctumMode: false,     // True when inside Peaceful Sect/Cave Hub!
     towerMode: false,
     midEventSpawned: false,
@@ -4821,7 +5091,7 @@ const ART = {
     player: {
       x: 520, y: 480, z: 0, vz: 0, vx: 0, vy: 0, facing: 1, bob: 0, lean: 0,
       airComboStep: 0, plunging: false, vaultPrimed: false, jumpCd: 0, blinkCd: 0,
-      samadhiFireReady: false, gourdHasteTimer: 0, gourdCritTimer: 0, righteousPulseCd: 4.0,
+      samadhiFireReady: false, gourdHasteTimer: 0, gourdCritTimer: 0, boonOverloadTimer: 0, righteousPulseCd: 4.0,
       meditating: false, meditateTick: 0, zenStacks: 0,
       comboStep: 0, comboWindow: 0, stepRippleCd: 0,
       dashTimer: 0, dashCd: 0, invuln: 0, shieldHp: 0,
@@ -12517,61 +12787,204 @@ const ART = {
     }
   }
 
-  function acquireGearItem(item) {
+  function hasRunBoon(id) {
+    return !!(arena && Array.isArray(arena.runBoons) && arena.runBoons.includes(id));
+  }
+
+  function getActiveDungeonClimate() {
+    if (!arena || !arena.dungeonMap || !arena.dungeonMap.activeClimate) return null;
+    return DUNGEON_CLIMATES[arena.dungeonMap.activeClimate] || null;
+  }
+
+  function effectiveGearVal(it, key, overrideLvl = null) {
+    if (!it) return 0;
+    const lvl = overrideLvl !== null ? overrideLvl : (it.lvl || 0);
+    const enh = 1 + lvl * 0.14;
+    if (key === "atk" || key === "hp" || key === "dr") return Math.round((it[key] || 0) * enh);
+    return it[key] || 0;
+  }
+
+  function equipGearWithOptionalTransfer(item, transferQuench = false) {
+    if (!game || !item) return null;
+    const bagIdx = game.gearBag.indexOf(item);
+    if (bagIdx >= 0) game.gearBag.splice(bagIdx, 1);
+    const prev = game.equippedGear[item.slot];
+    let transferredLvl = 0;
+    if (prev) {
+      const prevLvl = prev.lvl || 0;
+      const newLvl = item.lvl || 0;
+      if (transferQuench && prevLvl > newLvl) {
+        item.lvl = prevLvl;
+        prev.lvl = 0;
+        transferredLvl = prevLvl;
+      }
+      game.gearBag.unshift(prev);
+      while (game.gearBag.length > 24) {
+        const dropIdx = game.gearBag.findLastIndex(x => (x.lvl || 0) === 0);
+        const rm = game.gearBag.splice(dropIdx >= 0 ? dropIdx : game.gearBag.length - 1, 1)[0];
+        if (rm) game.stones += (rm.sell || 12);
+      }
+    }
+    game.equippedGear[item.slot] = item;
+    if (pendingCompareGear === item) pendingCompareGear = null;
+    syncFlyingSwords();
+    renderGearCompareCard();
+    saveGame();
+    updateHud();
+    return { prev, transferredLvl };
+  }
+
+  function dismissGearCompareCard() {
+    pendingCompareGear = null;
+    renderGearCompareCard();
+  }
+
+  function renderGearCompareCard() {
+    const el = document.getElementById("gear-compare-card");
+    if (!el) return;
+    const onWelcome = document.getElementById("welcome-screen") && document.getElementById("welcome-screen").style.display !== "none";
+    if (!game || !pendingCompareGear || onWelcome || !game.gearBag.includes(pendingCompareGear)) {
+      el.style.display = "none";
+      el.innerHTML = "";
+      return;
+    }
+    const nw = pendingCompareGear;
+    const cur = game.equippedGear[nw.slot];
+    if (!cur) {
+      el.style.display = "none";
+      el.innerHTML = "";
+      return;
+    }
+    const slotLabels = { weapon: "佩剑", armor: "仙衣", ring: "灵佩" };
+    const curLvl = cur.lvl || 0;
+    const previewLvl = Math.max(curLvl, nw.lvl || 0);
+    const dAtk = effectiveGearVal(nw, "atk", previewLvl) - effectiveGearVal(cur, "atk");
+    const dHp  = effectiveGearVal(nw, "hp", previewLvl) - effectiveGearVal(cur, "hp");
+    const dDr  = effectiveGearVal(nw, "dr", previewLvl) - effectiveGearVal(cur, "dr");
+    const dCrit = Math.round(((nw.crit || 0) - (cur.crit || 0)) * 100);
+    const deltas = [
+      dAtk !== 0 ? `<span class="${dAtk > 0 ? "gear-delta-pos" : "gear-delta-neg"}">攻${dAtk > 0 ? "+" : ""}${dAtk}</span>` : "",
+      dHp !== 0  ? `<span class="${dHp > 0 ? "gear-delta-pos" : "gear-delta-neg"}">血${dHp > 0 ? "+" : ""}${dHp}</span>` : "",
+      dDr !== 0  ? `<span class="${dDr > 0 ? "gear-delta-pos" : "gear-delta-neg"}">防${dDr > 0 ? "+" : ""}${dDr}</span>` : "",
+      dCrit !== 0 ? `<span class="${dCrit > 0 ? "gear-delta-pos" : "gear-delta-neg"}">暴${dCrit > 0 ? "+" : ""}${dCrit}%</span>` : ""
+    ].filter(Boolean).join("") || `<span style="color:var(--text-sub);">基础属性相当</span>`;
+
+    el.style.display = "flex";
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+        <strong style="font-size:12px;color:var(--gold-bright);">✦ 新获${slotLabels[nw.slot] || "仙装"}对比（已暂存行囊）</strong>
+        <button type="button" class="btn-ghost" style="padding:1px 7px;font-size:10.5px;" data-action="compare-keep-bag">留袋 ✕</button>
+      </div>
+      <div class="gear-cmp-grid">
+        <div class="gear-cmp-col new-item">
+          <span style="font-size:9.5px;color:var(--jade);">新掉落 · ${RARITIES[nw.rarity].name}</span>
+          <strong style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${nw.rarity}">${nw.name}${nw.lvl ? ` +${nw.lvl}` : ""}</strong>
+          <span style="font-size:10px;color:var(--text-sub);">${formatGearStats(nw)}</span>
+        </div>
+        <div class="gear-cmp-col">
+          <span style="font-size:9.5px;color:var(--text-sub);">当前穿戴${curLvl > 0 ? ` · 淬火+${curLvl}` : ""}</span>
+          <strong style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${cur.rarity}">${cur.name}${curLvl ? ` +${curLvl}` : ""}</strong>
+          <span style="font-size:10px;color:var(--text-sub);">${formatGearStats(cur)}</span>
+        </div>
+      </div>
+      <div class="gear-delta-row">
+        <span style="color:var(--text-sub);">${curLvl > 0 ? `继承+${previewLvl}差值：` : "换装差值："}</span>${deltas}
+      </div>
+      <div class="gear-cmp-actions">
+        ${curLvl > 0 ? `<button type="button" class="btn-jade" style="padding:4px 9px;font-size:11px;" data-action="compare-equip-transfer">换装并继承+${curLvl}</button>` : ""}
+        <button type="button" class="${curLvl > 0 ? "btn-ghost" : "btn-jade"}" style="padding:4px 9px;font-size:11px;" data-action="compare-equip-direct">${curLvl > 0 ? "直接换装" : "一键换装"}</button>
+        <button type="button" class="btn-gold" style="padding:4px 9px;font-size:11px;" data-action="compare-smelt-new">熔炼+${nw.sell || 15}石</button>
+      </div>
+    `;
+  }
+
+  function acquireGearItem(item, opts = {}) {
     if (!game || !item) return;
     if (game.goalStats) game.goalStats.craftOrLoot = (game.goalStats.craftOrLoot || 0) + 1;
     const cur = game.equippedGear[item.slot];
-    if (!cur || item.power > cur.power) {
-      if (cur) game.gearBag.unshift(cur);
+    if (!cur) {
       game.equippedGear[item.slot] = item;
       syncFlyingSwords();
       addFloat(`佩装【${item.name}】↑`, arena.player.x, arena.player.y - 62, RARITIES[item.rarity].color, 18, true);
-      showToast(`★ 自动换上高阶仙装【${item.name}】（${formatGearStats(item)}）`);
+      showToast(`★ 穿戴仙装【${item.name}】（${formatGearStats(item)}）`);
     } else {
-      if (game.gearBag.length < 18) {
-        game.gearBag.unshift(item);
-        addFloat(`收入行囊·${item.name}`, arena.player.x, arena.player.y - 48, RARITIES[item.rarity].color, 15);
-      } else {
-        game.stones += item.sell;
-        addFloat(`满袋化灵石 +${item.sell}`, arena.player.x, arena.player.y - 48, "#ffe28a", 15);
+      // Never silently overwrite an occupied or enhanced slot! Store safely & show non-blocking compare card.
+      game.gearBag.unshift(item);
+      while (game.gearBag.length > 24) {
+        const dropIdx = game.gearBag.findLastIndex(x => x !== item && (x.lvl || 0) === 0);
+        const rm = game.gearBag.splice(dropIdx >= 0 ? dropIdx : game.gearBag.length - 1, 1)[0];
+        if (rm) game.stones += (rm.sell || 12);
+      }
+      pendingCompareGear = item;
+      renderGearCompareCard();
+      addFloat(`✦ 拾获【${item.name}】· 可对比换装`, arena.player.x, arena.player.y - 54, RARITIES[item.rarity].color, 16, true);
+      if (!opts.silentToast) {
+        showToast(`✦ 拾获【${item.name}】已收入行囊，可在右下对比卡一键换装或无损继承淬火！`);
       }
     }
     saveGame();
     updateHud();
   }
 
+  function softCapPct(rawPct, knee = 1.80, cap = 3.20) {
+    if (rawPct <= knee) return Math.max(-0.5, rawPct);
+    const span = Math.max(0.1, cap - knee);
+    return knee + span * (1 - Math.exp(-(rawPct - knee) / span));
+  }
+
   function getMaxHp(g) {
     const gt = getGearTotals(g);
     const sb = getStarChartBonuses(g);
     const tortoiseMult = hasStarCore(g, "black_tortoise") ? 1.18 : 1.0;
-    return Math.round((REALMS[g.realm].maxHp + (g.maxHpBonus || 0) + gt.hp + sb.hp) * (g.statMultBonus || 1) * tortoiseMult);
+    const realmHp = (REALMS[g.realm] && REALMS[g.realm].maxHp) || 80;
+    const statCap = 1 + softCapPct(Math.max(0, (g.statMultBonus || 1) - 1), 0.75, 1.40);
+    return Math.round((realmHp + (g.maxHpBonus || 0) + gt.hp + sb.hp) * statCap * tortoiseMult);
   }
 
   function getCombatStats(g) {
     const r = REALMS[g.realm] || REALMS.mortal;
     const gt = getGearTotals(g);
     const maxHp = getMaxHp(g);
-    const maxMp = Math.round(r.maxMp * (g.statMultBonus || 1));
+    const maxMp = Math.round(r.maxMp * (1 + Math.min(0.95, Math.max(0, (g.statMultBonus || 1) - 1))));
     const stars = getEquippedRelicStars(g);
-    const starScale = 1 + Math.max(0, stars - 1) * 0.25;
+    const starScale = 1 + Math.max(0, stars - 1) * 0.24;
     const mindBonus = g.loadout.mind === "sword_pierce" ? 14 : g.loadout.mind === "talisman_clear" ? 6 : 0;
     const relicBonus = Math.round(((g.loadout.relic === "frost_sword" ? 10 : g.loadout.relic === "soul_lamp" ? 9 : 5) * (g.loadout.relic ? starScale : 0)));
+    const starB = getStarChartBonuses(g);
     const years = Math.floor(((g.startAgeMonths || 216) + (g.elapsedMonths || 0)) / 12);
-    const ageMult = hasLaw(g, "age_might") ? (1 + Math.min(0.40, Math.floor(Math.max(0, years - 18) / 10) * 0.08)) : 1.0;
-    const karmaMult = hasLaw(g, "karma_resonance") ? (1 + Math.min(0.36, Object.keys(g.choices || {}).length * 0.06)) : 1.0;
 
-    let atk = (15 + r.power * 1.42 + gt.atk + (g.atkFlatBonus || 0) + (g.perk === "sword_bone" ? 8 : 0) + mindBonus + relicBonus) * (g.statMultBonus || 1) * ageMult * karmaMult;
-    if (hasLaw(g, "wealth_power")) atk *= (1 + Math.min(0.85, Math.floor(g.stones / 100) * 0.06));
-    const stoneCurioLv = getCurioStacks(g, "curio_stone_alchemy");
-    if (stoneCurioLv > 0) atk *= (1 + Math.floor((g.stones || 0) / 100) * 0.06 * stoneCurioLv);
-    if (getCurioStacks(g, "curio_shield_thorns") > 0 && arena && arena.player && (arena.player.shieldHp || 0) > 0) {
-      atk *= (1 + 0.32 * getCurioStacks(g, "curio_shield_thorns"));
-    }
-    if (arena && arena.astralForm && arena.astralForm.active) {
-      atk *= (arena.astralForm.mode === "demonic" ? 1.95 : 1.75);
-    }
+    // Bucket 1: Flat Foundation ATK
+    const baseAtk = 16 + r.power * 1.62 + gt.atk + (g.atkFlatBonus || 0) + (g.perk === "sword_bone" ? 8 : 0) + mindBonus + relicBonus + starB.atk;
+
+    // Bucket 2: Passive Additive Bonus Pool (with diminishing soft-cap so late builds feel strong without 1-shotting bosses!)
     const setB = getActiveSetBonus(g);
-    if (setB && setB.atkMult) atk *= (1 + setB.atkMult);
+    const ks = getKarmaState(g);
+    const celPh = typeof getCurrentCelestialPhase === "function" ? getCurrentCelestialPhase() : { id: "dawn" };
+    const stoneCurioLv = getCurioStacks(g, "curio_stone_alchemy");
+    const shieldThornLv = getCurioStacks(g, "curio_shield_thorns");
+    let rawPassivePct = Math.max(0, (g.statMultBonus || 1) - 1);
+    if (hasLaw(g, "age_might")) rawPassivePct += Math.min(0.40, Math.floor(Math.max(0, years - 18) / 10) * 0.08);
+    if (hasLaw(g, "karma_resonance")) rawPassivePct += Math.min(0.36, Object.keys(g.choices || {}).length * 0.06);
+    if (hasLaw(g, "wealth_power")) rawPassivePct += Math.min(0.55, Math.floor((g.stones || 0) / 100) * 0.05);
+    if (stoneCurioLv > 0) rawPassivePct += Math.min(0.60, Math.floor((g.stones || 0) / 100) * 0.05 * stoneCurioLv);
+    if (shieldThornLv > 0 && arena && arena.player && (arena.player.shieldHp || 0) > 0) rawPassivePct += Math.min(0.64, 0.28 * shieldThornLv);
+    if (setB && setB.atkMult) rawPassivePct += setB.atkMult;
+    rawPassivePct += ks.mode === "demonic" ? 0.24 : ks.mode === "righteous" ? 0.08 : 0;
+    rawPassivePct += celPh.id === "noon" ? 0.14 : (celPh.id === "blood_dusk" ? (ks.mode === "demonic" ? 0.34 : 0.18) : 0);
+    if (hasRunBoon("gold_alchemist")) rawPassivePct += Math.min(0.36, Math.floor((g.stones || 0) / 100) * 0.04);
+    if (arena && arena.player && (arena.player.boonOverloadTimer || 0) > 0) rawPassivePct += 0.38;
+    const cappedPassivePct = softCapPct(rawPassivePct, 1.80, 3.20);
+
+    // Bucket 3: Active Stance / Burst / Climate Multiplier (capped cleanly at 2.85x)
+    const revMult = (arena.reversedDomainTimer || 0) > 0 ? 1.28 : 1.0;
+    const isHeavyPosture = arena.weaponPosture === "xuanzhong";
+    const postureAtkMult = isHeavyPosture ? 1.42 : 1.0;
+    const rushGlass = !!(arena.bossRush && arena.bossRush.active && arena.rushAffixes.includes("rush_glass"));
+    const rushAtkMult = rushGlass ? 1.50 : 1.0;
+    const astralMult = (arena && arena.astralForm && arena.astralForm.active) ? (arena.astralForm.mode === "demonic" ? 1.72 : 1.58) : 1.0;
+    const clim = getActiveDungeonClimate();
+    const climateAtkMult = (clim && clim.id === "blood_haze") ? 1.18 : 1.0;
+    const activeMult = Math.min(2.85, revMult * postureAtkMult * rushAtkMult * astralMult * climateAtkMult);
 
     const dmgReduce = gt.dr
       + (g.pet.id === "turtle" ? 8 : 0)
@@ -12580,37 +12993,39 @@ const ART = {
       + (g.loadout.relic === "jade_seal" ? Math.round(10 * starScale) : 0);
 
     const tier = getComboTier(arena.comboCount);
-    const crit = Math.min(0.95, 0.14 + gt.crit + (g.perk === "sword_bone" ? 0.1 : 0) + (g.pet.id === "fox" ? 0.12 : 0) + (hasLaw(g, "crit_lotus") ? 0.25 : 0) + (currentOmen(g).id === "wolf_star" ? 0.18 : 0));
-    const speed = 3.85 * (1 + gt.spd) * (hasLaw(g, "void_haste") ? 1.24 : 1.0) * (1 + tier.spdBonus * 0.35);
+    const lowHpBoonCrit = (hasRunBoon("blood_intent") && g.hp <= maxHp * 0.55) ? 0.25 : 0;
+    const crit = Math.min(0.95, 0.14 + gt.crit + (g.perk === "sword_bone" ? 0.1 : 0) + (g.pet.id === "fox" ? 0.12 : 0) + (hasLaw(g, "crit_lotus") ? 0.25 : 0) + (currentOmen(g).id === "wolf_star" ? 0.18 : 0) + lowHpBoonCrit);
+    const climSpdMult = (clim && clim.id === "sword_wind") ? 1.10 : 1.0;
+    const climHaste = (clim && clim.id === "sword_wind") ? 0.15 : 0;
+    const climCritMult = (clim && clim.id === "thunder_loom") ? 0.18 : 0;
+    const speed = 3.85 * (1 + gt.spd) * (hasLaw(g, "void_haste") ? 1.22 : 1.0) * (1 + tier.spdBonus * 0.35) * climSpdMult;
     const pineCrit = hasDestinyFruit(g, "eternal_pine") ? 0.12 : 0;
-    const pineMult = hasDestinyFruit(g, "eternal_pine") ? Math.min(0.60, Math.floor((g.stones || 0) / 80) * 0.05) : 0;
-    const revMult = (arena.reversedDomainTimer || 0) > 0 ? 1.30 : 1.0;
-    const isHeavyPosture = arena.weaponPosture === "xuanzhong";
-    const postureAtkMult = isHeavyPosture ? 1.46 : 1.0;
-    const postureHasteBonus = isHeavyPosture ? -0.14 : 0.28;
-    const postureSpdMult = isHeavyPosture ? 0.92 : 1.15;
-    const rushGlass = !!(arena.bossRush && arena.bossRush.active && arena.rushAffixes.includes("rush_glass"));
+    const pineMult = hasDestinyFruit(g, "eternal_pine") ? Math.min(0.50, Math.floor((g.stones || 0) / 80) * 0.04) : 0;
+    const postureHasteBonus = isHeavyPosture ? -0.14 : 0.26;
+    const postureSpdMult = isHeavyPosture ? 0.92 : 1.14;
     const finalMaxHp = rushGlass ? Math.max(40, Math.round(maxHp * 0.5)) : maxHp;
-    const rushAtkMult = rushGlass ? 1.55 : 1.0;
-    const ks = getKarmaState(g);
-    const karmaAtkMult = ks.mode === "demonic" ? 1.26 : ks.mode === "righteous" ? 1.08 : 1.0;
     const karmaDr = (g.karmaDrBonus || 0) + (ks.mode === "righteous" ? 10 : 0);
     const gourdHaste = (arena.player && (arena.player.gourdHasteTimer || 0) > 0) ? 0.30 : 0;
     const gourdCrit = (arena.player && (arena.player.gourdCritTimer || 0) > 0) ? 0.25 : 0;
-    const starB = getStarChartBonuses(g);
     const styleSpec = getStyleRankSpec(arena ? (arena.styleScore || 0) : 0);
-    const celPh = typeof getCurrentCelestialPhase === "function" ? getCurrentCelestialPhase() : { id: "dawn" };
-    const celAtkMult = celPh.id === "noon" ? 1.16 : (celPh.id === "blood_dusk" ? (ks.mode === "demonic" ? 1.42 : 1.22) : 1.0);
     const celDrBonus = celPh.id === "dawn" ? 10 : 0;
-    const celCritMult = celPh.id === "blood_dusk" ? 0.28 : 0;
+    const celCritMult = celPh.id === "blood_dusk" ? 0.24 : 0;
+    const finalAtk = Math.max(8, Math.round(baseAtk * (1 + cappedPassivePct) * activeMult));
+
     return {
-      maxHp: finalMaxHp + starB.hp, maxMp: maxMp + starB.mp,
-      atk: Math.round((atk + starB.atk) * revMult * postureAtkMult * rushAtkMult * karmaAtkMult * celAtkMult),
+      maxHp: finalMaxHp, maxMp: maxMp + starB.mp,
+      atk: finalAtk,
       dmgReduce: dmgReduce + (isHeavyPosture ? 14 : 0) + karmaDr + starB.dr + celDrBonus,
-      crit: Math.min(0.97, crit + pineCrit + gourdCrit + starB.crit),
-      critMult: 1.6 + styleSpec.critDmg + starB.critMult + celCritMult + (hasLaw(g, "crit_lotus") ? 0.22 : 0) + pineMult + ((setB && setB.critMult) || 0),
-      atkHaste: Math.max(0.65, 1 + gt.spd + starB.spd + styleSpec.haste + postureHasteBonus + gourdHaste + (arena.domain ? 0.42 : 0) + ((arena.reversedDomainTimer || 0) > 0 ? 0.35 : 0)),
-      speed: speed * postureSpdMult * (1 + gourdHaste + starB.spd)
+      crit: Math.min(0.95, crit + pineCrit + gourdCrit + starB.crit),
+      critMult: Math.min(3.35, 1.6 + styleSpec.critDmg + starB.critMult + celCritMult + climCritMult + (hasLaw(g, "crit_lotus") ? 0.22 : 0) + pineMult + ((setB && setB.critMult) || 0)),
+      atkHaste: Math.max(0.65, Math.min(2.65, 1 + gt.spd + starB.spd + styleSpec.haste + postureHasteBonus + gourdHaste + climHaste + (arena.domain ? 0.38 : 0) + ((arena.reversedDomainTimer || 0) > 0 ? 0.30 : 0))),
+      speed: speed * postureSpdMult * (1 + gourdHaste + starB.spd),
+      statBreakdown: {
+        baseAtk: Math.round(baseAtk),
+        rawPassivePct: Number(rawPassivePct.toFixed(3)),
+        cappedPassivePct: Number(cappedPassivePct.toFixed(3)),
+        activeMult: Number(activeMult.toFixed(3))
+      }
     };
   }
 
@@ -13121,10 +13536,17 @@ const ART = {
     arena.sanctumMode = true;
     arena.towerMode = false;
     arena.bossRush = null;
+    arena.dungeonMap = null;
+    arena.runBoons = [];
+    arena.boonRerollsLeft = 1;
+    arena.slashEchoCounter = 0;
+    arena.player.boonOverloadTimer = 0;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
     arena.nearbyProp = null;
     renderPropInteractHud();
+    renderRunBoonStrip();
+    renderGearCompareCard();
     arena.enemies = [];
     arena.projectiles = [];
     arena.drops = [];
@@ -13266,13 +13688,20 @@ const ART = {
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
     arena.nearbyProp = null;
-    renderPropInteractHud();
     arena.stageIdx = Math.max(0, Math.min(STAGES.length - 1, stageIdx));
     arena.stageTechDone = false;
     arena.maxStageCombo = 0;
     arena.waveIdx = 0;
-    arena.roomBranch = "combat";
+    arena.roomBranch = "outpost";
     arena.towerMode = towerMode;
+    arena.runBoons = [];
+    arena.boonRerollsLeft = 1;
+    arena.slashEchoCounter = 0;
+    arena.player.boonOverloadTimer = 0;
+    arena.dungeonMap = towerMode ? null : generateDungeonMap(arena.stageIdx);
+    renderPropInteractHud();
+    renderRunBoonStrip();
+    renderGearCompareCard();
     arena.midEventSpawned = false;
     arena.stageElement = null;
     arena.domain = null;
@@ -13357,36 +13786,318 @@ const ART = {
     return "【寒潮弹幕】半血狂化散射妖丹，切换Y键剑轮阵斩碎弹幕！";
   }
 
-  // Spawn 2-Way Branching Room Portals after clearing Room 0 (`前哨试剑`)!
-  function spawnBranchingRoomPortals() {
-    const canvas = document.getElementById("fx-canvas");
-    const w = canvas.width || 1440, h = canvas.height || 900;
-    const pTop = clampToPlaza(w * 0.64, h * 0.42, w, h);
-    const pBot = clampToPlaza(w * 0.64, h * 0.64, w, h);
-    arena.props.push({
-      id: "branch_loot", kind: "branch_portal", branch: "elite_loot", portalArt: "portal_crimson_sword",
-      name: "⚔ 凶煞剑冢门", badge: "精英试剑 · 必爆高品仙装光柱",
-      x: pTop.x, y: pTop.y, r: 48, progress: 0
-    });
-    arena.props.push({
-      id: "branch_merch", kind: "branch_portal", branch: "merchant_event", portalArt: "portal_golden_lantern",
-      name: "🏮 奇遇云灯门", badge: "机缘古碑 · 云游仙商 · 寒霜剑碑",
-      x: pBot.x, y: pBot.y, r: 48, progress: 0
-    });
-    showToast("✦ 前路分岔：踏入【凶煞剑冢房(必掉仙装)】或【奇遇仙商房(货郎丹鼎)】！");
+  // ==================== M2: 5-LAYER EXPEDITION STAR-MAP & RUN-SCOPED BOONS ====================
+  function generateDungeonMap(stageIdx) {
+    const climKeys = Object.keys(DUNGEON_CLIMATES);
+    const pickClim = (offset) => climKeys[(stageIdx + offset + Math.floor(Math.random() * climKeys.length)) % climKeys.length];
+    const nodes = {
+      n0_0: { id: "n0_0", layer: 0, row: 0, type: "outpost",         climate: pickClim(0), next: ["n1_0", "n1_1"] },
+      n1_0: { id: "n1_0", layer: 1, row: 0, type: "elite_loot",      climate: pickClim(1), next: ["n2_0", "n2_1"] },
+      n1_1: { id: "n1_1", layer: 1, row: 1, type: "merchant_event",  climate: pickClim(2), next: ["n2_0", "n2_1"] },
+      n2_0: { id: "n2_0", layer: 2, row: 0, type: "elemental_vault", climate: pickClim(3), next: ["n3_0", "n3_1"] },
+      n2_1: { id: "n2_1", layer: 2, row: 1, type: "spirit_spring",   climate: "spirit_mist", next: ["n3_0", "n3_1"] },
+      n3_0: { id: "n3_0", layer: 3, row: 0, type: "vanguard_clash",  climate: pickClim(1), next: ["n4_0"] },
+      n3_1: { id: "n3_1", layer: 3, row: 1, type: "mystery_shrine",  climate: pickClim(2), next: ["n4_0"] },
+      n4_0: { id: "n4_0", layer: 4, row: 0, type: "boss",            climate: stageIdx >= 3 ? "blood_haze" : "thunder_loom", next: [] }
+    };
+    // Ensure sibling branches in Layers 1-3 never share identical climate when rolled randomly
+    if (nodes.n1_0.climate === nodes.n1_1.climate) nodes.n1_1.climate = climKeys[(climKeys.indexOf(nodes.n1_0.climate) + 1) % climKeys.length];
+    if (nodes.n2_0.climate === nodes.n2_1.climate) nodes.n2_0.climate = climKeys[(climKeys.indexOf(nodes.n2_1.climate) + 2) % climKeys.length];
+    if (nodes.n3_0.climate === nodes.n3_1.climate) nodes.n3_1.climate = climKeys[(climKeys.indexOf(nodes.n3_0.climate) + 1) % climKeys.length];
+    return {
+      stageIdx,
+      layers: [["n0_0"], ["n1_0", "n1_1"], ["n2_0", "n2_1"], ["n3_0", "n3_1"], ["n4_0"]],
+      nodes,
+      currentNodeId: "n0_0",
+      clearedIds: [],
+      boonClaimedNodeIds: [],
+      activeClimate: nodes.n0_0.climate
+    };
+  }
+
+  function getCurrentDungeonNode() {
+    if (!arena.dungeonMap) return null;
+    return arena.dungeonMap.nodes[arena.dungeonMap.currentNodeId] || null;
+  }
+
+  function getSelectableNextNodeIds() {
+    const dm = arena.dungeonMap;
+    if (!dm) return [];
+    const cur = dm.nodes[dm.currentNodeId];
+    if (!cur || !cur.next || !cur.next.length) return [];
+    const roomSpec = DUNGEON_ROOM_TYPES[cur.type];
+    const hostiles = arena.enemies.filter(e => !e.isTreasure && e.hp > 0).length;
+    const isCleared = dm.clearedIds.includes(cur.id) || (roomSpec && roomSpec.peaceful);
+    if (!isCleared || hostiles > 0) return [];
+    return cur.next.slice();
+  }
+
+  function renderRunBoonStrip() {
+    const el = document.getElementById("run-boon-strip");
+    if (!el) return;
+    if (!game || arena.sanctumMode || !arena.runBoons || !arena.runBoons.length) {
+      el.innerHTML = "";
+      return;
+    }
+    el.innerHTML = arena.runBoons.map(bid => {
+      const b = RUN_BOONS.find(x => x.id === bid);
+      if (!b) return "";
+      return `<span class="run-boon-chip" data-tip="${escTip("秘境道韵 · " + b.name, b.desc)}">✦ ${b.name}</span>`;
+    }).join("");
+  }
+
+  function openRunBoonDraftModal(sourceNodeId = null, isReroll = false) {
+    if (!game) return;
+    const pool = RUN_BOONS.filter(b => !arena.runBoons.includes(b.id));
+    if (!pool.length) {
+      showToast("本趟秘境已悟全阶道韵！");
+      return;
+    }
+    if (isReroll) {
+      if ((arena.boonRerollsLeft || 0) <= 0) return;
+      arena.boonRerollsLeft -= 1;
+    }
+    arena.pendingBoonNodeId = sourceNodeId || (arena.dungeonMap ? arena.dungeonMap.currentNodeId : null);
+    const shuffled = pool.slice().sort(() => Math.random() - 0.5);
+    activeRunBoonChoices = shuffled.slice(0, Math.min(3, shuffled.length));
+    arena.paused = true;
+    openModal(`
+      <div class="drawer-mural-banner" style="height:92px;">
+        <img src="${ART.banner_relic}" alt="秘境道韵三选一" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">秘境临时道韵</span>
+            <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">秘境悟道 · 择一局内机制变体</h2>
+          </div>
+          <span class="tag-chip mythic">本趟已悟 ${arena.runBoons.length} 道</span>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-sub);padding:2px 2px;">
+        秘境道韵仅在本趟出征生效，可与你的剑阵、法宝、仙葫和大道法则产生强力联动构筑！
+      </div>
+      <div class="law-draft-grid">
+        ${activeRunBoonChoices.map(b => `
+          <button type="button" class="law-card-btn" data-pick-run-boon="${b.id}">
+            <img src="${ART[b.art]}" alt="${b.name}" />
+            <div style="font-family:var(--font-serif);font-size:18px;font-weight:700;color:#fff3c4;">${b.name}</div>
+            <span class="tag-chip done" style="font-size:11px;padding:2px 9px;">★ ${b.badge}</span>
+            <span style="font-size:11.5px;color:var(--text-sub);line-height:1.45;">${b.desc}</span>
+          </button>
+        `).join("")}
+      </div>
+      <div class="draft-reroll-bar">
+        <span>局内流派构筑：每趟秘境可借此演化不同打法</span>
+        ${(arena.boonRerollsLeft || 0) > 0 && pool.length > 3
+          ? `<button type="button" class="btn-jade" data-action="reroll-run-boon">天机换韵（免费剩余 ${arena.boonRerollsLeft} 次）</button>`
+          : `<button type="button" class="btn-ghost" data-modal-close="1">暂缓稍后择取</button>`}
+      </div>
+    `, true);
+  }
+
+  function applyPickedRunBoon(boonId) {
+    const spec = RUN_BOONS.find(b => b.id === boonId);
+    if (!spec || !game) return;
+    if (!arena.runBoons.includes(spec.id)) {
+      arena.runBoons.push(spec.id);
+    }
+    if (arena.dungeonMap && arena.pendingBoonNodeId && !arena.dungeonMap.boonClaimedNodeIds.includes(arena.pendingBoonNodeId)) {
+      arena.dungeonMap.boonClaimedNodeIds.push(arena.pendingBoonNodeId);
+    }
+    arena.props = arena.props.filter(pr => pr.kind !== "boon_stele");
+    if (arena.nearbyProp && arena.nearbyProp.kind === "boon_stele") arena.nearbyProp = null;
+    closeModal();
+    Sound.fanfare();
+    addRipple(arena.player.x, arena.player.y + 18, 120, "#ffe28a");
+    addFloat(`✦ 悟得秘境道韵【${spec.name}】！`, arena.player.x, arena.player.y - 58, "#ffe28a", 20, true);
+    showToast(`✦ 悟得局内道韵【${spec.name}】：${spec.desc}`);
+    renderRunBoonStrip();
+    renderPropInteractHud();
     updateHud();
   }
 
-  function enterChosenBranchRoom(branchKind) {
+  function spawnMapExitGateAndBoon() {
+    const dm = arena.dungeonMap;
+    if (!dm || arena.towerMode || arena.sanctumMode) return;
+    const cur = dm.nodes[dm.currentNodeId];
+    if (!cur) return;
+    if (!dm.clearedIds.includes(cur.id)) dm.clearedIds.push(cur.id);
+    const roomSpec = DUNGEON_ROOM_TYPES[cur.type];
     const canvas = document.getElementById("fx-canvas");
     const w = canvas.width || 1440, h = canvas.height || 900;
-    arena.props = arena.props.filter(p => p.kind !== "branch_portal");
-    arena.roomBranch = branchKind;
-    arena.waveIdx = 1;
-    const startPos = clampToPlaza(w * 0.34, h * 0.54, w, h);
+
+    if (roomSpec && roomSpec.grantsBoon && !dm.boonClaimedNodeIds.includes(cur.id) && !arena.props.some(p => p.kind === "boon_stele")) {
+      const bPos = clampToPlaza(w * 0.56, h * 0.52, w, h);
+      arena.props.push({
+        id: "boon_stele_" + cur.id, kind: "boon_stele", nodeId: cur.id, art: "relic_jade_seal", onLotus: true,
+        name: "✦ 秘境道韵玉简", badge: "点击或按 Enter 悟道三选一（局内强力构筑）",
+        x: bPos.x, y: bPos.y, r: 42, progress: 0
+      });
+    }
+    if (cur.next && cur.next.length > 0 && !arena.props.some(p => p.kind === "map_node_gate")) {
+      const gPos = clampToPlaza(w * 0.72, h * 0.53, w, h);
+      const nextNames = cur.next.map(nid => DUNGEON_ROOM_TYPES[dm.nodes[nid].type].name).join(" / ");
+      arena.props.push({
+        id: "map_node_gate_" + cur.id, kind: "map_node_gate", portalArt: "portal_golden_lantern",
+        name: `🧭 秘境星图阵门（第 ${cur.layer + 2}/5 层）`,
+        badge: `点击/Enter 或按 9 择路：${nextNames}`,
+        x: gPos.x, y: gPos.y, r: 48, progress: 0
+      });
+      showToast(`✦ 第 ${cur.layer + 1}/5 层已清！拾取道韵后点击/Enter【秘境星图阵门】或按 9 择路前行`);
+    }
+    updateHud();
+  }
+
+  function openDungeonMapModal() {
+    if (!game || !arena.dungeonMap || arena.sanctumMode || arena.towerMode) {
+      showToast("进入任意章节秘境后可按 9 查看 5 层秘境分支星图！");
+      return;
+    }
+    const dm = arena.dungeonMap;
+    const stg = STAGES[dm.stageIdx] || STAGES[0];
+    const selectable = getSelectableNextNodeIds();
+    const curNode = dm.nodes[dm.currentNodeId];
+    const clim = getActiveDungeonClimate();
+    const layerNames = ["第一层 · 前哨", "第二层 · 分岔A", "第三层 · 异变", "第四层 · 分岔B", "第五层 · 妖王"];
+
+    openModal(`
+      <div class="drawer-mural-banner" style="height:86px;">
+        <img src="${ART[stg.arenaArt]}" alt="${stg.name}" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">秘境星图 · 第 ${dm.stageIdx + 1} 章</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:4px;">${stg.name} · 五层探索星图</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-modal-close="1">返回秘境 ✕</button>
+        </div>
+      </div>
+      <div class="pity-bar-card">
+        <span>当前节点：<b>${DUNGEON_ROOM_TYPES[curNode.type].icon} ${DUNGEON_ROOM_TYPES[curNode.type].name}</b>${clim ? ` · ${clim.icon} ${clim.name}（${clim.badge}）` : ""}</span>
+        <span style="color:var(--gold-bright);">${selectable.length > 0 ? "★ 本层已清 · 请点选亮起节点前行" : "清扫本层妖潮后解锁前行分岔"}</span>
+      </div>
+      <div class="dmap-stage" id="dmap-stage">
+        <svg class="dmap-svg-edges" id="dmap-svg-edges"></svg>
+        <div class="dmap-layers-grid">
+          ${dm.layers.map((col, cIdx) => `
+            <div class="dmap-col">
+              <div class="dmap-col-hdr">${layerNames[cIdx]}</div>
+              ${col.map(nid => {
+                const nd = dm.nodes[nid];
+                const rSpec = DUNGEON_ROOM_TYPES[nd.type];
+                const cSpec = DUNGEON_CLIMATES[nd.climate];
+                const isCur = dm.currentNodeId === nid;
+                const isCleared = dm.clearedIds.includes(nid);
+                const canPick = selectable.includes(nid);
+                const cls = isCur ? "current" : canPick ? "selectable" : isCleared ? "cleared" : "locked";
+                const stateBadge = isCur ? "当前" : canPick ? "前往 ▸" : isCleared ? "✓ 已清" : "未达";
+                return `
+                  <button type="button" class="dmap-node-card ${cls}" data-dmap-node-id="${nid}" ${canPick ? `data-dungeon-node="${nid}"` : "disabled"} data-tip="${escTip(rSpec.name + " · " + cSpec.name, `${rSpec.reward}｜天候：${cSpec.desc}`)}">
+                    <div class="dmap-node-head">
+                      <strong class="dmap-node-title" style="color:${canPick ? "#fff3c4" : isCur ? "#80ffea" : "#dfece8"};">${rSpec.icon} ${rSpec.name}</strong>
+                      <span class="dmap-node-status" style="color:${canPick ? "#ffe28a" : isCur ? "#70ffe6" : "var(--text-sub)"};">${stateBadge}</span>
+                    </div>
+                    <span class="dmap-climate-pill">${cSpec.icon} ${cSpec.name}</span>
+                    <span style="font-size:10.5px;color:var(--text-sub);line-height:1.38;">${rSpec.reward}</span>
+                  </button>`;
+              }).join("")}
+            </div>
+          `).join("")}
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--text-sub);padding:2px 4px;">
+        <span>本趟秘境已悟道韵：<b>${arena.runBoons.length} 道</b>${arena.runBoons.length ? "（" + arena.runBoons.map(id => (RUN_BOONS.find(b => b.id === id) || {}).name).join(" · ") + "）" : "（击败精英/秘窟/灵泉可三选一悟道）"}</span>
+        <span>随时按 <b style="color:var(--gold-bright);">9</b> 检视路线</span>
+      </div>
+    `, true);
+
+    const drawDungeonMapEdges = () => {
+      const stageEl = document.getElementById("dmap-stage");
+      const svgEl = document.getElementById("dmap-svg-edges");
+      if (!stageEl || !svgEl) return;
+      const sRect = stageEl.getBoundingClientRect();
+      if (!sRect.width || !sRect.height) return;
+      svgEl.setAttribute("viewBox", `0 0 ${sRect.width.toFixed(1)} ${sRect.height.toFixed(1)}`);
+      const rects = {};
+      stageEl.querySelectorAll("[data-dmap-node-id]").forEach(el => {
+        rects[el.getAttribute("data-dmap-node-id")] = el.getBoundingClientRect();
+      });
+      const svgParts = [];
+      Object.values(dm.nodes).forEach(nd => {
+        const aR = rects[nd.id];
+        if (!aR) return;
+        const x1 = aR.right - sRect.left;
+        const y1 = aR.top + aR.height * 0.5 - sRect.top;
+        (nd.next || []).forEach(tid => {
+          const bR = rects[tid];
+          if (!bR) return;
+          const x2 = bR.left - sRect.left;
+          const y2 = bR.top + bR.height * 0.5 - sRect.top;
+          const activeEdge = nd.id === dm.currentNodeId && selectable.includes(tid);
+          const passedEdge = dm.clearedIds.includes(nd.id) && (dm.clearedIds.includes(tid) || dm.currentNodeId === tid);
+          const col = activeEdge ? "#ffe28a" : passedEdge ? "#70ffe6" : "rgba(216,179,106,0.28)";
+          const sw = activeEdge ? 2.6 : passedEdge ? 2.2 : 1.4;
+          const dx = Math.max(12, (x2 - x1) * 0.52);
+          svgParts.push(
+            `<path d="M ${x1.toFixed(1)} ${y1.toFixed(1)} C ${(x1 + dx).toFixed(1)} ${y1.toFixed(1)}, ${(x2 - dx).toFixed(1)} ${y2.toFixed(1)}, ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" ${activeEdge ? 'stroke-dasharray="5 4"' : ""} />`
+          );
+          if (activeEdge || passedEdge) {
+            svgParts.push(`<circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="3" fill="${col}" />`);
+            svgParts.push(`<circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="3" fill="${col}" />`);
+          }
+        });
+      });
+      svgEl.innerHTML = svgParts.join("");
+    };
+    drawDungeonMapEdges();
+    requestAnimationFrame(drawDungeonMapEdges);
+  }
+
+  function enterDungeonNode(nodeId) {
+    const dm = arena.dungeonMap;
+    if (!dm || !dm.nodes[nodeId]) return false;
+    const selectable = getSelectableNextNodeIds();
+    if (!selectable.includes(nodeId)) {
+      showToast("请先清扫当前节点妖潮，再选择相连的前行节点！");
+      return false;
+    }
+    const nd = dm.nodes[nodeId];
+    const canvas = document.getElementById("fx-canvas");
+    const w = canvas.width || 1440, h = canvas.height || 900;
+    closeModal();
+    dm.currentNodeId = nodeId;
+    dm.activeClimate = nd.climate;
+    arena.waveIdx = nd.layer;
+    arena.roomBranch = nd.type;
+    arena.props = [];
+    arena.projectiles = [];
+    arena.waterPools = [];
+    arena.fireZones = [];
+    arena.frostPools = [];
+    arena.nearbyProp = null;
+    renderPropInteractHud();
+    const startPos = clampToPlaza(w * 0.31, h * 0.54, w, h);
     arena.player.x = startPos.x;
     arena.player.y = startPos.y;
-    addRipple(startPos.x, startPos.y + 24, 72, "#70ffe6");
+    addRipple(startPos.x, startPos.y + 24, 78, "#70ffe6");
+    Sound.fanfare();
+    const rSpec = DUNGEON_ROOM_TYPES[nd.type];
+    const cSpec = DUNGEON_CLIMATES[nd.climate];
+    showToast(`${rSpec.icon} 步入第 ${nd.layer + 1}/5 层【${rSpec.name}】· 天候：${cSpec.icon}${cSpec.name}（${cSpec.badge}）`);
+    spawnCurrentWave();
+    return true;
+  }
+
+  // Backward-compatible wrapper if any legacy portal invokes branching room portals
+  function spawnBranchingRoomPortals() {
+    spawnMapExitGateAndBoon();
+  }
+
+  function enterChosenBranchRoom(branchKind) {
+    const dm = arena.dungeonMap;
+    if (dm) {
+      const selectable = getSelectableNextNodeIds();
+      const target = selectable.find(nid => dm.nodes[nid].type === branchKind) || selectable[0];
+      if (target) { enterDungeonNode(target); return; }
+    }
     spawnCurrentWave();
   }
 
@@ -13403,8 +14114,8 @@ const ART = {
       const pool = ["wolf", "warden", "serpent", "puppet", "shadow", "sentinel"];
       const bossId = pool[(fl - 1) % pool.length];
       const minions = [pool[fl % pool.length], pool[(fl + 1) % pool.length]];
-      spawnEnemyPack(minions, w * 0.60, h * 0.52, 110, 0.8 + fl * 0.22);
-      spawnSingleEnemy(bossId, w * 0.65, h * 0.54, 1.2 + fl * 0.28, true, `锁妖塔#${fl} · ${ENEMIES[bossId].name}`);
+      spawnEnemyPack(minions, w * 0.60, h * 0.52, 110, 0.85 + fl * 0.20);
+      spawnSingleEnemy(bossId, w * 0.65, h * 0.54, 1.15 + fl * 0.24, true, `锁妖塔#${fl} · ${ENEMIES[bossId].name}`);
       spawnStageInteractiveHazards();
       showBossCutIn(ENEMIES[bossId].art, `锁妖塔 #${fl} · ${ENEMIES[bossId].name}`, getBossMechLabel(bossId));
       updateHud();
@@ -13412,75 +14123,13 @@ const ART = {
     }
 
     const stg = STAGES[arena.stageIdx];
+    const dm = arena.dungeonMap;
+    const curNode = dm ? dm.nodes[dm.currentNodeId] : null;
+    const roomType = curNode ? curNode.type : (arena.waveIdx >= 4 ? "boss" : "outpost");
+    const stageScale = STAGE_SCALING[arena.stageIdx] || 1.0;
 
-    if (arena.waveIdx === 1 && !arena.midEventSpawned) {
-      arena.midEventSpawned = true;
-      if (arena.roomBranch === "merchant_event") {
-        // Encounter Room: Wandering Merchant + Cauldron + Elemental Stele + Light Guards!
-        refreshMarketStock();
-        const mPos = clampToPlaza(w * 0.48, h * 0.37, w, h);
-        const cPos = clampToPlaza(w * 0.35, h * 0.40, w, h);
-        const steleElem = (arena.stageIdx % 2 === 0) ? "frost" : "thunder";
-        const sPos = clampToPlaza(w * 0.48, h * 0.70, w, h);
-        arena.props.push({
-          id: "field_merchant", kind: "merchant_npc", art: "actor_lu", onLotus: true,
-          name: "云游仙商 · 百宝囊", badge: "点击/Enter 选购神装灵丹",
-          x: mPos.x, y: mPos.y, r: 40, progress: 0
-        });
-        arena.props.push({
-          id: "field_cauldron", kind: "cauldron", art: "furnace",
-          name: "灵脉丹鼎", badge: "点击/Enter 凝练回春仙丹",
-          x: cPos.x, y: cPos.y, r: 38, progress: 0
-        });
-        const encPos = clampToPlaza(w * 0.63, h * 0.43, w, h);
-        arena.props.push({
-          id: "field_encounter", kind: "encounter_stele", art: "relic_jade_seal", onLotus: true,
-          name: "📜 太古机缘古碑", badge: "点击/Enter 展卷抉择大道奇遇！",
-          x: encPos.x, y: encPos.y, r: 40, progress: 0
-        });
-        arena.props.push({
-          id: "elem_stele", kind: "elem_stele", elem: steleElem,
-          art: steleElem === "frost" ? "relic_frost_sword" : "relic_soul_lamp",
-          name: steleElem === "frost" ? "玄冥寒霜剑碑" : "九霄紫电剑碑",
-          badge: steleElem === "frost" ? "剑气附寒霜减速35%" : "剑气必引紫电链雷",
-          x: sPos.x, y: sPos.y, r: 38, progress: 0
-        });
-      } else {
-        // Elite Sword-Tomb Room: Blood Altar + Rough Jade + Guaranteed High-Rarity Gear Elite!
-        const altPos = clampToPlaza(w * 0.50, h * 0.36, w, h);
-        const jPos = clampToPlaza(w * 0.63, h * 0.38, w, h);
-        arena.props.push({
-          id: "blood_altar", kind: "blood_altar", art: "icon_blade",
-          name: "心魔血剑坛", badge: "献25%气血 · 飞剑+2!",
-          x: altPos.x, y: altPos.y, r: 38, progress: 0
-        });
-        arena.props.push({
-          id: "jade_" + Date.now(), kind: "rough_jade", art: "item_rough_jade", name: "剑冢原石",
-          x: jPos.x, y: jPos.y, r: 32, hp: 3, maxHp: 3
-        });
-      }
-    }
-
-    if (arena.waveIdx === 2) {
-      spawnTreasureSpirit(w * 0.62, h * 0.62);
-    }
-
-    if (arena.waveIdx < stg.waves.length) {
-      const mult = (arena.waveIdx === 1 && arena.roomBranch === "elite_loot") ? 1.22 : 1.0;
-      spawnStageInteractiveHazards();
-      spawnEnemyPack(stg.waves[arena.waveIdx], w * 0.62, h * 0.54, 120, mult);
-      if (arena.waveIdx === 1 && arena.roomBranch === "elite_loot" && arena.enemies.length > 0) {
-        arena.enemies[0].guaranteedGearRarity = Math.min(4, 2 + Math.floor(arena.stageIdx / 2));
-      }
-    } else if (arena.waveIdx === stg.waves.length) {
-      // Clean props before Final Chapter Boss Duel so the plaza is an epic uncluttered Boss Arena!
-      arena.props = arena.props.filter(p => p.kind === "elem_stele");
-      const bId = stg.boss;
-      spawnStageInteractiveHazards();
-      spawnSingleEnemy(bId, w * 0.64, h * 0.53, 1.48, true, `镇守妖王 · ${ENEMIES[bId].name}`);
-      Sound.drum(0.24);
-      showBossCutIn(ENEMIES[bId].art, ENEMIES[bId].name, getBossMechLabel(bId));
-    } else {
+    // Chapter Boss already beaten (waveIdx > 4) -> spawn progression portals cleanly (0->1->2->3->4!)
+    if (arena.waveIdx > 4) {
       unlockAchievement("ach_exp");
       if (arena.stageIdx === STAGES.length - 1) {
         game.trialCompleted = true;
@@ -13494,12 +14143,12 @@ const ART = {
             x: gatePos.x, y: gatePos.y, r: 50, progress: 0
           });
           arena.props.push({
-            id: "portal_tower_end", kind: "portal", name: `无尽试剑 · 太虚锁妖内坛`,
+            id: "portal_tower_end", kind: "portal", name: "无尽试剑 · 太虚锁妖内坛", badge: "点击/Enter 挑战镇妖古塔",
             nextIdx: 3, toTower: true, x: towPos.x, y: towPos.y, r: 44, progress: 0
           });
           if (game && game.stageStars) game.stageStars[4] = 3;
           spawnGearDrop(w * 0.56, h * 0.53, 4);
-          showToast("★★★ 天门道影已破！达成三星通关，踏入【九霄仙门】飞升证道！");
+          showToast("★★★ 天门道影已破！达成三星通关，点击/Enter【九霄仙门】飞升证道！");
         }
       } else if (!arena.props.some(p => p.kind === "portal")) {
         if (game && game.stageStars) {
@@ -13509,24 +14158,131 @@ const ART = {
           const earned  = 1 + (gotTech ? 1 : 0) + (gotHp ? 1 : 0);
           const prevS   = game.stageStars[arena.stageIdx] || 0;
           game.stageStars[arena.stageIdx] = Math.max(prevS, earned);
-          addFloat(`${"★".repeat(earned)} 秘境荡平！(${STAGES[arena.stageIdx].name})`, arena.player.x, arena.player.y - 72, "#ffe28a", 21, true);
-          showToast(`✦ 【${STAGES[arena.stageIdx].name}】达成 ${"★".repeat(earned)}${"☆".repeat(3 - earned)}！按 T 可开启星辉秘宝`);
+          addFloat(`${"★".repeat(earned)} 秘境荡平！(${stg.name})`, arena.player.x, arena.player.y - 72, "#ffe28a", 21, true);
+          showToast(`✦ 【${stg.name}】达成 ${"★".repeat(earned)}${"☆".repeat(3 - earned)}！按 T 可开启星辉秘宝`);
           renderStageDamageRecap(true);
         }
-        const nextIdx = arena.stageIdx === 2 ? 4 : (arena.stageIdx + 1);
+        // Continuous 5-chapter progression: 0 -> 1 -> 2 -> 3 (古修剑冢) -> 4 (九霄天门)!
+        const nextIdx = Math.min(STAGES.length - 1, arena.stageIdx + 1);
         const pPos = clampToPlaza(w * 0.66, h * 0.46, w, h);
         const hPos = clampToPlaza(w * 0.66, h * 0.64, w, h);
         arena.props.push({
-          id: "portal_next", kind: "portal", name: `前往 · ${STAGES[nextIdx].name}`, badge: "进入下一章秘境",
+          id: "portal_next", kind: "portal", name: `前往第 ${nextIdx + 1} 章 · ${STAGES[nextIdx].name}`, badge: "点击/Enter 贯通下一章秘境",
           nextIdx, toTower: false, x: pPos.x, y: pPos.y, r: 48, progress: 0
         });
         arena.props.push({
-          id: "portal_sanctum", kind: "sanctum_portal", name: "返回 · 听雨洞府主城", badge: "炼丹铸器 · 休整叙旧",
+          id: "portal_sanctum", kind: "sanctum_portal", name: "返回 · 听雨洞府主城", badge: "点击/Enter 炼丹铸器休整",
           x: hPos.x, y: hPos.y, r: 42, progress: 0
         });
         spawnDrop("herb", w * 0.54, h * 0.52);
-        spawnDrop("stone", w * 0.57, h * 0.55, 42);
+        spawnDrop("stone", w * 0.57, h * 0.55, 48 + arena.stageIdx * 16);
       }
+      updateHud();
+      return;
+    }
+
+    if (roomType === "merchant_event") {
+      refreshMarketStock();
+      const mPos = clampToPlaza(w * 0.48, h * 0.37, w, h);
+      const cPos = clampToPlaza(w * 0.38, h * 0.44, w, h);
+      const encPos = clampToPlaza(w * 0.58, h * 0.42, w, h);
+      const steleElem = (arena.stageIdx % 2 === 0) ? "frost" : "thunder";
+      const sPos = clampToPlaza(w * 0.48, h * 0.69, w, h);
+      arena.props.push({
+        id: "field_merchant", kind: "merchant_npc", art: "actor_lu", onLotus: true,
+        name: "云游仙商 · 百宝囊", badge: "点击/Enter 选购神装灵丹", x: mPos.x, y: mPos.y, r: 40, progress: 0
+      });
+      arena.props.push({
+        id: "field_cauldron", kind: "cauldron", art: "furnace",
+        name: "灵脉丹鼎", badge: "点击/Enter 凝练回春仙丹", x: cPos.x, y: cPos.y, r: 38, progress: 0
+      });
+      arena.props.push({
+        id: "field_encounter", kind: "encounter_stele", art: "relic_jade_seal", onLotus: true,
+        name: "📜 太古机缘古碑", badge: "点击/Enter 展卷抉择大道奇遇！", x: encPos.x, y: encPos.y, r: 40, progress: 0
+      });
+      arena.props.push({
+        id: "elem_stele", kind: "elem_stele", elem: steleElem,
+        art: steleElem === "frost" ? "relic_frost_sword" : "relic_soul_lamp",
+        name: steleElem === "frost" ? "玄冥寒霜剑碑" : "九霄紫电剑碑",
+        badge: steleElem === "frost" ? "点击/Enter 剑气附寒霜减速35%" : "点击/Enter 剑气必引紫电链雷",
+        x: sPos.x, y: sPos.y, r: 38, progress: 0
+      });
+      spawnMapExitGateAndBoon();
+      return;
+    }
+
+    if (roomType === "spirit_spring") {
+      const spPos = clampToPlaza(w * 0.45, h * 0.50, w, h);
+      arena.props.push({
+        id: "node_spring_" + Date.now(), kind: "immortal_spring", art: "prop_bagua_secret_gate",
+        name: "太初满灵泉", badge: "点击/Enter 全满气血/仙葫/剑意 · 永久剑攻+8",
+        x: spPos.x, y: spPos.y, r: 44, progress: 0
+      });
+      spawnMapExitGateAndBoon();
+      return;
+    }
+
+    if (roomType === "mystery_shrine") {
+      const altPos = clampToPlaza(w * 0.44, h * 0.41, w, h);
+      const jPos = clampToPlaza(w * 0.52, h * 0.66, w, h);
+      const encPos = clampToPlaza(w * 0.58, h * 0.43, w, h);
+      arena.props.push({
+        id: "blood_altar", kind: "blood_altar", art: "icon_blade",
+        name: "心魔血剑坛", badge: "点击/Enter 主动献25%气血 → 飞剑+2",
+        x: altPos.x, y: altPos.y, r: 38, progress: 0
+      });
+      arena.props.push({
+        id: "jade_" + Date.now(), kind: "rough_jade", art: "item_rough_jade", name: "剑冢原石", badge: "击碎爆出高品仙装",
+        x: jPos.x, y: jPos.y, r: 32, hp: 3, maxHp: 3
+      });
+      arena.props.push({
+        id: "field_encounter", kind: "encounter_stele", art: "relic_jade_seal", onLotus: true,
+        name: "📜 太古机缘古碑", badge: "点击/Enter 展卷抉择大道奇遇！",
+        x: encPos.x, y: encPos.y, r: 40, progress: 0
+      });
+      spawnMapExitGateAndBoon();
+      return;
+    }
+
+    if (roomType === "boss") {
+      arena.props = arena.props.filter(p => p.kind === "elem_stele");
+      const bId = stg.boss;
+      spawnStageInteractiveHazards();
+      spawnSingleEnemy(bId, w * 0.64, h * 0.53, stageScale, true, stg.bossTitle || `镇守妖王 · ${ENEMIES[bId].name}`);
+      Sound.drum(0.24);
+      showBossCutIn(ENEMIES[bId].art, stg.bossTitle || ENEMIES[bId].name, getBossMechLabel(bId));
+      updateHud();
+      return;
+    }
+
+    // Combat rooms: outpost / elite_loot / elemental_vault / vanguard_clash
+    spawnStageInteractiveHazards();
+    if (roomType === "elite_loot") {
+      const jPos = clampToPlaza(w * 0.45, h * 0.37, w, h);
+      arena.props.push({
+        id: "jade_" + Date.now(), kind: "rough_jade", art: "item_rough_jade", name: "剑冢原石", badge: "击碎爆出仙装",
+        x: jPos.x, y: jPos.y, r: 32, hp: 3, maxHp: 3
+      });
+      spawnEnemyPack(stg.waves[1], w * 0.62, h * 0.54, 125, stageScale * 1.18, true);
+      if (arena.enemies.length > 0) {
+        arena.enemies[0].guaranteedGearRarity = Math.min(4, 2 + Math.floor(arena.stageIdx / 2) + (getActiveDungeonClimate() && getActiveDungeonClimate().id === "blood_haze" ? 1 : 0));
+      }
+    } else if (roomType === "elemental_vault") {
+      const steleElem = (arena.stageIdx % 2 === 0) ? "thunder" : "frost";
+      const sPos = clampToPlaza(w * 0.44, h * 0.68, w, h);
+      arena.props.push({
+        id: "elem_stele", kind: "elem_stele", elem: steleElem,
+        art: steleElem === "frost" ? "relic_frost_sword" : "relic_soul_lamp",
+        name: steleElem === "frost" ? "玄冥寒霜剑碑" : "九霄紫电剑碑",
+        badge: steleElem === "frost" ? "点击/Enter 剑气附寒霜减速35%" : "点击/Enter 剑气必引紫电链雷",
+        x: sPos.x, y: sPos.y, r: 38, progress: 0
+      });
+      spawnTreasureSpirit(w * 0.60, h * 0.64);
+      spawnEnemyPack(stg.waves[1], w * 0.62, h * 0.50, 120, stageScale * 1.05, false);
+    } else if (roomType === "vanguard_clash") {
+      spawnEnemyPack(stg.waves[2], w * 0.63, h * 0.53, 130, stageScale * 1.24, true);
+    } else {
+      spawnEnemyPack(stg.waves[0], w * 0.62, h * 0.54, 120, stageScale, false);
     }
     updateHud();
   }
@@ -13559,25 +14315,34 @@ const ART = {
     });
   }
 
-  function spawnEnemyPack(ids, cx, cy, spread, mult = 1.0) {
+  function spawnEnemyPack(ids, cx, cy, spread, mult = 1.0, forceTacticalSquad = false) {
     const startIdx = arena.enemies.length;
     ids.forEach((id, i) => {
       const ang = (i * Math.PI * 2) / ids.length + Math.random() * 0.4;
       const dist = 45 + Math.random() * spread;
       spawnSingleEnemy(id, cx + Math.cos(ang) * dist, cy + Math.sin(ang) * dist * 0.65, mult, false);
     });
-    // V17 Tactical Synergy Formation: Frontline Shield-Vanguard + Backline Hex-Chanter (post-prologue)!
+    // M2 3-Role Tactical Squad Synergy: Frontline Shield-Vanguard + Backline Hex-Chanter + Flank Assassin!
     const spawned = arena.enemies.slice(startIdx);
-    if (spawned.length >= 2 && game && game.openingChoice) {
-      const van = spawned.find(e => e.id === "warden" || e.id === "puppet") || spawned[0];
+    const allowTactical = forceTacticalSquad || (game && (game.openingChoice || arena.stageIdx > 0 || arena.towerMode));
+    if (spawned.length >= 2 && allowTactical) {
+      const van = spawned.find(e => e.id === "warden" || e.id === "puppet" || e.id === "sentinel") || spawned[0];
       van.tacticalRole = "shield_vanguard";
-      van.frontShieldHp = Math.max(36, Math.round(van.maxPosture * 0.85));
+      van.frontShieldHp = Math.max(40, Math.round(van.maxPosture * 0.90));
       van.maxFrontShieldHp = van.frontShieldHp;
       van.shieldFacing = Math.PI;
       const chanter = spawned.slice().reverse().find(e => e !== van);
       if (chanter) {
         chanter.tacticalRole = "hex_chanter";
         chanter.attackType = "shot";
+      }
+      const flanker = spawned.find(e => e !== van && e !== chanter);
+      if (flanker) {
+        flanker.tacticalRole = "flank_assassin";
+        flanker.flankCd = 3.2 + Math.random() * 1.4;
+        flanker.flankTelegraph = 0;
+        flanker.flankTargetX = flanker.x;
+        flanker.flankTargetY = flanker.y;
       }
     }
   }
@@ -13592,8 +14357,10 @@ const ART = {
     const w = canvas.width || 1440, h = canvas.height || 900;
     const pos = clampToPlaza(x, y, w, h);
     const pactHpMult = game && hasPact(game, "frenzy_hp") ? 1.25 : 1.0;
-    const hp = Math.round(spec.hp * mult * (isBoss ? 1.55 : 0.84) * pactHpMult);
-    const maxPos = isBoss ? 105 : 46;
+    const clim = getActiveDungeonClimate();
+    const climAtkMult = (clim && clim.id === "blood_haze") ? 1.18 : 1.0;
+    const hp = Math.round(spec.hp * mult * (isBoss ? 2.15 : 0.92) * pactHpMult);
+    const maxPos = isBoss ? (118 + arena.stageIdx * 24) : (46 + arena.stageIdx * 8);
     const hasWard = (id === "warden" && isBoss) || id === "sentinel" || id === "trial_gate";
     const wardVal = hasWard ? Math.round(maxPos * 0.65) : 0;
 
@@ -13601,7 +14368,7 @@ const ART = {
       uid: "e_" + Math.random().toString(36).slice(2),
       id, art: spec.art,
       name: customName || spec.name,
-      isBoss, isTreasure: false, enraged: !!(isBoss && game && hasPact(game, 'blood_moon')), beamCd: 3.2,
+      isBoss, isTreasure: false, enraged: !!(isBoss && game && hasPact(game, "blood_moon")), beamCd: 3.2,
       mech: hasWard ? "ward" : spec.mech,
       wardHp: wardVal, maxWardHp: wardVal,
       mirrorTimer: 0,
@@ -13610,15 +14377,15 @@ const ART = {
       r: isBoss ? 48 : 31,
       hp, maxHp: hp,
       posture: maxPos, maxPosture: maxPos,
-      atk: Math.max(6, Math.round(spec.attack * mult * 0.65)),
-      heavy: Math.max(14, Math.round(spec.heavy * mult * 0.62)),
+      atk: Math.max(7, Math.round(spec.attack * mult * 0.70 * climAtkMult)),
+      heavy: Math.max(15, Math.round(spec.heavy * mult * 0.66 * climAtkMult)),
       state: "chase",
       timer: 0.95 + Math.random() * 1.0,
       windupDur: isBoss ? 1.02 : 0.84,
       aimX: 0, aimY: 0,
       attackType: (id === "warden" || id === "sentinel" || id === "trial_thunder") ? "slam" : (id === "serpent" || id === "shadow") ? "shot" : "charge",
-      partHp: isBoss ? Math.max(60, Math.round(hp * 0.30)) : 0,
-      maxPartHp: isBoss ? Math.max(60, Math.round(hp * 0.30)) : 0,
+      partHp: isBoss ? Math.max(72, Math.round(hp * 0.30)) : 0,
+      maxPartHp: isBoss ? Math.max(72, Math.round(hp * 0.30)) : 0,
       weakpointExposed: isBoss,
       partSevered: false,
       airborneZ: 0,
@@ -13977,6 +14744,23 @@ const ART = {
       triggerChainLightning(sx + Math.cos(ang) * 45, sy + Math.sin(ang) * 30, st.atk * 0.68, 3);
     }
 
+    // M2 Run Boon 【剑影回响】: Every 3rd slash launches 3 piercing phantom sword blades!
+    if (!fromClone && hasRunBoon("sword_echo")) {
+      arena.slashEchoCounter = (arena.slashEchoCounter || 0) + 1;
+      if (arena.slashEchoCounter >= 3) {
+        arena.slashEchoCounter = 0;
+        [-0.22, 0, 0.22].forEach(off => {
+          const ea = ang + off;
+          arena.projectiles.push({
+            friendly: true, kind: "wave", x: sx + Math.cos(ea) * 18, y: sy + Math.sin(ea) * 12,
+            vx: Math.cos(ea) * 15.5, vy: Math.sin(ea) * 15.5 * 0.72, ang: ea,
+            r: 22, dmg: Math.round(st.atk * 0.92), life: 0.68, color: "#80ffea", pierce: true, hitSet: new Set()
+          });
+        });
+        addFloat("✦ 剑影回响 · 三剑齐射！", p.x, p.y - 62, "#80ffea", 15, true);
+      }
+    }
+
     if (!fromClone && (hasLaw(game, "void_haste") || (step >= 2 && hasDestinyFruit(game, "void_phantom")))) {
       const cx = p.x - p.facing * 56, cy = p.y + 18;
       fireManualSlash(true, cx, cy, step);
@@ -14213,6 +14997,24 @@ const ART = {
       arena.flashColor = thunderSyn ? "#ebd6ff" : "#ffe8a3";
       addFloat(thunderSyn ? `九天雷帝 · 轰雷 ×${totalExplosions}！` : `万剑归宗 · 爆印 ×${totalExplosions}！`, p.x, p.y - 56, thunderSyn ? "#e2b8ff" : "#ffe8a3", 22, true);
       game.mp = Math.min(st.maxMp, (game.mp || 0) + totalExplosions * 5);
+      if (hasRunBoon("recall_nova")) {
+        let clearedOrbs = 0;
+        for (let pi = arena.projectiles.length - 1; pi >= 0; pi--) {
+          const pr = arena.projectiles[pi];
+          if (!pr.friendly && Math.hypot(pr.x - p.x, pr.y - p.y) < 240) {
+            spawnSparks(pr.x, pr.y, 6, 0, 3.14, "#70ffe6");
+            arena.projectiles.splice(pi, 1);
+            clearedOrbs += 1;
+          }
+        }
+        spawnDistortionRing(p.x, p.y, 215, "#70ffe6");
+        arena.enemies.slice().forEach(ne => {
+          if (ne.hp > 0 && Math.hypot(ne.x - p.x, ne.y - p.y) < 225) {
+            damageEnemy(ne, Math.round(st.atk * 1.15), false, 18, Math.atan2(ne.y - p.y, ne.x - p.x), 8, true);
+          }
+        });
+        addFloat(clearedOrbs > 0 ? `✦ 万剑归墟 · 震散妖丹×${clearedOrbs}！` : "✦ 万剑归墟 · 剑莲震爆！", p.x, p.y - 78, "#80ffea", 17, true);
+      }
     } else {
       addFloat("收剑归鞘！", p.x, p.y - 46, "#66ffe3", 17);
     }
@@ -14266,20 +15068,29 @@ const ART = {
 
     for (const e of arena.enemies.slice()) {
       const nearThreat = Math.hypot(e.x - (p.x + dx * 55), e.y - (p.y + dy * 55)) < e.r + 135 || Math.hypot(e.x - startX, e.y - startY) < e.r + 135;
-      if ((e.state === "windup" || e.state === "lunge" || e.mirrorTimer > 0) && nearThreat) {
+      if ((e.state === "windup" || e.state === "lunge" || e.mirrorTimer > 0 || (e.flankTelegraph || 0) > 0) && nearThreat) {
         if (e.perilous) {
           // Perilous Red Attack -> Triggers Perfect Dodge Time-Dilation (`极限闪避·太虚凝时`)!
           perfectDodge = true;
         } else {
-          // Golden Attack -> Triggers See-Through Sword Deflect (`识破·万钧剑反`)!
+          // Golden Attack / Assassin Flank Telegraph -> Triggers See-Through Sword Deflect (`识破·万钧剑反`)!
           parried = true;
           e.mirrorTimer = 0;
           e.flinchTimer = 0.38;
+          if ((e.flankTelegraph || 0) > 0) {
+            e.flankTelegraph = 0;
+            e.state = "stun";
+            e.timer = 2.5;
+            addFloat("⚡ 识破影袭绕背 · 反杀失衡！", e.x, e.y - e.r - 32, "#70ffe6", 19, true);
+          }
           e.swordMarks = Math.min(6, (e.swordMarks || 0) + 3);
           const bloodMoonAmp = hasPact(game, "blood_moon") ? 1.35 : 1.0;
           damageEnemy(e, Math.round(st.atk * 3.6 * bloodMoonAmp), true, 64, Math.atan2(dy, dx), 12, true);
         }
       }
+    }
+    if (hasRunBoon("dash_clone")) {
+      arena.jadeDecoys.push({ x: startX, y: startY, facing: p.facing, life: 0.85, maxLife: 0.85, dmg: Math.round(st.atk * 1.65) });
     }
     // Dodging near an active Boss Beam or Shockwave Ring also triggers Perfect Dodge Witch-Time!
     if (!parried && !perfectDodge) {
@@ -14353,6 +15164,13 @@ const ART = {
         arena.thunderOrbs.push({ x: startX, y: startY, life: 5.0, tickCd: 0.1 });
       }
       updateHud();
+    }
+    if ((parried || perfectDodge) && hasRunBoon("parry_reset")) {
+      p.recallCd = 0;
+      p.dashCd = Math.min(p.dashCd, 0.22);
+      p.ultCd = Math.max(0, (p.ultCd || 0) - 4.0);
+      arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + 25);
+      addFloat("✦ 镜花水月 · 冷却全清 +25%剑意！", p.x, p.y - 78, "#ffe28a", 16, true);
     }
     if (hasDestinyFruit(game, "thunder_soul")) {
       for (let k = 0; k < 3; k++) {
@@ -14594,6 +15412,12 @@ const ART = {
     }
     if (hasKeepsake(game, "shen")) {
       p.shieldHp = Math.max(p.shieldHp || 0, Math.round(st.maxHp * 0.18));
+    }
+    if (hasRunBoon("gourd_overload")) {
+      p.boonOverloadTimer = 7.0;
+      p.gourdHasteTimer = Math.max(p.gourdHasteTimer || 0, 7.0);
+      p.hyperArmorTimer = Math.max(p.hyperArmorTimer || 0, 5.0);
+      addFloat("✦ 仙酿剑狂 · 剑攻+38% 霸体 7s！", p.x, p.y - 82, "#ffd166", 17, true);
     }
 
     Sound.gourdSipChime();
@@ -15354,7 +16178,9 @@ const ART = {
     }
     const omniLv = getCurioStacks(game, "curio_hongmeng_omni");
     const effCritMult = st.critMult + omniLv * 0.35;
-    let dmg = Math.max(1, Math.round(rawDmg * brokenMult * (isCrit ? effCritMult : 1.0)));
+    let hexGuardMult = ((e.hexBuffTimer || 0) > 0 && e.state !== "stun") ? 0.75 : 1.0;
+    const aerialBoonMult = (hasRunBoon("aerial_reign") && ((arena.player.z || 0) > 10 || arena.player.plunging)) ? 1.65 : 1.0;
+    let dmg = Math.max(1, Math.round(rawDmg * hexGuardMult * aerialBoonMult * brokenMult * (isCrit ? effCritMult : 1.0)));
     if (isCrit && getCurioStacks(game, "curio_crit_silk") > 0) {
       dmg = Math.round(dmg * (1 + 0.28 * getCurioStacks(game, "curio_crit_silk")));
       arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + 4);
@@ -15371,7 +16197,12 @@ const ART = {
     }
     if (e.isDummy && e.hp < 5000) e.hp = e.maxHp;
     recordDamageTelemetry(dmg);
-    arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + (isHeavySkill ? 3.2 : 1.6));
+    const intentAmp = (hasRunBoon("blood_intent") && game.hp <= st.maxHp * 0.55) ? 2.0 : 1.0;
+    arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + (isHeavySkill ? 3.2 : 1.6) * intentAmp);
+    if (aerialBoonMult > 1.0 && !e.isBoss && e.state !== "stun") {
+      e.state = "stun";
+      e.timer = Math.max(e.timer || 0, 1.35);
+    }
 
     if (hasGearAffix(game, "vamp_blade")) {
       ptCombat.vampHits += 1;
@@ -15407,6 +16238,21 @@ const ART = {
     if (arena.stageElement === "frost" || game.loadout.builder === "talisman_frost") e.chillTimer = 2.6;
     if (game.school === "talisman" || hasLaw(game, "yinyang")) e.burnTimer = 2.5;
 
+    // M2 Run Boon 【玄霜剑爆】: 38% chance on hit to unleash an icy splash nova!
+    if (hasRunBoon("frost_splash") && Math.random() < 0.38) {
+      e.chillTimer = Math.max(e.chillTimer || 0, 3.0);
+      addRipple(e.x, e.y + 12, 118, "#80ecff");
+      const splashDmg = Math.max(5, Math.round(st.atk * 0.52));
+      arena.enemies.slice().forEach(o => {
+        if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 125) {
+          o.chillTimer = Math.max(o.chillTimer || 0, 2.8);
+          o.hp -= splashDmg;
+          o.hitFlash = 0.10;
+          if (o.hp <= 0 && !o.isDummy) handleEnemyDeath(o, kAng);
+        }
+      });
+    }
+
     if (e.isBoss && !e.enraged && e.hp > 0 && e.hp / e.maxHp < 0.55) {
       e.enraged = true;
       e.beamCd = 1.1;
@@ -15434,6 +16280,7 @@ const ART = {
       }
     }
 
+    if (hasRunBoon("posture_shatter")) postureDmg = Math.round(postureDmg * 1.55);
     if (e.state !== "stun" && e.posture >= 0) {
       e.posture = Math.max(0, e.posture - postureDmg);
       if (e.posture <= 0) {
@@ -15445,6 +16292,17 @@ const ART = {
         if (hasLaw(game, "stagger_surge")) {
           game.mp = Math.min(st.maxMp, (game.mp || 0) + 15);
           arena.player.ultCd = Math.max(0, arena.player.ultCd - 1.5);
+        }
+        if (hasRunBoon("posture_shatter") && !e.isDummy) {
+          const shatterTrue = Math.max(12, Math.round(e.maxHp * 0.18));
+          e.hp -= shatterTrue;
+          addFloat(`💥 崩岳破势真伤 -${shatterTrue}！`, e.x, e.y - e.r - 46, "#ffd166", 20, true);
+        }
+        if (hasRunBoon("vampiric_qi")) {
+          const vHeal = Math.max(5, Math.round(st.maxHp * 0.08));
+          game.hp = Math.min(st.maxHp, game.hp + vHeal);
+          game.mp = Math.min(st.maxMp, (game.mp || 0) + 12);
+          addFloat(`✦ 噬灵归元 +${vHeal}血`, arena.player.x, arena.player.y - 44, "#70ffe6", 14);
         }
         Sound.drum(0.28);
         Sound.clang(0.85, 0.16);
@@ -15468,15 +16326,18 @@ const ART = {
       }
     }
 
-    const chainChance = arena.stageElement === "thunder" ? 0.78 : (hasLaw(game, "yinyang") || game.school === "talisman") ? 0.44 : 0;
-    if (chainChance > 0 && Math.random() < chainChance) {
-      const other = arena.enemies.find(o => o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 225);
-      if (other) {
+    const climNow = getActiveDungeonClimate();
+    const critChainCount = (isCrit && hasRunBoon("lightning_chain")) ? 2 : (isCrit && climNow && climNow.id === "thunder_loom") ? 1 : 0;
+    const baseChainChance = arena.stageElement === "thunder" ? 0.78 : (hasLaw(game, "yinyang") || game.school === "talisman") ? 0.44 : 0;
+    const totalJumps = critChainCount > 0 ? critChainCount : ((baseChainChance > 0 && Math.random() < baseChainChance) ? 1 : 0);
+    if (totalJumps > 0) {
+      const candidates = arena.enemies.filter(o => o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 245).slice(0, totalJumps);
+      candidates.forEach(other => {
         arena.lightnings.push({ x1: e.x, y1: e.y, x2: other.x, y2: other.y, t: 0, color: "#c792ff" });
-        other.hp -= Math.round(dmg * 0.56);
+        other.hp -= Math.round(dmg * 0.46);
         other.hitFlash = 0.1;
-        if (other.hp <= 0) handleEnemyDeath(other, kAng);
-      }
+        if (other.hp <= 0 && !other.isDummy) handleEnemyDeath(other, kAng);
+      });
     }
 
     addFloat(`${isCrit ? "暴 " : ""}-${dmg}`, e.x, e.y - e.r - 8, isCrit ? "#ffe26a" : "#ffffff", isCrit ? 20 : 15, isCrit);
@@ -15565,11 +16426,27 @@ const ART = {
     }
 
     const r = REALMS[game.realm];
-    const xpOrbVal = Math.max(3, Math.ceil((r.xpCap || 60) * (e.isBoss ? 0.42 : 0.16)));
-    const wolfStarMult = currentOmen(game).id === "wolf_star" ? 1.4 : 1.0;
+    const climD = getActiveDungeonClimate();
+    const curNodeD = getCurrentDungeonNode();
+    if (hasRunBoon("vampiric_qi")) {
+      const stV = getCombatStats(game);
+      const vHeal = Math.max(5, Math.round(stV.maxHp * 0.08));
+      game.hp = Math.min(stV.maxHp, game.hp + vHeal);
+      game.mp = Math.min(stV.maxMp, (game.mp || 0) + 12);
+      addFloat(`✦ 噬灵归元 +${vHeal}血`, arena.player.x, arena.player.y - 44, "#70ffe6", 14);
+    }
+    const xpOrbVal = Math.max(3, Math.ceil((r.xpCap || 60) * (e.isBoss ? 0.42 : (curNodeD && curNodeD.type === "vanguard_clash" ? 0.24 : 0.16))));
+    const wolfStarMult = (currentOmen(game).id === "wolf_star" ? 1.4 : 1.0) * (hasRunBoon("gold_alchemist") ? 1.45 : 1.0);
     spawnDrop("qi", e.x, e.y, xpOrbVal);
-    spawnDrop("stone", e.x + 12, e.y - 8, Math.round((e.isBoss ? 42 + arena.stageIdx * 22 : 9 + arena.stageIdx * 5) * wolfStarMult));
-    if (Math.random() < (e.isBoss ? 1.0 : 0.38)) spawnDrop("herb", e.x - 14, e.y + 8, 1);
+    spawnDrop("stone", e.x + 12, e.y - 8, Math.round((e.isBoss ? 48 + arena.stageIdx * 24 : 10 + arena.stageIdx * 5) * wolfStarMult));
+    const herbMult = ((climD && climD.id === "spirit_mist") || (curNodeD && curNodeD.type === "elemental_vault")) ? 2 : 1;
+    if (Math.random() < (e.isBoss ? 1.0 : 0.42)) {
+      for (let hb = 0; hb < herbMult; hb++) spawnDrop("herb", e.x - 14 + hb * 12, e.y + 8, 1);
+    }
+    if (climD && climD.id === "spirit_mist") {
+      const stM = getCombatStats(game);
+      game.mp = Math.min(stM.maxMp, (game.mp || 0) + Math.round(stM.maxMp * 0.12));
+    }
 
     const remainingHostiles = arena.enemies.filter(x => !x.isTreasure).length;
     if (remainingHostiles === 0 && !arena.waveTransitioning) {
@@ -15616,7 +16493,7 @@ const ART = {
         game.hp = Math.min(st.maxHp, game.hp + Math.round(st.maxHp * 0.25));
         game.mp = Math.min(st.maxMp, game.mp + Math.round(st.maxMp * 0.30));
         Sound.fanfare();
-        showToast(`★ 锁妖塔第 ${fl} 层破关！气血恢复25%，踏入阵眼冲第 ${game.towerFloor} 层`);
+        showToast(`★ 锁妖塔第 ${fl} 层破关！气血恢复25%，点击/Enter 阵眼冲第 ${game.towerFloor} 层`);
         const canvas = document.getElementById("fx-canvas");
         const pPos = clampToPlaza((canvas.width || 1440) * 0.65, (canvas.height || 900) * 0.54, canvas.width || 1440, canvas.height || 900);
         arena.props = arena.props.filter(p => p.kind !== "tower_next");
@@ -15630,7 +16507,7 @@ const ART = {
         const shenProp = arena.props.find(p => p.id === "shen_rescue" && !p.rescued);
         if (shenProp) {
           shenProp.rescued = true;
-          shenProp.bubble = "多谢拔剑相救！踏入光柱择一谢礼：";
+          shenProp.bubble = "多谢拔剑相救！点击或按 Enter 于玉莲台择一谢礼：";
           Sound.fanfare();
           const canvas = document.getElementById("fx-canvas");
           const w = canvas.width || 1440, h = canvas.height || 900;
@@ -15638,23 +16515,37 @@ const ART = {
           const p2 = clampToPlaza(w * 0.69, h * 0.62, w, h);
           arena.props.push({
             id: "ped_shen", kind: "pedestal", choice: "help", art: "item_lotus", onLotus: true,
-            name: "青莲灵契", badge: "沈清禾回春助阵", x: p1.x, y: p1.y, r: 42, progress: 0
+            name: "青莲灵契", badge: "点击/Enter 结契沈清禾回春助阵", x: p1.x, y: p1.y, r: 42, progress: 0
           });
           arena.props.push({
             id: "ped_sword", kind: "pedestal", choice: "trade", art: "relic_frost_sword",
-            name: "惊鸿剑诀", badge: "环身飞剑 +2", x: p2.x, y: p2.y, r: 42, progress: 0
+            name: "惊鸿剑诀", badge: "点击/Enter 获环身飞剑 +2", x: p2.x, y: p2.y, r: 42, progress: 0
           });
           // Trigger Prologue Portrait Cutscene!
           playCutscene("prologue_rescue");
-        } else if (arena.waveIdx === 0) {
-          // Room 0 cleared -> Present 2-Way Branching Expedition Portals!
-          arena.waveTransitioning = true;
-          const curEpoch = arena.stageEpoch;
-          setTimeout(() => {
-            if (!game || arena.stageEpoch !== curEpoch) return;
-            arena.waveTransitioning = false;
-            spawnBranchingRoomPortals();
-          }, 550);
+        } else if (arena.dungeonMap) {
+          const dm = arena.dungeonMap;
+          const curNode = dm.nodes[dm.currentNodeId];
+          if (curNode && curNode.next && curNode.next.length > 0) {
+            arena.waveTransitioning = true;
+            const curEpoch = arena.stageEpoch;
+            setTimeout(() => {
+              if (!game || arena.stageEpoch !== curEpoch) return;
+              arena.waveTransitioning = false;
+              spawnMapExitGateAndBoon();
+            }, 460);
+          } else {
+            // Layer 4 Chapter Boss Cleared -> Chapter Victory & Continuous Next-Chapter Portal!
+            if (curNode && !dm.clearedIds.includes(curNode.id)) dm.clearedIds.push(curNode.id);
+            arena.waveTransitioning = true;
+            arena.waveIdx = 5;
+            const curEpoch = arena.stageEpoch;
+            setTimeout(() => {
+              if (!game || arena.stageEpoch !== curEpoch) return;
+              if (arena.enemies.filter(x => !x.isTreasure).length === 0) spawnCurrentWave();
+              else arena.waveTransitioning = false;
+            }, 580);
+          }
         } else {
           arena.waveTransitioning = true;
           arena.waveIdx += 1;
@@ -15740,6 +16631,7 @@ const ART = {
     if (p.jumpCd > 0) p.jumpCd = Math.max(0, p.jumpCd - dt);
     if (p.blinkCd > 0) p.blinkCd = Math.max(0, p.blinkCd - dt);
     if (p.gourdHasteTimer > 0) p.gourdHasteTimer = Math.max(0, p.gourdHasteTimer - dt);
+    if (p.boonOverloadTimer > 0) p.boonOverloadTimer = Math.max(0, p.boonOverloadTimer - dt);
     if (p.gourdCritTimer > 0) p.gourdCritTimer = Math.max(0, p.gourdCritTimer - dt);
     if (arena.soulCd > 0) arena.soulCd = Math.max(0, arena.soulCd - dt);
     stepGhostRecorder(dt);
@@ -16581,6 +17473,31 @@ const ART = {
           frontAlly.hexBuffTimer = 0.6;
         } else e.hexLinkTarget = null;
       }
+      if (e.tacticalRole === "flank_assassin" && e.state !== "stun") {
+        if ((e.flankTelegraph || 0) > 0) {
+          e.flankTelegraph = Math.max(0, e.flankTelegraph - dt * witchMult);
+          if (e.flankTelegraph <= 0) {
+            addRipple(e.x, e.y + 12, 36, "#ff6b81");
+            e.x = e.flankTargetX;
+            e.y = e.flankTargetY;
+            addRipple(e.x, e.y + 12, 46, "#ff6b81");
+            if (Math.hypot(p.x - e.x, p.y - e.y) < e.r + 56 && (p.z || 0) < 18) {
+              hurtPlayer(Math.round(e.atk * 1.18));
+              addFloat("🗡 影袭背刺!", p.x, p.y - 46, "#ff7875", 15, true);
+            }
+            e.flankCd = 4.6 + Math.random() * 1.4;
+          }
+        } else {
+          e.flankCd = (e.flankCd === undefined ? 3.5 : e.flankCd) - dt * slowMult;
+          if (e.flankCd <= 0 && dist > 80 && dist < 440 && e.state === "chase") {
+            const behind = clampToPlaza(p.x - p.facing * 72, p.y + (Math.random() - 0.5) * 42, w, h);
+            e.flankTargetX = behind.x;
+            e.flankTargetY = behind.y;
+            e.flankTelegraph = 0.72;
+            addFloat("⚠ 影袭绕背 · 空格一闪反杀！", e.x, e.y - e.r - 26, "#ff8787", 14, true);
+          }
+        }
+      }
       if (e.isBoss && e.enraged && e.state !== "stun" && !e.partSevered) {
         e.beamCd = (e.beamCd === undefined ? 3.2 : e.beamCd) - dt;
         if (e.beamCd <= 0) {
@@ -16864,7 +17781,7 @@ const ART = {
       "branch_portal", "sanctum_portal", "merchant_npc", "companion_npc",
       "blood_altar", "bounty_board", "encounter_stele", "elem_stele",
       "cauldron", "taixu_craft_alchemy", "taixu_craft_forge", "portal",
-      "tower_next", "ascend_gate"
+      "tower_next", "ascend_gate", "boon_stele", "map_node_gate"
     ]);
     let closestInteract = null;
     let closestInteractDist = Infinity;
@@ -17112,6 +18029,10 @@ const ART = {
       spawnCurrentWave();
     } else if (pr.kind === "ascend_gate") {
       triggerAscendGateAction();
+    } else if (pr.kind === "boon_stele") {
+      openRunBoonDraftModal(pr.nodeId || null, false);
+    } else if (pr.kind === "map_node_gate") {
+      openDungeonMapModal();
     } else {
       return false;
     }
@@ -18628,20 +19549,20 @@ const ART = {
       if (ac.kind === "prop") {
         const pr = ac.obj;
         const pDist = game ? Math.hypot(arena.player.x - pr.x, arena.player.y - pr.y) : 999;
-        const showSub = pDist < 126 || pr.kind === "branch_portal" || pr.kind === "pedestal";
+        const showSub = pDist < 126 || pr.kind === "branch_portal" || pr.kind === "pedestal" || pr.kind === "map_node_gate" || pr.kind === "boon_stele";
         const accentCol = (pr.kind === "blood_altar" || pr.branch === "elite_loot") ? "#ff8780"
-          : (pr.kind === "branch_portal" || pr.kind === "sanctum_portal") ? "#70ffe6" : "#ffe89e";
+          : (pr.kind === "branch_portal" || pr.kind === "sanctum_portal" || pr.kind === "map_node_gate") ? "#70ffe6" : "#ffe89e";
 
         ctx.save();
         drawGroundedShadow(pr.x, pr.y + 24, pr.r * 0.96, pr.r * 0.44, 0.92);
 
-        if (pr.kind === "branch_portal" || pr.kind === "portal" || pr.kind === "tower_next" || pr.kind === "sanctum_portal") {
+        if (pr.kind === "branch_portal" || pr.kind === "portal" || pr.kind === "tower_next" || pr.kind === "sanctum_portal" || pr.kind === "map_node_gate") {
           const pArt = pr.portalArt || (pr.kind === "tower_next" ? "portal_crimson_sword" : "portal_golden_lantern");
           drawSprite(pArt, pr.x, pr.y - 26, 134);
           drawNameplatePill(pr.name, pr.badge, pr.x, pr.y - 96, accentCol, showSub);
         } else if (pr.kind === "ascend_gate") {
           drawSprite("heaven_gate", pr.x, pr.y - 34, 152);
-          drawNameplatePill(pr.name, pr.badge || "踏入渡劫飞升", pr.x, pr.y - 112, "#ffe89e", true);
+          drawNameplatePill(pr.name, pr.badge || "点击/Enter 渡劫飞升", pr.x, pr.y - 112, "#ffe89e", true);
         } else if (pr.onLotus) {
           drawSprite("lotus_pedestal_shrine", pr.x, pr.y + 12, 82);
           const isFullActor = pr.art && pr.art.startsWith("actor_");
@@ -18680,7 +19601,7 @@ const ART = {
         } else {
           if (pr.art) drawSprite(pr.art, pr.x, pr.y - (pr.kind === "bounty_board" ? 20 : 6), pr.kind === "bounty_board" ? 116 : pr.kind === "cauldron" ? 86 : 66);
           const subTxt = (pr.kind === "cauldron" && game)
-            ? ((game.inventory.herb || 0) >= 2 ? "灵草充足 · 点击控火或踏入凝丹" : (pr.badge || `灵草 ${game.inventory.herb || 0}/2`))
+            ? ((game.inventory.herb || 0) >= 2 ? "灵草充足 · 点击或按 Enter 凝丹" : (pr.badge || `灵草 ${game.inventory.herb || 0}/2`))
             : pr.badge;
           drawNameplatePill(pr.bubble || pr.name, subTxt, pr.x, pr.y - 54, accentCol, showSub);
         }
@@ -18739,6 +19660,35 @@ const ART = {
           ctx.beginPath(); ctx.moveTo(e.x, e.y - 22); ctx.lineTo(e.hexLinkTarget.x, e.hexLinkTarget.y - 22); ctx.stroke();
           ctx.setLineDash([]);
           ctx.restore();
+        }
+        // M2 Flank Assassin Crimson Blink Telegraph Vector
+        if (e.tacticalRole === "flank_assassin" && (e.flankTelegraph || 0) > 0) {
+          ctx.save();
+          ctx.globalCompositeOperation = "lighter";
+          ctx.strokeStyle = "rgba(255, 92, 108, 0.88)";
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([6, 5]);
+          ctx.beginPath(); ctx.moveTo(e.x, e.y - 14); ctx.lineTo(e.flankTargetX, e.flankTargetY - 14); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.beginPath(); ctx.ellipse(e.flankTargetX, e.flankTargetY + 12, 26, 12, 0, 0, Math.PI * 2); ctx.stroke();
+          ctx.restore();
+        }
+        if ((e.hexBuffTimer || 0) > 0) {
+          drawBaguaCircle(e.x, e.y + e.r * 0.56, e.r * 0.98, "#d69eff", nowSec * 2.2, 0.52, false);
+        }
+        if (e.tacticalRole && !e.isBoss) {
+          const rMap = { shield_vanguard: ["🛡 盾卫", "#ffe28a"], hex_chanter: ["🔮 妖师", "#e2b8ff"], flank_assassin: ["🗡 影袭", "#ff8787"] };
+          const rm = rMap[e.tacticalRole];
+          if (rm) {
+            ctx.save();
+            ctx.font = "bold 10px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "rgba(5, 13, 18, 0.82)";
+            ctx.fillRect(e.x - 24, e.y - e.r - 44 - liftZ, 48, 14);
+            ctx.fillStyle = rm[1];
+            ctx.fillText(rm[0], e.x, e.y - e.r - 33 - liftZ);
+            ctx.restore();
+          }
         }
 
         if (e.isTitan) {
@@ -19954,7 +20904,10 @@ const ART = {
 
     const subTag = document.getElementById("wave-sub-tag");
     const hostiles = arena.enemies.filter(e => !e.isTreasure).length;
-    const stageLabels = ["前哨试剑", arena.roomBranch === "merchant_event" ? "奇遇仙商" : "凶煞剑冢", "镇坛护法", "妖王决战"];
+    const dmHud = arena.dungeonMap;
+    const curNodeHud = dmHud ? dmHud.nodes[dmHud.currentNodeId] : null;
+    const curRoomSpec = curNodeHud ? DUNGEON_ROOM_TYPES[curNodeHud.type] : null;
+    const selectableHud = getSelectableNextNodeIds();
     if (arena.cloudFlight && arena.cloudFlight.active) subTag.textContent = "御剑空战";
     else if (arena.celestialSpire && arena.celestialSpire.active) subTag.textContent = "奇物深渊";
     else if (arena.bossRush && arena.bossRush.active) subTag.textContent = `⏱ ${arena.bossRush.elapsed.toFixed(1)}s · 碎核×${arena.bossRush.partBreaks}`;
@@ -19964,16 +20917,42 @@ const ART = {
     else if (arena.player.meditating) subTag.textContent = `☯ 周天吐纳 (${xpPct}%)`;
     else if (arena.towerMode) subTag.textContent = hostiles > 0 ? `余妖 ×${hostiles}` : "点击/Enter 进下一层";
     else if (arena.stageIdx === 0 && !game.openingChoice) subTag.textContent = hostiles > 0 ? `救沈清禾 (${hostiles})` : "点击/Enter 择玉莲仙缘";
-    else if (arena.props.some(x => x.kind === "branch_portal")) subTag.textContent = "双门择路 (点击/Enter)";
     else if (arena.props.some(x => x.kind === "ascend_gate")) subTag.textContent = "点击/Enter 叩九霄仙门";
-    else if (arena.props.some(x => x.kind === "portal")) subTag.textContent = "点击/Enter 启传送阵";
-    else subTag.textContent = stageLabels[Math.min(3, arena.waveIdx)];
+    else if (arena.props.some(x => x.kind === "portal")) subTag.textContent = "点击/Enter 启下章传送阵";
+    else if (selectableHud.length > 0) subTag.textContent = "本层已清 · 按 9 择路";
+    else if (curRoomSpec) subTag.textContent = `${curRoomSpec.icon} ${curRoomSpec.name}`;
+    else subTag.textContent = "秘境试剑";
+
+    const routeBtn = document.getElementById("btn-dungeon-route");
+    if (routeBtn) {
+      const showRoute = Boolean(
+        dmHud && !arena.sanctumMode && !arena.towerMode
+        && !(arena.bossRush && arena.bossRush.active)
+        && !(arena.cloudFlight && arena.cloudFlight.active)
+        && !(arena.celestialSpire && arena.celestialSpire.active)
+        && !(arena.stageIdx === 0 && !game.openingChoice)
+      );
+      if (showRoute && curNodeHud) {
+        const climH = getActiveDungeonClimate();
+        const climStr = climH ? ` · ${climH.icon}${climH.name}` : "";
+        routeBtn.style.display = "inline-flex";
+        routeBtn.classList.toggle("ready-pulse", selectableHud.length > 0);
+        routeBtn.textContent = selectableHud.length > 0
+          ? `🧭 星图择路 (第${curNodeHud.layer + 1}/5层已清 · 点选下层)${climStr}`
+          : `🧭 秘境星图 (第${curNodeHud.layer + 1}/5层)${climStr}`;
+      } else {
+        routeBtn.style.display = "none";
+      }
+    }
+    renderRunBoonStrip();
 
     const dotsRow = document.getElementById("wave-dots-row");
     if (arena.sanctumMode || arena.towerMode) {
       dotsRow.innerHTML = `<span class="wave-dot cleared"></span>`;
     } else {
-      dotsRow.innerHTML = [0, 1, 2, 3].map(i => `<span class="wave-dot ${i < arena.waveIdx ? "cleared" : i === arena.waveIdx ? "active" : ""}"></span>`).join("");
+      const curL = curNodeHud ? curNodeHud.layer : Math.min(4, arena.waveIdx);
+      const bossDone = arena.waveIdx > 4;
+      dotsRow.innerHTML = [0, 1, 2, 3, 4].map(i => `<span class="wave-dot ${(bossDone || i < curL) ? "cleared" : i === curL ? "active" : ""}"></span>`).join("");
     }
 
     document.getElementById("orb-img-slash").src = ART.icon_blade;
@@ -20181,6 +21160,8 @@ const ART = {
   }
   function closeModal() {
     clearTransientInputs();
+    const tipEl = document.getElementById("ling-tooltip");
+    if (tipEl) tipEl.style.display = "none";
     const bd = document.getElementById("modal-backdrop");
     const wasOpen = !!(bd && bd.classList.contains("open"));
     if (bd) bd.classList.remove("open");
@@ -20786,14 +21767,24 @@ const ART = {
               <button class="btn-jade" style="padding:3px 9px;font-size:11px;" data-action="smelt-all-gear">一键熔炼化灵石</button>
             </div>
             <div class="grid-2">
-              ${game.gearBag.slice(0, 6).map((it, idx) => `
-                <button class="visual-tile rarity-${it.rarity}" data-equip-bag="${idx}">
-                  <img src="${ART[it.art]}" alt="${it.name}" style="width:32px;height:32px;" />
-                  <div>
-                    <div style="font-size:11px;font-weight:700;" class="txt-r${it.rarity}">${it.name}</div>
-                    <div style="font-size:10px;color:var(--text-sub);">${formatGearStats(it)}</div>
-                  </div>
-                </button>`).join("")}
+              ${game.gearBag.slice(0, 8).map((it, idx) => {
+                const curEq = game.equippedGear[it.slot];
+                const canTransfer = Boolean(curEq && (curEq.lvl || 0) > (it.lvl || 0));
+                return `
+                  <div class="visual-tile rarity-${it.rarity}" style="flex-direction:column;align-items:stretch;gap:5px;padding:7px 8px;">
+                    <div style="display:flex;align-items:center;gap:7px;">
+                      <img src="${ART[it.art]}" alt="${it.name}" style="width:32px;height:32px;" />
+                      <div style="min-width:0;flex:1;">
+                        <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${it.rarity}">${it.name}${it.lvl ? ` +${it.lvl}` : ""}</div>
+                        <div style="font-size:10px;color:var(--text-sub);">${formatGearStats(it)}</div>
+                      </div>
+                    </div>
+                    <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;">
+                      ${canTransfer ? `<button type="button" class="gear-action-mini" style="border-color:#70ffe6;color:#9effec;" data-equip-bag-transfer="${idx}">继承+${curEq.lvl}换装</button>` : ""}
+                      <button type="button" class="gear-action-mini" data-equip-bag="${idx}">换装</button>
+                    </div>
+                  </div>`;
+              }).join("")}
             </div>
           </div>
         ` : ""}
@@ -21426,6 +22417,9 @@ const ART = {
     } else if (ev.code === "KeyM") {
       if (document.getElementById("modal-backdrop").classList.contains("open")) closeModal();
       else openWorldMapModal();
+    } else if (ev.code === "Digit9") {
+      if (document.getElementById("modal-backdrop").classList.contains("open")) closeModal();
+      else openDungeonMapModal();
     } else if (ev.code === "KeyT") {
       if (document.getElementById("modal-backdrop").classList.contains("open")) closeModal();
       else openObjectivesModal();
@@ -21789,7 +22783,76 @@ const ART = {
       closeDrawer();
       document.getElementById("welcome-screen").style.display = "flex";
       renderWelcomeScreen();
+      pendingCompareGear = null;
+      renderGearCompareCard();
       showToast("已清空当前本地存档。");
+      return;
+    }
+
+    // ==================== M2 CLICK HANDLERS ====================
+    if (m1Act === "open-dungeon-map") {
+      openDungeonMapModal();
+      return;
+    }
+    if (t.hasAttribute("data-dungeon-node")) {
+      enterDungeonNode(t.getAttribute("data-dungeon-node"));
+      return;
+    }
+    if (t.hasAttribute("data-pick-run-boon")) {
+      applyPickedRunBoon(t.getAttribute("data-pick-run-boon"));
+      return;
+    }
+    if (m1Act === "reroll-run-boon") {
+      openRunBoonDraftModal(arena.pendingBoonNodeId || null, true);
+      return;
+    }
+    if (m1Act === "compare-equip-transfer" && pendingCompareGear && game) {
+      const targetItem = pendingCompareGear;
+      const res = equipGearWithOptionalTransfer(targetItem, true);
+      Sound.clang(1.3, 0.12);
+      Sound.fanfare();
+      showToast(res && res.transferredLvl > 0
+        ? `★ 已换装【${targetItem.name} +${res.transferredLvl}】并无损继承淬火等级！`
+        : `★ 已换装【${targetItem.name}】！`);
+      return;
+    }
+    if (m1Act === "compare-equip-direct" && pendingCompareGear && game) {
+      const targetItem = pendingCompareGear;
+      equipGearWithOptionalTransfer(targetItem, false);
+      Sound.clang(1.2, 0.10);
+      showToast(`★ 已直接换装【${targetItem.name}】，旧装备已移入行囊！`);
+      return;
+    }
+    if (m1Act === "compare-smelt-new" && pendingCompareGear && game) {
+      const targetItem = pendingCompareGear;
+      const bIdx = game.gearBag.indexOf(targetItem);
+      if (bIdx >= 0) game.gearBag.splice(bIdx, 1);
+      const gain = targetItem.sell || 15;
+      game.stones += gain;
+      pendingCompareGear = null;
+      renderGearCompareCard();
+      Sound.qiOrb(3);
+      saveGame();
+      updateHud();
+      showToast(`已就地熔炼【${targetItem.name}】· 获灵石 +${gain}！`);
+      return;
+    }
+    if (m1Act === "compare-keep-bag") {
+      dismissGearCompareCard();
+      showToast("新仙装已妥善留存行囊，随时可在【行囊】中换装或熔炼。");
+      return;
+    }
+    if (t.hasAttribute("data-equip-bag-transfer") && game) {
+      const idx = Number(t.getAttribute("data-equip-bag-transfer"));
+      const it = game.gearBag[idx];
+      if (!it) return;
+      const res = equipGearWithOptionalTransfer(it, true);
+      Sound.clang(1.3, 0.12);
+      Sound.fanfare();
+      showToast(res && res.transferredLvl > 0
+        ? `★ 已换装【${it.name} +${res.transferredLvl}】并无损继承淬火！`
+        : `★ 已换装【${it.name}】！`);
+      renderDrawerContent();
       return;
     }
 
@@ -23095,6 +24158,25 @@ const ART = {
     resolveDefeatChoice,
     hurtPlayer,
     interactWithProp,
+    initArenaStage,
+    openDungeonMapModal,
+    enterDungeonNode,
+    getSelectableNextNodeIds,
+    spawnMapExitGateAndBoon,
+    openRunBoonDraftModal,
+    applyPickedRunBoon,
+    acquireGearItem,
+    equipGearWithOptionalTransfer,
+    getPendingCompareGear: () => pendingCompareGear,
+    getCombatStats,
+    damageEnemy,
+    handleEnemyDeath,
+    spawnCurrentWave,
+    spawnEnemyPack,
+    STAGES,
+    RUN_BOONS,
+    DUNGEON_ROOM_TYPES,
+    DUNGEON_CLIMATES,
     rollGearItem,
     openAffixEngraveModal,
     openIconicUpgradeDraft,
