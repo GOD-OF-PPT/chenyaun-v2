@@ -563,7 +563,10 @@
   }
   #story-dialogue-bar.open { display: flex; }
   body:has(#story-dialogue-bar.open) #toast-container {
-    bottom: 206px !important;
+    bottom: 214px !important;
+  }
+  body:has(#story-dialogue-bar.open .dlg-choice-btn) #toast-container {
+    bottom: 356px !important;
   }
 
   .dlg-portrait-wrap {
@@ -2786,6 +2789,198 @@
     width: fit-content;
     white-space: nowrap;
   }
+
+  /* ==================== M3 SANCTUM CONSTRUCTION, PORTRAIT STORY STAGE, KARMA & LIFESPAN UI ==================== */
+  .modal-box:has(.sanctum-grid) {
+    width: min(860px, 95vw);
+  }
+  .sanctum-mat-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 11px;
+    border-radius: 10px;
+    background: rgba(6, 17, 22, 0.85);
+    border: 1px solid rgba(216, 179, 106, 0.30);
+    font-size: 11px;
+    align-items: center;
+  }
+  .sanctum-mat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: rgba(14, 34, 40, 0.9);
+    border: 1px solid rgba(112, 255, 230, 0.25);
+    color: #dff7f2;
+    font-weight: 700;
+  }
+  .sanctum-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .sanctum-bld-card {
+    padding: 11px 12px;
+    border-radius: 12px;
+    background: linear-gradient(170deg, rgba(13, 32, 39, 0.94), rgba(7, 18, 23, 0.96));
+    border: 1px solid rgba(216, 179, 106, 0.36);
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .sanctum-bld-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+  .sanctum-bld-card.maxed {
+    border-color: rgba(255, 226, 138, 0.78);
+    box-shadow: 0 0 18px rgba(255, 226, 138, 0.16);
+  }
+  .sanctum-lv-pips {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .sanctum-pip {
+    width: 10px;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(216, 179, 106, 0.25);
+  }
+  .sanctum-pip.lit {
+    background: linear-gradient(90deg, #4ad2b8, #ffe28a);
+    border-color: #fff2b2;
+    box-shadow: 0 0 6px rgba(255, 226, 138, 0.45);
+  }
+  .dlg-choices-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .dlg-choice-btn {
+    padding: 7px 11px;
+    border-radius: 9px;
+    text-align: left;
+    background: linear-gradient(155deg, rgba(15, 38, 46, 0.94), rgba(8, 21, 27, 0.96));
+    border: 1px solid rgba(235, 198, 122, 0.56);
+    color: #fff3d2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+  }
+  .dlg-choice-btn:hover:not(:disabled) {
+    transform: translateX(3px);
+    border-color: #70ffe6;
+    background: linear-gradient(155deg, rgba(20, 52, 60, 0.96), rgba(10, 28, 34, 0.98));
+  }
+  .companion-modal-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: 13px;
+    background: radial-gradient(circle at 12% 50%, rgba(112, 255, 230, 0.14), rgba(7, 19, 24, 0.96));
+    border: 1px solid rgba(235, 198, 122, 0.55);
+  }
+  .companion-modal-head img {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--gold-bright);
+    flex-shrink: 0;
+  }
+  .companion-action-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .companion-action-btn {
+    padding: 10px 9px;
+    border-radius: 11px;
+    background: linear-gradient(170deg, rgba(14, 34, 41, 0.94), rgba(7, 18, 24, 0.96));
+    border: 1px solid rgba(216, 179, 106, 0.38);
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+  }
+  .companion-action-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: #ffe28a;
+  }
+  .karma-market-card {
+    padding: 9px 11px;
+    border-radius: 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .karma-market-card.righteous {
+    background: linear-gradient(160deg, rgba(10, 40, 44, 0.94), rgba(6, 20, 25, 0.96));
+    border: 1px solid rgba(112, 255, 230, 0.58);
+  }
+  .karma-market-card.demonic {
+    background: linear-gradient(160deg, rgba(50, 12, 22, 0.94), rgba(22, 7, 14, 0.96));
+    border: 1px solid rgba(255, 92, 108, 0.62);
+  }
+  .karma-market-card.neutral {
+    background: linear-gradient(160deg, rgba(20, 32, 38, 0.92), rgba(9, 18, 24, 0.95));
+    border: 1px solid rgba(216, 179, 106, 0.42);
+  }
+  .lifespan-alert-card {
+    padding: 8px 10px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+  }
+  .lifespan-alert-card.warning {
+    background: rgba(54, 38, 12, 0.9);
+    border: 1px solid rgba(255, 210, 100, 0.65);
+    color: #ffe8a8;
+  }
+  .lifespan-alert-card.critical {
+    background: rgba(62, 14, 18, 0.94);
+    border: 1px solid rgba(255, 104, 104, 0.78);
+    color: #ffd0cc;
+  }
+  .recap-companion-comment {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(216, 179, 106, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .recap-companion-comment img {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid var(--gold);
+    flex-shrink: 0;
+  }
+  .ending-karma-poem {
+    padding: 10px 14px;
+    border-radius: 11px;
+    background: rgba(9, 24, 30, 0.88);
+    border: 1px solid rgba(235, 198, 122, 0.45);
+    max-width: 560px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
 </style>
 </head>
 <body>
@@ -3227,6 +3422,7 @@
         <span id="dlg-speaker-name" class="dlg-speaker-name">沈清禾</span>
       </div>
       <div id="dlg-text-content" class="dlg-text"></div>
+      <div id="dlg-choices-box" class="dlg-choices-row" style="display:none;"></div>
     </div>
     <div id="dlg-action-box" class="dlg-actions">
       <button type="button" id="btn-dlg-next" class="btn-gold" style="padding:6px 14px;font-size:12px;">继续 ▸</button>
@@ -3263,11 +3459,17 @@
   </div>
   <!-- V25 COMPACT SANCTUM DOJO PAVILION (ZERO OVERFLOW, ZERO OVERLAP) -->
   <div id="dojo-control-bar">
-    <button type="button" id="btn-toggle-dojo-bar" class="dojo-bar-toggle" data-action="toggle-dojo-drawer">
-      <span class="cinnabar-seal" style="font-size:10px;padding:1px 7px;">演武论剑坪</span>
-      <span id="lbl-dojo-cur-mode">定身测伤桩</span>
-      <span id="lbl-dojo-caret" style="opacity:0.75;">▾</span>
-    </button>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;">
+      <button type="button" id="btn-toggle-dojo-bar" class="dojo-bar-toggle" data-action="toggle-dojo-drawer">
+        <span class="cinnabar-seal" style="font-size:10px;padding:1px 7px;">演武论剑坪</span>
+        <span id="lbl-dojo-cur-mode">定身测伤桩</span>
+        <span id="lbl-dojo-caret" style="opacity:0.75;">▾</span>
+      </button>
+      <button type="button" id="btn-sanctum-build" class="dojo-bar-toggle" style="border-color:rgba(112,255,230,0.62);color:#9effec;" data-action="open-sanctum-upgrade" data-tip="听雨洞府灵脉建设|消耗秘境灵材与灵石升级聚气灵眼、紫微丹鼎、天工剑炉、藏经阁与护山大阵 (Lv.1→Lv.5)！">
+        <span>🏛 洞府建设</span>
+        <span id="lbl-sanctum-lv" style="color:#ffe28a;">Lv.5/25</span>
+      </button>
+    </div>
     <div class="dojo-drawer-panel">
       <div class="dojo-group-row">
         <span class="dojo-group-lbl">木桩演武</span>
@@ -3340,6 +3542,7 @@
     </div>
     <div id="recap-summary-line" style="font-size:10.5px;color:#9ee8dc;">总伤 0 · 最高爆发 0 · 识破/凝时 0 次</div>
     <div id="recap-bars-box" style="display:flex;flex-direction:column;gap:5px;"></div>
+    <div id="recap-companion-box" class="recap-companion-comment" style="display:none;"></div>
   </div>
 
   <div id="cinema-letterbox-top" class="cinema-letterbox-bar"></div>
@@ -4061,6 +4264,8 @@ const ART = {
     dao:             { id: "dao", name: "道蕴砂", min: "spirit", buy: 135, sell: 46, kind: "material", art: "item_dao", desc: "登仙台法则碎砂，炼制渡劫引的至高材料。" },
     healing_pill:    { id: "healing_pill", name: "回春丹", min: "mortal", buy: 18, sell: 7, kind: "medicine", hpRatio: 0.46, hpFlat: 42, art: "item_healing_pill", desc: "立即恢复 46% 最大气血，道心垂危时可主动服丹重燃战意（悟【丹火不息】后额外引发丹火震爆）。" },
     spirit_pill:     { id: "spirit_pill", name: "回灵丹", min: "qi", buy: 18, sell: 7, kind: "medicine", mpRatio: 0.5, mpFlat: 30, art: "item_spirit_pill", desc: "立即回满剑元并刷新爆剑、一闪、法宝与助阵冷却。" },
+    longevity_pill:  { id: "longevity_pill", name: "延寿青莲丹", min: "qi", buy: 120, sell: 42, kind: "medicine", art: "item_lotus", desc: "紫微丹鼎 Lv.2 解封延寿仙丹：服用永久延寿 +30 载（+360 月）并增加 +15 气血上限，可解大限之忧。" },
+    blood_fury_pill: { id: "blood_fury_pill", name: "嗜血煞丹", min: "qi", buy: 135, sell: 45, kind: "medicine", art: "item_core", desc: "赤渊黑市禁丹：服用永久剑道攻击 +10、劫煞魔心 -15，但折损 2 载寿元（慎择）。" },
     foundation_pill: { id: "foundation_pill", name: "筑基丹", min: "qi", buy: 260, sell: null, kind: "breakthrough", art: "item_foundation_pill", desc: "炼气冲关筑基护劫灵丹：渡劫仪轨携丹可获3层护脉丹障稳渡雷劫；亦可直接服用涨60%修为。" },
     golden_pill:     { id: "golden_pill", name: "凝金丹", min: "foundation", buy: 680, sell: null, kind: "breakthrough", art: "item_golden_pill", desc: "筑基凝结金丹护劫灵丹：渡劫仪轨携丹可获3层护脉丹障稳渡雷劫；亦可直接服用涨60%修为。" },
     nascent_pill:    { id: "nascent_pill", name: "结婴丹", min: "golden", buy: 1120, sell: null, kind: "breakthrough", art: "item_nascent_pill", desc: "金丹碎丹成婴护劫至宝：渡劫仪轨携丹可获3层护脉丹障稳渡雷劫；亦可直接服用涨60%修为。" },
@@ -4071,6 +4276,7 @@ const ART = {
   const RECIPES = {
     healing:     { id: "healing", name: "炼制回春丹", min: "qi", inputs: { herb: 2 }, stones: 2, months: 3, output: "healing_pill" },
     spirit:      { id: "spirit", name: "炼制回灵丹", min: "qi", inputs: { herb: 1, dew: 1 }, stones: 3, months: 3, output: "spirit_pill" },
+    longevity:   { id: "longevity", name: "炼制延寿青莲丹", min: "qi", reqCauldronLv: 2, inputs: { herb: 3, dew: 2, lotus: 1 }, stones: 65, months: 6, output: "longevity_pill" },
     foundation:  { id: "foundation", name: "炼制筑基丹", min: "qi", inputs: { herb: 6, dew: 2, core: 1 }, stones: 20, months: 6, output: "foundation_pill" },
     golden:      { id: "golden", name: "炼制凝金丹", min: "foundation", inputs: { herb: 4, dew: 2, core: 2, jade: 3 }, stones: 55, months: 10, output: "golden_pill" },
     nascent:     { id: "nascent", name: "炼制结婴丹", min: "golden", inputs: { dew: 3, jade: 2, lotus: 4 }, stones: 105, months: 14, output: "nascent_pill" },
@@ -4507,7 +4713,7 @@ const ART = {
   const DESTINY_FRUITS = {
     sword_twin:   { id: "sword_twin",   name: "剑心通明", badge: "飞剑+3 · 贯虹", art: "relic_frost_sword", desc: "环身本命飞剑永久 +3 柄，且蓄力万剑穿云伤害额外提高 28%。" },
     thunder_soul: { id: "thunder_soul", name: "紫霄雷体", badge: "一闪落雷 · 麻痹", art: "relic_soul_lamp",   desc: "每次施展空格【一闪】，在起点与终点劈落三道紫霄神雷轰击群妖并削减架势。" },
-    lotus_body:   { id: "lotus_body",   name: "青莲圣体", badge: "吐纳翻倍 · 护体", art: "item_lotus",        desc: "V键周天吐纳聚气效率 +65%，且每次破境与回城额外凝结 35% 最大气血青莲护盾。" },
+    lotus_body:   { id: "lotus_body",   name: "青莲圣体", badge: "吐纳翻倍 · 护体", art: "item_lotus",        desc: "B键周天吐纳聚气效率 +65%，且每次破境与回城额外凝结 35% 最大气血青莲护盾。" },
     zhuxian_edge: { id: "zhuxian_edge", name: "诛仙残意", badge: "爆剑增伤 · 返冷", art: "icon_blade",        desc: "右键【爆剑】引爆剑印伤害提升 55%，若引爆满印妖兽立即返还 50% 冷却。" },
     void_phantom: { id: "void_phantom", name: "太虚幻剑", badge: "三式双影 · 剑轮", art: "relic_cloud_mirror",desc: "普攻第三式额外唤出一道太虚剑影协同投掷双倍旋风剑轮。" },
     glutton_pill: { id: "glutton_pill", name: "饕餮丹心", badge: "服丹永驻 · 强魄", art: "item_golden_pill",  desc: "每次服用或炼成灵丹，永久增加 +8 剑道攻击与 +24 气血上限，并立即获赐回春丹×2。" },
@@ -4564,6 +4770,270 @@ const ART = {
       ]
     }
   ];
+
+  // ==================== M3 SANCTUM 5-TIER CONSTRUCTION, COMPANION PRESENCE & KARMA WORLD ====================
+  const SANCTUM_BUILDINGS = [
+    {
+      id: "spirit_eye", name: "聚气灵眼", icon: "💠", art: "prop_bagua_secret_gate", color: "#70ffe6",
+      role: "吐纳效率 · 仙葫容量 · 洞天灵纹",
+      tiers: [
+        null,
+        { stones: 60,  mats: { herb: 3, dew: 1 },           eff: "吐纳效率 +22% · 灵眼双环光阵" },
+        { stones: 130, mats: { herb: 4, jade: 2 },          eff: "吐纳效率 +44% · 仙葫上限永久 +1 缕" },
+        { stones: 240, mats: { jade: 3, lotus: 2 },         eff: "吐纳效率 +66% · 破境溢流修为提升" },
+        { stones: 400, mats: { lotus: 3, soul: 2, dao: 1 }, eff: "吐纳效率 +88% · 仙葫上限再 +1 · 太初灵眼满辉" }
+      ],
+      summaryFn: lv => `吐纳 ×${(1 + (lv - 1) * 0.22).toFixed(2)} · 仙葫上限 +${(lv >= 3 ? 1 : 0) + (lv >= 5 ? 1 : 0)}`
+    },
+    {
+      id: "cauldron", name: "紫微丹鼎", icon: "🔥", art: "furnace", color: "#ffae66",
+      role: "延寿丹方 · 仙葫泡酒槽 · 控火温区",
+      tiers: [
+        null,
+        { stones: 70,  mats: { herb: 3, dew: 2 },           eff: "解锁【延寿青莲丹】丹方 · 控火黄金区 +3.5%" },
+        { stones: 150, mats: { core: 2, jade: 2 },          eff: "仙葫泡酒槽扩容至 4 槽 · 控火黄金区 +7%" },
+        { stones: 260, mats: { lotus: 3, core: 2 },         eff: "控火成丹必额外 +1 枚回春丹 · 黄金区 +10.5%" },
+        { stones: 420, mats: { soul: 3, dao: 1 },           eff: "仙葫泡酒槽满扩容 5 槽 · 控火黄金区 +14%" }
+      ],
+      summaryFn: lv => `泡酒槽 ${lv >= 5 ? 5 : lv >= 3 ? 4 : 3} 槽 · ${lv >= 2 ? "已解封延寿青莲丹" : "Lv.2解封延寿丹"}`
+    },
+    {
+      id: "sword_forge", name: "天工剑炉", icon: "⚒", art: "anvil_tiangong_forge", color: "#ffe28a",
+      role: "常驻剑攻 · 淬火折价 · 剑谱共鸣",
+      tiers: [
+        null,
+        { stones: 80,  mats: { core: 2, herb: 2 },          eff: "常驻剑攻 +8 · 仙装淬火费用 -10%" },
+        { stones: 165, mats: { core: 2, jade: 3 },          eff: "常驻剑攻 +16 · 淬火 -20% · 自创剑谱伤害 +12%" },
+        { stones: 280, mats: { jade: 3, lotus: 2 },         eff: "常驻剑攻 +24 · 淬火 -30% · 法宝升星折扣" },
+        { stones: 450, mats: { soul: 3, dao: 2 },           eff: "常驻剑攻 +32 · 淬火 -40% · 自创剑谱伤害 +25%" }
+      ],
+      summaryFn: lv => `常驻剑攻 +${(lv - 1) * 8} · 淬火 -${(lv - 1) * 10}%`
+    },
+    {
+      id: "scripture_hall", name: "藏经阁", icon: "📜", art: "scroll_shanhe_sheji", color: "#b998fa",
+      role: "远征产出 · 采集收益 · 道韵换韵次数",
+      tiers: [
+        null,
+        { stones: 75,  mats: { dew: 2, jade: 1 },           eff: "九州远征产出 +20% · 秘境道韵免费换韵 +1 次" },
+        { stones: 160, mats: { jade: 3, lotus: 1 },         eff: "九州远征产出 +40% · 历练委托灵石修为 +30%" },
+        { stones: 270, mats: { lotus: 3, soul: 2 },         eff: "远征产出 +60% · 大道法则三选一换韵 +1 次" },
+        { stones: 440, mats: { soul: 3, dao: 2 },           eff: "远征产出 +80% · 历练委托双倍灵材概率" }
+      ],
+      summaryFn: lv => `远征 +${(lv - 1) * 20}% · 道韵换韵 ${1 + (lv >= 2 ? 1 : 0)} 次`
+    },
+    {
+      id: "guard_array", name: "护山大阵", icon: "🛡", art: "prop_guardian_sword_pylon", color: "#58e6c8",
+      role: "常驻减伤 · 守卫剑塔增幅 · 灵脉护盾",
+      tiers: [
+        null,
+        { stones: 75,  mats: { core: 2, dew: 2 },           eff: "常驻护体减伤 +4 · 守卫核心气血 +350 · 剑塔增威" },
+        { stones: 155, mats: { core: 3, jade: 2 },          eff: "常驻减伤 +8 · 守卫战增设第 3 座【北护山剑塔】！" },
+        { stones: 275, mats: { jade: 3, soul: 2 },          eff: "常驻减伤 +12 · 剑塔连射提速 30% · 核心 +1050 血" },
+        { stones: 430, mats: { soul: 3, dao: 2 },           eff: "常驻减伤 +16 · 三塔极速雷光阵 · 洞府大阵圆满" }
+      ],
+      summaryFn: lv => `常驻减伤 +${(lv - 1) * 4} · 护山灵塔 ${lv >= 3 ? "3座" : "2座"}`
+    }
+  ];
+
+  const SANCTUM_PROSPERITY_TIERS = [
+    { minLv: 5,  title: "初辟灵洞", col: "#9ab5b0" },
+    { minLv: 9,  title: "清韵小筑", col: "#70ffe6" },
+    { minLv: 14, title: "紫微仙庭", col: "#80c8ff" },
+    { minLv: 19, title: "太虚洞天", col: "#d69eff" },
+    { minLv: 23, title: "混元圣域", col: "#ffe28a" }
+  ];
+
+  const COMPANION_HUB_DIALOGUES = {
+    shen: {
+      favMat: "herb", favCount: 3, favLabel: "凝气草 ×3",
+      sparReward: "气血回复并获药香护盾 +18%",
+      greetings: {
+        righteous: [
+          "山雨初歇，清禾新煮了一壶青莲安神茶。道友守正清虚，灵脉澄澈了许多。",
+          "近来山下村落太平，皆赖道友除妖卫道。若见寿元渐紧，紫微丹鼎升阶后可炼【延寿青莲丹】。"
+        ],
+        neutral: [
+          "破庙一别至今，听雨洞府倒渐渐有了烟火气。出征前别忘了满酿九转仙葫。",
+          "清禾替你晒好了几味新采灵草，若秘境险恶，宁可御剑遁走也莫硬撑伤了道基。"
+        ],
+        demonic: [
+          "你袖间血煞又浓了几分……坐下喝口温药吧。纵使天下人畏你魔剑，清禾的药炉仍为你留火。",
+          "以血炼煞虽能极速破境，切记不可妄服黑市煞丹折损过多寿元，清禾会担心的。"
+        ]
+      },
+      teaLines: {
+        righteous: "竹影摇窗，药香袅袅。沈清禾为你斟满青莲露：『能与心存仁善之人同行仙途，此生无憾。』",
+        neutral:   "细雨打芭蕉，炉上茶沸。沈清禾轻笑：『忙于破境斩妖，也别忘了在洞府停下来喝盏热茶。』",
+        demonic:   "药汤泛起微光，暂时压下你周身燥烈血气。沈清禾轻声道：『道心本在你手，勿让凶剑反噬本心。』"
+      },
+      postBattle: {
+        righteous: "清禾浅笑收阵：『剑光澄澈、分毫不乱，此战既诛群妖又护住自身灵脉！』",
+        neutral:   "清禾递来丝帕：『好一场酣畅剑舞，回洞府歇息片刻再整备下章吧。』",
+        demonic:   "清禾为你抹去眉角血渍：『这血煞剑意何等霸道……所幸你未失神智。』"
+      }
+    },
+    pei: {
+      favMat: "core", favCount: 2, favLabel: "妖核 ×2",
+      sparReward: "切磋领悟剑意 +45% · 修为精进",
+      greetings: {
+        righteous: [
+          "哈哈！刚才见你演武一剑浩然如青云破晓，裴某手痒得很，可敢切磋十招？",
+          "秘境五层星图愈发凶险，盾卫前顶、妖师施法、影袭绕后——先斩妖师，方显剑修本色！"
+        ],
+        neutral: [
+          "道友回洞府了？正好，天工剑炉若能升阶，你我二人的本命佩剑都能省下不少淬火灵石。",
+          "剑修一途无他，唯快、唯准、唯敢于在妖王金芒刹那迎剑识破！"
+        ],
+        demonic: [
+          "好一股骇人的血煞剑压！裴某握剑的手都在发颤——来来来，让我瞧瞧你的【血煞狂剑诀】！",
+          "魔心虽烈，但只要你手中剑仍是自己握着，裴照便永远认你这个对手与挚友！"
+        ]
+      },
+      teaLines: {
+        righteous: "裴照举杯敬苍穹：『太清剑意配山泉清酿，痛快！他日九霄天门，我为你斩开第一重罡风！』",
+        neutral:   "两人以剑代箸、对坐论招。裴照大笑：『这一记切手派生改得妙极！』",
+        demonic:   "烈酒入喉如吞剑火！裴照目射精光：『纵入魔道又如何？剑斩万古，只需问心无愧！』"
+      },
+      postBattle: {
+        righteous: "裴照拊掌大笑：『好一记浩然破势！这一战看得裴某热血沸腾！』",
+        neutral:   "裴照抱剑颔首：『招式衔接愈发老辣，下一章妖王怕也撑不过几合！』",
+        demonic:   "裴照咧嘴一笑：『血煞漫天、一剑断魂！这等杀伐气魄，九州难逢敌手！』"
+      }
+    },
+    lu: {
+      favMat: "jade", favCount: 2, favLabel: "地脉灵玉 ×2",
+      sparReward: "传功指点 · 修为与护脉悟性精进",
+      greetings: {
+        righteous: [
+          "青云宗千年未见你这般清正剑心！云岚百宝阁已对你开放【太清仙珍】九折特供。",
+          "洞府五座灵脉建筑相辅相成：藏经阁旺远征，护山大阵保平安，不可偏废。"
+        ],
+        neutral: [
+          "修行讲究财侣法地。把秘境带回的灵玉、妖核投入洞府升阶，远比堆在行囊划算。",
+          "记牢了：每次破境皆能大增寿元，切莫在低阶境界蹉跎光阴至大限将近。"
+        ],
+        demonic: [
+          "老夫察觉你体内煞气翻涌……青云宗门规虽严，但你仍守听雨洞府未伤无辜，老夫便再信你一回。",
+          "坊市暗处已有赤渊黑市商客寻你。黑市魔宝威猛却常折寿元，取舍之间好自为之！"
+        ]
+      },
+      teaLines: {
+        righteous: "陆玄松抚须品茗：『有你承继青云薪火，老夫纵然百年之后亦能含笑九泉。』",
+        neutral:   "陆玄松摊开洞府灵脉图，细细指点各阶阵眼与破境丹火候要诀。",
+        demonic:   "陆玄松一盏清茶推至案前：『以煞御剑，切忌反为剑奴。老夫这口山门古钟，随时为你镇心。』"
+      },
+      postBattle: {
+        righteous: "陆玄松欣慰颔首：『稳扎稳打、攻守有度，颇有宗门真传大将之风！』",
+        neutral:   "陆玄松轻捻胡须：『此战历练极佳，记得清点战利品并检视洞府建设。』",
+        demonic:   "陆玄松微微一叹：『煞威滔天、速决敌阵，只是收剑后莫忘静坐吐纳平复心魔。』"
+      }
+    },
+    yan: {
+      favMat: "lotus", favCount: 2, favLabel: "月华莲 ×2",
+      sparReward: "古镜照心 · 洞察破绽并获道心感悟",
+      greetings: {
+        righteous: [
+          "古镜照你灵台，清如秋水无纤尘。如此道心，日后登仙台天门道影难以撼动。",
+          "凡人寿不过甲子，唯有破境与灵丹可逆光阴。看淡荣辱，却不可轻抛岁寿。"
+        ],
+        neutral: [
+          "残碑刻名易，铭记来路难。听雨洞府里这几位故人，才是你逆天问道时最稳的锚。",
+          "我常在镜中窥见五层星图变幻——有时绕开血战、赴一趟太初灵泉，反是上策。"
+        ],
+        demonic: [
+          "镜中映出滔天血焰，却未见迷失之眼。奇哉，你竟能执劫煞魔心而不忘故人。",
+          "正道多护生，魔心重破障。天门之上只问真我，不问世俗褒贬。"
+        ]
+      },
+      teaLines: {
+        righteous: "砚尘拂镜微笑：『光阴似水，幸得青山故人犹在。这一盏照影清茶，敬你的初心。』",
+        neutral:   "砚尘慢研墨汁：『今日听雨，明日登仙。把你的事迹记在生平卷里，莫叫岁月抹去。』",
+        demonic:   "砚尘凝望镜中红莲：『能把魔焰炼作照夜灯火者，古往今来寥寥无几。』"
+      },
+      postBattle: {
+        righteous: "砚尘抚镜微笑：『心如明镜，妖邪破绽自现于前，好剑法。』",
+        neutral:   "砚尘提笔录卷：『又破一重关隘，离九霄天门更近一步。』",
+        demonic:   "砚尘轻叹一声：『以杀止杀，以煞镇妖，镜中血光倒映出一番凌厉气象。』"
+      }
+    }
+  };
+
+  const BOSS_KARMA_MONOLOGUES = {
+    wolf: {
+      righteous: "雾隐狼王低吼：『好刺眼的太清正气……撕碎你这满身药香的伪君子！』",
+      neutral:   "雾隐狼王龇牙咆哮：『闯我青岚荒野，便拿命来祭这山雨夜！』",
+      demonic:   "雾隐狼王毛发倒竖：『你身上怎有比妖煞更凶戾的血气？！退后！』"
+    },
+    warden: {
+      righteous: "守山石卫洪声如钟：『太清灵光纯正！且接老石卫三锤试道！』",
+      neutral:   "守山石卫重锤砸地：『青云山门试剑，无破势之能者止步于此！』",
+      demonic:   "守山石卫金阵暴涨：『竟携赤渊魔煞擅闯青云仙台？镇妖金阵，诛！』"
+    },
+    serpent: {
+      righteous: "寒潭玄蛇嘶鸣：『区区正道剑修，也敢以清虚莲光净我千年寒潭？』",
+      neutral:   "寒潭玄蛇破冰腾起：『凡闯照影寒潭者，皆化潭底冰雕！』",
+      demonic:   "寒潭玄蛇竖瞳微缩：『好霸道的血煞魔意……吞了你，本座便可化蛟！』"
+    },
+    puppet: {
+      righteous: "古境剑傀铜镜鸣响：『太清剑道传人？且看铜镜能否照破你之无垢剑心！』",
+      neutral:   "古境剑傀缓缓拔剑：『千年剑冢无生人，唯有胜过旧影者方能前行。』",
+      demonic:   "古境剑傀红芒骤盛：『检测到绝世劫煞剑意——启封古冢灭魔剑阵！』"
+    },
+    shadow: {
+      righteous: "剑冢镇魂煞阴笑：『满口仁义道德，让我剖开你伪善的清虚假面！』",
+      neutral:   "剑冢镇魂煞幽影重重：『照影成魔，你敢直面自己最怕的执念吗？』",
+      demonic:   "剑冢镇魂煞狂喜大笑：『同源魔血！来吧，让我看看谁才是真正的煞剑之主！』"
+    },
+    sentinel: {
+      righteous: "云台守灵肃然拱手：『清虚正道，功德圆满——请以毕生剑道叩开天门！』",
+      neutral:   "云台守灵金甲生辉：『历经五境星图至此，唯有斩破本座方可问仙！』",
+      demonic:   "云台守灵雷戟直指：『身负滔天劫煞亦敢叩问九霄？天雷不容魔剑，受诛！』"
+    },
+    trial_gate: {
+      righteous: "天门道影垂眸：『以仁心护苍生，以正剑开天门——今日证你太清真仙果！』",
+      neutral:   "天门道影轰然回响：『凡尘百载皆为序章，拔剑斩断最后一重天障！』",
+      demonic:   "天门道影震怒雷鸣：『逆天魔胎竟踏碎云阶至此！既不跪天，便以血剑开天！』"
+    }
+  };
+
+  const KARMA_ENCOUNTER_EXTRAS = {
+    ancient_sword_mound: {
+      righteous: { id: "karma_r_sword", label: "☯ [正道专属] 太清渡剑灵", detail: "清虚正道 +12 · 护体减伤永久 +5 · 获灵石 +110 · 仁心 +12", karma: 12, drBonus: 5, stones: 110, dao: { benevolence: 12 } },
+      demonic:   { id: "karma_d_sword", label: "🔥 [魔心专属] 血煞吞剑魄", detail: "劫煞魔心 -15 · 剑道攻击永久 +18 · 环身飞剑 +1 · 锋芒 +14", karma: -15, atkBonus: 18, bonusSword: 1, dao: { edge: 14 } }
+    },
+    cold_pond_spring: {
+      righteous: { id: "karma_r_spring", label: "☯ [正道专属] 净莲延寿露", detail: "清虚正道 +12 · 获【延寿青莲丹】×1 · 永久延寿 +15 载 · 状态全满", karma: 12, longevityPill: 1, lifespanMonths: 180, fullHeal: true, dao: { benevolence: 10, serenity: 8 } },
+      demonic:   { id: "karma_d_spring", label: "🔥 [魔心专属] 魔焰沸寒煞", detail: "劫煞魔心 -15 · 剑道攻击永久 +16 · 获妖核 ×3 · 剑意 100%", karma: -15, atkBonus: 16, cores: 3, fillIntent: true, dao: { edge: 12 } }
+    },
+    alchemist_remnant: {
+      righteous: { id: "karma_r_furnace", label: "☯ [正道专属] 紫微济世丹", detail: "清虚正道 +12 · 获回春丹 ×3、延寿青莲丹 ×1 · 沈清禾羁绊提升", karma: 12, healPills: 3, longevityPill: 1, bond: "shen", dao: { benevolence: 14 } },
+      demonic:   { id: "karma_d_furnace", label: "🔥 [魔心专属] 掠夺血丹魂", detail: "劫煞魔心 -15 · 必获仙品杀伐佩剑 · 剑道攻击永久 +12", karma: -15, atkBonus: 12, gearSlot: "weapon", gearRarity: 3, dao: { edge: 12 } }
+    }
+  };
+
+  const KARMA_ENDING_EPILOGUES = {
+    righteous: {
+      seal: "太清功德 · 正道证仙",
+      epithet: "清虚护世真君",
+      color: "#70ffe6",
+      poem: "青莲映雨照尘寰，一剑澄明万古寒。\n莫道仙途无旧侣，长风共守百城安。",
+      epilogue: "你以清虚正道叩开九霄仙门，太清功德化作甘霖泽被九州；听雨洞府灯火长明，沈清禾、裴照、陆玄松与砚尘皆立于云阶共证此段佳话。"
+    },
+    demonic: {
+      seal: "劫煞逆天 · 魔剑开穹",
+      epithet: "赤渊破劫魔尊",
+      color: "#ff6b81",
+      poem: "血刃惊雷裂九天，不向苍穹乞寸仙。\n纵背魔名三千载，一剑孤光照旧缘。",
+      epilogue: "天雷难阻劫煞锋芒，你以无上魔剑硬生生斩裂天门禁制！诸天仙神为之震怖，唯听雨洞府一盏暖灯与故人剑影，铭记你未泯的赤诚。"
+    },
+    neutral: {
+      seal: "太初本真 · 逍遥登仙",
+      epithet: "听雨逍遥剑主",
+      color: "#ffe28a",
+      poem: "山雨破庙初执剑，星河万象入眸来。\n不拘正魔千秋论，自在乘风叩玉台。",
+      epilogue: "不囿正统，不坠魔执，你循本心走过五境星图与九霄雷劫；携灵兽故友泛舟星海，听雨洞府之名自此流传万古。"
+    }
+  };
 
   function hasDestinyFruit(g, fid) {
     return g && Array.isArray(g.destinyFruits) && g.destinyFruits.includes(fid);
@@ -4889,11 +5359,114 @@ const ART = {
   function refreshMarketStock() {
     if (!game) return;
     const tier = Math.max(arena.stageIdx, rankOf(game.realm));
-    game.marketStock = [
-      rollGearItem(tier, Math.min(3, 1 + Math.floor(tier / 2)), "weapon", { usePity: false }),
-      rollGearItem(tier, Math.min(3, 1 + Math.floor(tier / 2)), "armor", { usePity: false }),
-      rollGearItem(tier, Math.min(4, 2 + Math.floor(tier / 2)), "ring", { usePity: false })
+    const ks = getKarmaState(game);
+    const wpn = rollGearItem(tier, Math.min(3, 1 + Math.floor(tier / 2)), "weapon", { usePity: false });
+    const arm = rollGearItem(tier, Math.min(3, 1 + Math.floor(tier / 2)), "armor", { usePity: false });
+    const rng = rollGearItem(tier, Math.min(4, 2 + Math.floor(tier / 2)), "ring", { usePity: false });
+    if (ks.mode === "demonic") {
+      wpn.atk = Math.round(wpn.atk * 1.24);
+      wpn.name = wpn.name.replace("·", "·血煞");
+      wpn.affix = wpn.affix || "vamp_blade";
+      wpn.price = Math.round(wpn.price * 1.05);
+    } else if (ks.mode === "righteous") {
+      arm.hp = Math.round(arm.hp * 1.24);
+      arm.dr = Math.round(arm.dr * 1.25);
+      arm.name = arm.name.replace("·", "·太清");
+      arm.affix = arm.affix || "xuanwu_ward";
+    }
+    game.marketStock = [wpn, arm, rng];
+    game.karmaMarketBought = {};
+  }
+
+  function getKarmaMarketSpecials(g) {
+    if (!g) return [];
+    const ks = getKarmaState(g);
+    const fairDisc = currentOmen(g).id === "fair" ? 0.8 : 1.0;
+    const rightDisc = ks.mode === "righteous" ? 0.9 : 1.0;
+    if (ks.mode === "righteous") {
+      return [
+        {
+          id: "km_longevity", name: "☯ 太清延寿青莲丹", art: "item_lotus",
+          desc: "正道珍品：服用延寿 +30 载、气血上限 +15（破大限必备）",
+          cost: Math.round(95 * fairDisc * rightDisc), kind: "item", itemId: "longevity_pill", count: 1
+        },
+        {
+          id: "km_lotus_bundle", name: "☯ 悬壶灵丹礼匣", art: "item_healing_pill",
+          desc: "清虚正道专供：回春丹 ×2 + 回灵丹 ×1 + 凝气草 ×3",
+          cost: Math.round(52 * fairDisc * rightDisc), kind: "bundle_right"
+        }
+      ];
+    }
+    if (ks.mode === "demonic") {
+      return [
+        {
+          id: "km_blood_pill", name: "🔥 黑市禁丹 · 嗜血煞丹", art: "item_core",
+          desc: "赤渊黑市：服用永久剑攻 +10、魔心 -15，但折损 2 载寿元",
+          cost: Math.round(110 * fairDisc), kind: "item", itemId: "blood_fury_pill", count: 1
+        },
+        {
+          id: "km_demon_core", name: "🔥 赤渊魔煞妖核匣", art: "item_soul",
+          desc: "赤渊黑市：妖核 ×3 + 仙品血煞佩剑 1 件（高攻低防）",
+          cost: Math.round(145 * fairDisc), kind: "bundle_demon"
+        }
+      ];
+    }
+    const caulLv = typeof getSanctumLevel === "function" ? getSanctumLevel(g, "cauldron") : 1;
+    return [
+      {
+        id: "km_neutral_tea", name: "✦ 云岚清茶灵材包", art: "item_dew",
+        desc: "本真中正：凝气草 ×4 + 晨曦灵露 ×2（偏向正魔±25解封专属商阁）",
+        cost: Math.round(45 * fairDisc), kind: "bundle_neutral"
+      },
+      ...(caulLv >= 2 ? [{
+        id: "km_longevity_std", name: "✦ 延寿青莲丹", art: "item_lotus",
+        desc: "紫微丹鼎 Lv.2 秘药：服用延寿 +30 载、气血上限 +15",
+        cost: Math.round(120 * fairDisc), kind: "item", itemId: "longevity_pill", count: 1
+      }] : [])
     ];
+  }
+
+  function buyKarmaSpecialItem(specialId) {
+    if (!game) return false;
+    if (!game.karmaMarketBought) game.karmaMarketBought = {};
+    if (game.karmaMarketBought[specialId]) {
+      showToast("本批特供珍品已购罄，可点击【换一批】刷新货架！");
+      return false;
+    }
+    const spec = getKarmaMarketSpecials(game).find(x => x.id === specialId);
+    if (!spec) return false;
+    if (game.stones < spec.cost) {
+      showToast(`灵石不足（需 ${spec.cost} 灵石）`);
+      return false;
+    }
+    game.stones -= spec.cost;
+    game.karmaMarketBought[specialId] = true;
+    if (spec.kind === "item") {
+      game.inventory[spec.itemId] = (game.inventory[spec.itemId] || 0) + (spec.count || 1);
+      showToast(`已购得【${spec.name}】，可于下方随身灵丹服用！`);
+    } else if (spec.kind === "bundle_right") {
+      game.inventory.healing_pill = (game.inventory.healing_pill || 0) + 2;
+      game.inventory.spirit_pill = (game.inventory.spirit_pill || 0) + 1;
+      game.inventory.herb = (game.inventory.herb || 0) + 3;
+      showToast("☯ 购得【悬壶灵丹礼匣】：回春丹×2 · 回灵丹×1 · 凝气草×3！");
+    } else if (spec.kind === "bundle_demon") {
+      game.inventory.core = (game.inventory.core || 0) + 3;
+      const dWpn = rollGearItem(Math.max(2, arena.stageIdx + 1), 3, "weapon", { usePity: false });
+      dWpn.atk = Math.round(dWpn.atk * 1.28);
+      dWpn.name = "魔品·赤渊噬魂剑";
+      dWpn.affix = "vamp_blade";
+      acquireGearItem(dWpn);
+      showToast("🔥 黑市成交：妖核×3 + 【魔品·赤渊噬魂剑】已暂存对比！");
+    } else if (spec.kind === "bundle_neutral") {
+      game.inventory.herb = (game.inventory.herb || 0) + 4;
+      game.inventory.dew = (game.inventory.dew || 0) + 2;
+      showToast("✦ 购得【云岚清茶灵材包】：凝气草×4 · 晨曦灵露×2！");
+    }
+    Sound.fanfare();
+    saveGame();
+    updateHud();
+    if (drawerOpen) renderDrawerContent();
+    return true;
   }
 
   // ==================== 5C. CINEMATIC STORY DIALOGUE SCRIPTS ====================
@@ -4905,7 +5478,7 @@ const ART = {
     ],
     enter_sect: [
       { art: "char_lu", role: "青云山门 · 传功执事", speaker: "陆玄松", text: "钟鸣云海，能凭一己剑气自青岚山野闯入青云仙台，足见道心坚韧。" },
-      { art: "char_lu", role: "青云山门 · 传功执事", speaker: "陆玄松", text: "每破一处前哨，皆有【凶煞神装道】与【奇遇仙商道】双门并立；善择前路、勤炼丹器者，方得大道！" }
+      { art: "char_lu", role: "青云山门 · 传功执事", speaker: "陆玄松", text: "秘境已启【五层分支星图】，随时按 9 键检视天候与奖励；善择前路、勤建洞府者，方得大道！" }
     ],
     enter_secret: [
       { art: "char_pei", role: "青云剑阁 · 首座弟子", speaker: "裴照", text: "照影寒潭之下尽是上古剑傀，铜镜一开便会反震轻剑——道友若遇镜光，切记以【空格一闪】或【爆剑】破之！" },
@@ -4915,6 +5488,19 @@ const ART = {
       { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "九霄星盘已在脚下。护阵能挡天雷，却替不得你斩开天门道影——拔剑吧，故人皆在云海为你护道！" }
     ]
   };
+
+  function playCustomDialogueLines(lines, onFinish = null) {
+    if (!lines || !lines.length) {
+      if (onFinish) onFinish();
+      return;
+    }
+    cutscene.active = true;
+    cutscene.lines = lines;
+    cutscene.idx = 0;
+    cutscene.onFinish = onFinish;
+    arena.paused = true;
+    renderCutsceneStep();
+  }
 
   function playCutscene(key, onFinish = null) {
     if (!game) return;
@@ -4929,12 +5515,111 @@ const ART = {
     }
     if (!game.seenCutscenes) game.seenCutscenes = {};
     game.seenCutscenes[key] = true;
-    cutscene.active = true;
-    cutscene.lines = seq;
-    cutscene.idx = 0;
-    cutscene.onFinish = onFinish;
-    arena.paused = true;
-    renderCutsceneStep();
+    playCustomDialogueLines(seq, onFinish);
+  }
+
+  function canAffordStoryOpt(g, opt) {
+    if (!g || !opt) return false;
+    if (opt.stonesCost && (g.stones || 0) < opt.stonesCost) return false;
+    if (opt.cost) {
+      for (const [ik, req] of Object.entries(opt.cost)) {
+        if ((g.inventory[ik] || 0) < req) return false;
+      }
+    }
+    return true;
+  }
+
+  function playStoryEventInPortraitBar(storyId, onFinish = null) {
+    if (!game) return false;
+    const stSpec = STORIES.find(s => s.id === storyId);
+    if (!stSpec || game.choices[storyId]) return false;
+    const npc = NPC_META[stSpec.npc];
+    if (!npc) return false;
+    closeModal();
+    closeDrawer();
+    const ks = getKarmaState(game);
+    const karmaNote = ks.mode === "demonic"
+      ? "（对方望向你周身血煞剑气，神色微凝却仍以礼相待）"
+      : ks.mode === "righteous"
+        ? "（对方感你太清正气，眼中露出欣然之意）"
+        : "";
+    playCustomDialogueLines([
+      {
+        art: npc.art,
+        role: `${npc.role} · 《${stSpec.name}》`,
+        speaker: npc.name,
+        text: `${stSpec.body}${karmaNote ? " " + karmaNote : ""}`,
+        storyId: stSpec.id,
+        choices: stSpec.options
+      }
+    ], onFinish);
+    return true;
+  }
+
+  function resolveStoryChoice(sid, oid, fromPortraitBar = false) {
+    if (!game) return false;
+    const stSpec = STORIES.find(s => s.id === sid);
+    const opt = stSpec ? stSpec.options.find(o => o.id === oid) : null;
+    if (!stSpec || !opt || game.choices[sid]) return false;
+
+    if (opt.stonesCost && game.stones < opt.stonesCost) {
+      showToast(`需 ${opt.stonesCost} 灵石`);
+      return false;
+    }
+    if (opt.cost) {
+      for (const [ik, req] of Object.entries(opt.cost)) {
+        if ((game.inventory[ik] || 0) < req) {
+          showToast(`需 ${ITEMS[ik].name} ×${req}（可赴历练获取）`);
+          return false;
+        }
+      }
+    }
+    if (opt.stonesCost) game.stones -= opt.stonesCost;
+    if (opt.cost) {
+      for (const [ik, req] of Object.entries(opt.cost)) game.inventory[ik] -= req;
+    }
+    if (opt.stonesGain) game.stones += opt.stonesGain;
+    if (opt.gain) {
+      for (const [ik, n] of Object.entries(opt.gain)) game.inventory[ik] = (game.inventory[ik] || 0) + n;
+    }
+    if (opt.xpGain) gainRealmXp(opt.xpGain);
+    if (opt.aid) game.aids[opt.aid] = true;
+    if (opt.dao) {
+      Object.entries(opt.dao).forEach(([dk, dv]) => { game.dao[dk] = (game.dao[dk] || 0) + dv; });
+    }
+    // Completing a companion story also naturally advances their bond tier up to 3!
+    if (!game.bondTiers) game.bondTiers = { shen: 1, pei: 0, lu: 0, yan: 0 };
+    const prevTier = getCompanionBondTier(game, stSpec.npc);
+    if (prevTier < 3) game.bondTiers[stSpec.npc] = Math.min(3, prevTier + 1);
+    game.aids[stSpec.npc] = true;
+
+    game.choices[sid] = oid;
+    if (Array.isArray(game.journal)) {
+      game.journal.unshift(`【故人机缘 · ${NPC_META[stSpec.npc].name}】《${stSpec.name}》：${opt.label}`);
+    }
+    Sound.fanfare();
+    showToast(opt.result || "故人盟契已成！");
+    saveGame();
+    updateHud();
+
+    const npc = NPC_META[stSpec.npc];
+    if (fromPortraitBar && npc) {
+      const kp = COMPANION_KEEPSAKES[stSpec.npc];
+      const newTier = getCompanionBondTier(game, stSpec.npc);
+      const tierLine = newTier > prevTier ? `（羁绊晋升：【${kp.tierTitles[newTier]}】${newTier >= 3 ? ` · 信物【${kp.keepsake}】已觉醒！` : ""}）` : "";
+      playCustomDialogueLines([
+        {
+          art: npc.art,
+          role: `${npc.role} · 盟契已成`,
+          speaker: npc.name,
+          text: `${opt.result || "故人盟契已成！"}${tierLine}`,
+          finalBtnLabel: "礼成收卷 ▸"
+        }
+      ]);
+    } else if (drawerOpen) {
+      renderDrawerContent();
+    }
+    return true;
   }
 
   function renderCutsceneStep() {
@@ -4943,6 +5628,8 @@ const ART = {
     if (!cutscene.active || cutscene.idx >= cutscene.lines.length) {
       cutscene.active = false;
       bar.classList.remove("open");
+      const chBox = document.getElementById("dlg-choices-box");
+      if (chBox) { chBox.innerHTML = ""; chBox.style.display = "none"; }
       arena.paused = drawerOpen || document.getElementById("modal-backdrop").classList.contains("open");
       const cb = cutscene.onFinish;
       cutscene.onFinish = null;
@@ -4954,7 +5641,32 @@ const ART = {
     document.getElementById("dlg-role-seal").textContent = line.role;
     document.getElementById("dlg-speaker-name").textContent = line.speaker === "顾长青" ? (game ? game.name : "顾长青") : line.speaker;
     document.getElementById("dlg-text-content").textContent = line.text;
-    document.getElementById("btn-dlg-next").textContent = cutscene.idx >= cutscene.lines.length - 1 ? "拔剑启程 ▸" : "继续 ▸";
+
+    const chBox = document.getElementById("dlg-choices-box");
+    const nextBtn = document.getElementById("btn-dlg-next");
+    const skipBtn = document.getElementById("btn-dlg-skip");
+    if (line.choices && line.choices.length && chBox) {
+      chBox.style.display = "flex";
+      chBox.innerHTML = line.choices.map(o => {
+        const ok = canAffordStoryOpt(game, o);
+        return `<button type="button" class="dlg-choice-btn" data-story-bar-id="${line.storyId}" data-story-bar-opt="${o.id}" ${ok ? "" : "disabled"}>
+          <div style="display:flex;flex-direction:column;gap:2px;">
+            <strong style="font-size:12.5px;color:#fff3c4;">${o.label}</strong>
+            <span style="font-size:10.5px;color:#80ffea;">${o.detail}</span>
+          </div>
+          <span class="tag-chip ${ok ? "done" : ""}">${ok ? "抉择 ▸" : "灵材不足"}</span>
+        </button>`;
+      }).join("");
+      if (nextBtn) nextBtn.style.display = "none";
+      if (skipBtn) skipBtn.textContent = "暂缓离开";
+    } else {
+      if (chBox) { chBox.innerHTML = ""; chBox.style.display = "none"; }
+      if (nextBtn) {
+        nextBtn.style.display = "inline-flex";
+        nextBtn.textContent = line.finalBtnLabel || (cutscene.idx >= cutscene.lines.length - 1 ? "拔剑启程 ▸" : "继续 ▸");
+      }
+      if (skipBtn) skipBtn.textContent = "跳过";
+    }
     bar.classList.add("open");
   }
 
@@ -7577,31 +8289,38 @@ const ART = {
     const dojoBar = document.getElementById("dojo-control-bar");
     if (dojoBar) dojoBar.classList.remove("active");
 
+    const sb = getSanctumBonuses(game);
     const corePos = clampToPlaza(w * 0.50, h * 0.52, w, h);
     const tLeft = clampToPlaza(w * 0.38, h * 0.48, w, h);
     const tRight = clampToPlaza(w * 0.62, h * 0.48, w, h);
+    const tNorth = clampToPlaza(w * 0.50, h * 0.36, w, h);
+    const maxCoreHp = 1200 + sb.coreHpBonus;
+    const towers = [
+      { x: tLeft.x,  y: tLeft.y,  cd: 0.35, name: "西护山剑塔" },
+      { x: tRight.x, y: tRight.y, cd: 0.65, name: "东护山剑塔" }
+    ];
+    if (sb.hasThirdTower) {
+      towers.push({ x: tNorth.x, y: tNorth.y, cd: 0.50, name: "北护山剑塔" });
+    }
     arena.sectDefense = {
       active: true,
       wave: 1,
       maxWaves: 3,
-      coreHp: 1200,
-      maxCoreHp: 1200,
+      coreHp: maxCoreHp,
+      maxCoreHp,
       coreX: corePos.x,
       coreY: corePos.y,
-      towers: [
-        { x: tLeft.x,  y: tLeft.y,  cd: 0.35, name: "西护山剑塔" },
-        { x: tRight.x, y: tRight.y, cd: 0.65, name: "东护山剑塔" }
-      ]
+      towers
     };
     arena.props.push({
       id: "sect_core_pylon", kind: "sect_core", art: "prop_guardian_sword_pylon",
-      name: "听雨灵脉大阵中枢", badge: "守护灵脉免遭三波百鬼夜行攻破！",
+      name: `听雨灵脉大阵中枢 · Lv.${getSanctumLevel(game, "guard_array")}`, badge: "守护灵脉免遭三波百鬼夜行攻破！",
       x: corePos.x, y: corePos.y, r: 46, progress: 0
     });
     // Summon companions automatically to defend the sect together!
     summonAllyCoop();
     spawnSectDefenseWave(1);
-    showBossCutIn("prop_guardian_sword_pylon", "护山大阵 · 百鬼夜行守卫战", "协同两座【护山剑阵灵塔】与道侣抵御三波立体妖潮，赢取鸿蒙星魄与护宗功勋！");
+    showBossCutIn("prop_guardian_sword_pylon", "护山大阵 · 百鬼夜行守卫战", `协同 ${towers.length} 座【护山剑阵灵塔】与道侣抵御三波立体妖潮，赢取鸿蒙星魄与护宗功勋！`);
     updateBossBannerAndRecallOrb();
     updateHud();
   }
@@ -7627,6 +8346,7 @@ const ART = {
     const sd = arena.sectDefense;
     if (!sd || !sd.active || !game) return;
     const st = getCombatStats(game);
+    const sb = getSanctumBonuses(game);
 
     // Autonomous Guardian Sword-Array Towers (`护山剑阵灵塔`) fire cyan-gold sword beams!
     for (const tw of sd.towers) {
@@ -7634,11 +8354,11 @@ const ART = {
       if (tw.cd <= 0 && arena.enemies.length > 0) {
         const tgt = arena.enemies.find(e => e.hp > 0);
         if (tgt) {
-          tw.cd = 0.68;
+          tw.cd = sb.towerCd;
           const ang = Math.atan2(tgt.y - tw.y, tgt.x - tw.x);
           arena.lightnings.push({ x1: tw.x, y1: tw.y - 44, x2: tgt.x, y2: tgt.y - 10, t: 0, color: "#70ffe6" });
           Sound.pluck(659.25, 0.08, 0.025, "triangle", tw.x);
-          damageEnemy(tgt, Math.round(st.atk * 0.92), false, 12, ang, 3.0, false);
+          damageEnemy(tgt, Math.round(st.atk * sb.towerDmgMult), false, 12, ang, 3.0, false);
         }
       }
     }
@@ -10451,7 +11171,7 @@ const ART = {
   function executeComboSequencerModule(modId, sx, sy, ang, st, isEcho = false, echoColor = null) {
     const mod = COMBO_SEQ_MODULES[modId] || COMBO_SEQ_MODULES.sword_crescent;
     const col = echoColor || mod.color;
-    const dmgScale = isEcho ? 0.55 : 1.0;
+    const dmgScale = (isEcho ? 0.55 : 1.0) * (1 + (game ? getSanctumBonuses(game).seqDmgBonus : 0));
 
     if (!isEcho && game) {
       const seq = ensureCustomComboSeq(game);
@@ -10966,19 +11686,21 @@ const ART = {
     if (!game) return null;
     const ex = ensureExpeditionState(game);
     const activeNodes = EXPEDITION_NODES.filter(nd => ex.assignments && ex.assignments[nd.id]);
+    const sb = getSanctumBonuses(game);
     // Ensure immediate meaningful harvest if active garrisons are deployed
     if (ex.bankedStones <= 0 && activeNodes.length > 0) {
       ex.bankedStones = activeNodes.reduce((s, n) => s + n.stoneRate, 0);
       ex.bankedStars = Math.max(1, Math.floor(activeNodes.length / 2));
     }
-    const gainedStones = ex.bankedStones || 0;
-    const gainedStars = ex.bankedStars || 0;
+    const gainedStones = Math.round((ex.bankedStones || 0) * sb.expMult);
+    const gainedStars = Math.round((ex.bankedStars || 0) * (sb.expMult >= 1.4 ? 1.5 : 1));
     game.stones = (game.stones || 0) + gainedStones;
     game.bonusStarPts = (game.bonusStarPts || 0) + gainedStars;
     ex.bankedStones = 0;
     ex.bankedStars = 0;
     Sound.fanfare();
-    showToast(`🎁 远征军资入库：灵石 +${gainedStones}、鸿蒙星魄 +${gainedStars}（可按 N 键点亮二十八星宿）！`);
+    const scLv = getSanctumLevel(game, "scripture_hall");
+    showToast(`🎁 远征军资入库${scLv > 1 ? `（藏经阁Lv.${scLv} ×${sb.expMult.toFixed(1)}）` : ""}：灵石 +${gainedStones}、鸿蒙星魄 +${gainedStars}！`);
     saveGame();
     updateHud();
     if (document.getElementById("modal-backdrop").classList.contains("open")) openExpeditionSandboxModal();
@@ -11944,6 +12666,21 @@ const ART = {
         <div class="dmg-bar-track"><div class="dmg-bar-fill" style="width:${pct}%;background:${r.col};"></div></div>
       </div>`;
     }).join("");
+
+    const comBox = document.getElementById("recap-companion-box");
+    if (comBox && game) {
+      const cmt = getCompanionPostBattleComment(game);
+      if (cmt) {
+        comBox.style.display = "flex";
+        comBox.innerHTML = `
+          <img src="${ART[cmt.art]}" alt="${cmt.name}" />
+          <div style="font-size:10.5px;line-height:1.4;color:#e5f3ef;">
+            <strong style="color:var(--gold-bright);">${cmt.name} · 战后评语：</strong>${cmt.text}
+          </div>`;
+      } else {
+        comBox.style.display = "none";
+      }
+    }
   }
 
   function toggleTelemetryPanel(force = null) {
@@ -12173,6 +12910,10 @@ const ART = {
       retreats: 0,
       tribulationFails: 0,
       defiantBreakthroughs: 0,
+      sanctumLevels: { spirit_eye: 1, cauldron: 1, sword_forge: 1, scripture_hall: 1, guard_array: 1 },
+      lifespanBonusMonths: 0,
+      sanctumChatStage: {},
+      karmaMarketBought: {},
       journal: ["十八岁山雨倾盆，仗剑踏入青岚破庙。"]
     };
     const st = getCombatStats(g);
@@ -12225,6 +12966,16 @@ const ART = {
     g.retreats = Number(raw.retreats) || 0;
     g.tribulationFails = Number(raw.tribulationFails) || 0;
     g.defiantBreakthroughs = Number(raw.defiantBreakthroughs) || 0;
+    g.sanctumLevels = Object.assign(
+      { spirit_eye: 1, cauldron: 1, sword_forge: 1, scripture_hall: 1, guard_array: 1 },
+      raw.sanctumLevels && typeof raw.sanctumLevels === "object" ? raw.sanctumLevels : {}
+    );
+    Object.keys(g.sanctumLevels).forEach(k => {
+      g.sanctumLevels[k] = Math.max(1, Math.min(5, Math.floor(Number(g.sanctumLevels[k]) || 1)));
+    });
+    g.lifespanBonusMonths = Number(raw.lifespanBonusMonths) || 0;
+    g.sanctumChatStage = Object.assign({}, raw.sanctumChatStage || {});
+    g.karmaMarketBought = Object.assign({}, raw.karmaMarketBought || {});
     const st = getCombatStats(g);
     if (typeof g.hp !== "number" || isNaN(g.hp) || g.hp <= 0) g.hp = st.maxHp;
     else g.hp = Math.min(st.maxHp, g.hp);
@@ -12941,6 +13692,458 @@ const ART = {
     return Math.round((realmHp + (g.maxHpBonus || 0) + gt.hp + sb.hp) * statCap * tortoiseMult);
   }
 
+  // ==================== M3 ENGINE: SANCTUM CONSTRUCTION, LIFESPAN, COMPANION PRESENCE & KARMA WORLD ====================
+  function ensureSanctumLevels(g) {
+    if (!g) return { spirit_eye: 1, cauldron: 1, sword_forge: 1, scripture_hall: 1, guard_array: 1 };
+    if (!g.sanctumLevels || typeof g.sanctumLevels !== "object") {
+      g.sanctumLevels = { spirit_eye: 1, cauldron: 1, sword_forge: 1, scripture_hall: 1, guard_array: 1 };
+    }
+    ["spirit_eye", "cauldron", "sword_forge", "scripture_hall", "guard_array"].forEach(k => {
+      g.sanctumLevels[k] = Math.max(1, Math.min(5, Math.floor(Number(g.sanctumLevels[k]) || 1)));
+    });
+    return g.sanctumLevels;
+  }
+
+  function getSanctumLevel(g, bId) {
+    const lvMap = ensureSanctumLevels(g);
+    return lvMap[bId] || 1;
+  }
+
+  function getSanctumTotalLevel(g) {
+    const lvMap = ensureSanctumLevels(g);
+    return Object.values(lvMap).reduce((s, v) => s + v, 0);
+  }
+
+  function getSanctumProsperity(g) {
+    const tot = getSanctumTotalLevel(g);
+    let best = SANCTUM_PROSPERITY_TIERS[0];
+    for (const tier of SANCTUM_PROSPERITY_TIERS) {
+      if (tot >= tier.minLv) best = tier;
+    }
+    return { totalLv: tot, maxTotalLv: 25, title: best.title, col: best.col };
+  }
+
+  function getSanctumNextCost(bId, curLv) {
+    const spec = SANCTUM_BUILDINGS.find(b => b.id === bId);
+    if (!spec || curLv >= 5) return null;
+    return spec.tiers[curLv] || null;
+  }
+
+  function getMaxGourdSoaks(g) {
+    const cLv = getSanctumLevel(g, "cauldron");
+    return cLv >= 5 ? 5 : cLv >= 3 ? 4 : 3;
+  }
+
+  function getGearEnhanceCost(g, eq) {
+    if (!eq) return 0;
+    const base = 25 + (eq.lvl || 0) * 20;
+    const fLv = getSanctumLevel(g, "sword_forge");
+    const mult = Math.max(0.60, 1 - (fLv - 1) * 0.10);
+    return Math.max(12, Math.round(base * mult));
+  }
+
+  function getSanctumBonuses(g) {
+    const eyeLv = getSanctumLevel(g, "spirit_eye");
+    const caulLv = getSanctumLevel(g, "cauldron");
+    const forgeLv = getSanctumLevel(g, "sword_forge");
+    const scLv = getSanctumLevel(g, "scripture_hall");
+    const grdLv = getSanctumLevel(g, "guard_array");
+    return {
+      medMult: Number((1 + (eyeLv - 1) * 0.22).toFixed(2)),
+      bonusGourdCharges: (eyeLv >= 3 ? 1 : 0) + (eyeLv >= 5 ? 1 : 0),
+      alchemySweetBonus: (caulLv - 1) * 0.035,
+      maxSoaks: caulLv >= 5 ? 5 : caulLv >= 3 ? 4 : 3,
+      longevityUnlocked: caulLv >= 2,
+      forgeAtk: (forgeLv - 1) * 8,
+      quenchDiscMult: Math.max(0.60, 1 - (forgeLv - 1) * 0.10),
+      seqDmgBonus: forgeLv >= 5 ? 0.25 : forgeLv >= 3 ? 0.12 : 0,
+      expMult: Number((1 + (scLv - 1) * 0.20).toFixed(2)),
+      sourceMult: Number((1 + (scLv - 1) * 0.15).toFixed(2)),
+      bonusBoonRerolls: scLv >= 2 ? 1 : 0,
+      bonusLawRerolls: scLv >= 4 ? 1 : 0,
+      guardDr: (grdLv - 1) * 4,
+      coreHpBonus: (grdLv - 1) * 350,
+      towerDmgMult: Number((0.92 + (grdLv - 1) * 0.22).toFixed(2)),
+      towerCd: Number(Math.max(0.36, 0.68 - (grdLv - 1) * 0.07).toFixed(2)),
+      hasThirdTower: grdLv >= 3
+    };
+  }
+
+  function getLifespanInfo(g) {
+    if (!g) return { curMonths: 216, maxMonths: 744, curYears: 18, maxYears: 62, remainYears: 44, ratio: 0.29, status: "normal", medPenaltyMult: 1.0 };
+    const r = REALMS[g.realm] || REALMS.mortal;
+    const curMonths = Math.max(12, Math.round((g.startAgeMonths || 216) + (g.elapsedMonths || 0)));
+    const maxMonths = Math.max(240, (r.lifespanMonths || 744) + (g.perk === "immortal_echo" ? 480 : 0) + (g.lifespanBonusMonths || 0));
+    const curYears = Math.floor(curMonths / 12);
+    const maxYears = Math.floor(maxMonths / 12);
+    const remainYears = Math.max(0, maxYears - curYears);
+    const ratio = g.realm === "ascended" ? 0.05 : curMonths / Math.max(1, maxMonths);
+    const status = ratio >= 0.92 ? "critical" : ratio >= 0.75 ? "warning" : "normal";
+    return {
+      curMonths, maxMonths, curYears, maxYears, remainYears, ratio: Number(ratio.toFixed(3)),
+      status,
+      medPenaltyMult: status === "critical" ? 0.90 : 1.0
+    };
+  }
+
+  function canAffordSanctumUpgrade(g, bId) {
+    if (!g) return false;
+    const curLv = getSanctumLevel(g, bId);
+    const cost = getSanctumNextCost(bId, curLv);
+    if (!cost) return false;
+    if ((g.stones || 0) < cost.stones) return false;
+    for (const [mk, req] of Object.entries(cost.mats || {})) {
+      if ((g.inventory[mk] || 0) < req) return false;
+    }
+    return true;
+  }
+
+  function upgradeSanctumBuilding(bId) {
+    if (!game) return false;
+    const spec = SANCTUM_BUILDINGS.find(b => b.id === bId);
+    const lvMap = ensureSanctumLevels(game);
+    const curLv = lvMap[bId] || 1;
+    if (!spec || curLv >= 5) {
+      showToast("该灵脉建筑已修至 Lv.5 圆满之境！");
+      return false;
+    }
+    const cost = getSanctumNextCost(bId, curLv);
+    if (!cost) return false;
+    if ((game.stones || 0) < cost.stones) {
+      showToast(`灵石不足（升至 Lv.${curLv + 1} 需 ${cost.stones} 灵石）`);
+      return false;
+    }
+    for (const [mk, req] of Object.entries(cost.mats || {})) {
+      if ((game.inventory[mk] || 0) < req) {
+        showToast(`缺少【${(ITEMS[mk] && ITEMS[mk].name) || mk}】×${req}（可赴秘境斩妖或宗门委托采集）`);
+        return false;
+      }
+    }
+    game.stones -= cost.stones;
+    Object.entries(cost.mats || {}).forEach(([mk, req]) => {
+      game.inventory[mk] = Math.max(0, (game.inventory[mk] || 0) - req);
+    });
+    lvMap[bId] = curLv + 1;
+    const nextLv = lvMap[bId];
+    if (bId === "spirit_eye" && (nextLv === 3 || nextLv === 5)) {
+      if (!game.gourd) refillImmortalGourd();
+      game.gourd.maxCharges = (game.gourd.maxCharges || 5) + 1;
+      game.gourd.charges = game.gourd.maxCharges;
+    }
+    if (Array.isArray(game.journal)) {
+      game.journal.unshift(`【洞府升阶】${spec.name}晋升 Lv.${nextLv}：${cost.eff}`);
+    }
+    Sound.fanfare();
+    Sound.clang(1.25, 0.14);
+    if (arena.sanctumMode) {
+      // Refresh Sanctum prop labels immediately so Lv.N shows on courtyard landmarks!
+      arena.props.forEach(pr => {
+        if (pr.id === "cauldron_main") pr.name = `紫微丹鼎 · Lv.${lvMap.cauldron}`;
+        if (pr.id === "sanctum_tiangong_forge") pr.name = `天工星火剑炉 · Lv.${lvMap.sword_forge}`;
+        if (pr.id === "hub_sect_defense") pr.name = `护山大阵 · Lv.${lvMap.guard_array}`;
+        if (pr.id === "hub_scripture_hall") pr.name = `藏经阁 · Lv.${lvMap.scripture_hall}`;
+      });
+      addRipple(arena.player.x, arena.player.y + 18, 150, spec.color);
+      addFloat(`🏛 ${spec.name} 升阶 Lv.${nextLv}！`, arena.player.x, arena.player.y - 62, spec.color, 21, true);
+    }
+    showToast(`🏛 【${spec.name}】升至 Lv.${nextLv}！${cost.eff}`);
+    saveGame();
+    updateHud();
+    if (drawerOpen) renderDrawerContent();
+    if (document.getElementById("modal-backdrop").classList.contains("open")) {
+      openSanctumUpgradeModal();
+    }
+    return true;
+  }
+
+  function openSanctumUpgradeModal() {
+    if (!game) return;
+    closeDrawer();
+    arena.paused = true;
+    const lvMap = ensureSanctumLevels(game);
+    const pros = getSanctumProsperity(game);
+    const matKeys = ["herb", "dew", "core", "jade", "lotus", "soul", "dao"];
+
+    openModal(`
+      <div class="drawer-mural-banner" style="height:88px;">
+        <img src="${ART.banner_sanctum}" alt="听雨洞府灵脉建设" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">洞府经营 · 五阶灵脉</span>
+            <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">听雨洞府 · ${pros.title}（灵阶 ${pros.totalLv}/${pros.maxTotalLv}）</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-modal-close="1">返回洞府 ✕</button>
+        </div>
+      </div>
+
+      <div class="sanctum-mat-bar">
+        <span style="color:var(--gold-bright);font-weight:700;">行囊灵材库：</span>
+        <span class="sanctum-mat-pill" style="border-color:rgba(255,226,138,0.55);color:#ffe89e;">◆ 灵石 ${game.stones || 0}</span>
+        ${matKeys.map(mk => `<span class="sanctum-mat-pill">${ITEMS[mk].name} ×${game.inventory[mk] || 0}</span>`).join("")}
+      </div>
+
+      <div class="sanctum-grid">
+        ${SANCTUM_BUILDINGS.map(b => {
+          const lv = lvMap[b.id] || 1;
+          const nextCost = getSanctumNextCost(b.id, lv);
+          const ok = canAffordSanctumUpgrade(game, b.id);
+          const costStr = nextCost
+            ? `灵石 ${nextCost.stones} + ` + Object.entries(nextCost.mats).map(([mk, req]) => `${ITEMS[mk].name}×${req}`).join(" · ")
+            : "已臻圆满 Lv.5";
+          return `
+            <div class="sanctum-bld-card ${lv >= 5 ? "maxed" : ""}">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <img src="${ART[b.art]}" alt="${b.name}" style="width:36px;height:36px;object-fit:contain;" />
+                  <div>
+                    <div style="font-family:var(--font-serif);font-size:15px;font-weight:700;color:${b.color};">${b.icon} ${b.name} · Lv.${lv}/5</div>
+                    <div style="font-size:10px;color:var(--text-sub);">${b.role}</div>
+                  </div>
+                </div>
+                <div class="sanctum-lv-pips">
+                  ${[1, 2, 3, 4, 5].map(i => `<span class="sanctum-pip ${i <= lv ? "lit" : ""}"></span>`).join("")}
+                </div>
+              </div>
+              <div style="font-size:11px;color:#9effec;font-weight:700;">当前成效：${b.summaryFn(lv)}</div>
+              ${nextCost ? `
+                <div style="font-size:10.5px;color:#ffe6a8;">升至 Lv.${lv + 1}：${nextCost.eff}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:2px;">
+                  <span style="font-size:10px;color:var(--text-sub);">${costStr}</span>
+                  <button type="button" class="${ok ? "btn-gold" : "btn-ghost"}" style="padding:4px 11px;font-size:11px;white-space:nowrap;" data-upgrade-sanctum="${b.id}" ${ok ? "" : "disabled"}>升阶 Lv.${lv + 1}</button>
+                </div>
+              ` : `<span class="tag-chip mythic" style="align-self:flex-end;">★ 五阶圆满</span>`}
+            </div>`;
+        }).join("")}
+      </div>
+    `, true);
+  }
+
+  function getCompanionDynamicGreeting(g, npcId) {
+    const dlg = COMPANION_HUB_DIALOGUES[npcId];
+    if (!dlg || !g) return "道友安好，仙途漫漫且共勉。";
+    const mode = getKarmaState(g).mode;
+    const pool = dlg.greetings[mode] || dlg.greetings.neutral;
+    const idx = (rankOf(g.realm) + (arena.stageIdx || 0)) % pool.length;
+    return pool[idx];
+  }
+
+  function getCompanionPostBattleComment(g) {
+    if (!g) return null;
+    const ids = ["shen", "pei", "lu", "yan"];
+    let bestId = "shen";
+    let bestScore = -1;
+    ids.forEach(id => {
+      const sc = getCompanionBondTier(g, id) * 10 + (g.aids && g.aids[id] ? 5 : 0);
+      if (sc > bestScore) { bestScore = sc; bestId = id; }
+    });
+    const npc = NPC_META[bestId];
+    const dlg = COMPANION_HUB_DIALOGUES[bestId];
+    if (!npc || !dlg) return null;
+    const mode = getKarmaState(g).mode;
+    return {
+      npcId: bestId,
+      name: npc.name,
+      art: npc.art,
+      text: dlg.postBattle[mode] || dlg.postBattle.neutral
+    };
+  }
+
+  function openCompanionInteractModal(npcId) {
+    if (!game || !NPC_META[npcId]) return;
+    closeDrawer();
+    arena.paused = true;
+    const npc = NPC_META[npcId];
+    const kp = COMPANION_KEEPSAKES[npcId];
+    const dlg = COMPANION_HUB_DIALOGUES[npcId];
+    const tier = getCompanionBondTier(game, npcId);
+    const ks = getKarmaState(game);
+    const greet = getCompanionDynamicGreeting(game, npcId);
+    const availStory = STORIES.find(s => s.npc === npcId && !game.choices[s.id] && rankOf(game.realm) >= rankOf(s.min) && (!s.requires || !!game.choices[s.requires]));
+    const nextLockedStory = STORIES.find(s => s.npc === npcId && !game.choices[s.id] && (!s.requires || !!game.choices[s.requires]) && rankOf(game.realm) < rankOf(s.min));
+    const doneStories = STORIES.filter(s => s.npc === npcId && !!game.choices[s.id]).length;
+    const totalStories = STORIES.filter(s => s.npc === npcId).length;
+    const chatKey = `${npcId}_${game.realm}`;
+    const teaClaimed = !!(game.sanctumChatStage && game.sanctumChatStage["tea_" + chatKey]);
+    const sparClaimed = !!(game.sanctumChatStage && game.sanctumChatStage["spar_" + chatKey]);
+    const hasFavMat = (game.inventory[dlg.favMat] || 0) >= dlg.favCount;
+    const canGiftStone = (game.stones || 0) >= 40;
+
+    openModal(`
+      <div class="companion-modal-head">
+        <img src="${ART[npc.art]}" alt="${npc.name}" />
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <span class="cinnabar-seal">${npc.role}</span>
+              <strong style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);">${npc.name}</strong>
+              <span class="tag-chip ${tier >= 3 ? "mythic" : "done"}">${kp.tierTitles[tier]}</span>
+            </div>
+            <button type="button" class="btn-ghost" data-modal-close="1">告辞 ✕</button>
+          </div>
+          <p style="font-size:12.5px;color:#edf7f4;line-height:1.5;font-family:var(--font-serif);">『${greet}』</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:10.5px;">
+            <span style="color:#80ffea;">三阶信物【${kp.keepsake}】：${kp.bonusDesc}</span>
+            <span style="color:var(--gold);">故人剧情：${doneStories}/${totalStories}</span>
+          </div>
+        </div>
+      </div>
+
+      ${availStory ? `
+        <div class="jade-card" style="border-color:rgba(255,226,138,0.68);flex-direction:row;justify-content:space-between;align-items:center;gap:10px;">
+          <div>
+            <strong style="font-size:13.5px;color:var(--gold-bright);">🎭 可触发专属立绘剧情 · 《${availStory.name}》</strong>
+            <div style="font-size:11px;color:var(--text-sub);margin-top:2px;">进入半身立绘叙事舞台，亲手抉择故人机缘并推进三阶羁绊！</div>
+          </div>
+          <button type="button" class="btn-gold" style="white-space:nowrap;" data-play-story-bar="${availStory.id}">🎭 立绘演绎 ▸</button>
+        </div>
+      ` : nextLockedStory ? `
+        <div class="pity-bar-card">
+          <span>下一段专属剧情：《${nextLockedStory.name}》</span>
+          <span style="color:var(--gold-bright);">晋升【${REALMS[nextLockedStory.min].name}期】解锁</span>
+        </div>
+      ` : `
+        <div class="pity-bar-card">
+          <span>★ 与【${npc.name}】本世故人剧情已全部圆满！</span>
+          <span style="color:#70ffe6;">合击技：${npc.coopName}</span>
+        </div>
+      `}
+
+      <div class="companion-action-grid">
+        <button type="button" class="companion-action-btn" data-comp-act="tea" data-comp-npc="${npcId}">
+          <strong style="font-size:13px;color:#9effec;">🍵 洞府茶叙</strong>
+          <span style="font-size:10.5px;color:var(--text-sub);line-height:1.4;">${teaClaimed ? "重温立绘对谈（本境茶礼已领）" : "半身立绘茶叙 · 仁心/本真 +5 · 灵气全满"}</span>
+        </button>
+        <button type="button" class="companion-action-btn" data-comp-act="spar" data-comp-npc="${npcId}">
+          <strong style="font-size:13px;color:#ffe28a;">⚔ 同门切磋</strong>
+          <span style="font-size:10.5px;color:var(--text-sub);line-height:1.4;">${sparClaimed ? "演武切磋感悟（本境修为已领）" : dlg.sparReward}</span>
+        </button>
+        <button type="button" class="companion-action-btn" data-comp-act="gift" data-comp-npc="${npcId}" ${tier >= 3 || (!hasFavMat && !canGiftStone) ? "disabled" : ""}>
+          <strong style="font-size:13px;color:#f3c6ff;">🎁 赠礼晋阶信物</strong>
+          <span style="font-size:10.5px;color:var(--text-sub);line-height:1.4;">${tier >= 3 ? `★ 【${kp.keepsake}】已满阶激活` : hasFavMat ? `赠心仪灵材 ${dlg.favLabel}（优先）晋升 ${kp.tierTitles[tier + 1]}` : `赠 40 灵石晋升 ${kp.tierTitles[tier + 1]}`}</span>
+        </button>
+      </div>
+    `, true);
+  }
+
+  function triggerCompanionHubAction(npcId, act) {
+    if (!game || !NPC_META[npcId]) return false;
+    const npc = NPC_META[npcId];
+    const kp = COMPANION_KEEPSAKES[npcId];
+    const dlg = COMPANION_HUB_DIALOGUES[npcId];
+    const ks = getKarmaState(game);
+    if (!game.sanctumChatStage) game.sanctumChatStage = {};
+    const chatKey = `${npcId}_${game.realm}`;
+
+    if (act === "tea") {
+      closeModal();
+      const firstTime = !game.sanctumChatStage["tea_" + chatKey];
+      if (firstTime) {
+        game.sanctumChatStage["tea_" + chatKey] = true;
+        game.dao.serenity = (game.dao.serenity || 6) + 5;
+        game.dao.benevolence = (game.dao.benevolence || 6) + 3;
+        const st = getCombatStats(game);
+        game.hp = st.maxHp;
+        game.mp = st.maxMp;
+        refillImmortalGourd();
+        saveGame();
+        updateHud();
+      }
+      const lineTxt = dlg.teaLines[ks.mode] || dlg.teaLines.neutral;
+      playCustomDialogueLines([
+        {
+          art: npc.art,
+          role: `${npc.role} · 听雨茶叙`,
+          speaker: npc.name,
+          text: lineTxt + (firstTime ? "（本真+5 · 仁心+3 · 气血仙葫满盈）" : ""),
+          finalBtnLabel: "品茗收盏 ▸"
+        }
+      ]);
+      return true;
+    }
+
+    if (act === "spar") {
+      closeModal();
+      const firstTime = !game.sanctumChatStage["spar_" + chatKey];
+      const st = getCombatStats(game);
+      if (firstTime) {
+        game.sanctumChatStage["spar_" + chatKey] = true;
+        const xpAdd = Math.max(18, Math.round((REALMS[game.realm].xpCap || 120) * 0.14));
+        gainRealmXp(xpAdd);
+        arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + 45);
+        if (npcId === "shen") arena.player.shieldHp = Math.max(arena.player.shieldHp || 0, Math.round(st.maxHp * 0.18));
+        game.dao.edge = (game.dao.edge || 10) + 5;
+        Sound.clang(1.2, 0.12);
+        saveGame();
+        updateHud();
+      }
+      playCustomDialogueLines([
+        {
+          art: npc.art,
+          role: `${npc.role} · 演武切磋`,
+          speaker: npc.name,
+          text: firstTime
+            ? `剑光交错十余合！${npc.name}收势赞叹：『好精妙的破势剑意！』（修为精进 · 剑意+45% · 锋芒+5）`
+            : `与${npc.name}再度演武十招，彼此剑意更见圆融。`,
+          finalBtnLabel: "收剑致谢 ▸"
+        }
+      ]);
+      return true;
+    }
+
+    if (act === "gift") {
+      const curT = getCompanionBondTier(game, npcId);
+      if (curT >= 3) return false;
+      const useMat = (game.inventory[dlg.favMat] || 0) >= dlg.favCount;
+      if (!useMat && (game.stones || 0) < 40) {
+        showToast(`需 ${dlg.favLabel} 或 40 灵石方可赠礼晋阶`);
+        return false;
+      }
+      if (useMat) game.inventory[dlg.favMat] -= dlg.favCount;
+      else game.stones -= 40;
+      if (!game.bondTiers) game.bondTiers = { shen: 1, pei: 0, lu: 0, yan: 0 };
+      game.bondTiers[npcId] = curT + 1;
+      game.aids[npcId] = true;
+      const newT = game.bondTiers[npcId];
+      closeModal();
+      Sound.fanfare();
+      saveGame();
+      updateHud();
+      const quote = ks.mode === "demonic" ? kp.demonQuote : kp.rightQuote;
+      playCustomDialogueLines([
+        {
+          art: npc.art,
+          role: `${npc.role} · ${kp.tierTitles[newT]}`,
+          speaker: npc.name,
+          text: `${quote}${newT >= 3 ? ` ★ 三阶生死信物【${kp.keepsake}】已永久觉醒（${kp.bonusDesc}）！` : `（羁绊晋升至【${kp.tierTitles[newT]}】）`}`,
+          finalBtnLabel: "铭记于心 ▸"
+        }
+      ]);
+      return true;
+    }
+    return false;
+  }
+
+  function getBossKarmaMonologue(bossId) {
+    const entry = BOSS_KARMA_MONOLOGUES[bossId];
+    if (!entry) return "";
+    const mode = getKarmaState(game).mode;
+    return entry[mode] || entry.neutral || "";
+  }
+
+  function getKarmaEndingEpilogue(g, endId) {
+    const ks = getKarmaState(g);
+    const base = KARMA_ENDING_EPILOGUES[ks.mode] || KARMA_ENDING_EPILOGUES.neutral;
+    const ed = ASCENSION_ENDINGS.find(e => e.id === endId);
+    return {
+      mode: ks.mode,
+      seal: base.seal,
+      epithet: ed ? `${base.epithet} · ${ed.name}` : base.epithet,
+      color: base.color,
+      poem: base.poem,
+      epilogue: base.epilogue
+    };
+  }
+
   function getCombatStats(g) {
     const r = REALMS[g.realm] || REALMS.mortal;
     const gt = getGearTotals(g);
@@ -12951,10 +14154,11 @@ const ART = {
     const mindBonus = g.loadout.mind === "sword_pierce" ? 14 : g.loadout.mind === "talisman_clear" ? 6 : 0;
     const relicBonus = Math.round(((g.loadout.relic === "frost_sword" ? 10 : g.loadout.relic === "soul_lamp" ? 9 : 5) * (g.loadout.relic ? starScale : 0)));
     const starB = getStarChartBonuses(g);
+    const sanctumB = getSanctumBonuses(g);
     const years = Math.floor(((g.startAgeMonths || 216) + (g.elapsedMonths || 0)) / 12);
 
     // Bucket 1: Flat Foundation ATK
-    const baseAtk = 16 + r.power * 1.62 + gt.atk + (g.atkFlatBonus || 0) + (g.perk === "sword_bone" ? 8 : 0) + mindBonus + relicBonus + starB.atk;
+    const baseAtk = 16 + r.power * 1.62 + gt.atk + (g.atkFlatBonus || 0) + (g.perk === "sword_bone" ? 8 : 0) + mindBonus + relicBonus + starB.atk + sanctumB.forgeAtk;
 
     // Bucket 2: Passive Additive Bonus Pool (with diminishing soft-cap so late builds feel strong without 1-shotting bosses!)
     const setB = getActiveSetBonus(g);
@@ -12990,7 +14194,8 @@ const ART = {
       + (g.pet.id === "turtle" ? 8 : 0)
       + (g.loadout.mind === "sword_still" ? 6 : 0)
       + (g.loadout.mind === "talisman_clear" ? 10 : 0)
-      + (g.loadout.relic === "jade_seal" ? Math.round(10 * starScale) : 0);
+      + (g.loadout.relic === "jade_seal" ? Math.round(10 * starScale) : 0)
+      + sanctumB.guardDr;
 
     const tier = getComboTier(arena.comboCount);
     const lowHpBoonCrit = (hasRunBoon("blood_intent") && g.hp <= maxHp * 0.55) ? 0.25 : 0;
@@ -13597,17 +14802,22 @@ const ART = {
     initScarfRibbon();
     syncFlyingSwords();
 
-    // Well-spaced isometric courtyard layout (zero vertical stacking!)
-    const merchPos  = clampToPlaza(w * 0.50, h * 0.29, w, h);
-    const caulPos   = clampToPlaza(w * 0.34, h * 0.38, w, h);
-    const boardPos  = clampToPlaza(w * 0.66, h * 0.37, w, h);
-    const alchPos   = clampToPlaza(w * 0.23, h * 0.52, w, h);
-    const gatePos   = clampToPlaza(w * 0.77, h * 0.51, w, h);
-    const shenPos   = clampToPlaza(w * 0.31, h * 0.68, w, h);
-    const defPos    = clampToPlaza(w * 0.50, h * 0.75, w, h);
-    const forgePos  = clampToPlaza(w * 0.69, h * 0.66, w, h);
-    const jadePos   = clampToPlaza(w * 0.38, h * 0.51, w, h);
-    const peiPos    = clampToPlaza(w * 0.61, h * 0.75, w, h);
+    // Well-spaced symmetrical isometric courtyard layout (all 4 companions + 5-tier Sanctum landmarks!)
+    const lvMap = ensureSanctumLevels(game);
+    const hubKs = getKarmaState(game);
+    const merchPos     = clampToPlaza(w * 0.50, h * 0.25, w, h);
+    const luPos        = clampToPlaza(w * 0.40, h * 0.31, w, h);
+    const scripturePos = clampToPlaza(w * 0.60, h * 0.31, w, h);
+    const caulPos      = clampToPlaza(w * 0.31, h * 0.40, w, h);
+    const boardPos     = clampToPlaza(w * 0.69, h * 0.40, w, h);
+    const alchPos      = clampToPlaza(w * 0.22, h * 0.53, w, h);
+    const gatePos      = clampToPlaza(w * 0.78, h * 0.52, w, h);
+    const shenPos      = clampToPlaza(w * 0.28, h * 0.67, w, h);
+    const yanPos       = clampToPlaza(w * 0.39, h * 0.76, w, h);
+    const defPos       = clampToPlaza(w * 0.50, h * 0.78, w, h);
+    const peiPos       = clampToPlaza(w * 0.61, h * 0.76, w, h);
+    const forgePos     = clampToPlaza(w * 0.71, h * 0.66, w, h);
+    const jadePos      = clampToPlaza(w * 0.38, h * 0.51, w, h);
 
     arena.props.push({
       id: "sanctum_taixu_furnace", kind: "taixu_craft_alchemy", destructible: false, art: "furnace_taixu_alchemy",
@@ -13615,15 +14825,22 @@ const ART = {
     });
     arena.props.push({
       id: "sanctum_tiangong_forge", kind: "taixu_craft_forge", destructible: false, art: "anvil_tiangong_forge",
-      name: "天工星火剑炉", badge: "点击落锤锻紫气鸿蒙 · 开裂空剑痕", x: forgePos.x, y: forgePos.y, r: 40
+      name: `天工星火剑炉 · Lv.${lvMap.sword_forge}`, badge: `常驻攻+${(lvMap.sword_forge - 1) * 8} · 点击落锤锻神兵`, x: forgePos.x, y: forgePos.y, r: 40, sanctumKey: "sword_forge"
     });
     arena.props.push({
-      id: "cauldron_main", kind: "cauldron", art: "furnace", name: "紫微丹鼎", badge: "点击或按 Enter 控火炼丹",
-      x: caulPos.x, y: caulPos.y, r: 40, progress: 0
+      id: "cauldron_main", kind: "cauldron", art: "furnace", name: `紫微丹鼎 · Lv.${lvMap.cauldron}`, badge: "点击或按 Enter 控火炼丹",
+      x: caulPos.x, y: caulPos.y, r: 40, progress: 0, sanctumKey: "cauldron"
     });
     arena.props.push({
-      id: "hub_merchant", kind: "merchant_npc", art: "actor_lu", onLotus: true, name: "云岚百宝商 · 陆执事", badge: "点击或按 Enter 选购仙装灵丹",
-      x: merchPos.x, y: merchPos.y, r: 42, progress: 0
+      id: "hub_merchant", kind: "merchant_npc", art: "relic_cloud_mirror", onLotus: true,
+      name: hubKs.mode === "demonic" ? "赤渊黑市 · 百宝坊" : hubKs.mode === "righteous" ? "太清仙珍 · 百宝坊" : "云岚百宝坊市",
+      badge: "点击或按 Enter 选购仙装与正魔特供",
+      x: merchPos.x, y: merchPos.y, r: 40, progress: 0
+    });
+    arena.props.push({
+      id: "hub_scripture_hall", kind: "sanctum_upgrade", art: "scroll_shanhe_sheji", onLotus: true,
+      name: `藏经阁 · Lv.${lvMap.scripture_hall}`, badge: "点击/Enter 升级洞府五大灵脉建筑",
+      x: scripturePos.x, y: scripturePos.y, r: 40, progress: 0, sanctumKey: "scripture_hall"
     });
     arena.props.push({
       id: "hub_bounty_board", kind: "bounty_board", art: "bounty_jade_board", name: "青云天命悬赏榜", badge: "点击或按 T 领悬赏秘宝",
@@ -13633,26 +14850,37 @@ const ART = {
       id: "hub_jade_" + Date.now(), kind: "rough_jade", art: "item_rough_jade", name: "试剑鸿蒙石", badge: "飞剑自动切玉爆仙装",
       x: jadePos.x, y: jadePos.y, r: 30, hp: 3, maxHp: 3
     });
-    const hubKs = getKarmaState(game);
     arena.props.push({
-      id: "hub_shen", kind: "companion_npc", art: "actor_shen", onLotus: true,
+      id: "hub_shen", kind: "companion_npc", npcId: "shen", art: "actor_shen", onLotus: true,
       name: `沈清禾 · ${COMPANION_KEEPSAKES.shen.tierTitles[getCompanionBondTier(game, "shen")]}`,
-      badge: hubKs.mode === "demonic" ? "纵染劫煞亦留暖汤 · 点击/Enter 晋阶信物" : "清虚守正药香护脉 · 点击/Enter 晋阶信物",
-      x: shenPos.x, y: shenPos.y, r: 40, progress: 0
+      badge: hubKs.mode === "demonic" ? "纵染劫煞亦留暖汤 · 点击/Enter 雅集叙话" : "清虚守正药香护脉 · 点击/Enter 雅集叙话",
+      x: shenPos.x, y: shenPos.y, r: 38, progress: 0
     });
-    if (game.aids.pei || rankOf(game.realm) >= 2 || Object.keys(game.choices).some(k => k.startsWith("pei"))) {
-      arena.props.push({
-        id: "hub_pei", kind: "companion_npc", art: "actor_pei", onLotus: true, name: "裴照 · 寒潭论剑", badge: "点击/Enter 切磋剑道盟契",
-        x: peiPos.x, y: peiPos.y, r: 40, progress: 0
-      });
-    }
+    arena.props.push({
+      id: "hub_lu", kind: "companion_npc", npcId: "lu", art: "actor_lu", onLotus: true,
+      name: `陆玄松 · ${COMPANION_KEEPSAKES.lu.tierTitles[getCompanionBondTier(game, "lu")]}`,
+      badge: hubKs.mode === "righteous" ? "太清真传欣慰备至 · 点击/Enter 传功叙话" : hubKs.mode === "demonic" ? "镇山古钟为你稳心 · 点击/Enter 叙话" : "青云传功执事 · 点击/Enter 叙话切磋",
+      x: luPos.x, y: luPos.y, r: 38, progress: 0
+    });
+    arena.props.push({
+      id: "hub_pei", kind: "companion_npc", npcId: "pei", art: "actor_pei", onLotus: true,
+      name: `裴照 · ${COMPANION_KEEPSAKES.pei.tierTitles[getCompanionBondTier(game, "pei")]}`,
+      badge: hubKs.mode === "demonic" ? "好烈血煞试剑十招 · 点击/Enter 切磋" : "青云剑首邀君论剑 · 点击/Enter 切磋叙话",
+      x: peiPos.x, y: peiPos.y, r: 38, progress: 0
+    });
+    arena.props.push({
+      id: "hub_yan", kind: "companion_npc", npcId: "yan", art: "actor_yan", onLotus: true,
+      name: `砚尘 · ${COMPANION_KEEPSAKES.yan.tierTitles[getCompanionBondTier(game, "yan")]}`,
+      badge: hubKs.mode === "demonic" ? "执劫火而不迷本真 · 点击/Enter 照心叙话" : "古境守碑观世人 · 点击/Enter 茶叙照心",
+      x: yanPos.x, y: yanPos.y, r: 38, progress: 0
+    });
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.celestialSpire = null;
     arena.props.push({
       id: "hub_sect_defense", kind: "sect_defense_trigger", art: "prop_guardian_sword_pylon",
-      name: "护山大阵 · 守卫台", badge: "点击或按 Enter 开启三波妖潮守卫战",
-      x: defPos.x, y: defPos.y, r: 38, progress: 0
+      name: `护山大阵 · Lv.${lvMap.guard_array}`, badge: `常驻减伤+${(lvMap.guard_array - 1) * 4} · 点击开启守卫战`,
+      x: defPos.x, y: defPos.y, r: 38, progress: 0, sanctumKey: "guard_array"
     });
     arena.props.push({
       id: "hub_depart", kind: "portal", portalArt: "portal_golden_lantern", name: `出征 · ${STAGES[arena.stageIdx].name}`, badge: "点击或按 M 选域出征",
@@ -13668,7 +14896,7 @@ const ART = {
     const recapCard = document.getElementById("stage-recap-card");
     if (recapCard) recapCard.classList.remove("open");
     Sound.qiOrb(3);
-    showToast("已返【听雨洞府】· 点击上方【演武论剑坪】可切换木桩与诸天试炼");
+    showToast("已返【听雨洞府】· 可点击【藏经阁】升阶洞府建筑，或与四位故人茶叙切磋！");
     saveGame();
     updateHud();
   }
@@ -13695,7 +14923,7 @@ const ART = {
     arena.roomBranch = "outpost";
     arena.towerMode = towerMode;
     arena.runBoons = [];
-    arena.boonRerollsLeft = 1;
+    arena.boonRerollsLeft = 1 + (game ? getSanctumBonuses(game).bonusBoonRerolls : 0);
     arena.slashEchoCounter = 0;
     arena.player.boonOverloadTimer = 0;
     arena.dungeonMap = towerMode ? null : generateDungeonMap(arena.stageIdx);
@@ -14147,10 +15375,12 @@ const ART = {
             nextIdx: 3, toTower: true, x: towPos.x, y: towPos.y, r: 44, progress: 0
           });
           if (game && game.stageStars) game.stageStars[4] = 3;
+          if (game) game.elapsedMonths = (game.elapsedMonths || 0) + 6;
           spawnGearDrop(w * 0.56, h * 0.53, 4);
           showToast("★★★ 天门道影已破！达成三星通关，点击/Enter【九霄仙门】飞升证道！");
         }
       } else if (!arena.props.some(p => p.kind === "portal")) {
+        if (game) game.elapsedMonths = (game.elapsedMonths || 0) + 6;
         if (game && game.stageStars) {
           const stClear = getCombatStats(game);
           const gotTech = arena.stageTechDone || (arena.maxStageCombo || 0) >= 12;
@@ -14250,7 +15480,12 @@ const ART = {
       spawnStageInteractiveHazards();
       spawnSingleEnemy(bId, w * 0.64, h * 0.53, stageScale, true, stg.bossTitle || `镇守妖王 · ${ENEMIES[bId].name}`);
       Sound.drum(0.24);
-      showBossCutIn(ENEMIES[bId].art, stg.bossTitle || ENEMIES[bId].name, getBossMechLabel(bId));
+      const bMono = getBossKarmaMonologue(bId);
+      const cutSub = bMono ? `${bMono} ｜ ${getBossMechLabel(bId)}` : getBossMechLabel(bId);
+      showBossCutIn(ENEMIES[bId].art, stg.bossTitle || ENEMIES[bId].name, cutSub);
+      if (bMono) {
+        addFloat(bMono, w * 0.64, h * 0.43, getKarmaState(game).color, 15, true);
+      }
       updateHud();
       return;
     }
@@ -15509,6 +16744,37 @@ const ART = {
       if (drawerOpen) renderDrawerContent();
       return;
     }
+    if (itemId === "longevity_pill") {
+      game.inventory.longevity_pill -= 1;
+      game.lifespanBonusMonths = (game.lifespanBonusMonths || 0) + 360;
+      game.maxHpBonus = (game.maxHpBonus || 0) + 15;
+      const stNew = getCombatStats(game);
+      game.hp = Math.min(stNew.maxHp, game.hp + 15);
+      const lf = getLifespanInfo(game);
+      if (Array.isArray(game.journal)) game.journal.unshift(`服下【延寿青莲丹】，寿元延至 ${lf.maxYears} 载！`);
+      Sound.fanfare();
+      addRipple(arena.player.x, arena.player.y + 18, 120, "#70ffe6");
+      addFloat("🌿 延寿青莲丹 · 寿元 +30 载！", arena.player.x, arena.player.y - 54, "#70ffe6", 18, true);
+      showToast(`🌿 服下【延寿青莲丹】· 寿元永久 +30 载（${lf.curYears}/${lf.maxYears} 载）且气血上限 +15！`);
+      saveGame(); updateHud();
+      if (drawerOpen) renderDrawerContent();
+      return;
+    }
+    if (itemId === "blood_fury_pill") {
+      game.inventory.blood_fury_pill -= 1;
+      game.atkFlatBonus = (game.atkFlatBonus || 0) + 10;
+      game.karmaScore = Math.max(-100, Math.min(100, (game.karmaScore || 0) - 15));
+      game.elapsedMonths = (game.elapsedMonths || 0) + 24;
+      const lf = getLifespanInfo(game);
+      if (Array.isArray(game.journal)) game.journal.unshift(`吞服黑市【嗜血煞丹】，剑攻永久+10，折损2载寿元。`);
+      Sound.clang(0.95, 0.14);
+      addRipple(arena.player.x, arena.player.y + 18, 120, "#ff5263");
+      addFloat("🔥 嗜血煞丹 · 剑攻+10 / 魔心-15！", arena.player.x, arena.player.y - 54, "#ff7888", 18, true);
+      showToast(`🔥 吞服【嗜血煞丹】· 剑攻永久 +10、魔心 -15、骨龄 +2 载（当前 ${lf.curYears}/${lf.maxYears} 载）！`);
+      saveGame(); updateHud();
+      if (drawerOpen) renderDrawerContent();
+      return;
+    }
     if (it.kind === "breakthrough") {
       game.inventory[itemId] -= 1;
       const r = REALMS[game.realm];
@@ -15706,7 +16972,7 @@ const ART = {
 
     game.realm = tb.nextRealm;
     const newR = REALMS[game.realm];
-    const overflowRatio = tb.hardcore ? 0.65 : 0.45;
+    const overflowRatio = (tb.hardcore ? 0.65 : 0.45) + (getSanctumLevel(game, "spirit_eye") >= 4 ? 0.15 : 0);
     const carry = newR.xpCap > 0 ? Math.min(Math.floor(newR.xpCap * overflowRatio), (game.overflowXp || 0) + (tb.hardcore ? Math.round(newR.xpCap * 0.20) : 0)) : 0;
     game.xp = carry;
     game.overflowXp = 0;
@@ -15749,9 +17015,12 @@ const ART = {
     if (isHeaven) unlockAchievement("ach_heaven_core");
 
     const unlockMsg = REALM_UNLOCK_NOTICES[game.realm];
-    if (unlockMsg) showToast(`★ ${unlockMsg}`);
+    const lfNew = getLifespanInfo(game);
+    if (Array.isArray(game.journal)) game.journal.unshift(`破境晋升【${REALMS[game.realm].name}】，寿元增至 ${lfNew.maxYears} 载！`);
+    if (unlockMsg) showToast(`★ ${unlockMsg}（寿元延至 ${lfNew.maxYears} 载！）`);
+    else showToast(`★ 破境【${REALMS[game.realm].name}】功成 · 寿元延至 ${lfNew.maxYears} 载！`);
 
-    addFloat(`${tb.hardcore ? "⚡ 逆天傲骨 · " : isHeaven ? "★ 天道一品 · " : ""}破境【${REALMS[game.realm].name}】· 飞剑×${getSwordCount(game)}！`, arena.player.x, arena.player.y - 64, "#fff4c2", 22, true);
+    addFloat(`${tb.hardcore ? "⚡ 逆天傲骨 · " : isHeaven ? "★ 天道一品 · " : ""}破境【${REALMS[game.realm].name}】· 寿元 ${lfNew.maxYears} 载！`, arena.player.x, arena.player.y - 64, "#fff4c2", 22, true);
     arena.enemies.slice().forEach(e => damageEnemy(e, Math.round(st.atk * 2.6), true, 48, 0, 9, true));
     saveGame(); updateHud(true);
     activeFruitRerolls = 1;
@@ -15852,13 +17121,17 @@ const ART = {
     `, true);
   }
 
-  function openEncounterModal() {
+  function openEncounterModal(forcedSecretIdx = null) {
     if (!game) return;
-    if ((game.karmaEventsDone || 0) < 2 || Math.random() < 0.65) {
+    if (forcedSecretIdx === null && ((game.karmaEventsDone || 0) < 2 || Math.random() < 0.65)) {
       openKarmaDilemmaModal();
       return;
     }
-    const evSpec = SECRET_ENCOUNTERS[Math.floor(Math.random() * SECRET_ENCOUNTERS.length)];
+    const evSpec = forcedSecretIdx !== null
+      ? SECRET_ENCOUNTERS[forcedSecretIdx % SECRET_ENCOUNTERS.length]
+      : SECRET_ENCOUNTERS[Math.floor(Math.random() * SECRET_ENCOUNTERS.length)];
+    const ks = getKarmaState(game);
+    const karmaExtra = (KARMA_ENCOUNTER_EXTRAS[evSpec.id] && ks.mode !== "neutral") ? KARMA_ENCOUNTER_EXTRAS[evSpec.id][ks.mode] : null;
     arena.paused = true;
     openModal(`
       <div class="drawer-mural-banner" style="height:96px;">
@@ -15868,7 +17141,7 @@ const ART = {
             <span class="cinnabar-seal">${evSpec.seal}</span>
             <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">${evSpec.title}</h2>
           </div>
-          <span class="tag-chip done">道心抉择 · 机缘造化</span>
+          <span class="tag-chip done">道心抉择 · ${ks.label}</span>
         </div>
       </div>
       <p style="font-size:13px;color:var(--text-main);line-height:1.65;padding:4px 6px;">${evSpec.desc}</p>
@@ -15882,13 +17155,22 @@ const ART = {
             <span class="tag-chip mythic">抉择 ▸</span>
           </button>
         `).join("")}
+        ${karmaExtra ? `
+          <button type="button" class="encounter-opt-btn" style="border-color:${ks.mode === "demonic" ? "rgba(255,92,108,0.72)" : "rgba(112,255,230,0.72)"};background:${ks.mode === "demonic" ? "linear-gradient(155deg,rgba(54,12,24,0.95),rgba(22,7,14,0.97))" : "linear-gradient(155deg,rgba(10,44,48,0.95),rgba(6,20,26,0.97))"};" data-enc-id="${evSpec.id}" data-enc-opt="${karmaExtra.id}" data-enc-karma="${ks.mode}">
+            <div>
+              <div style="font-family:var(--font-serif);font-size:15px;font-weight:700;color:${ks.mode === "demonic" ? "#ffd2d8" : "#c4fff4"};">${karmaExtra.label}</div>
+              <div style="font-size:11.5px;color:${ks.mode === "demonic" ? "#ff9eaa" : "#80ffea"};margin-top:3px;">${karmaExtra.detail}</div>
+            </div>
+            <span class="tag-chip ${ks.mode === "demonic" ? "mythic" : "done"}">${ks.mode === "demonic" ? "魔心专属 ▸" : "正道专属 ▸"}</span>
+          </button>
+        ` : ""}
       </div>
     `, false);
   }
 
   function openIconicUpgradeDraft(titleText, isReroll = false) {
     if (!game) return;
-    if (!isReroll) { activeDraftRerolls = 1; activeDraftMeta = { titleText, lastIds: [] }; }
+    if (!isReroll) { activeDraftRerolls = 1 + getSanctumBonuses(game).bonusLawRerolls; activeDraftMeta = { titleText, lastIds: [] }; }
     arena.paused = true;
     const petCandidates = [];
     if (!game.pet.id) {
@@ -16758,7 +18040,9 @@ const ART = {
 
     if (p.meditating) {
       p.meditateTick += dt;
-      const eyeMult = (arena.sanctumMode ? 3.0 : (inSpiritEye ? 2.0 : 1.0)) * (hasDestinyFruit(game, "lotus_body") ? 1.65 : 1.0);
+      const sanctumMed = getSanctumBonuses(game).medMult;
+      const lifeMed = getLifespanInfo(game).medPenaltyMult;
+      const eyeMult = (arena.sanctumMode ? 3.0 * sanctumMed : (inSpiritEye ? 2.0 * sanctumMed : 1.0)) * (hasDestinyFruit(game, "lotus_body") ? 1.65 : 1.0) * lifeMed;
       game.hp = Math.min(st.maxHp, game.hp + st.maxHp * 0.12 * eyeMult * dt);
       game.mp = Math.min(st.maxMp, (game.mp || 0) + st.maxMp * 0.28 * eyeMult * dt);
       if (Math.random() < 0.55) {
@@ -17781,7 +19065,7 @@ const ART = {
       "branch_portal", "sanctum_portal", "merchant_npc", "companion_npc",
       "blood_altar", "bounty_board", "encounter_stele", "elem_stele",
       "cauldron", "taixu_craft_alchemy", "taixu_craft_forge", "portal",
-      "tower_next", "ascend_gate", "boon_stele", "map_node_gate"
+      "tower_next", "ascend_gate", "boon_stele", "map_node_gate", "sanctum_upgrade"
     ]);
     let closestInteract = null;
     let closestInteractDist = Infinity;
@@ -17951,8 +19235,11 @@ const ART = {
       enterSanctumHub();
     } else if (pr.kind === "merchant_npc") {
       toggleDrawer("bag");
+    } else if (pr.kind === "sanctum_upgrade") {
+      openSanctumUpgradeModal();
     } else if (pr.kind === "companion_npc") {
-      toggleDrawer("story");
+      if (pr.npcId && NPC_META[pr.npcId]) openCompanionInteractModal(pr.npcId);
+      else toggleDrawer("story");
     } else if (pr.kind === "bounty_board") {
       openObjectivesModal("bounties");
     } else if (pr.kind === "taixu_craft_alchemy") {
@@ -19038,18 +20325,36 @@ const ART = {
       drawPointLight(z.x, z.y + 10, z.r * 0.9, "rgba(74, 210, 184, 0.14)");
     }
 
+    if (arena.sanctumMode && game) {
+      const eyeLv = getSanctumLevel(game, "spirit_eye");
+      const ctr = getPlazaCenter(w, h);
+      const eyeR = 52 + (eyeLv - 1) * 16;
+      const eyeCol = eyeLv >= 5 ? "#ffe28a" : eyeLv >= 3 ? "#70ffe6" : "#4ad2b8";
+      drawBaguaCircle(ctr.x, ctr.y + 12, eyeR, eyeCol, nowSec * (0.28 + eyeLv * 0.08), 0.28 + eyeLv * 0.11, eyeLv >= 2);
+      if (eyeLv >= 3) {
+        drawBaguaCircle(ctr.x, ctr.y + 12, eyeR * 0.62, "#ffe28a", -nowSec * 0.55, 0.34 + (eyeLv - 2) * 0.10, false);
+      }
+      drawPointLight(ctr.x, ctr.y + 6, eyeR * 1.4, eyeLv >= 4 ? "rgba(255, 226, 138, 0.18)" : "rgba(112, 255, 230, 0.14)");
+    }
+
     for (const pr of arena.props) {
+      const bLv = (pr.sanctumKey && game) ? getSanctumLevel(game, pr.sanctumKey) : 1;
       const ringCol = pr.kind === "blood_altar" ? "#ff5e57"
         : pr.kind === "branch_portal" ? (pr.branch === "elite_loot" ? "#ff7870" : "#70ffe6")
         : pr.kind === "sanctum_portal" ? "#70ffe6"
+        : pr.kind === "sanctum_upgrade" ? "#b998fa"
         : pr.kind === "encounter_stele" ? "#ffe28a"
         : pr.kind === "elem_stele" ? (pr.elem === "frost" ? "#80ecff" : "#d69eff")
         : pr.kind === "ascend_gate" ? "#ffe270"
         : (pr.kind === "portal" || pr.kind === "tower_next") ? "#ffe699"
+        : bLv >= 4 ? "#ffe28a"
         : pr.choice === "help" ? "#4ad2b8" : "#d8b36a";
 
-      drawBaguaCircle(pr.x, pr.y + 24, pr.r + 4, ringCol, nowSec * (pr.kind.includes("portal") || pr.kind === "ascend_gate" ? 1.15 : 0.42), 0.72, pr.r >= 38);
-      drawPointLight(pr.x, pr.y + 8, pr.r * 1.45, (pr.kind === "blood_altar" || pr.branch === "elite_loot") ? "rgba(255, 82, 72, 0.18)" : "rgba(248, 215, 130, 0.15)");
+      drawBaguaCircle(pr.x, pr.y + 24, pr.r + 4 + (bLv - 1) * 3, ringCol, nowSec * (pr.kind.includes("portal") || pr.kind === "ascend_gate" ? 1.15 : 0.42 + (bLv - 1) * 0.1), Math.min(0.95, 0.72 + (bLv - 1) * 0.06), pr.r >= 38 || bLv >= 2);
+      if (bLv >= 2) {
+        drawBaguaCircle(pr.x, pr.y + 24, pr.r + 12 + (bLv - 2) * 4, "#ffe28a", -nowSec * 0.55, 0.25 + (bLv - 1) * 0.09, false);
+      }
+      drawPointLight(pr.x, pr.y + 8, pr.r * (1.45 + (bLv - 1) * 0.18), (pr.kind === "blood_altar" || pr.branch === "elite_loot") ? "rgba(255, 82, 72, 0.18)" : bLv >= 3 ? "rgba(112, 255, 230, 0.22)" : "rgba(248, 215, 130, 0.15)");
 
       if (pr.nearby || pr.progress > 0) {
         const pulse = 0.72 + Math.sin(nowSec * 5.2) * 0.24;
@@ -20944,6 +22249,11 @@ const ART = {
         routeBtn.style.display = "none";
       }
     }
+    const sanctumLbl = document.getElementById("lbl-sanctum-lv");
+    if (sanctumLbl && game) {
+      const pros = getSanctumProsperity(game);
+      sanctumLbl.textContent = `${pros.title} Lv.${pros.totalLv}/${pros.maxTotalLv}`;
+    }
     renderRunBoonStrip();
 
     const dotsRow = document.getElementById("wave-dots-row");
@@ -21235,8 +22545,11 @@ const ART = {
 
     if (currentTab === "cultivate") {
       const schoolSkills = Object.values(SKILLS).filter(s => s.school === game.school);
-      const ageYears = Math.floor(((game.startAgeMonths || 216) + (game.elapsedMonths || 0)) / 12);
-      const maxYears = Math.floor((REALMS[game.realm].lifespanMonths || 744) / 12);
+      const lf = getLifespanInfo(game);
+      const ageYears = lf.curYears;
+      const maxYears = lf.maxYears;
+      const longPills = game.inventory.longevity_pill || 0;
+      const lifeColor = lf.status === "critical" ? "#ff8080" : lf.status === "warning" ? "#ffe28a" : "var(--gold-bright)";
 
       body.innerHTML = `
         ${muralHeader("banner_sanctum", "命盘道统", `${game.name} · ${REALMS[game.realm].name}期命盘`)}
@@ -21245,7 +22558,7 @@ const ART = {
         <div class="jade-card" style="flex-direction:row;align-items:center;gap:10px;">
           ${buildDaoRadarSvg(game)}
           <div class="stat-kv-grid" style="flex:1;">
-            <div class="stat-kv-row"><span>骨龄寿元</span><b>${ageYears}/${maxYears}载</b></div>
+            <div class="stat-kv-row"><span>骨龄寿元</span><b style="color:${lifeColor};">${ageYears}/${maxYears}载</b></div>
             <div class="stat-kv-row"><span>环身飞剑</span><b>×${getSwordCount(game)} 柄</b></div>
             <div class="stat-kv-row"><span>剑道攻击</span><b>${st.atk}</b></div>
             <div class="stat-kv-row"><span>护体减伤</span><b>${st.dmgReduce}</b></div>
@@ -21253,6 +22566,18 @@ const ART = {
             <div class="stat-kv-row"><span>暴击倍率</span><b>${Math.round(st.critMult * 100)}%</b></div>
           </div>
         </div>
+
+        ${lf.status !== "normal" ? `
+          <div class="lifespan-alert-card ${lf.status}">
+            <div>
+              <strong>${lf.status === "critical" ? "⏳ 大限临近" : "⚠ 寿元将近"}（余 ${lf.remainYears} 载）</strong>
+              <div style="font-size:10px;opacity:0.92;margin-top:2px;">${lf.status === "critical" ? "灵脉渐衰（吐纳效率 -10%，不死档）：速服【延寿青莲丹】或渡劫破境大增寿元！" : "建议早做筹谋：升级紫微丹鼎 Lv.2 炼制延寿丹，或积满修为破境延寿！"}</div>
+            </div>
+            ${longPills > 0
+              ? `<button type="button" class="btn-jade" style="padding:4px 9px;font-size:10.5px;white-space:nowrap;" data-use-item="longevity_pill">服延寿丹(${longPills})</button>`
+              : `<button type="button" class="btn-gold" style="padding:4px 9px;font-size:10.5px;white-space:nowrap;" data-action="open-sanctum-upgrade">建丹鼎延寿</button>`}
+          </div>
+        ` : ""}
 
         ${(game.destinyFruits && game.destinyFruits.length > 0) ? `
           <div class="jade-card">
@@ -21290,7 +22615,7 @@ const ART = {
               { slot: "ring",   label: "乾坤灵佩", emptyArt: "item_jade" }
             ].map( meta => {
               const eq = game.equippedGear[meta.slot];
-              const enhCost = eq ? (25 + (eq.lvl || 0) * 20) : 0;
+              const enhCost = getGearEnhanceCost(game, eq);
               return `
                 <div class="visual-tile ${eq ? `rarity-${eq.rarity}` : ""}" style="flex-direction:column;align-items:stretch;gap:5px;padding:7px 8px;">
                   <div style="display:flex;align-items:center;gap:7px;">
@@ -21506,28 +22831,34 @@ const ART = {
           ${Object.values(NPC_META).map(npc => {
             const tier = getCompanionBondTier(game, npc.id);
             const kp = COMPANION_KEEPSAKES[npc.id];
-            const quote = getKarmaState(game).mode === "demonic" ? kp.demonQuote : kp.rightQuote;
+            const quote = getCompanionDynamicGreeting(game, npc.id);
             return `
               <div class="visual-tile ${tier >= 3 ? "rarity-4" : tier >= 1 ? "equipped" : ""}" style="flex-direction:column;align-items:stretch;gap:5px;padding:8px 10px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    <img src="${ART[npc.art]}" alt="${npc.name}" style="width:38px;height:38px;border-radius:50%;" />
-                    <div>
+                  <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                    <img src="${ART[npc.art]}" alt="${npc.name}" style="width:38px;height:38px;border-radius:50%;flex-shrink:0;" />
+                    <div style="min-width:0;">
                       <div style="font-size:12.5px;font-weight:700;color:var(--gold-bright);">${npc.name} <span class="tag-chip ${tier >= 3 ? "mythic" : "done"}">${kp.tierTitles[tier]}</span></div>
                       <div style="font-size:10.5px;color:#80ffea;">三阶信物【${kp.keepsake}】：${kp.bonusDesc}</div>
                     </div>
                   </div>
-                  ${tier < 3
-                    ? `<button type="button" class="btn-jade" style="padding:4px 10px;font-size:11px;white-space:nowrap;" data-gift-npc="${npc.id}">🎁 论道晋阶(40石)</button>`
-                    : `<span class="tag-chip mythic">★ 信物已激活</span>`}
+                  <div style="display:flex;gap:4px;flex-shrink:0;">
+                    <button type="button" class="btn-gold" style="padding:4px 8px;font-size:10.5px;white-space:nowrap;" data-open-comp-modal="${npc.id}">🍵 雅集叙话</button>
+                    ${tier < 3
+                      ? `<button type="button" class="btn-jade" style="padding:4px 8px;font-size:10.5px;white-space:nowrap;" data-gift-npc="${npc.id}">🎁 晋阶</button>`
+                      : `<span class="tag-chip mythic">★ 信物</span>`}
+                  </div>
                 </div>
-                <div style="font-size:10.5px;color:var(--text-sub);font-style:italic;">${quote}</div>
+                <div style="font-size:10.5px;color:var(--text-sub);font-style:italic;">『${quote}』</div>
               </div>`;
           }).join("")}
         </div>
         ${avail.length > 0 ? avail.slice(0, 3).map(stItem => `
           <div class="jade-card">
-            <strong style="color:var(--gold-bright);">${NPC_META[stItem.npc].name} · 《${stItem.name}》</strong>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+              <strong style="color:var(--gold-bright);">${NPC_META[stItem.npc].name} · 《${stItem.name}》</strong>
+              <button type="button" class="btn-gold" style="padding:3px 10px;font-size:10.5px;white-space:nowrap;" data-play-story-bar="${stItem.id}">🎭 立绘演绎 ▸</button>
+            </div>
             <p style="font-size:11.5px;color:var(--text-sub);line-height:1.45;">${stItem.body}</p>
             ${stItem.options.map(o => `
               <button class="visual-tile" style="flex-direction:column;align-items:flex-start;gap:3px;" data-story-id="${stItem.id}" data-opt-id="${o.id}">
@@ -21631,11 +22962,14 @@ const ART = {
             <div style="display:flex;align-items:center;gap:9px;">
               <img src="${ART.item_immortal_gourd}" alt="本命九转仙葫" style="width:42px;height:46px;object-fit:contain;" />
               <div>
-                <strong style="font-family:var(--font-serif);font-size:14px;color:var(--gold-bright);">🍶 本命九转仙葫（灵酿 ${game.gourd.charges}/${game.gourd.maxCharges} 缕 · 已镶 ${game.gourd.soaks.length}/3 槽）</strong>
-                <div style="font-size:10.5px;color:var(--jade);">自由点选镶嵌最多 3 味丹引泡酒物，按 Q 键瞬饮同时触发全部泡酒神效！</div>
+                <strong style="font-family:var(--font-serif);font-size:14px;color:var(--gold-bright);">🍶 本命九转仙葫（灵酿 ${game.gourd.charges}/${game.gourd.maxCharges} 缕 · 已镶 ${game.gourd.soaks.length}/${getMaxGourdSoaks(game)} 槽）</strong>
+                <div style="font-size:10.5px;color:var(--jade);">紫微丹鼎 Lv.${getSanctumLevel(game, "cauldron")} 可镶 ${getMaxGourdSoaks(game)} 味泡酒物（Lv.3→4槽 · Lv.5→5槽）！</div>
               </div>
             </div>
-            <button type="button" class="btn-jade" style="padding:4px 10px;font-size:11px;white-space:nowrap;" data-action="refill-gourd-now">满酿仙葫</button>
+            <div style="display:flex;gap:5px;flex-shrink:0;">
+              <button type="button" class="btn-gold" style="padding:4px 9px;font-size:10.5px;white-space:nowrap;" data-action="open-sanctum-upgrade">🏛 建丹鼎</button>
+              <button type="button" class="btn-jade" style="padding:4px 9px;font-size:10.5px;white-space:nowrap;" data-action="refill-gourd-now">满酿仙葫</button>
+            </div>
           </div>
           <div class="soak-grid">
             ${Object.values(GOURD_SOAKS).map(sk => {
@@ -21673,6 +23007,8 @@ const ART = {
         <div class="grid-2">
           ${Object.values(RECIPES).map(rec => {
             const out = ITEMS[rec.output];
+            const caulLv = getSanctumLevel(game, "cauldron");
+            const lockedByCaul = Boolean(rec.reqCauldronLv && caulLv < rec.reqCauldronLv);
             const matBuyCost = Object.entries(rec.inputs).reduce((sum, [k, req]) => {
               const lack = Math.max(0, req - (game.inventory[k] || 0));
               return sum + lack * Math.round((ITEMS[k].buy || 20) * fairDisc);
@@ -21681,15 +23017,15 @@ const ART = {
             const ownedCount = game.inventory[rec.output] || 0;
             const isSel = furnaceGame.recipeId === rec.id;
             return `
-              <div class="visual-tile ${isSel ? "equipped" : ""}" style="justify-content:space-between;padding:7px;">
-                <button style="display:flex;align-items:center;gap:7px;text-align:left;flex:1;" data-select-recipe="${rec.id}" data-tip="${escTip(rec.name, out.desc)}">
+              <div class="visual-tile ${isSel ? "equipped" : ""}" style="justify-content:space-between;padding:7px;${lockedByCaul ? "opacity:0.65;" : ""}">
+                <button style="display:flex;align-items:center;gap:7px;text-align:left;flex:1;" data-select-recipe="${rec.id}" data-tip="${escTip(rec.name, lockedByCaul ? `需先在洞府将【紫微丹鼎】升至 Lv.${rec.reqCauldronLv} 解封！` : out.desc)}" ${lockedByCaul ? "disabled" : ""}>
                   <img src="${ART[out.art]}" alt="${out.name}" style="width:34px;height:34px;" />
                   <div>
                     <div style="font-size:11.5px;font-weight:700;">${out.name} ${ownedCount > 0 ? `(${ownedCount})` : ""}</div>
-                    <span class="tag-chip">${totalStoneCost}石</span>
+                    <span class="tag-chip">${lockedByCaul ? `丹鼎Lv.${rec.reqCauldronLv}解封` : `${totalStoneCost}石`}</span>
                   </div>
                 </button>
-                <button class="btn-ghost" style="padding:4px 7px;font-size:10.5px;" data-quick-craft="${rec.id}" ${game.stones < totalStoneCost ? "disabled" : ""}>速炼</button>
+                <button class="btn-ghost" style="padding:4px 7px;font-size:10.5px;" data-quick-craft="${rec.id}" ${(lockedByCaul || game.stones < totalStoneCost) ? "disabled" : ""}>${lockedByCaul ? "未封" : "速炼"}</button>
               </div>`;
           }).join("")}
         </div>
@@ -21705,7 +23041,8 @@ const ART = {
               const eq = game.loadout.relic === rel.id;
               const stars = (game.relicStars && game.relicStars[rel.id]) || (owned ? 1 : 0);
               const rCost = Math.round(rel.stones * fairDisc);
-              const temperCost = Math.max(40, stars * 75 - ((game.inventory.core || 0) > 0 ? 30 : 0));
+              const forgeDisc = getSanctumLevel(game, "sword_forge") >= 4 ? 0.85 : 1.0;
+              const temperCost = Math.max(35, Math.round((stars * 75 - ((game.inventory.core || 0) > 0 ? 30 : 0)) * forgeDisc));
               return `
                 <div class="visual-tile ${eq ? "equipped" : ""}" style="flex-direction:column;align-items:stretch;gap:6px;">
                   <button style="display:flex;align-items:center;gap:8px;text-align:left;" data-relic="${rel.id}" data-tip="${escTip(rel.name + " · " + rel.activeName, rel.activeDesc)}">
@@ -21730,16 +23067,44 @@ const ART = {
         </div>
       `;
     } else {
-      // Tab 5: Cloud Market (`云岚百宝坊市`) + Gear Satchel (`仙装行囊`) + Consumable Pills!
+      // Tab 5: Cloud Market (`云岚百宝坊市` + Karma Exclusive Pavilion / Black Market) + Gear Satchel + Consumable Pills!
       if (!game.marketStock || !game.marketStock.length) refreshMarketStock();
-      const fairDisc = currentOmen(game).id === "fair" ? 0.8 : 1.0;
+      const ks = getKarmaState(game);
+      const fairDisc = (currentOmen(game).id === "fair" ? 0.8 : 1.0) * (ks.mode === "righteous" ? 0.9 : 1.0);
+      const karmaSpecials = getKarmaMarketSpecials(game);
+      const marketTitle = ks.mode === "righteous"
+        ? "☯ 太清仙珍阁（清虚正道享 9 折惠价与延寿珍品）"
+        : ks.mode === "demonic"
+          ? "🔥 赤渊魔道黑市（血煞神兵与禁丹交易）"
+          : "🏮 云岚百宝阁（灵石选购高阶仙装）";
       const owned = Object.values(ITEMS).filter(it => (game.inventory[it.id] || 0) > 0);
       body.innerHTML = `
-        ${muralHeader("banner_archive", "云岚百宝", "坊市采买 · 仙装行囊 · 道果金榜")}
+        ${muralHeader("banner_archive", "云岚百宝", `${ks.label} · 坊市采买 · 仙装行囊`)}
+
+        <div class="karma-market-card ${ks.mode}">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+            <strong style="font-size:12px;color:${ks.color};">${ks.mode === "righteous" ? "☯ 太清正道专属特供" : ks.mode === "demonic" ? "🔥 赤渊魔道黑市秘货" : "✦ 因果奇珍特供（正魔±25解封专属商阁）"}</strong>
+            <span class="tag-chip ${ks.mode === "demonic" ? "mythic" : "done"}">${ks.label}</span>
+          </div>
+          ${karmaSpecials.map(sp => {
+            const bought = !!(game.karmaMarketBought && game.karmaMarketBought[sp.id]);
+            return `
+              <div class="visual-tile" style="justify-content:space-between;padding:6px 8px;">
+                <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                  <img src="${ART[sp.art]}" alt="${sp.name}" style="width:32px;height:32px;flex-shrink:0;" />
+                  <div style="min-width:0;">
+                    <div style="font-size:11.5px;font-weight:700;color:#fff2c6;">${sp.name}</div>
+                    <div style="font-size:10px;color:var(--text-sub);">${sp.desc}</div>
+                  </div>
+                </div>
+                <button type="button" class="${ks.mode === "demonic" ? "btn-gold" : "btn-jade"}" style="padding:4px 10px;font-size:11px;white-space:nowrap;" data-buy-karma-item="${sp.id}" ${(bought || game.stones < sp.cost) ? "disabled" : ""}>${bought ? "已购罄" : `${sp.cost}石购`}</button>
+              </div>`;
+          }).join("")}
+        </div>
 
         <div class="jade-card">
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <strong style="font-size:12.5px;color:var(--gold-bright);">🏮 云岚百宝阁（灵石选购高阶仙装）</strong>
+            <strong style="font-size:12.5px;color:var(--gold-bright);">${marketTitle}</strong>
             <button class="btn-ghost" style="padding:3px 9px;font-size:11px;" data-action="refresh-market">换一批 (15石)</button>
           </div>
           <div style="display:flex;flex-direction:column;gap:6px;">
@@ -21817,6 +23182,10 @@ const ART = {
     if (!game) return;
     const rec = RECIPES[recId];
     if (!rec) return;
+    if (rec.reqCauldronLv && getSanctumLevel(game, "cauldron") < rec.reqCauldronLv) {
+      showToast(`需先在洞府将【紫微丹鼎】升至 Lv.${rec.reqCauldronLv} 方可炼制【${ITEMS[rec.output].name}】！`);
+      return;
+    }
     const fairDisc = currentOmen(game).id === "fair" ? 0.8 : 1.0;
     const matBuyCost = Object.entries(rec.inputs).reduce((sum, [k, req]) => {
       const lack = Math.max(0, req - (game.inventory[k] || 0));
@@ -21832,9 +23201,10 @@ const ART = {
       game.inventory[k] = Math.max(0, (game.inventory[k] || 0) - req);
     });
 
-    const bonusWidth = (game.perk === "medicine_sage" ? 0.10 : 0) + (currentOmen(game).id === "alchemy_star" ? 0.08 : 0) + (hasLaw(game, "nine_pill") ? 0.08 : 0);
+    const sb = getSanctumBonuses(game);
+    const bonusWidth = (game.perk === "medicine_sage" ? 0.10 : 0) + (currentOmen(game).id === "alchemy_star" ? 0.08 : 0) + (hasLaw(game, "nine_pill") ? 0.08 : 0) + sb.alchemySweetBonus;
     furnaceGame.recipeId = recId;
-    furnaceGame.sweetWidth = Math.min(0.46, 0.22 + bonusWidth);
+    furnaceGame.sweetWidth = Math.min(0.56, 0.22 + bonusWidth);
     furnaceGame.sweetStart = 0.50 - furnaceGame.sweetWidth / 2;
     furnaceGame.pos = 0.08;
     furnaceGame.dir = 1;
@@ -21855,6 +23225,9 @@ const ART = {
     const count = inSweet ? baseCount + 1 : baseCount;
 
     game.inventory[rec.output] = (game.inventory[rec.output] || 0) + count;
+    if (getSanctumLevel(game, "cauldron") >= 4) {
+      game.inventory.healing_pill = (game.inventory.healing_pill || 0) + 1;
+    }
     game.immortalPills = (game.immortalPills || 0) + 1;
     unlockAchievement("ach_pill");
 
@@ -21881,6 +23254,8 @@ const ART = {
     const score = computeCompetitionScore(game);
     const gradeInfo = getScoreGrade(score);
     const chosenEnd = ASCENSION_ENDINGS.find(e => e.id === game.ending);
+    const karmaEnd = getKarmaEndingEpilogue(game, game.ending);
+    const ks = getKarmaState(game);
 
     if (game.status === "ascended" && !chosenEnd) {
       openModal(`
@@ -21888,11 +23263,15 @@ const ART = {
           <img src="${ART.heaven_gate}" alt="九霄天门" />
           <div class="drawer-mural-overlay">
             <div>
-              <span class="cinnabar-seal">九霄叩门</span>
+              <span class="cinnabar-seal">${karmaEnd.seal}</span>
               <h2 style="font-family:var(--font-serif);font-size:23px;color:var(--gold-bright);margin-top:4px;">九霄天门已开 · 抉择飞升道途</h2>
             </div>
-            <span class="tag-chip done">仁 ${game.dao.benevolence} · 锋 ${game.dao.edge} · 真 ${game.dao.serenity}</span>
+            <span class="tag-chip done">${ks.label} · 仁${game.dao.benevolence} 锋${game.dao.edge} 真${game.dao.serenity}</span>
           </div>
+        </div>
+        <div class="ending-karma-poem" style="width:100%;max-width:none;text-align:center;">
+          <strong style="font-size:12px;color:${karmaEnd.color};">道心证果印记：【${karmaEnd.epithet}】</strong>
+          <div style="font-family:var(--font-serif);font-size:13px;color:#fff3d0;white-space:pre-line;line-height:1.6;">${karmaEnd.poem}</div>
         </div>
         <div class="law-draft-grid">
           ${ASCENSION_ENDINGS.map(ed => `
@@ -21913,16 +23292,22 @@ const ART = {
         <img src="${ART.heaven_gate}" alt="道果金榜" />
         <div class="drawer-mural-overlay">
           <div>
-            <span class="cinnabar-seal">${gradeInfo.grade} 级评定</span>
+            <span class="cinnabar-seal">${gradeInfo.grade} 级评定 · ${karmaEnd.seal}</span>
             <h2 style="font-family:var(--font-serif);font-size:24px;color:var(--gold-bright);margin-top:4px;">${gradeInfo.title} · 道果金榜 ${score} 分</h2>
           </div>
           <button class="btn-ghost" data-modal-close="1">收卷 ✕</button>
         </div>
       </div>
-      <div style="text-align:center;display:flex;flex-direction:column;gap:12px;">
-        ${chosenEnd ? `<div style="font-size:13.5px;color:var(--jade);font-weight:700;">证道尊号：【${chosenEnd.name}】</div><p style="font-size:12px;color:var(--text-sub);max-width:540px;margin:0 auto;">${chosenEnd.desc}</p>` : ""}
+      <div style="text-align:center;display:flex;flex-direction:column;gap:10px;">
+        ${chosenEnd ? `<div style="font-size:14px;color:${karmaEnd.color};font-weight:700;">证道尊号：【${karmaEnd.epithet}】</div><p style="font-size:12px;color:var(--text-sub);max-width:540px;margin:0 auto;">${chosenEnd.desc}</p>` : ""}
+        <div class="ending-karma-poem">
+          <strong style="font-size:11.5px;color:${karmaEnd.color};">☯ 正魔证道题诗 · ${ks.label}</strong>
+          <div style="font-family:var(--font-serif);font-size:13.5px;color:#fff4d2;white-space:pre-line;line-height:1.65;">${karmaEnd.poem}</div>
+          <p style="font-size:11.5px;color:#b8dcd5;line-height:1.5;">${karmaEnd.epilogue}</p>
+        </div>
         <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
           <span class="tag-chip done">境界：${REALMS[game.realm].name}</span>
+          <span class="tag-chip">洞府灵阶 ${getSanctumTotalLevel(game)}/25</span>
           <span class="tag-chip">飞剑 ×${getSwordCount(game)}</span>
           <span class="tag-chip">大道法则 ×${game.laws.length}</span>
           <span class="tag-chip mythic">共鸣羁绊 ×${SYNERGIES.filter(s => s.active(game)).length}</span>
@@ -22856,6 +24241,36 @@ const ART = {
       return;
     }
 
+    // ==================== M3 CLICK HANDLERS ====================
+    if (m1Act === "open-sanctum-upgrade") {
+      openSanctumUpgradeModal();
+      return;
+    }
+    if (t.hasAttribute("data-upgrade-sanctum")) {
+      upgradeSanctumBuilding(t.getAttribute("data-upgrade-sanctum"));
+      return;
+    }
+    if (t.hasAttribute("data-open-comp-modal")) {
+      openCompanionInteractModal(t.getAttribute("data-open-comp-modal"));
+      return;
+    }
+    if (t.hasAttribute("data-comp-act")) {
+      triggerCompanionHubAction(t.getAttribute("data-comp-npc"), t.getAttribute("data-comp-act"));
+      return;
+    }
+    if (t.hasAttribute("data-play-story-bar")) {
+      playStoryEventInPortraitBar(t.getAttribute("data-play-story-bar"));
+      return;
+    }
+    if (t.hasAttribute("data-story-bar-id")) {
+      resolveStoryChoice(t.getAttribute("data-story-bar-id"), t.getAttribute("data-story-bar-opt"), true);
+      return;
+    }
+    if (t.hasAttribute("data-buy-karma-item")) {
+      buyKarmaSpecialItem(t.getAttribute("data-buy-karma-item"));
+      return;
+    }
+
     if (t.id === "btn-sanctum-hub" || t.getAttribute("data-action") === "enter-sanctum") {
       closeDrawer();
       if (arena.sanctumMode) initArenaStage(arena.stageIdx, false);
@@ -22886,7 +24301,9 @@ const ART = {
       const idx = Number(t.getAttribute("data-buy-gear"));
       const it = game.marketStock[idx];
       if (!it) return;
-      const cost = Math.round(it.price * (currentOmen(game).id === "fair" ? 0.8 : 1.0));
+      const ksBuy = getKarmaState(game);
+      const disc = (currentOmen(game).id === "fair" ? 0.8 : 1.0) * (ksBuy.mode === "righteous" ? 0.9 : 1.0);
+      const cost = Math.round(it.price * disc);
       if (game.stones < cost) { showToast(`需 ${cost} 灵石`); return; }
       game.stones -= cost;
       game.marketStock.splice(idx, 1);
@@ -23299,10 +24716,11 @@ const ART = {
       const sid = t.getAttribute("data-toggle-soak");
       if (!game.gourd) refillImmortalGourd();
       const idx = game.gourd.soaks.indexOf(sid);
+      const maxSoaks = getMaxGourdSoaks(game);
       if (idx >= 0) {
         game.gourd.soaks.splice(idx, 1);
       } else {
-        if (game.gourd.soaks.length >= 3) game.gourd.soaks.shift();
+        while (game.gourd.soaks.length >= maxSoaks) game.gourd.soaks.shift();
         game.gourd.soaks.push(sid);
       }
       Sound.qiOrb(3);
@@ -23533,7 +24951,8 @@ const ART = {
       const rid = t.getAttribute("data-temper-relic");
       const curStars = (game.relicStars && game.relicStars[rid]) || 1;
       if (curStars >= 5) return;
-      const temperCost = Math.max(40, curStars * 75 - ((game.inventory.core || 0) > 0 ? 30 : 0));
+      const forgeDisc = getSanctumLevel(game, "sword_forge") >= 4 ? 0.85 : 1.0;
+      const temperCost = Math.max(35, Math.round((curStars * 75 - ((game.inventory.core || 0) > 0 ? 30 : 0)) * forgeDisc));
       if (game.stones < temperCost) { showToast(`需 ${temperCost} 灵石`); return; }
       game.stones -= temperCost;
       if ((game.inventory.core || 0) > 0) game.inventory.core -= 1;
@@ -23595,7 +25014,7 @@ const ART = {
       const eq = game && game.equippedGear ? game.equippedGear[sl] : null;
       if (!eq) return;
       if ((eq.lvl || 0) >= 10) { showToast("该仙装已淬火至圆满 +10！"); return; }
-      const cost = 25 + (eq.lvl || 0) * 20;
+      const cost = getGearEnhanceCost(game, eq);
       if (game.stones < cost) { showToast(`淬火需 ${cost} 灵石`); return; }
       game.stones -= cost;
       eq.lvl = (eq.lvl || 0) + 1;
@@ -23746,6 +25165,34 @@ const ART = {
     if (t.hasAttribute("data-enc-id")) {
       const eid = t.getAttribute("data-enc-id");
       const oid = t.getAttribute("data-enc-opt");
+      const karmaMode = t.getAttribute("data-enc-karma");
+      if (karmaMode && KARMA_ENCOUNTER_EXTRAS[eid] && KARMA_ENCOUNTER_EXTRAS[eid][karmaMode]) {
+        const kOpt = KARMA_ENCOUNTER_EXTRAS[eid][karmaMode];
+        if (kOpt.karma) game.karmaScore = Math.max(-100, Math.min(100, (game.karmaScore || 0) + kOpt.karma));
+        if (kOpt.dao) Object.entries(kOpt.dao).forEach(([dk, dv]) => { game.dao[dk] = (game.dao[dk] || 0) + dv; });
+        if (kOpt.drBonus) game.karmaDrBonus = (game.karmaDrBonus || 0) + kOpt.drBonus;
+        if (kOpt.atkBonus) game.atkFlatBonus = (game.atkFlatBonus || 0) + kOpt.atkBonus;
+        if (kOpt.stones) game.stones += kOpt.stones;
+        if (kOpt.bonusSword) { game.bonusSwords = (game.bonusSwords || 0) + kOpt.bonusSword; syncFlyingSwords(); }
+        if (kOpt.longevityPill) game.inventory.longevity_pill = (game.inventory.longevity_pill || 0) + kOpt.longevityPill;
+        if (kOpt.healPills) game.inventory.healing_pill = (game.inventory.healing_pill || 0) + kOpt.healPills;
+        if (kOpt.cores) game.inventory.core = (game.inventory.core || 0) + kOpt.cores;
+        if (kOpt.lifespanMonths) game.lifespanBonusMonths = (game.lifespanBonusMonths || 0) + kOpt.lifespanMonths;
+        if (kOpt.fillIntent) arena.swordIntent = 100;
+        if (kOpt.fullHeal) { const st2 = getCombatStats(game); game.hp = st2.maxHp; game.mp = st2.maxMp; }
+        if (kOpt.bond) {
+          if (!game.bondTiers) game.bondTiers = { shen: 1, pei: 0, lu: 0, yan: 0 };
+          game.bondTiers[kOpt.bond] = Math.min(3, getCompanionBondTier(game, kOpt.bond) + 1);
+          game.aids[kOpt.bond] = true;
+        }
+        if (kOpt.gearSlot) acquireGearItem(rollGearItem(Math.max(2, arena.stageIdx + 1), kOpt.gearRarity || 3, kOpt.gearSlot));
+        Sound.fanfare();
+        showToast(`✦ ${kOpt.label} 功成！`);
+        closeModal();
+        saveGame();
+        updateHud();
+        return;
+      }
       const evSpec = SECRET_ENCOUNTERS.find(x => x.id === eid);
       const opt = evSpec ? evSpec.options.find(x => x.id === oid) : null;
       if (opt) {
@@ -23850,7 +25297,7 @@ const ART = {
         return;
       }
       closeDrawer();
-      initArenaStage(targetIdx, targetIdx === 3);
+      initArenaStage(targetIdx, false);
       saveGame();
       return;
     }
@@ -23891,41 +25338,7 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-story-id")) {
-      const sid = t.getAttribute("data-story-id");
-      const oid = t.getAttribute("data-opt-id");
-      const stSpec = STORIES.find(s => s.id === sid);
-      const opt = stSpec ? stSpec.options.find(o => o.id === oid) : null;
-      if (!stSpec || !opt || game.choices[sid]) return;
-
-      if (opt.stonesCost && game.stones < opt.stonesCost) {
-        showToast(`需 ${opt.stonesCost} 灵石`);
-        return;
-      }
-      if (opt.cost) {
-        for (const [ik, req] of Object.entries(opt.cost)) {
-          if ((game.inventory[ik] || 0) < req) {
-            showToast(`需 ${ITEMS[ik].name} ×${req}（可赴历练获取）`);
-            return;
-          }
-        }
-      }
-      if (opt.stonesCost) game.stones -= opt.stonesCost;
-      if (opt.cost) {
-        for (const [ik, req] of Object.entries(opt.cost)) game.inventory[ik] -= req;
-      }
-      if (opt.stonesGain) game.stones += opt.stonesGain;
-      if (opt.gain) {
-        for (const [ik, n] of Object.entries(opt.gain)) game.inventory[ik] = (game.inventory[ik] || 0) + n;
-      }
-      if (opt.xpGain) gainRealmXp(opt.xpGain);
-      if (opt.aid) game.aids[opt.aid] = true;
-      if (opt.dao) {
-        Object.entries(opt.dao).forEach(([dk, dv]) => { game.dao[dk] = (game.dao[dk] || 0) + dv; });
-      }
-      game.choices[sid] = oid;
-      Sound.fanfare();
-      showToast(opt.result || "故人盟契已成！");
-      saveGame(); renderDrawerContent(); updateHud();
+      resolveStoryChoice(t.getAttribute("data-story-id"), t.getAttribute("data-opt-id"), false);
       return;
     }
     if (t.hasAttribute("data-source")) {
@@ -23933,13 +25346,17 @@ const ART = {
       const src = SOURCES.find(s => s.id === t.getAttribute("data-source"));
       if (src) {
         arena.sourceCd = 2.8;
-        const bonusItem = (currentOmen(game).id === "harvest" || hasLaw(game, "destiny_eye")) ? 1 : 0;
+        const sb = getSanctumBonuses(game);
+        const scLv = getSanctumLevel(game, "scripture_hall");
+        const bonusItem = (currentOmen(game).id === "harvest" || hasLaw(game, "destiny_eye") || (scLv >= 5 && Math.random() < 0.5)) ? 1 : 0;
         Object.entries(src.items).forEach(([k, n]) => { game.inventory[k] = (game.inventory[k] || 0) + n + bonusItem; });
-        game.stones += src.stones;
+        const gainedStones = Math.round((src.stones || 0) * sb.sourceMult);
+        const gainedXp = Math.round((src.xp || 0) * sb.sourceMult);
+        game.stones += gainedStones;
         game.elapsedMonths = (game.elapsedMonths || 0) + (hasLaw(game, "age_might") ? Math.ceil(src.months * 0.5) : src.months);
-        gainRealmXp(src.xp || 0);
+        gainRealmXp(gainedXp);
         Sound.qiOrb(3);
-        showToast(`${src.name}归来 · 修为+${src.xp}${src.stones ? ` · 灵石+${src.stones}` : ""}`);
+        showToast(`${src.name}归来 · 修为+${gainedXp}${gainedStones ? ` · 灵石+${gainedStones}` : ""}`);
         saveGame(); updateHud(); renderDrawerContent();
         setTimeout(() => { if (drawerOpen && currentTab === "explore") renderDrawerContent(); }, 2850);
       }
@@ -23948,6 +25365,10 @@ const ART = {
     if (t.hasAttribute("data-quick-craft")) {
       const rec = RECIPES[t.getAttribute("data-quick-craft")];
       if (!rec) return;
+      if (rec.reqCauldronLv && getSanctumLevel(game, "cauldron") < rec.reqCauldronLv) {
+        showToast(`需将洞府【紫微丹鼎】升至 Lv.${rec.reqCauldronLv} 方可炼制！`);
+        return;
+      }
       const fairDisc = currentOmen(game).id === "fair" ? 0.8 : 1.0;
       const matBuyCost = Object.entries(rec.inputs).reduce((sum, [k, req]) => {
         const lack = Math.max(0, req - (game.inventory[k] || 0));
@@ -23964,6 +25385,9 @@ const ART = {
       });
       const count = (hasLaw(game, "nine_pill") || currentOmen(game).id === "alchemy_star") ? 2 : 1;
       game.inventory[rec.output] = (game.inventory[rec.output] || 0) + count;
+      if (getSanctumLevel(game, "cauldron") >= 4) {
+        game.inventory.healing_pill = (game.inventory.healing_pill || 0) + 1;
+      }
       game.immortalPills = (game.immortalPills || 0) + 1;
       unlockAchievement("ach_pill");
       Sound.qiOrb(4);
@@ -24177,6 +25601,28 @@ const ART = {
     RUN_BOONS,
     DUNGEON_ROOM_TYPES,
     DUNGEON_CLIMATES,
+    SANCTUM_BUILDINGS,
+    enterSanctumHub,
+    openSanctumUpgradeModal,
+    upgradeSanctumBuilding,
+    getSanctumBonuses,
+    getSanctumLevel,
+    getSanctumProsperity,
+    getLifespanInfo,
+    openCompanionInteractModal,
+    triggerCompanionHubAction,
+    playStoryEventInPortraitBar,
+    resolveStoryChoice,
+    getCompanionPostBattleComment,
+    getBossKarmaMonologue,
+    getKarmaMarketSpecials,
+    buyKarmaSpecialItem,
+    getKarmaEndingEpilogue,
+    openEncounterModal,
+    openEndingModal,
+    consumeInventoryItem,
+    renderStageDamageRecap,
+    refreshMarketStock,
     rollGearItem,
     openAffixEngraveModal,
     openIconicUpgradeDraft,
