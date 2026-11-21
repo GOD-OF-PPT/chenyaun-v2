@@ -12,4 +12,12 @@ python -m http.server 5174 --bind 127.0.0.1 --directory web/public
 
 打开 <http://127.0.0.1:5174/playable-v2.html>。局域网试玩时，将命令和网址中的 `127.0.0.1` 都换成本机的局域网 IPv4 地址。同一浏览器使用相同的协议、地址和端口即可继续读取原站点的存档。
 
+## 自动化回归验收（1440×900 Chromium）
+
+```sh
+node scripts/verify-playable-v2.mjs
+```
+
+脚本会自动起停本地静态 HTTP 服务，在独立 Chromium 上下文中运行 M1–M4 全量 19 项回归测试（支持 `--filter`、`--screenshots <dir>` 与 `--report <file>` 参数）。
+
 [版本更新记录](docs/v2-overhaul-notes.md) · [随包美术素材](web/public/art/v4)
