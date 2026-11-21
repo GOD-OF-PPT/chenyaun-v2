@@ -2421,6 +2421,147 @@
     font-size: 11.5px;
     color: var(--text-sub);
   }
+
+  /* ================= M1: EXPLICIT INTERACTION, TRIBULATION RITUAL, DEFEAT STAKES & SAVE SAFETY ================= */
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  [tabindex="-1"]:focus-visible {
+    outline: 2px solid #ffe28a !important;
+    outline-offset: 2px;
+  }
+  #save-status-banner {
+    width: 100%;
+    max-width: 540px;
+    padding: 10px 13px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(64, 18, 20, 0.92), rgba(34, 10, 12, 0.96));
+    border: 1px solid rgba(255, 118, 110, 0.72);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.62);
+    color: #ffe8e6;
+    font-size: 11.5px;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    text-align: left;
+  }
+  #save-status-banner .save-banner-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  #hud-save-alert {
+    position: fixed;
+    top: 62px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 62;
+    max-width: min(680px, 92vw);
+    padding: 8px 14px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(58, 17, 20, 0.96), rgba(28, 9, 12, 0.98));
+    border: 1px solid rgba(255, 130, 115, 0.78);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.72);
+    color: #fff0ed;
+    font-size: 11.5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    pointer-events: auto;
+  }
+  #hud-save-alert.readonly-mode {
+    background: linear-gradient(180deg, rgba(46, 36, 14, 0.95), rgba(24, 19, 8, 0.97));
+    border-color: rgba(248, 212, 122, 0.72);
+    color: #fff3cf;
+  }
+  #prop-interact-hud {
+    position: fixed;
+    left: 50%;
+    bottom: 100px;
+    transform: translateX(-50%);
+    z-index: 56;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(9, 25, 31, 0.94), rgba(5, 14, 19, 0.97));
+    border: 1px solid rgba(248, 220, 144, 0.65);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.72), 0 0 18px rgba(74, 210, 184, 0.18);
+    backdrop-filter: blur(8px);
+    max-width: min(620px, 92vw);
+  }
+  body:has(#prop-interact-hud[style*="flex"]) #toast-container {
+    bottom: 164px !important;
+  }
+  #prop-interact-hud.danger-prop {
+    border-color: rgba(255, 116, 108, 0.8);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.75), 0 0 18px rgba(255, 94, 87, 0.25);
+  }
+  .prop-interact-key {
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(248, 227, 172, 0.16);
+    border: 1px solid rgba(248, 227, 172, 0.55);
+    color: #fff2c4;
+    font-size: 10.5px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .trib-prep-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .trib-path-card {
+    padding: 12px 13px;
+    border-radius: 12px;
+    background: linear-gradient(175deg, rgba(11, 28, 34, 0.95), rgba(6, 16, 21, 0.98));
+    border: 1px solid rgba(74, 210, 184, 0.52);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+    text-align: left;
+  }
+  .trib-path-card.defiant {
+    border-color: rgba(255, 124, 110, 0.62);
+    background: linear-gradient(175deg, rgba(36, 15, 22, 0.95), rgba(18, 9, 14, 0.98));
+  }
+  .defeat-decision-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .defeat-opt-btn {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 11px;
+    background: rgba(10, 26, 32, 0.94);
+    border: 1px solid rgba(216, 179, 106, 0.42);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+    color: var(--text-main);
+  }
+  .defeat-opt-btn:hover:not(:disabled) {
+    border-color: #ffe28a;
+    background: rgba(22, 46, 52, 0.96);
+    transform: translateY(-1px);
+  }
+  .defeat-opt-btn.retreat {
+    border-color: rgba(112, 255, 230, 0.48);
+  }
+  .defeat-opt-btn:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+  }
 </style>
 </head>
 <body>
@@ -2442,6 +2583,8 @@
         <span class="title-mini-badge"><b class="badge-key">空格</b>金芒识破 · 凝时闪避</span>
         <span class="title-mini-badge"><b class="badge-key">B 键</b>周天吐纳 · 满修渡劫</span>
       </div>
+
+      <div id="save-status-banner" role="alert" style="display:none;"></div>
 
       <div class="welcome-actions">
         <button id="btn-start-new" class="btn-start-hero">踏入山雨 · 开启新卷</button>
@@ -3023,8 +3166,10 @@
   </section>
   <button type="button" id="photo-restore-ui-btn" data-photo-act="show-ui">👁 显示摄影面板 (U)</button>
 
-  <div id="modal-backdrop">
-    <div id="modal-content" class="modal-box"></div>
+  <div id="hud-save-alert" role="alert" style="display:none;"></div>
+  <div id="prop-interact-hud" aria-live="polite" style="display:none;"></div>
+  <div id="modal-backdrop" role="dialog" aria-modal="true" aria-label="系统与抉择弹窗">
+    <div id="modal-content" class="modal-box" tabindex="-1"></div>
   </div>
   <div id="ling-tooltip"><strong id="ling-tip-title"></strong><p id="ling-tip-desc"></p></div>
   <div id="toast-container"></div>
@@ -3661,7 +3806,7 @@ const ART = {
 
   const REALM_ORDER = ["mortal", "qi", "foundation", "golden", "nascent", "spirit", "ascended"];
   const REALMS = {
-    mortal:     { id: "mortal", name: "凡人", xpCap: 10, baseYield: 2.5, maxHp: 65, maxMp: 28, lifespanMonths: 744, power: 0, next: "qi", pill: null },
+    mortal:     { id: "mortal", name: "凡人", xpCap: 60, baseYield: 6.5, maxHp: 65, maxMp: 28, lifespanMonths: 744, power: 0, next: "qi", pill: null },
     qi:         { id: "qi", name: "炼气", xpCap: 400, baseYield: 15, maxHp: 120, maxMp: 68, lifespanMonths: 1140, power: 6, next: "foundation", pill: "foundation_pill" },
     foundation: { id: "foundation", name: "筑基", xpCap: 1300, baseYield: 38, maxHp: 205, maxMp: 110, lifespanMonths: 1800, power: 15, next: "golden", pill: "golden_pill" },
     golden:     { id: "golden", name: "金丹", xpCap: 3300, baseYield: 86, maxHp: 325, maxMp: 160, lifespanMonths: 2880, power: 28, next: "nascent", pill: "nascent_pill" },
@@ -3682,18 +3827,18 @@ const ART = {
   const ITEMS = {
     herb:            { id: "herb", name: "凝气草", min: "qi", buy: 6, sell: 3, kind: "material", art: "item_herb", desc: "山野灵草，炼丹与培育本命灵兽的基础灵材。" },
     dew:             { id: "dew", name: "晨曦灵露", min: "qi", buy: 12, sell: 5, kind: "material", art: "item_dew", desc: "破晓松针凝露，调和丹火躁性。" },
-    core:            { id: "core", name: "妖核", min: "qi", buy: 48, sell: 18, kind: "material", art: "item_core", desc: "斩杀妖兽所得，可炼制破境丹或喂养灵兽升阶。" },
+    core:            { id: "core", name: "妖核", min: "qi", buy: 48, sell: 18, kind: "material", art: "item_core", desc: "斩杀妖兽所得，可炼制破境丹或淬炼法宝升星。" },
     jade:            { id: "jade", name: "地脉灵玉", min: "foundation", buy: 46, sell: 16, kind: "material", art: "item_jade", desc: "照影古境灵脉所产，凝金丹与铸造法宝核心灵材。" },
     lotus:           { id: "lotus", name: "月华莲", min: "golden", buy: 68, sell: 24, kind: "material", art: "item_lotus", desc: "古境寒池绽放，炼制结婴丹与照魂灯珍材。" },
     soul:            { id: "soul", name: "凝魂晶", min: "nascent", buy: 95, sell: 34, kind: "material", art: "item_soul", desc: "静潭凝结的魂力结晶，化神与渡劫引必备。" },
     dao:             { id: "dao", name: "道蕴砂", min: "spirit", buy: 135, sell: 46, kind: "material", art: "item_dao", desc: "登仙台法则碎砂，炼制渡劫引的至高材料。" },
-    healing_pill:    { id: "healing_pill", name: "回春丹", min: "mortal", buy: 18, sell: 7, kind: "medicine", hpRatio: 0.46, hpFlat: 42, art: "item_healing_pill", desc: "恢复 46% 最大气血（悟【丹火不息】后战中零回合瞬发炸场）。" },
-    spirit_pill:     { id: "spirit_pill", name: "回灵丹", min: "qi", buy: 18, sell: 7, kind: "medicine", mpRatio: 0.5, mpFlat: 30, art: "item_spirit_pill", desc: "恢复 50% 最大灵力。" },
-    foundation_pill: { id: "foundation_pill", name: "筑基丹", min: "qi", buy: 260, sell: null, kind: "breakthrough", art: "item_foundation_pill", desc: "炼气圆满冲关筑基必备灵丹。" },
-    golden_pill:     { id: "golden_pill", name: "凝金丹", min: "foundation", buy: 680, sell: null, kind: "breakthrough", art: "item_golden_pill", desc: "筑基圆满凝结金丹大道之物。" },
-    nascent_pill:    { id: "nascent_pill", name: "结婴丹", min: "golden", buy: 1120, sell: null, kind: "breakthrough", art: "item_nascent_pill", desc: "金丹圆满碎丹成婴至宝。" },
-    spirit_seed:     { id: "spirit_seed", name: "化神丹", min: "nascent", buy: 1780, sell: null, kind: "breakthrough", art: "item_spirit_seed", desc: "元婴圆满蜕凡化神核心灵丹。" },
-    ascension_seal:  { id: "ascension_seal", name: "渡劫引", min: "spirit", buy: 2680, sell: null, kind: "breakthrough", art: "item_ascension_seal", desc: "化神圆满于登仙台引动九霄雷劫，叩开仙门。" }
+    healing_pill:    { id: "healing_pill", name: "回春丹", min: "mortal", buy: 18, sell: 7, kind: "medicine", hpRatio: 0.46, hpFlat: 42, art: "item_healing_pill", desc: "立即恢复 46% 最大气血，道心垂危时可主动服丹重燃战意（悟【丹火不息】后额外引发丹火震爆）。" },
+    spirit_pill:     { id: "spirit_pill", name: "回灵丹", min: "qi", buy: 18, sell: 7, kind: "medicine", mpRatio: 0.5, mpFlat: 30, art: "item_spirit_pill", desc: "立即回满剑元并刷新爆剑、一闪、法宝与助阵冷却。" },
+    foundation_pill: { id: "foundation_pill", name: "筑基丹", min: "qi", buy: 260, sell: null, kind: "breakthrough", art: "item_foundation_pill", desc: "炼气冲关筑基护劫灵丹：渡劫仪轨携丹可获3层护脉丹障稳渡雷劫；亦可直接服用涨60%修为。" },
+    golden_pill:     { id: "golden_pill", name: "凝金丹", min: "foundation", buy: 680, sell: null, kind: "breakthrough", art: "item_golden_pill", desc: "筑基凝结金丹护劫灵丹：渡劫仪轨携丹可获3层护脉丹障稳渡雷劫；亦可直接服用涨60%修为。" },
+    nascent_pill:    { id: "nascent_pill", name: "结婴丹", min: "golden", buy: 1120, sell: null, kind: "breakthrough", art: "item_nascent_pill", desc: "金丹碎丹成婴护劫至宝：渡劫仪轨携丹可获3层护脉丹障稳渡雷劫；亦可直接服用涨60%修为。" },
+    spirit_seed:     { id: "spirit_seed", name: "化神丹", min: "nascent", buy: 1780, sell: null, kind: "breakthrough", art: "item_spirit_seed", desc: "元婴蜕凡化神护劫核心灵丹：渡劫仪轨携丹可获3层护脉丹障稳渡雷劫；亦可直接服用涨60%修为。" },
+    ascension_seal:  { id: "ascension_seal", name: "渡劫引", min: "spirit", buy: 2680, sell: null, kind: "breakthrough", art: "item_ascension_seal", desc: "化神叩开九霄仙门护劫至宝：渡劫仪轨携引可获3层护脉丹障稳渡飞升天劫。" }
   };
 
   const RECIPES = {
@@ -3720,89 +3865,89 @@ const ART = {
   ];
 
   const SKILLS = {
-    sword_mind:    { id: "sword_mind", name: "青锋心诀", school: "sword", slot: "mind", min: "qi", price: 0, branch: null, art: "icon_blade", desc: "基础剑诀：普攻与起势凝聚剑意（上限3层），满层终结技可破除敌方蓄势重击！" },
-    sword_still:   { id: "sword_still", name: "止水剑心", school: "sword", slot: "mind", min: "foundation", price: 95, branch: "sword-mind", art: "icon_heart", desc: "【稳守流】洞府吐纳效率 +25%，护体与完美拆招减伤大幅提升。" },
-    sword_pierce:  { id: "sword_pierce", name: "破妄剑心", school: "sword", slot: "mind", min: "foundation", price: 95, branch: "sword-mind", art: "icon_blade", desc: "【锐攻流】所有剑招直伤 +14，破势断招伤害额外 +25%。" },
-    sword_build:   { id: "sword_build", name: "青锋起势", school: "sword", slot: "builder", min: "qi", price: 0, branch: null, mp: 8, art: "icon_blade", desc: "耗灵8：斩出剑气并凝聚 2 层剑意。" },
-    sword_guard:   { id: "sword_guard", name: "听雨剑势", school: "sword", slot: "builder", min: "foundation", price: 80, branch: "sword-builder", mp: 8, art: "icon_seal", desc: "耗灵8：剑气伤敌、凝聚 1 层剑意并架起剑幕减伤。" },
-    sword_surge:   { id: "sword_surge", name: "惊涛剑势", school: "sword", slot: "builder", min: "foundation", price: 80, branch: "sword-builder", mp: 12, art: "icon_blade", desc: "耗灵12：狂澜重斩伤害极高，瞬间凝聚 2 层剑意。" },
-    sword_release: { id: "sword_release", name: "惊鸿斩", school: "sword", slot: "finisher", min: "qi", price: 0, branch: null, mp: 12, art: "icon_blade", desc: "耗灵12：倾泻全部剑意爆发斩击！满3层可【破势断招】。" },
-    sword_echo:    { id: "sword_echo", name: "回风归一", school: "sword", slot: "finisher", min: "golden", price: 155, branch: "sword-finisher", mp: 12, art: "icon_heart", desc: "耗灵12：剑意爆发同时恢复大量气血，满3层可破势。" },
-    sword_shatter: { id: "sword_shatter", name: "断岳斩", school: "sword", slot: "finisher", min: "golden", price: 155, branch: "sword-finisher", mp: 16, art: "icon_blade", desc: "耗灵16：毁天灭地一剑，满3层可强破护阵与重压！" },
+    sword_mind:    { id: "sword_mind", name: "青锋心诀", school: "sword", slot: "mind", min: "qi", price: 0, branch: null, art: "icon_blade", desc: "基础剑道心法：左键四段剑舞叠剑印，右键切手派生与爆剑破除敌方架势。" },
+    sword_still:   { id: "sword_still", name: "止水剑心", school: "sword", slot: "mind", min: "foundation", price: 95, branch: "sword-mind", art: "icon_heart", desc: "【稳守流】周天吐纳与修为获取 +25%，常驻护体减伤 +6。" },
+    sword_pierce:  { id: "sword_pierce", name: "破妄剑心", school: "sword", slot: "mind", min: "foundation", price: 95, branch: "sword-mind", art: "icon_blade", desc: "【锐攻流】基础剑道攻击永久 +14，高爆发斩破妖王架势。" },
+    sword_build:   { id: "sword_build", name: "青锋起势", school: "sword", slot: "builder", min: "qi", price: 0, branch: null, mp: 8, art: "icon_blade", desc: "基础起手剑势：稳定挥出青锋剑气并为目标叠剑印。" },
+    sword_guard:   { id: "sword_guard", name: "听雨剑势", school: "sword", slot: "builder", min: "foundation", price: 80, branch: "sword-builder", mp: 8, art: "icon_seal", desc: "【护体剑幕】出剑同步凝起短暂剑幕灵盾，稳健换血与防失误。" },
+    sword_surge:   { id: "sword_surge", name: "惊涛剑势", school: "sword", slot: "builder", min: "foundation", price: 80, branch: "sword-builder", mp: 12, art: "icon_blade", desc: "【狂澜猛攻】四段剑舞与剑气威力大幅提升 +24%！" },
+    sword_release: { id: "sword_release", name: "惊鸿斩", school: "sword", slot: "finisher", min: "qi", price: 0, branch: null, mp: 12, art: "icon_blade", desc: "基础收势终结技：四段末招必定暴击并激发旋风剑莲破势。" },
+    sword_echo:    { id: "sword_echo", name: "回风归一", school: "sword", slot: "finisher", min: "golden", price: 155, branch: "sword-finisher", mp: 12, art: "icon_heart", desc: "【续战收势】打出四段终结斩时自动回补气血，攻守一体。" },
+    sword_shatter: { id: "sword_shatter", name: "断岳斩", school: "sword", slot: "finisher", min: "golden", price: 155, branch: "sword-finisher", mp: 16, art: "icon_blade", desc: "【裂地爆发】四段终结斩伤害暴涨 +45%，强力轰碎护盾与架势！" },
 
-    talisman_mind:    { id: "talisman_mind", name: "镇灵心诀", school: "talisman", slot: "mind", min: "qi", price: 0, branch: null, art: "icon_seal", desc: "基础符诀：施符挂载持续灼伤符印（无视反震），引爆可破除蓄势！" },
-    talisman_calm:    { id: "talisman_calm", name: "太清符心", school: "talisman", slot: "mind", min: "foundation", price: 95, branch: "talisman-mind", art: "icon_scroll", desc: "【回灵流】吐纳效率 +25%，普攻额外回复 +7 灵力。" },
-    talisman_clear:   { id: "talisman_clear", name: "清虚符心", school: "talisman", slot: "mind", min: "foundation", price: 95, branch: "talisman-mind", art: "icon_heart", desc: "【御守流】常驻受伤减免 10 点，符印灼伤 +5。" },
-    talisman_build:   { id: "talisman_build", name: "镇灵符", school: "talisman", slot: "builder", min: "qi", price: 0, branch: null, mp: 8, art: "icon_seal", desc: "耗灵8：贴附 2 回合灼伤符印并获得符障减伤。" },
-    talisman_frost:   { id: "talisman_frost", name: "寒霜符", school: "talisman", slot: "builder", min: "foundation", price: 80, branch: "talisman-builder", mp: 10, art: "icon_seal", desc: "耗灵10：贴附 3 回合寒霜符印，削弱敌方攻势。" },
-    talisman_ember:   { id: "talisman_ember", name: "烬火符", school: "talisman", slot: "builder", min: "foundation", price: 80, branch: "talisman-builder", mp: 12, art: "icon_seal", desc: "耗灵12：烈焰真符每回合灼伤大幅提高 +12！" },
-    talisman_release: { id: "talisman_release", name: "燃符诀", school: "talisman", slot: "finisher", min: "qi", price: 0, branch: null, mp: 10, art: "icon_scroll", desc: "耗灵10：引爆全部符印结算高额总伤，直接【破势断招】！" },
-    talisman_return:  { id: "talisman_return", name: "归元符", school: "talisman", slot: "finisher", min: "golden", price: 155, branch: "talisman-finisher", mp: 10, art: "icon_heart", desc: "耗灵10：引爆符印破势，同时回补 24 点灵力与气血。" },
-    talisman_rupture: { id: "talisman_rupture", name: "裂阵符", school: "talisman", slot: "finisher", min: "golden", price: 155, branch: "talisman-finisher", mp: 15, art: "icon_seal", desc: "耗灵15：超载爆破符印，无视护阵减伤并强断重压！" }
+    talisman_mind:    { id: "talisman_mind", name: "镇灵心诀", school: "talisman", slot: "mind", min: "qi", price: 0, branch: null, art: "icon_seal", desc: "基础雷符心法：出招附着灼魂符印与雷链共鸣，右键爆剑引爆高额符伤。" },
+    talisman_calm:    { id: "talisman_calm", name: "太清符心", school: "talisman", slot: "mind", min: "foundation", price: 95, branch: "talisman-mind", art: "icon_scroll", desc: "【回灵流】周天吐纳与修为获取 +25%，持久释放法宝剑域更从容。" },
+    talisman_clear:   { id: "talisman_clear", name: "清虚符心", school: "talisman", slot: "mind", min: "foundation", price: 95, branch: "talisman-mind", art: "icon_heart", desc: "【御守流】常驻护体减伤 +10、基础攻击 +6，稳扎稳打。" },
+    talisman_build:   { id: "talisman_build", name: "镇灵符", school: "talisman", slot: "builder", min: "qi", price: 0, branch: null, mp: 8, art: "icon_seal", desc: "基础镇灵起符：挥招附带符障护体并叠加剑印。" },
+    talisman_frost:   { id: "talisman_frost", name: "寒霜符", school: "talisman", slot: "builder", min: "foundation", price: 80, branch: "talisman-builder", mp: 10, art: "icon_seal", desc: "【寒霜附刃】剑气化作玄冥霜蓝，命中持续施加 2.6 秒寒霜减速！" },
+    talisman_ember:   { id: "talisman_ember", name: "烬火符", school: "talisman", slot: "builder", min: "foundation", price: 80, branch: "talisman-builder", mp: 12, art: "icon_seal", desc: "【烈焰余烬】剑招伤害 +24%，且敌方灼魂燃烧持续伤害暴涨 +45%！" },
+    talisman_release: { id: "talisman_release", name: "燃符诀", school: "talisman", slot: "finisher", min: "qi", price: 0, branch: null, mp: 10, art: "icon_scroll", desc: "基础燃符终式：四段终结与爆剑引爆符印，高效削减首领架势。" },
+    talisman_return:  { id: "talisman_return", name: "归元符", school: "talisman", slot: "finisher", min: "golden", price: 155, branch: "talisman-finisher", mp: 10, art: "icon_heart", desc: "【归元回春】打出四段终结斩时自动回复气血与灵元，续航拉满。" },
+    talisman_rupture: { id: "talisman_rupture", name: "裂阵符", school: "talisman", slot: "finisher", min: "golden", price: 155, branch: "talisman-finisher", mp: 15, art: "icon_seal", desc: "【超载裂阵】四段终结爆发威力提升 +45%，轻松击溃首领护阵！" }
   };
 
   const RELICS = {
-    frost_sword:  { id: "frost_sword", name: "青霜剑", art: "relic_frost_sword", stones: 130, inputs: { jade: 3, core: 1 }, passive: "直伤 +7，剑意终结后保留 1 层剑意", activeName: "霜天万剑引", mp: 14, cd: 3, activeDesc: "万剑齐发高额穿甲剑气，补满3层剑意并直接破除敌方蓄势！" },
-    jade_seal:    { id: "jade_seal", name: "玄玉印", art: "relic_jade_seal", stones: 130, inputs: { jade: 4 }, passive: "常驻减伤 +10，渡劫稳如泰山", activeName: "玄武镇岳印", mp: 12, cd: 3, activeDesc: "震击敌方并开启金钟巨盾（本回合减伤+48），恢复22%气血！" },
-    soul_lamp:    { id: "soul_lamp", name: "照魂灯", art: "relic_soul_lamp", stones: 150, inputs: { jade: 2, lotus: 2 }, passive: "每枚符印每回合灼伤 +6", activeName: "九幽燃魂焰", mp: 14, cd: 3, activeDesc: "瞬间叠满3枚灼魂符印，并立即触发一次无视反震的真火爆发！" },
-    cloud_mirror: { id: "cloud_mirror", name: "流云镜", art: "relic_cloud_mirror", stones: 150, inputs: { jade: 2, dew: 4 }, passive: "每回合回血 +6，普攻/护体额外回灵 +6", activeName: "流云返照诀", mp: 10, cd: 3, activeDesc: "立即恢复35%气血与35%灵力，反照净化并轰击敌方！" }
+    frost_sword:  { id: "frost_sword", name: "青霜剑", art: "relic_frost_sword", stones: 130, inputs: { jade: 3, core: 1 }, passive: "剑道攻击 +10（随星级成长），环身飞剑额外 +1 柄", activeName: "霜天万剑引", mp: 14, cd: 3, activeDesc: "按 E 展开【太虚剑域】并降下霜天万剑雨，强力穿甲削韧！" },
+    jade_seal:    { id: "jade_seal", name: "玄玉印", art: "relic_jade_seal", stones: 130, inputs: { jade: 4 }, passive: "常驻护体减伤 +10（随星级成长），渡劫与硬拼更稳健", activeName: "玄武镇岳印", mp: 12, cd: 3, activeDesc: "按 E 展开【太虚剑域】并凝结厚重玄武灵盾、恢复气血！" },
+    soul_lamp:    { id: "soul_lamp", name: "照魂灯", art: "relic_soul_lamp", stones: 150, inputs: { jade: 2, lotus: 2 }, passive: "剑道攻击 +9（随星级成长），灼魂燃烧持续伤害 +35%", activeName: "九幽燃魂焰", mp: 14, cd: 3, activeDesc: "按 E 展开【太虚剑域】并点燃全场灼魂真火，持续炙烤群妖！" },
+    cloud_mirror: { id: "cloud_mirror", name: "流云镜", art: "relic_cloud_mirror", stones: 150, inputs: { jade: 2, dew: 4 }, passive: "兼修攻防与恢复，法宝升星同步强化剑域续航", activeName: "流云返照诀", mp: 10, cd: 3, activeDesc: "按 E 展开【太虚剑域】并瞬间回复大量气血与剑元！" }
   };
 
   // ==================== 3. DAO LAWS, PAINTED SPIRIT PETS & ACHIEVEMENTS ====================
   const DAO_LAWS = {
-    wanjian:         { id: "wanjian", name: "万剑归宗", rarity: "仙品", cat: "剑符神通", desc: "每次普攻或起势额外激发 2 道追踪飞剑，每道造成 35% 直伤并渲染剑雨弧光！" },
-    yinyang:         { id: "yinyang", name: "阴阳剑符", rarity: "鸿蒙", cat: "跨派神通", desc: "打通剑符界限！剑修出招自动挂载灼魂符印；符修引爆额外叠剑意使总伤 +30%！" },
-    pill_fire:       { id: "pill_fire", name: "丹火不息", rarity: "仙品", cat: "丹战神通", desc: "战中服丹【不消耗回合】瞬发，且丹气化火直接震伤敌方 20% 当前气血！" },
-    wealth_power:    { id: "wealth_power", name: "聚宝乾坤", rarity: "仙品", cat: "财道气运", desc: "每持有 100 灵石全招式伤害 +6%（最高 +90%），战利品灵石 +35%！" },
-    thunder_body:    { id: "thunder_body", name: "紫霄雷体", rarity: "仙品", cat: "不灭雷体", desc: "每次御守或受击引落紫霄神雷反劈敌方（造成护体值 85% 无视护阵雷伤）！" },
-    crit_lotus:      { id: "crit_lotus", name: "刹那芳华", rarity: "灵品", cat: "剑符神通", desc: "全招式暴击率 +25%，暴击伤害提升至 185%，破势与完美拆招必定暴击！" },
-    nine_pill:       { id: "nine_pill", name: "九转丹香", rarity: "仙品", cat: "丹器造化", desc: "控火黄金区拓宽 30%，仙品成丹额外 +1 枚（共3枚）且永久提升气血！" },
-    eternal_spring:  { id: "eternal_spring", name: "生生造化", rarity: "灵品", cat: "不灭雷体", desc: "每回合结束自动恢复 8% 最大气血与 10% 灵力，持久战无懈可击！" },
-    stagger_surge:   { id: "stagger_surge", name: "破阵惊雷", rarity: "仙品", cat: "剑符神通", desc: "敌方破绽易伤由 +35% 暴涨至 +75%，破势立即回灵 15 并缩减法宝冷却！" },
-    void_haste:      { id: "void_haste", name: "太虚神速", rarity: "灵品", cat: "气运财道", desc: "洞府周天吐纳速度 +55%，每次吸收灵韵光球额外获得灵石！" },
-    relic_awake:     { id: "relic_awake", name: "百宝通灵", rarity: "仙品", cat: "丹器造化", desc: "本命法宝神通冷却缩短 1 回合（3合→2合），神通伤害与护盾 +40%！" },
-    beast_soul:      { id: "beast_soul", name: "兽魂共鸣", rarity: "鸿蒙", cat: "御兽神通", desc: "本命灵兽进化为【每回合协同出手一次】，且灵兽技能威力提升 +60%！" },
-    age_might:       { id: "age_might", name: "岁月长歌", rarity: "灵品", cat: "不灭雷体", desc: "每经历 20 载春秋招式威力 +8%，采集与炼丹消耗岁月减半！" },
-    karma_resonance: { id: "karma_resonance", name: "红尘同心", rarity: "鸿蒙", cat: "因果神通", desc: "每段已结故人因果提供 +6% 增伤与 +4% 减伤，【故人同心技】每战可用 2 次！" },
-    destiny_eye:     { id: "destiny_eye", name: "天命慧眼", rarity: "灵品", cat: "气运财道", desc: "古玉鉴宝切出仙髓概率翻倍，所有采集与宗门委托材料产出 +1！" }
+    wanjian:         { id: "wanjian", name: "万剑归宗", rarity: "仙品", cat: "剑符神通", desc: "环身飞剑永久 +2，出剑额外激发追踪飞剑与剑雨弧光！" },
+    yinyang:         { id: "yinyang", name: "阴阳剑符", rarity: "鸿蒙", cat: "跨派神通", desc: "打通剑符界限！剑招附带灼魂符印，爆剑与连携引动额外雷火爆发！" },
+    pill_fire:       { id: "pill_fire", name: "丹火不息", rarity: "仙品", cat: "丹战神通", desc: "按 Q 饮仙葫或服回春丹时瞬间引爆大范围丹火震波，重创周围群妖！" },
+    wealth_power:    { id: "wealth_power", name: "聚宝乾坤", rarity: "仙品", cat: "财道气运", desc: "每持有 100 灵石剑道攻击 +6%（最高 +85%），战利品灵石收益大幅提升！" },
+    thunder_body:    { id: "thunder_body", name: "紫霄雷体", rarity: "仙品", cat: "不灭雷体", desc: "周身雷罡环绕，周期引落紫霄神雷自动劈击近身妖兽并联动水洼感电！" },
+    crit_lotus:      { id: "crit_lotus", name: "刹那芳华", rarity: "灵品", cat: "剑符神通", desc: "暴击率 +25%、暴击倍率 +22%，破势处决与识破剑反必定暴击！" },
+    nine_pill:       { id: "nine_pill", name: "九转丹香", rarity: "仙品", cat: "丹器造化", desc: "丹鼎控火黄金区大幅拓宽，每次成丹产出额外 +1 枚且永久增益气血！" },
+    eternal_spring:  { id: "eternal_spring", name: "生生造化", rarity: "灵品", cat: "不灭雷体", desc: "战中持续缓缓回复气血与剑元，搭配【丹火不息】觉醒青莲不灭真身！" },
+    stagger_surge:   { id: "stagger_surge", name: "破阵惊雷", rarity: "仙品", cat: "剑符神通", desc: "敌方破势易伤暴涨至 +75%，击空架势立即回复剑元并缩短法宝冷却！" },
+    void_haste:      { id: "void_haste", name: "太虚神速", rarity: "灵品", cat: "气运财道", desc: "身法移速与周天吐纳大幅提速，每次吸收灵韵光球额外获得灵石！" },
+    relic_awake:     { id: "relic_awake", name: "百宝通灵", rarity: "仙品", cat: "丹器造化", desc: "本命法宝【太虚剑域】冷却大幅缩短，剑域爆发伤害与护盾 +40%！" },
+    beast_soul:      { id: "beast_soul", name: "兽魂共鸣", rarity: "鸿蒙", cat: "御兽神通", desc: "本命灵兽主动协同出手频率大幅提升（1.95s → 1.15s），绝技威力 +60%！" },
+    age_might:       { id: "age_might", name: "岁月长歌", rarity: "灵品", cat: "不灭雷体", desc: "随骨龄增长永久提升剑道威力（最高 +40%），采集委托耗时减半！" },
+    karma_resonance: { id: "karma_resonance", name: "红尘同心", rarity: "鸿蒙", cat: "因果神通", desc: "每段已结故人因果提供 +6% 增伤，大幅强化【故人助阵】合击频率与威能！" },
+    destiny_eye:     { id: "destiny_eye", name: "天命慧眼", rarity: "灵品", cat: "气运财道", desc: "击杀掉落灵石与灵草翻倍，所有采集与宗门委托材料产出额外 +1！" }
   };
 
   // Uses our newly generated painted xianxia illustrations!
   const SPIRIT_PETS = {
-    fox:          { id: "fox", art: "pet_fox", name: "青丘火狐", skill: "狐火燎原", color: "#ff8a65", desc: "喷吐青丘真火灼伤敌方并挂1枚符印，主人暴击率 +12%" },
-    turtle:       { id: "turtle", art: "pet_turtle", name: "玄水灵龟", skill: "玄水灵障", color: "#4ad2b8", desc: "恢复主人气血并张开玄水灵盾减伤，稳守拆招首选" },
-    roc:          { id: "roc", art: "pet_roc", name: "九霄雷鹏", skill: "九天落雷", color: "#b998fa", desc: "召唤紫金天雷重轰（对破绽目标双倍伤害），概率震断敌方蓄势" },
-    sword_spirit: { id: "sword_spirit", art: "pet_sword", name: "太虚剑灵", skill: "游龙剑影", color: "#f5dc9b", desc: "激发穿云剑气无视护阵，并为主人凝聚 +1 剑意与 +6 灵力" }
+    fox:          { id: "fox", art: "pet_fox", name: "青丘火狐", skill: "狐火燎原", color: "#ff8a65", desc: "喷吐青丘真火灼伤敌方并挂1枚剑印，主人暴击率 +12%" },
+    turtle:       { id: "turtle", art: "pet_turtle", name: "玄水灵龟", skill: "玄水灵障", color: "#4ad2b8", desc: "周期为主人回血并凝结玄水灵盾，常驻减伤 +8" },
+    roc:          { id: "roc", art: "pet_roc", name: "九霄雷鹏", skill: "九天落雷", color: "#b998fa", desc: "召唤紫金天雷重轰（对破势目标双倍伤害），高效削韧" },
+    sword_spirit: { id: "sword_spirit", art: "pet_sword", name: "太虚剑灵", skill: "游龙剑影", color: "#f5dc9b", desc: "激发穿云双剑气叠剑印，并持续为主人回复剑元" }
   };
 
   const ACHIEVEMENTS = [
     { id: "ach_qi", name: "引气入道", desc: "冲破凡胎踏入炼气期", pts: 60 },
-    { id: "ach_heaven_core", name: "天道一品", desc: "在三才冲脉仪式中铸就【天道一品道基】", pts: 150 },
-    { id: "ach_orb5", name: "天人交感", desc: "达成灵窍共鸣5连击触发法则顿悟", pts: 100 },
-    { id: "ach_combo", name: "剑符连携", desc: "在斗法中打出【起-承-绝】门派绝学连携或完美拆招", pts: 140 },
-    { id: "ach_break", name: "一剑破势", desc: "首次破除妖兽蓄势或达成完美拆招", pts: 110 },
-    { id: "ach_coop", name: "故人同心", desc: "在斗法中施展故人同心合击绝技", pts: 120 },
-    { id: "ach_pill", name: "九转丹圣", desc: "文武控火炼出九转仙品云纹丹", pts: 140 },
+    { id: "ach_heaven_core", name: "天道一品", desc: "在紫霄雷劫中迎雷弹反或携丹护脉铸就【天道一品道基】", pts: 150 },
+    { id: "ach_orb5", name: "天人交感", desc: "战中达成 5 连击以上触发剑意共振", pts: 100 },
+    { id: "ach_combo", name: "剑符连携", desc: "在斗法中打出切手重派生或识破剑反", pts: 140 },
+    { id: "ach_break", name: "一剑破势", desc: "首次击空妖兽架势或达成金芒识破剑反", pts: 110 },
+    { id: "ach_coop", name: "故人同心", desc: "在斗法中召唤故人同心助阵", pts: 120 },
+    { id: "ach_pill", name: "九转丹圣", desc: "控火炼出九转仙品云纹丹", pts: 140 },
     { id: "ach_pet3", name: "灵兽化形", desc: "将本命灵兽培育至 Lv.3 以上", pts: 130 },
-    { id: "ach_jade", name: "赌石天眼", desc: "古玉鉴宝切出冰种灵翡或太古仙髓", pts: 140 },
-    { id: "ach_exp", name: "星盘夺宝", desc: "通关一次五层连线分支秘境星图", pts: 160 },
+    { id: "ach_jade", name: "赌石天眼", desc: "一剑切开鸿蒙原石领悟大道法则", pts: 140 },
+    { id: "ach_exp", name: "星盘夺宝", desc: "成功荡平一座九州秘境并击败镇守妖王", pts: 160 },
     { id: "ach_laws5", name: "万法归一", desc: "单局集齐 5 道以上大道法则", pts: 220 },
-    { id: "ach_tower5", name: "镇妖锋芒", desc: "太虚镇妖塔突破第 5 层", pts: 250 },
-    { id: "ach_tower10", name: "独断太虚", desc: "太虚镇妖塔突破第 10 层", pts: 450 },
-    { id: "ach_ascend", name: "叩开九霄门", desc: "渡过三重天劫成功飞升上界", pts: 500 }
+    { id: "ach_tower5", name: "镇妖锋芒", desc: "太虚锁妖塔突破第 5 层", pts: 250 },
+    { id: "ach_tower10", name: "独断太虚", desc: "太虚锁妖塔突破第 10 层", pts: 450 },
+    { id: "ach_ascend", name: "叩开九霄门", desc: "渡过飞升天劫成功叩开九霄仙门", pts: 500 }
   ];
 
   const ENEMIES = {
-    wolf:          { id: "wolf", name: "雾隐妖狼", min: "qi", location: "wilderness", art: "enemy_wolf", hp: 82, attack: 13, heavy: 32, stones: 24, xp: 26, loot: { core: 1, herb: 1 }, mech: null, mechDesc: "每3回合蓄势扑击：可用终结技【破势断招】，或在重击回合【凝气御守】触发完美拆招反击！" },
-    warden:        { id: "warden", name: "守山石卫", min: "qi", location: "wilderness", art: "enemy_warden", hp: 125, attack: 17, heavy: 42, stones: 38, xp: 38, loot: { core: 2 }, mech: null, mechDesc: "巨锤蓄势极沉，破势断招或完美拆招均可令其陷入破绽！" },
-    serpent:       { id: "serpent", name: "寒潭玄蛇", min: "foundation", location: "secret", art: "enemy_serpent", hp: 175, attack: 23, heavy: 56, stones: 56, xp: 72, loot: { jade: 2, core: 1 }, mech: null, mechDesc: "盘踞古境寒潭，善用【起-承-绝】三段连携将其速斩。" },
-    puppet:        { id: "puppet", name: "古境剑傀", min: "golden", location: "secret", art: "enemy_puppet", hp: 265, attack: 33, heavy: 78, stones: 90, xp: 140, loot: { lotus: 2, jade: 1 }, mech: "reflection", mechDesc: "【镜照反震】反震回合反弹35%直伤！宜御守、挂符或召唤故人/法宝无视反震。" },
-    shadow:        { id: "shadow", name: "照影心魇", min: "nascent", location: "secret", art: "enemy_shadow", hp: 380, attack: 50, heavy: 118, stones: 140, xp: 270, loot: { soul: 2, lotus: 1 }, mech: "drain", mechDesc: "【噬血魔影】造成未格挡伤害时回血！务必完美拆招或破势断其重击。" },
-    sentinel:      { id: "sentinel", name: "云台守灵", min: "spirit", location: "terrace", art: "enemy_sentinel", hp: 520, attack: 68, heavy: 168, stones: 195, xp: 460, loot: { dao: 2, soul: 1 }, mech: "ward", mechDesc: "【护山灵阵】护阵期直伤减半，重压回合可破阵或完美拆招化解！" },
-    trial_heart:   { id: "trial_heart", name: "第一劫 · 往昔心魔", min: "spirit", location: "terrace", art: "enemy_trial_heart", hp: 360, attack: 42, heavy: 105, stones: 0, xp: 0, loot: {}, trial: true, mech: "drain", mechDesc: "九霄第一劫：幻化执念噬血攻心，破其蓄势方见真我。" },
+    wolf:          { id: "wolf", name: "雾隐妖狼", min: "qi", location: "wilderness", art: "enemy_wolf", hp: 82, attack: 13, heavy: 32, stones: 24, xp: 26, loot: { core: 1, herb: 1 }, mech: null, mechDesc: "凶猛突进扑击：金芒蓄力时按【空格一闪】可识破剑反，红光血月爪需极限闪避触发凝时！" },
+    warden:        { id: "warden", name: "守山石卫", min: "qi", location: "wilderness", art: "enemy_warden", hp: 125, attack: 17, heavy: 42, stones: 38, xp: 38, loot: { core: 2 }, mech: null, mechDesc: "重锤震地与下段裂地波：按【Z键御风腾跃】可踏剑跃破地脉波，重劈/爆剑可速破其金阵！" },
+    serpent:       { id: "serpent", name: "寒潭玄蛇", min: "foundation", location: "secret", art: "enemy_serpent", hp: 175, attack: 23, heavy: 56, stones: 56, xp: 72, loot: { jade: 2, core: 1 }, mech: null, mechDesc: "盘踞古境寒潭并喷吐冰池弹幕：按【Y键切剑轮阵】斩碎弹幕，切手重击快速破势。" },
+    puppet:        { id: "puppet", name: "古境剑傀", min: "golden", location: "secret", art: "enemy_puppet", hp: 265, attack: 33, heavy: 78, stones: 90, xp: 140, loot: { lotus: 2, jade: 1 }, mech: "reflection", mechDesc: "【镜照反震】展开铜镜架势时反弹轻剑伤害，宜用【空格一闪】或【右键爆剑】强破镜阵！" },
+    shadow:        { id: "shadow", name: "照影心魇", min: "nascent", location: "secret", art: "enemy_shadow", hp: 380, attack: 50, heavy: 118, stones: 140, xp: 270, loot: { soul: 2, lotus: 1 }, mech: "drain", mechDesc: "【噬血魔影】瞬步绕后突袭并吸血，看准金芒识破剑反或开【Y键剑轮阵】压制。" },
+    sentinel:      { id: "sentinel", name: "云台守灵", min: "spirit", location: "terrace", art: "enemy_sentinel", hp: 520, attack: 68, heavy: 168, stones: 195, xp: 460, loot: { dao: 2, soul: 1 }, mech: "ward", mechDesc: "【护山灵阵】护阵期大幅减伤，切【Tab玄重巨阙式】重劈或右键爆剑崩碎其金盾！" },
+    trial_heart:   { id: "trial_heart", name: "第一劫 · 往昔心魔", min: "spirit", location: "terrace", art: "enemy_trial_heart", hp: 360, attack: 42, heavy: 105, stones: 0, xp: 0, loot: {}, trial: true, mech: "drain", mechDesc: "九霄第一劫：幻化执念噬血攻心，识破其蓄势方见真我。" },
     trial_thunder: { id: "trial_thunder", name: "第二劫 · 九霄雷劫", min: "spirit", location: "terrace", art: "enemy_trial_thunder", hp: 450, attack: 64, heavy: 185, stones: 0, xp: 0, loot: {}, trial: true, mech: null, mechDesc: "九霄第二劫：沈清禾【灵枢药阵】与裴照【剑痕】将在此劫显化护持！" },
-    trial_gate:    { id: "trial_gate", name: "第三劫 · 天门道影", min: "spirit", location: "terrace", art: "enemy_trial_gate", hp: 540, attack: 72, heavy: 198, stones: 0, xp: 0, loot: {}, trial: true, mech: "ward", mechDesc: "九霄终劫：倾尽连携绝学、法宝、灵兽与故人合击斩开仙门！" },
-    sky_roc:       { id: "sky_roc",    name: "巡天金甲雷鹏将",   min: "golden", location: "terrace", art: "enemy_roc_sky_general", hp: 460, attack: 58, heavy: 145, stones: 180, xp: 320, loot: { soul: 2, core: 2 }, mech: "sky_barrage", mechDesc: "【九霄巡天】振翅布下天雷激光网并攒射漫天雷球：按空格【滚筒侧闪】穿激光，开【太虚剑盾】将漫天法球原路震回破其金甲！" }
+    trial_gate:    { id: "trial_gate", name: "第三劫 · 天门道影", min: "spirit", location: "terrace", art: "enemy_trial_gate", hp: 540, attack: 72, heavy: 198, stones: 0, xp: 0, loot: {}, trial: true, mech: "ward", mechDesc: "九霄终劫：倾尽双姿态连携、法宝剑域、灵兽与故人合击斩开仙门！" },
+    sky_roc:       { id: "sky_roc",    name: "巡天金甲雷鹏将",   min: "golden", location: "terrace", art: "enemy_roc_sky_general", hp: 460, attack: 58, heavy: 145, stones: 180, xp: 320, loot: { soul: 2, core: 2 }, mech: "sky_barrage", mechDesc: "【九霄巡天】振翅布下天雷激光网并攒射漫天雷球：按空格【滚筒侧闪】穿激光，按右键【太虚剑盾】将漫天法球原路震回破其金甲！" }
   };
 
   // ==================== 4. V13 4-TIER GOALS: 7-CHAPTER MAINLINE, SECT BOUNTIES, STAR CHESTS & ENDGAME MANDATE ====================
@@ -3810,11 +3955,11 @@ const ART = {
     {
       index: 1, realm: "mortal", vol: "第一卷", title: "山雨入道 · 破庙救美",
       poem: "山雨欲来破庙寒，一剑退狼定前缘。",
-      desc: "拔剑击退青岚破庙群狼救下沈清禾，踏入玉莲谢礼台择定仙缘，积满修为引动首重天劫踏入炼气期！",
+      desc: "拔剑击退青岚破庙群狼救下沈清禾，点击或靠近按 Enter 于玉莲谢礼台择定仙缘，积满修为开启首重渡劫仪轨踏入炼气期！",
       steps: [
-        { id: "s1_open",  text: "破庙拔剑：退群狼救沈清禾并踏入玉莲台择礼", tab: "story", loc: "wilderness", route: "stage_0", reward: { stones: 35, pill: "healing_pill" }, rewardTxt: "35灵石 · 回春丹×1", check: g => !!g.openingChoice },
-        { id: "s1_xp",    text: "周天聚气：斩妖或按 V 盘膝吐纳攒满修为槽", tab: "cultivate", loc: "cave", route: "meditate", reward: { stones: 45, herb: 2 }, rewardTxt: "45灵石 · 凝气草×2", check: g => rankOf(g.realm) >= 1 || g.xp >= REALMS[g.realm].xpCap },
-        { id: "s1_break", text: "引动天劫：按 B 键渡过紫霄雷劫晋升【炼气期】", tab: "cultivate", loc: "cave", route: "tribulate", reward: { stones: 65, gearMin: 1 }, rewardTxt: "65灵石 · 灵品仙装", check: g => rankOf(g.realm) >= 1 }
+        { id: "s1_open",  text: "破庙拔剑：退群狼救沈清禾并择定玉莲台仙缘", tab: "story", loc: "wilderness", route: "stage_0", reward: { stones: 35, pill: "healing_pill" }, rewardTxt: "35灵石 · 回春丹×1", check: g => !!g.openingChoice },
+        { id: "s1_xp",    text: "周天聚气：斩妖或按 B 盘膝吐纳攒满修为槽", tab: "cultivate", loc: "cave", route: "meditate", reward: { stones: 45, herb: 2 }, rewardTxt: "45灵石 · 凝气草×2", check: g => rankOf(g.realm) >= 1 || g.xp >= REALMS[g.realm].xpCap },
+        { id: "s1_break", text: "引动天劫：按 B 键开启渡劫仪轨晋升【炼气期】", tab: "cultivate", loc: "cave", route: "tribulate", reward: { stones: 65, gearMin: 1 }, rewardTxt: "65灵石 · 灵品仙装", check: g => rankOf(g.realm) >= 1 }
       ]
     },
     {
@@ -6565,6 +6710,10 @@ const ART = {
     arena.sanctumMode = false;
     arena.towerMode = false;
     arena.waveTransitioning = false;
+    arena.defeatRevivesUsed = 0;
+    arena.defeatPending = null;
+    arena.nearbyProp = null;
+    renderPropInteractHud();
     arena.bossRush = {
       active: true,
       bout: Math.max(1, Math.min(7, startBout)),
@@ -7566,6 +7715,10 @@ const ART = {
     arena.sectDefense = null;
     arena.celestialSpire = null;
     arena.waveTransitioning = false;
+    arena.defeatRevivesUsed = 0;
+    arena.defeatPending = null;
+    arena.nearbyProp = null;
+    renderPropInteractHud();
     const dojoBar = document.getElementById("dojo-control-bar");
     if (dojoBar) dojoBar.classList.remove("active");
 
@@ -7965,6 +8118,10 @@ const ART = {
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.waveTransitioning = false;
+    arena.defeatRevivesUsed = 0;
+    arena.defeatPending = null;
+    arena.nearbyProp = null;
+    renderPropInteractHud();
     const dojoBar = document.getElementById("dojo-control-bar");
     if (dojoBar) dojoBar.classList.remove("active");
 
@@ -8013,7 +8170,7 @@ const ART = {
       const spPos = clampToPlaza(w * 0.50, h * 0.48, w, h);
       arena.props.push({
         id: "spire_spring_" + Date.now(), kind: "immortal_spring", destructible: false, art: "prop_bagua_secret_gate",
-        name: "天宫赐福 · 太初满灵泉", badge: "踏入全满恢复 · 剑意100%", x: spPos.x, y: spPos.y, r: 44, progress: 0
+        name: "天宫赐福 · 太初满灵泉", badge: "点击/Enter 全满恢复 · 剑意100%", x: spPos.x, y: spPos.y, r: 44, progress: 0
       });
     }
 
@@ -8958,6 +9115,10 @@ const ART = {
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.celestialSpire = null;
+    arena.defeatRevivesUsed = 0;
+    arena.defeatPending = null;
+    arena.nearbyProp = null;
+    renderPropInteractHud();
     arena.customSeedRun = { active: true, seed: activeSeed };
     const dojoBar = document.getElementById("dojo-control-bar");
     if (dojoBar) dojoBar.classList.remove("active");
@@ -11007,7 +11168,7 @@ const ART = {
       arena.props.push({
         id: "ravine_zip_" + Math.random().toString(36).slice(2, 7),
         kind: "ravine_zipline", destructible: false, art: "prop_guardian_sword_pylon",
-        name: "御剑流光索道台", badge: "踏入或按 F 御剑飞渡深渊 · 剑威+25%",
+        name: "御剑流光索道台", badge: "点击/Enter 或按 F 御剑飞渡深渊 · 剑威+25%",
         x: pZip.x, y: pZip.y, r: 36, progress: 0
       });
     }
@@ -11091,7 +11252,7 @@ const ART = {
       arena.props.push({
         id: "immortal_spring_" + Date.now(),
         kind: "immortal_spring", destructible: false, art: "prop_bagua_secret_gate",
-        name: "上古秘窟 · 太初满灵泉", badge: "踏入全满气血/仙葫/剑意 · 永久剑攻+8！",
+        name: "上古秘窟 · 太初满灵泉", badge: "点击/Enter 全满气血/仙葫/剑意 · 永久剑攻+8！",
         x: pr.x, y: pr.y, r: 46, progress: 0
       });
       showToast("☯ 八卦封壁击破！上古仙人藏宝秘窟洞开，爆出仙装与【太初满灵泉】！");
@@ -11739,6 +11900,9 @@ const ART = {
       bonusStarPts: 0,
       pity: { epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 },
       unlockAllArcana: false,
+      retreats: 0,
+      tribulationFails: 0,
+      defiantBreakthroughs: 0,
       journal: ["十八岁山雨倾盆，仗剑踏入青岚破庙。"]
     };
     const st = getCombatStats(g);
@@ -11788,6 +11952,9 @@ const ART = {
     if (!Array.isArray(g.litStars)) g.litStars = [];
     ensureDeterministicPity(g);
     g.unlockAllArcana = !!raw.unlockAllArcana;
+    g.retreats = Number(raw.retreats) || 0;
+    g.tribulationFails = Number(raw.tribulationFails) || 0;
+    g.defiantBreakthroughs = Number(raw.defiantBreakthroughs) || 0;
     const st = getCombatStats(g);
     if (typeof g.hp !== "number" || isNaN(g.hp) || g.hp <= 0) g.hp = st.maxHp;
     else g.hp = Math.min(st.maxHp, g.hp);
@@ -11796,8 +11963,325 @@ const ART = {
     return g;
   }
 
-  function saveGame() {
-    if (!game) return;
+  // ==================== M1 INDUSTRIAL-GRADE SAVE, VALIDATION & MULTI-TAB CONFLICT ENGINE ====================
+  const TAB_ID = "tab_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  let loadedSaveRev = 0;
+  let storageReadError = null;
+  let storageWriteError = null;
+  let saveConflictState = null;
+  let saveReadOnlyMode = false;
+  let saveAlertDismissed = false;
+  let lastModalTriggerEl = null;
+  let lastDrawerTriggerEl = null;
+
+  function computeSaveChecksum(str) {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h.toString(16).toUpperCase().padStart(8, "0");
+  }
+
+  function buildCanonicalSavePayload(bundleObj) {
+    return JSON.stringify({
+      game: bundleObj.game,
+      stageIdx: bundleObj.stageIdx,
+      stanceIdx: bundleObj.stanceIdx,
+      towerMode: !!bundleObj.towerMode,
+      sanctumMode: !!bundleObj.sanctumMode
+    });
+  }
+
+  function parseAndValidateSaveRaw(raw, sourceKey) {
+    if (!raw || typeof raw !== "string") {
+      return { ok: false, empty: true, sourceKey };
+    }
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      return { ok: false, empty: false, sourceKey, reason: `JSON 解析失败（${e && e.message ? e.message : "格式损坏"}）`, raw };
+    }
+    if (!parsed || typeof parsed !== "object" || !parsed.game || typeof parsed.game !== "object") {
+      return { ok: false, empty: false, sourceKey, reason: "存档缺少核心 game 数据结构", raw };
+    }
+    if (!REALMS[parsed.game.realm]) {
+      return { ok: false, empty: false, sourceKey, reason: `存档境界字段非法（${String(parsed.game.realm)}）`, raw };
+    }
+    if (parsed.envelopeVersion >= 2 && parsed.checksum) {
+      const expected = computeSaveChecksum(buildCanonicalSavePayload(parsed));
+      if (expected !== parsed.checksum) {
+        return { ok: false, empty: false, sourceKey, reason: `存档校验和不匹配（期望 ${expected}，实得 ${parsed.checksum}）`, raw };
+      }
+    }
+    return {
+      ok: true,
+      empty: false,
+      sourceKey,
+      bundle: parsed,
+      rev: Number(parsed.saveRev) || 0,
+      tabId: parsed.tabId || null,
+      updatedAt: Number(parsed.updatedAt) || 0,
+      legacy: sourceKey !== STORAGE_KEY || !parsed.envelopeVersion
+    };
+  }
+
+  function inspectSavedBundle() {
+    let primaryRaw = null;
+    try {
+      primaryRaw = localStorage.getItem(STORAGE_KEY);
+    } catch (e) {
+      storageReadError = {
+        key: STORAGE_KEY,
+        reason: `无法访问本地存储（${e && e.message ? e.message : String(e)}）`,
+        raw: null,
+        at: Date.now()
+      };
+      return { ok: false, empty: false, error: storageReadError };
+    }
+
+    if (primaryRaw !== null && primaryRaw !== "") {
+      const res = parseAndValidateSaveRaw(primaryRaw, STORAGE_KEY);
+      if (res.ok) {
+        storageReadError = null;
+        return res;
+      }
+      // Preserve corrupted primary save intact! Never delete or silently fall back over it.
+      storageReadError = {
+        key: STORAGE_KEY,
+        reason: res.reason || "存档结构异常",
+        raw: primaryRaw,
+        rawLength: primaryRaw.length,
+        at: Date.now()
+      };
+      return { ok: false, empty: false, error: storageReadError };
+    }
+
+    // Primary slot absent: safely inspect legacy keys (v10/v9)
+    for (const legacyKey of ["chenyuan_wendao_v10_save", "chenyuan_wendao_v9_save"]) {
+      let raw = null;
+      try { raw = localStorage.getItem(legacyKey); } catch (e) { continue; }
+      if (raw !== null && raw !== "") {
+        const res = parseAndValidateSaveRaw(raw, legacyKey);
+        if (res.ok) {
+          storageReadError = null;
+          return res;
+        }
+        storageReadError = {
+          key: legacyKey,
+          reason: `旧版存档 ${legacyKey} 读取失败：${res.reason || "格式损坏"}`,
+          raw,
+          rawLength: raw.length,
+          at: Date.now()
+        };
+        return { ok: false, empty: false, error: storageReadError };
+      }
+    }
+
+    storageReadError = null;
+    return { ok: false, empty: true, error: null };
+  }
+
+  function loadSavedBundle() {
+    const res = inspectSavedBundle();
+    return res.ok ? res.bundle : null;
+  }
+
+  function renderWelcomeSaveStatusBanner() {
+    const el = document.getElementById("save-status-banner");
+    if (!el) return;
+    if (!storageReadError) {
+      el.style.display = "none";
+      el.innerHTML = "";
+      return;
+    }
+    el.style.display = "flex";
+    el.innerHTML = `
+      <div>
+        <strong style="color:#ff9e98;">⚠ 旧存档读取失败 · 已为您原样保留原数据</strong>
+        <div style="font-size:11px;color:#ffd5d0;margin-top:2px;">原因：${storageReadError.reason}（原数据未删除、未覆盖）</div>
+      </div>
+      <div class="save-banner-actions">
+        ${storageReadError.raw ? `<button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;" data-action="copy-corrupt-save-raw">复制受损原文备份</button>` : ""}
+        <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;border-color:rgba(255,130,118,0.65);color:#ffd0ca;" data-action="prompt-overwrite-corrupt">覆盖并开启新卷</button>
+      </div>
+    `;
+  }
+
+  function renderHudSaveAlert() {
+    const el = document.getElementById("hud-save-alert");
+    if (!el) return;
+    const onWelcome = document.getElementById("welcome-screen") && document.getElementById("welcome-screen").style.display !== "none";
+    if (onWelcome || (!storageWriteError && !saveReadOnlyMode && !saveConflictState)) {
+      el.style.display = "none";
+      el.innerHTML = "";
+      el.classList.remove("readonly-mode");
+      return;
+    }
+    if (saveAlertDismissed && !saveConflictState) {
+      el.style.display = "none";
+      return;
+    }
+    if (saveConflictState) {
+      el.classList.remove("readonly-mode");
+      el.style.display = "flex";
+      el.innerHTML = `
+        <span>⚠ <b>检测到另一标签页更新了存档</b>（${saveConflictState.externalName} · ${saveConflictState.externalRealm}，v${saveConflictState.externalRev}），已暂停自动覆盖。</span>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button type="button" class="btn-jade" style="padding:3px 9px;font-size:11px;" data-action="open-save-conflict">处理冲突</button>
+        </div>
+      `;
+      return;
+    }
+    if (storageWriteError) {
+      el.classList.remove("readonly-mode");
+      el.style.display = "flex";
+      el.innerHTML = `
+        <span>⚠ <b>本地存档写入失败</b>（${storageWriteError.message}）· 当前进度仅暂存内存，请备份云码。</span>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button type="button" class="btn-gold" style="padding:3px 9px;font-size:11px;" data-action="retry-save-now">重试保存</button>
+          <button type="button" class="btn-ghost" style="padding:3px 9px;font-size:11px;" data-action="open-cloud-backup">备份云码</button>
+          <button type="button" class="btn-ghost" style="padding:2px 7px;font-size:11px;" data-action="dismiss-save-alert">✕</button>
+        </div>
+      `;
+      return;
+    }
+    if (saveReadOnlyMode) {
+      el.classList.add("readonly-mode");
+      el.style.display = "flex";
+      el.innerHTML = `
+        <span>📖 当前处于<b>只读观览态</b>（避免覆盖另一标签页的较新进度），自动存档已暂停。</span>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button type="button" class="btn-jade" style="padding:3px 9px;font-size:11px;" data-action="load-latest-save">载入最新档</button>
+          <button type="button" class="btn-gold" style="padding:3px 9px;font-size:11px;" data-action="overwrite-with-current-save">以本页覆盖</button>
+        </div>
+      `;
+    }
+  }
+
+  function openCorruptedOverwriteConfirmModal() {
+    if (!storageReadError) return;
+    openModal(`
+      <div class="drawer-mural-banner" style="height:82px;">
+        <img src="${ART.banner_archive}" alt="存档读取失败" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">存档保护</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:#ffd0ca;margin-top:4px;">旧存档损坏保护 · 请确认操作</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-modal-close="1">取消 ✕</button>
+        </div>
+      </div>
+      <div style="font-size:12.5px;color:#ffe6e2;line-height:1.6;padding:4px 2px;">
+        检测到本地存档 <code style="color:#ffe28a;">${storageReadError.key}</code> 读取失败：<b>${storageReadError.reason}</b>。<br/>
+        系统已原样保留受损存档数据，<b>不会静默删除或覆盖</b>。您可先复制受损原文留存，或显式确认覆盖并开启新卷。
+      </div>
+      <div class="defeat-decision-grid">
+        ${storageReadError.raw ? `<button type="button" class="defeat-opt-btn retreat" data-action="copy-corrupt-save-raw">
+          <div><div style="font-weight:700;color:#80ffea;">📋 复制受损存档原文（保留原档）</div><div style="font-size:11px;color:var(--text-sub);">将原始字符串复制到剪贴板，原本地存档保持不变</div></div>
+          <span class="tag-chip done">备份</span>
+        </button>` : ""}
+        <button type="button" class="defeat-opt-btn" style="border-color:rgba(255,112,102,0.68);" data-action="confirm-overwrite-corrupt-new">
+          <div><div style="font-weight:700;color:#ffb4ae;">⚠ 确认覆盖原损坏存档并开启新卷</div><div style="font-size:11px;color:var(--text-sub);">此操作会以新开局替换受损数据，仅在您主动确认后执行</div></div>
+          <span class="tag-chip" style="border-color:#ff7870;color:#ffb4ae;">显式覆盖</span>
+        </button>
+      </div>
+    `, true);
+  }
+
+  function openSaveConflictModal(info = saveConflictState) {
+    if (!info) return;
+    const tsStr = info.externalUpdatedAt ? new Date(info.externalUpdatedAt).toLocaleTimeString("zh-CN", { hour12: false }) : "刚刚";
+    openModal(`
+      <div class="drawer-mural-banner" style="height:82px;">
+        <img src="${ART.banner_archive}" alt="多标签页存档冲突" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">多标签页竞争保护</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:4px;">检测到另一标签页更新了存档</h2>
+          </div>
+          <span class="tag-chip mythic">版本 v${info.externalRev} · ${tsStr}</span>
+        </div>
+      </div>
+      <div style="font-size:12.5px;color:var(--text-main);line-height:1.6;">
+        另一标签页于 <b>${tsStr}</b> 保存了更新进度（道号 <b>${info.externalName}</b> · <b>${info.externalRealm}</b>，灵石 ${info.externalStones}，本页原为 v${loadedSaveRev}）。<br/>
+        为防止误覆盖较新进度，本页已暂停自动写入，请选择处理方式：
+      </div>
+      <div class="defeat-decision-grid">
+        <button type="button" class="defeat-opt-btn retreat" data-action="load-latest-save">
+          <div><div style="font-weight:700;color:#80ffea;">↻ 载入最新标签页进度（推荐）</div><div style="font-size:11px;color:var(--text-sub);">同步为 v${info.externalRev} 最新存档并恢复自动保存</div></div>
+          <span class="tag-chip done">同步最新</span>
+        </button>
+        <button type="button" class="defeat-opt-btn" data-action="stay-readonly-save">
+          <div><div style="font-weight:700;color:#ffe28a;">📖 保留本页画面（进入只读态，不写入存档）</div><div style="font-size:11px;color:var(--text-sub);">继续观览本页且绝不覆盖另一标签页的存档</div></div>
+          <span class="tag-chip">安全只读</span>
+        </button>
+        <button type="button" class="defeat-opt-btn" style="border-color:rgba(255,118,110,0.6);" data-action="overwrite-with-current-save">
+          <div><div style="font-weight:700;color:#ffb4ae;">⚡ 以本页当前状态强制覆盖存档</div><div style="font-size:11px;color:var(--text-sub);">将本页作为最新进度写入（版本号升至 v${Math.max(loadedSaveRev, info.externalRev) + 1}）</div></div>
+          <span class="tag-chip" style="border-color:#ff7870;color:#ffb4ae;">显式覆盖</span>
+        </button>
+      </div>
+    `, false);
+  }
+
+  function buildConflictInfoFromResult(res) {
+    const g = res.bundle.game;
+    return {
+      externalRev: res.rev,
+      externalTabId: res.tabId,
+      externalUpdatedAt: res.updatedAt,
+      externalName: g.name || "顾长青",
+      externalRealm: (REALMS[g.realm] && REALMS[g.realm].name) || g.realm,
+      externalStones: g.stones || 0
+    };
+  }
+
+  function triggerSaveConflict(res, openNow = true) {
+    saveConflictState = buildConflictInfoFromResult(res);
+    saveAlertDismissed = false;
+    renderHudSaveAlert();
+    if (openNow && game && document.getElementById("welcome-screen").style.display === "none") {
+      openSaveConflictModal(saveConflictState);
+    }
+  }
+
+  function saveGame(opts = {}) {
+    if (!game) return false;
+    const force = !!(opts && opts.forceOverwrite);
+    if (saveReadOnlyMode && !force) {
+      renderHudSaveAlert();
+      return false;
+    }
+    if (storageReadError && !force) {
+      renderWelcomeSaveStatusBanner();
+      return false;
+    }
+
+    // Synchronous multi-tab write-race guard: inspect live storage right before writing!
+    let externalMaxRev = loadedSaveRev;
+    if (!force) {
+      try {
+        const curRaw = localStorage.getItem(STORAGE_KEY);
+        if (curRaw) {
+          const curRes = parseAndValidateSaveRaw(curRaw, STORAGE_KEY);
+          if (curRes.ok && curRes.tabId && curRes.tabId !== TAB_ID && curRes.rev > loadedSaveRev) {
+            triggerSaveConflict(curRes, true);
+            return false;
+          }
+          if (curRes.ok) externalMaxRev = Math.max(externalMaxRev, curRes.rev);
+        }
+      } catch (e) {}
+    } else {
+      try {
+        const curRaw = localStorage.getItem(STORAGE_KEY);
+        if (curRaw) {
+          const curRes = parseAndValidateSaveRaw(curRaw, STORAGE_KEY);
+          if (curRes.ok) externalMaxRev = Math.max(externalMaxRev, curRes.rev);
+        }
+      } catch (e) {}
+    }
+
     game.laws.forEach(lid => {
       if (!metaState.seenLaws.includes(lid)) metaState.seenLaws.push(lid);
     });
@@ -11805,28 +12289,66 @@ const ART = {
     if (sc > metaState.bestScore) metaState.bestScore = sc;
     if (game.towerBest > metaState.bestTower) metaState.bestTower = game.towerBest;
     saveMeta();
+
+    const nextRev = Math.max(loadedSaveRev, externalMaxRev) + 1;
+    const payloadObj = {
+      game,
+      stageIdx: arena.stageIdx,
+      stanceIdx: arena.stanceIdx,
+      towerMode: !!arena.towerMode,
+      sanctumMode: !!arena.sanctumMode
+    };
+    const envelope = Object.assign({
+      envelopeVersion: 2,
+      saveRev: nextRev,
+      tabId: TAB_ID,
+      updatedAt: Date.now(),
+      checksum: computeSaveChecksum(buildCanonicalSavePayload(payloadObj))
+    }, payloadObj);
+
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        game,
-        stageIdx: arena.stageIdx,
-        stanceIdx: arena.stanceIdx,
-        towerMode: arena.towerMode,
-        sanctumMode: arena.sanctumMode
-      }));
-    } catch (e) {}
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));
+      loadedSaveRev = nextRev;
+      storageWriteError = null;
+      storageReadError = null;
+      saveConflictState = null;
+      if (force) saveReadOnlyMode = false;
+      renderHudSaveAlert();
+      return true;
+    } catch (e) {
+      storageWriteError = {
+        message: (e && e.name === "QuotaExceededError") ? "存储空间已满 (QuotaExceededError)" : (e && e.message ? e.message : String(e)),
+        at: Date.now()
+      };
+      saveAlertDismissed = false;
+      renderHudSaveAlert();
+      showToast(`⚠ 本地存档写入失败：${storageWriteError.message}`);
+      return false;
+    }
   }
+
   function saveMeta() {
     try { localStorage.setItem(META_KEY, JSON.stringify(metaState)); } catch (e) {}
   }
-  function loadSavedBundle() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("chenyuan_wendao_v10_save") || localStorage.getItem("chenyuan_wendao_v9_save");
-      if (!raw) return null;
-      const p = JSON.parse(raw);
-      if (p && p.game && REALMS[p.game.realm]) return p;
-    } catch (e) {}
-    return null;
-  }
+
+  window.addEventListener("storage", (ev) => {
+    if (ev.key !== STORAGE_KEY) return;
+    if (!ev.newValue) {
+      if (!game) renderWelcomeScreen();
+      return;
+    }
+    const res = parseAndValidateSaveRaw(ev.newValue, STORAGE_KEY);
+    if (!res.ok) return;
+    if (res.tabId && res.tabId === TAB_ID) return;
+    if (!game || document.getElementById("welcome-screen").style.display !== "none") {
+      loadedSaveRev = res.rev;
+      renderWelcomeScreen();
+      return;
+    }
+    if (res.rev > loadedSaveRev) {
+      triggerSaveConflict(res, true);
+    }
+  });
 
   function computeCompetitionScore(g) {
     if (!g) return 0;
@@ -12594,16 +13116,15 @@ const ART = {
     const w = canvas.width || window.innerWidth;
     const h = canvas.height || window.innerHeight;
 
-    if (!game.openingChoice) {
-      game.openingChoice = "help";
-      game.aids.shen = true;
-    }
-
     arena.stageEpoch += 1;
     arena.waveTransitioning = false;
     arena.sanctumMode = true;
     arena.towerMode = false;
     arena.bossRush = null;
+    arena.defeatRevivesUsed = 0;
+    arena.defeatPending = null;
+    arena.nearbyProp = null;
+    renderPropInteractHud();
     arena.enemies = [];
     arena.projectiles = [];
     arena.drops = [];
@@ -12675,11 +13196,11 @@ const ART = {
       name: "天工星火剑炉", badge: "点击落锤锻紫气鸿蒙 · 开裂空剑痕", x: forgePos.x, y: forgePos.y, r: 40
     });
     arena.props.push({
-      id: "cauldron_main", kind: "cauldron", art: "furnace", name: "紫微丹鼎", badge: "点击或踏入控火炼丹",
+      id: "cauldron_main", kind: "cauldron", art: "furnace", name: "紫微丹鼎", badge: "点击或按 Enter 控火炼丹",
       x: caulPos.x, y: caulPos.y, r: 40, progress: 0
     });
     arena.props.push({
-      id: "hub_merchant", kind: "merchant_npc", art: "actor_lu", onLotus: true, name: "云岚百宝商 · 陆执事", badge: "点击或踏入选购仙装灵丹",
+      id: "hub_merchant", kind: "merchant_npc", art: "actor_lu", onLotus: true, name: "云岚百宝商 · 陆执事", badge: "点击或按 Enter 选购仙装灵丹",
       x: merchPos.x, y: merchPos.y, r: 42, progress: 0
     });
     arena.props.push({
@@ -12694,12 +13215,12 @@ const ART = {
     arena.props.push({
       id: "hub_shen", kind: "companion_npc", art: "actor_shen", onLotus: true,
       name: `沈清禾 · ${COMPANION_KEEPSAKES.shen.tierTitles[getCompanionBondTier(game, "shen")]}`,
-      badge: hubKs.mode === "demonic" ? "纵染劫煞亦留暖汤 · 踏入晋阶信物" : "清虚守正药香护脉 · 踏入晋阶信物",
+      badge: hubKs.mode === "demonic" ? "纵染劫煞亦留暖汤 · 点击/Enter 晋阶信物" : "清虚守正药香护脉 · 点击/Enter 晋阶信物",
       x: shenPos.x, y: shenPos.y, r: 40, progress: 0
     });
     if (game.aids.pei || rankOf(game.realm) >= 2 || Object.keys(game.choices).some(k => k.startsWith("pei"))) {
       arena.props.push({
-        id: "hub_pei", kind: "companion_npc", art: "actor_pei", onLotus: true, name: "裴照 · 寒潭论剑", badge: "踏入切磋剑道盟契",
+        id: "hub_pei", kind: "companion_npc", art: "actor_pei", onLotus: true, name: "裴照 · 寒潭论剑", badge: "点击/Enter 切磋剑道盟契",
         x: peiPos.x, y: peiPos.y, r: 40, progress: 0
       });
     }
@@ -12708,7 +13229,7 @@ const ART = {
     arena.celestialSpire = null;
     arena.props.push({
       id: "hub_sect_defense", kind: "sect_defense_trigger", art: "prop_guardian_sword_pylon",
-      name: "护山大阵 · 守卫台", badge: "点击或踏入开启三波妖潮守卫战",
+      name: "护山大阵 · 守卫台", badge: "点击或按 Enter 开启三波妖潮守卫战",
       x: defPos.x, y: defPos.y, r: 38, progress: 0
     });
     arena.props.push({
@@ -12735,11 +13256,6 @@ const ART = {
     const w = canvas.width || window.innerWidth;
     const h = canvas.height || window.innerHeight;
 
-    if (game && !game.openingChoice && (stageIdx > 0 || towerMode || rankOf(game.realm) >= 1)) {
-      game.openingChoice = "help";
-      game.aids.shen = true;
-    }
-
     arena.stageEpoch += 1;
     arena.waveTransitioning = false;
     arena.sanctumMode = false;
@@ -12747,6 +13263,10 @@ const ART = {
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.celestialSpire = null;
+    arena.defeatRevivesUsed = 0;
+    arena.defeatPending = null;
+    arena.nearbyProp = null;
+    renderPropInteractHud();
     arena.stageIdx = Math.max(0, Math.min(STAGES.length - 1, stageIdx));
     arena.stageTechDone = false;
     arena.maxStageCombo = 0;
@@ -12833,8 +13353,8 @@ const ART = {
   function getBossMechLabel(id) {
     if (id === "warden" || id === "sentinel" || id === "trial_gate") return "【护山金阵】金盾减伤45%，用重劈/爆剑/一闪破除金阵！";
     if (id === "puppet") return "【镜照剑反】展开铜镜架势时，用空格一闪或爆剑击碎反噬！";
-    if (id === "shadow" || id === "trial_heart") return "【噬影瞬步】瞬移绕后突袭，开启C键剑轮阵或一闪弹反！";
-    return "【寒潮弹幕】半血狂化散射妖丹，切换C键剑轮阵斩碎弹幕！";
+    if (id === "shadow" || id === "trial_heart") return "【噬影瞬步】瞬移绕后突袭，开启Y键剑轮阵或一闪弹反！";
+    return "【寒潮弹幕】半血狂化散射妖丹，切换Y键剑轮阵斩碎弹幕！";
   }
 
   // Spawn 2-Way Branching Room Portals after clearing Room 0 (`前哨试剑`)!
@@ -12904,18 +13424,18 @@ const ART = {
         const sPos = clampToPlaza(w * 0.48, h * 0.70, w, h);
         arena.props.push({
           id: "field_merchant", kind: "merchant_npc", art: "actor_lu", onLotus: true,
-          name: "云游仙商 · 百宝囊", badge: "踏入选购神装灵丹",
+          name: "云游仙商 · 百宝囊", badge: "点击/Enter 选购神装灵丹",
           x: mPos.x, y: mPos.y, r: 40, progress: 0
         });
         arena.props.push({
           id: "field_cauldron", kind: "cauldron", art: "furnace",
-          name: "灵脉丹鼎", badge: "踏入凝练回春仙丹",
+          name: "灵脉丹鼎", badge: "点击/Enter 凝练回春仙丹",
           x: cPos.x, y: cPos.y, r: 38, progress: 0
         });
         const encPos = clampToPlaza(w * 0.63, h * 0.43, w, h);
         arena.props.push({
           id: "field_encounter", kind: "encounter_stele", art: "relic_jade_seal", onLotus: true,
-          name: "📜 太古机缘古碑", badge: "踏入展卷抉择大道奇遇！",
+          name: "📜 太古机缘古碑", badge: "点击/Enter 展卷抉择大道奇遇！",
           x: encPos.x, y: encPos.y, r: 40, progress: 0
         });
         arena.props.push({
@@ -12970,7 +13490,7 @@ const ART = {
           arena.props.push({
             id: "ascend_gate", kind: "ascend_gate", art: "item_ascension_seal",
             name: game.status === "ascended" ? "道果金榜 · 仙途总览" : "九霄仙门 · 叩天飞升",
-            badge: game.status === "ascended" ? "查看本世五维道果" : "踏入引动终极飞升天劫!",
+            badge: game.status === "ascended" ? "查看本世五维道果" : "点击/Enter 引动终极飞升天劫!",
             x: gatePos.x, y: gatePos.y, r: 50, progress: 0
           });
           arena.props.push({
@@ -14194,12 +14714,130 @@ const ART = {
     golden: "新境解封：太虚秘匣全阶神通（奇门八阵/山海灵骑/法天象地/一气三清/山河图/凌霄仙舟/同心瞬切）"
   };
 
-  function startLiveTribulation() {
+  function openTribulationPrepModal() {
     if (!game || arena.tribulation) return;
     const r = REALMS[game.realm];
     if (game.realm === "ascended") { openEndingModal(); return; }
-    if (r.xpCap > 0 && game.xp < r.xpCap) { showToast("按 B 周天吐纳或斩妖攒满修为槽即可渡劫！"); return; }
+    if (r.xpCap > 0 && game.xp < r.xpCap) {
+      showToast("按 B 周天吐纳或斩妖攒满修为槽即可开启渡劫仪轨！");
+      return;
+    }
     const nextRealmId = r.next || "ascended";
+    const nextR = REALMS[nextRealmId];
+    const st = getCombatStats(game);
+    const pillId = r.pill;
+    const pillSpec = pillId ? ITEMS[pillId] : null;
+    const pillCount = pillId ? (game.inventory[pillId] || 0) : 0;
+    const pillRecipe = pillId ? Object.values(RECIPES).find(rc => rc.output === pillId) : null;
+    const aidsTxt = [
+      game.aids.shen ? "沈清禾·灵枢药阵(-25%雷伤)" : null,
+      game.aids.pei ? "裴照·云台剑痕(-20%雷伤)" : null,
+      game.aids.lu ? "陆玄松·满态入场" : null
+    ].filter(Boolean).join(" · ") || "暂无故人护阵";
+
+    arena.player.meditating = false;
+    arena.paused = true;
+
+    const pathBody = pillSpec ? `
+      <div class="trib-prep-grid">
+        <div class="trib-path-card">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <img src="${ART[pillSpec.art]}" alt="${pillSpec.name}" style="width:36px;height:36px;object-fit:contain;" />
+              <div>
+                <div style="font-family:var(--font-serif);font-size:16px;font-weight:700;color:#84ffea;">丹护渡劫 · 稳破重霄</div>
+                <span class="tag-chip ${pillCount > 0 ? "done" : ""}">持有 ${pillSpec.name} ×${pillCount}</span>
+              </div>
+            </div>
+            <p style="font-size:11.5px;color:var(--text-sub);line-height:1.5;">
+              消耗 <b>1 枚【${pillSpec.name}】</b>护持道基：立获 <b>+3 层护脉丹障</b>抵御天雷，标准 ${nextRealmId === "ascended" ? 4 : 3} 重雷劫，余障过关稳成【天道一品】！
+            </p>
+          </div>
+          ${pillCount > 0
+            ? `<button type="button" class="btn-jade" style="width:100%;padding:8px 12px;" data-trib-start="pill">携【${pillSpec.name}】开启渡劫</button>`
+            : `<div style="display:flex;flex-direction:column;gap:6px;">
+                 <button type="button" class="btn-ghost" style="width:100%;padding:7px 10px;" disabled>缺少 ${pillSpec.name}（当前 0 枚）</button>
+                 ${pillRecipe ? `<button type="button" class="btn-gold" style="width:100%;padding:7px 10px;font-size:11.5px;" data-trib-craft-pill="${pillRecipe.id}">🔥 前往紫微丹鼎炼制【${pillSpec.name}】</button>` : ""}
+               </div>`}
+        </div>
+        <div class="trib-path-card defiant">
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;">
+              <div style="font-family:var(--font-serif);font-size:16px;font-weight:700;color:#ffb4ae;">无丹强渡 · 逆天傲骨</div>
+              <span class="tag-chip" style="border-color:#ff7870;color:#ffb4ae;">高危高奖</span>
+            </div>
+            <p style="font-size:11.5px;color:#f3d2cf;line-height:1.5;">
+              不借破境丹药，以肉身硬撼强化天劫：雷劫 <b>+2 重</b>、落雷威压 <b>×1.55</b> 且无丹障；若凭身法与【空格一闪】渡过，<b>必成【天道一品】</b>并获【逆天傲骨】双倍溢修与丰厚灵石！
+            </p>
+          </div>
+          <button type="button" class="btn-gold" style="width:100%;padding:8px 12px;background:linear-gradient(135deg,#942b2b,#d86a3a);color:#fff6e2;" data-trib-start="defiant">⚡ 无丹逆天强渡</button>
+        </div>
+      </div>
+    ` : `
+      <div class="trib-path-card" style="gap:10px;">
+        <div>
+          <div style="font-family:var(--font-serif);font-size:17px;font-weight:700;color:#ffe89e;">引气入道 · 初劫洗髓（无需破境丹）</div>
+          <p style="font-size:12px;color:var(--text-sub);line-height:1.55;margin-top:4px;">
+            凡胎首渡 3 重紫霄雷劫：走位躲避紫电雷圈，或在落雷瞬间按 <b>【空格一闪】</b>迎雷弹反铸就【天道一品】！若天劫中气血归零可选择服丹续渡或保留 75% 修为退回整备。
+          </p>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" class="btn-ghost" data-modal-close="1">暂缓整备</button>
+          <button type="button" class="btn-gold" style="padding:8px 20px;" data-trib-start="normal">⚡ 引动初劫 · 晋升炼气</button>
+        </div>
+      </div>
+    `;
+
+    openModal(`
+      <div class="drawer-mural-banner" style="height:92px;">
+        <img src="${ART.banner_tribulation}" alt="九霄渡劫仪轨" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">九霄渡劫仪轨</span>
+            <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">${r.name}圆满 → 冲击【${nextR.name}】</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-modal-close="1">暂缓 ✕</button>
+        </div>
+      </div>
+      <div class="pity-bar-card">
+        <span>当前战力：<b>气血 ${Math.round(game.hp)}/${st.maxHp} · 攻击 ${st.atk} · 护脉丹障 ${game.tribShield || 0} 层</b></span>
+        <span style="color:var(--jade);">${aidsTxt}</span>
+      </div>
+      ${pathBody}
+    `, true);
+  }
+
+  function startLiveTribulation(opts = {}) {
+    if (!game || arena.tribulation) return;
+    const r = REALMS[game.realm];
+    if (game.realm === "ascended") { openEndingModal(); return; }
+    if (r.xpCap > 0 && game.xp < r.xpCap) { showToast("按 B 周天吐纳或斩妖攒满修为槽即可开启渡劫仪轨！"); return; }
+    if (!opts || !opts.confirmed) {
+      openTribulationPrepModal();
+      return;
+    }
+
+    const mode = opts.mode || "normal";
+    const nextRealmId = r.next || "ascended";
+    let usedPill = false;
+    let hardcore = false;
+
+    if (mode === "pill" && r.pill) {
+      if ((game.inventory[r.pill] || 0) < 1) {
+        showToast(`缺少【${ITEMS[r.pill].name}】，请先炼制或选择无丹逆天强渡！`);
+        openTribulationPrepModal();
+        return;
+      }
+      game.inventory[r.pill] -= 1;
+      game.tribShield = (game.tribShield || 0) + 3;
+      usedPill = true;
+    } else if (mode === "defiant") {
+      hardcore = true;
+    }
+
+    closeModal();
+    arena.paused = false;
+    arena.defeatRevivesUsed = 0;
     arena.player.meditating = false;
 
     if (game.aids.lu) {
@@ -14209,34 +14847,54 @@ const ART = {
 
     Sound.fanfare();
     Sound.drum(0.28);
-    const totalWaves = nextRealmId === "ascended" ? 4 : 3;
+    const baseWaves = nextRealmId === "ascended" ? 4 : 3;
+    const totalWaves = hardcore ? baseWaves + 2 : baseWaves;
     arena.camZoom = 1.06;
     arena.tribulation = {
       nextRealm: nextRealmId,
       totalBolts: totalWaves,
       boltsLeft: totalWaves,
-      cooldown: 0.15,
+      cooldown: 0.25,
       parryCount: 0,
+      usedPill,
+      hardcore,
       strikes: []
     };
-    showBossCutIn("banner_tribulation", `九霄紫霄雷劫 · 冲击【${REALMS[nextRealmId].name}】`, "走位躲避紫电雷圈，或按【空格一闪】迎雷弹反凝天道金丹！");
-    addFloat(`九霄紫霄雷劫降临 · 逆天破境！`, arena.player.x, arena.player.y - 64, "#ffe89e", 22, true);
+    const cutTitle = hardcore
+      ? `逆天强渡 · 强化紫霄劫【${REALMS[nextRealmId].name}】`
+      : `九霄紫霄雷劫 · 冲击【${REALMS[nextRealmId].name}】`;
+    const cutSub = hardcore
+      ? "无丹硬撼强化天劫！精准【空格一闪】迎雷弹反铸逆天傲骨！"
+      : usedPill
+        ? "破境丹障护脉已成！走位躲雷或按【空格一闪】迎雷弹反凝天道一品！"
+        : "走位躲避紫电雷圈，或按【空格一闪】迎雷弹反凝天道一品！";
+    showBossCutIn("banner_tribulation", cutTitle, cutSub);
+    addFloat(hardcore ? "⚡ 无丹强渡 · 强化雷劫降临！" : "九霄紫霄雷劫降临 · 逆天破境！", arena.player.x, arena.player.y - 64, hardcore ? "#ff9e98" : "#ffe89e", 22, true);
+    saveGame();
     updateHud();
   }
 
   function completeLiveTribulation() {
     if (!game || !arena.tribulation) return;
     const tb = arena.tribulation;
-    const isHeaven = (tb.parryCount || 0) >= 1 || (game.tribShield || 0) > 0;
+    const isHeaven = !!tb.hardcore || (tb.parryCount || 0) >= 1 || (tb.usedPill && (game.tribShield || 0) >= 1) || (game.tribShield || 0) > 0;
     arena.tribulation = null;
 
     game.realm = tb.nextRealm;
     const newR = REALMS[game.realm];
-    const carry = newR.xpCap > 0 ? Math.min(Math.floor(newR.xpCap * 0.45), game.overflowXp || 0) : 0;
+    const overflowRatio = tb.hardcore ? 0.65 : 0.45;
+    const carry = newR.xpCap > 0 ? Math.min(Math.floor(newR.xpCap * overflowRatio), (game.overflowXp || 0) + (tb.hardcore ? Math.round(newR.xpCap * 0.20) : 0)) : 0;
     game.xp = carry;
     game.overflowXp = 0;
     game.foundationQuality[game.realm] = isHeaven ? "heaven" : "earth";
-    game.statMultBonus = Number(((game.statMultBonus || 1) + (isHeaven ? 0.15 : 0.09)).toFixed(2));
+    game.statMultBonus = Number(((game.statMultBonus || 1) + (tb.hardcore ? 0.18 : isHeaven ? 0.15 : 0.09)).toFixed(2));
+    if (tb.hardcore) {
+      game.defiantBreakthroughs = (game.defiantBreakthroughs || 0) + 1;
+      const bonusStones = 120 + rankOf(game.realm) * 60;
+      game.stones += bonusStones;
+      if (Array.isArray(game.journal)) game.journal.unshift(`【逆天傲骨】无丹强渡${REALMS[game.realm].name}雷劫功成，获赐 ${bonusStones} 灵石！`);
+      showToast(`★ 逆天傲骨！无丹强渡【${REALMS[game.realm].name}】功成 · 赐 ${bonusStones} 灵石与天道一品！`);
+    }
     refreshMarketStock();
 
     const st = getCombatStats(game);
@@ -14269,7 +14927,7 @@ const ART = {
     const unlockMsg = REALM_UNLOCK_NOTICES[game.realm];
     if (unlockMsg) showToast(`★ ${unlockMsg}`);
 
-    addFloat(`${isHeaven ? "★ 天道一品 · " : ""}破境【${REALMS[game.realm].name}】· 飞剑×${getSwordCount(game)}！`, arena.player.x, arena.player.y - 64, "#fff4c2", 22, true);
+    addFloat(`${tb.hardcore ? "⚡ 逆天傲骨 · " : isHeaven ? "★ 天道一品 · " : ""}破境【${REALMS[game.realm].name}】· 飞剑×${getSwordCount(game)}！`, arena.player.x, arena.player.y - 64, "#fff4c2", 22, true);
     arena.enemies.slice().forEach(e => damageEnemy(e, Math.round(st.atk * 2.6), true, 48, 0, 9, true));
     saveGame(); updateHud(true);
     activeFruitRerolls = 1;
@@ -14964,7 +15622,7 @@ const ART = {
         arena.props = arena.props.filter(p => p.kind !== "tower_next");
         arena.props.push({
           id: "tower_next_" + game.towerFloor, kind: "tower_next",
-          name: `冲关 · 锁妖塔第 ${game.towerFloor} 层`, badge: "踏入或点击开启下一层",
+          name: `冲关 · 锁妖塔第 ${game.towerFloor} 层`, badge: "点击或按 Enter 开启下一层",
           x: pPos.x, y: pPos.y, r: 48, progress: 0
         });
         arena.waveTransitioning = false;
@@ -15776,24 +16434,25 @@ const ART = {
       if (tb.cooldown <= 0 && tb.boltsLeft > 0) {
         const waveIdx = (tb.totalBolts || 3) - tb.boltsLeft;
         tb.boltsLeft -= 1;
-        tb.cooldown = 1.25;
+        tb.cooldown = tb.hardcore ? 1.02 : 1.25;
         const sp = clampToPlaza(p.x + (Math.random() - 0.5) * 40, p.y + (Math.random() - 0.5) * 35, w, h);
-        tb.strikes.push({ x: sp.x, y: sp.y, r: 74, t: 0, hit: false, parried: false });
-        for (let extra = 0; extra < Math.min(2, waveIdx); extra++) {
+        tb.strikes.push({ x: sp.x, y: sp.y, r: tb.hardcore ? 80 : 74, t: 0, hit: false, parried: false });
+        const extraMax = tb.hardcore ? 3 : 2;
+        for (let extra = 0; extra < Math.min(extraMax, waveIdx); extra++) {
           const ea = Math.random() * Math.PI * 2;
           const ep = clampToPlaza(p.x + Math.cos(ea) * 125, p.y + Math.sin(ea) * 78, w, h);
-          tb.strikes.push({ x: ep.x, y: ep.y, r: 62, t: 0.12, hit: false, parried: false });
+          tb.strikes.push({ x: ep.x, y: ep.y, r: tb.hardcore ? 68 : 62, t: 0.12, hit: false, parried: false });
         }
       }
       for (let i = tb.strikes.length - 1; i >= 0; i--) {
         const s = tb.strikes[i];
-        s.t += dt * 0.92;
+        s.t += dt * (tb.hardcore ? 1.05 : 0.92);
         if (s.t >= 1.0 && !s.hit) {
           s.hit = true;
           Sound.drum(0.26);
           Sound.slash(true);
           arena.shake = 12;
-          arena.skyBolts.push({ x: s.x, y: s.y, t: 0, color: s.parried ? "#70ffe6" : "#e2b8ff" });
+          arena.skyBolts.push({ x: s.x, y: s.y, t: 0, color: s.parried ? "#70ffe6" : (tb.hardcore ? "#ff7875" : "#e2b8ff") });
           triggerElectroPoolReaction(s.x, s.y, st.atk);
           GamepadSystem.rumble(0.70, 0.78, 175);
           addDecal(s.x, s.y, 0, 52, "scorch");
@@ -15801,18 +16460,26 @@ const ART = {
           if (!s.parried && p.invuln <= 0 && Math.hypot(p.x - s.x, p.y - s.y) < s.r - 8) {
             if ((game.tribShield || 0) > 0) {
               game.tribShield -= 1;
-              addFloat("护脉丹障抵御天雷！", p.x, p.y - 40, "#ffe28a", 18, true);
+              addFloat(`护脉丹障抵御天雷！（余 ${game.tribShield} 层）`, p.x, p.y - 40, "#ffe28a", 18, true);
+              updateHud();
             } else {
               const aidMit = (game.aids.shen ? 0.25 : 0) + (game.aids.pei ? 0.20 : 0);
-              const loss = Math.max(4, Math.round(st.maxHp * 0.14 * (1 - aidMit)));
-              game.hp = Math.max(12, game.hp - loss);
-              addFloat(`雷劫 -${loss}`, p.x, p.y - 36, "#ff7b7b", 18);
+              const basePct = tb.hardcore ? 0.34 : 0.22;
+              const loss = Math.max(8, Math.round(st.maxHp * basePct * (1 - aidMit)));
+              game.hp = Math.max(0, game.hp - loss);
+              p.invuln = 0.45;
+              addFloat(`雷劫 -${loss}`, p.x, p.y - 36, "#ff7b7b", 18, true);
+              updateHud();
+              if (game.hp <= 0) {
+                openDefeatDecisionModal(true);
+                return;
+              }
             }
           }
         }
         if (s.t >= 1.25) tb.strikes.splice(i, 1);
       }
-      if (tb.boltsLeft <= 0 && tb.strikes.length === 0) completeLiveTribulation();
+      if (arena.tribulation && tb.boltsLeft <= 0 && tb.strikes.length === 0) completeLiveTribulation();
     }
 
     for (let ei = arena.enemies.length - 1; ei >= 0; ei--) {
@@ -16191,133 +16858,31 @@ const ART = {
       }
     }
 
-    // Interactive Props (including Sanctum NPCs, Wandering Merchant & 2-Way Branch Portals!)
-    for (let i = arena.props.length - 1; i >= 0; i--) {
+    // Interactive Props: Proximity highlights target & displays explicit confirm prompt (never auto-spends or auto-transitions!)
+    const INTERACTIVE_PROP_KINDS = new Set([
+      "immortal_spring", "ravine_zipline", "sect_defense_trigger", "pedestal",
+      "branch_portal", "sanctum_portal", "merchant_npc", "companion_npc",
+      "blood_altar", "bounty_board", "encounter_stele", "elem_stele",
+      "cauldron", "taixu_craft_alchemy", "taixu_craft_forge", "portal",
+      "tower_next", "ascend_gate"
+    ]);
+    let closestInteract = null;
+    let closestInteractDist = Infinity;
+    for (let i = 0; i < arena.props.length; i++) {
       const pr = arena.props[i];
-      const inside = Math.hypot(p.x - pr.x, p.y - pr.y) < pr.r + 26;
-      if (pr.kind === "immortal_spring") {
-        pr.progress = inside ? Math.min(1, (pr.progress || 0) + dt * 1.8) : Math.max(0, (pr.progress || 0) - dt);
-        if (pr.progress >= 1) {
-          game.hp = st.maxHp; game.mp = st.maxMp;
-          refillImmortalGourd();
-          arena.swordIntent = 100;
-          game.atkFlatBonus = (game.atkFlatBonus || 0) + 8;
-          Sound.fanfare();
-          addRipple(pr.x, pr.y + 16, 150, "#70ffe6");
-          addFloat("✨ 沐浴太初满灵泉 · 状态全满、剑意100%且永久剑攻+8！", pr.x, pr.y - 48, "#80ffea", 19, true);
-          arena.props.splice(i, 1);
-          saveGame(); updateHud();
-          break;
-        }
-      } else if (pr.kind === "ravine_zipline") {
-        pr.progress = inside ? Math.min(1, (pr.progress || 0) + dt * 1.65) : Math.max(0, (pr.progress || 0) - dt);
-        if (pr.progress >= 1) {
-          pr.progress = 0;
-          triggerSwordGlideRavineDash(pr);
-          break;
-        }
-      } else if (pr.kind === "sect_defense_trigger") {
-        pr.progress = inside ? Math.min(1, (pr.progress || 0) + dt * 1.55) : Math.max(0, (pr.progress || 0) - dt);
-        if (pr.progress >= 1) {
-          pr.progress = 0;
-          startSectDefenseSiege();
-          break;
-        }
-      } else if (pr.kind === "pedestal") {
-        pr.progress = inside ? Math.min(1, pr.progress + dt * 1.5) : Math.max(0, pr.progress - dt);
-        if (pr.progress >= 1) { activatePedestalChoice(pr); break; }
-      } else if (pr.kind === "branch_portal") {
-        pr.progress = inside ? Math.min(1, pr.progress + dt * 1.45) : Math.max(0, pr.progress - dt);
-        if (pr.progress >= 1) { Sound.fanfare(); enterChosenBranchRoom(pr.branch); break; }
-      } else if (pr.kind === "sanctum_portal") {
-        pr.progress = inside ? Math.min(1, pr.progress + dt * 1.45) : Math.max(0, pr.progress - dt);
-        if (pr.progress >= 1) { enterSanctumHub(); break; }
-      } else if (pr.kind === "merchant_npc") {
-        pr.progress = inside ? Math.min(1, pr.progress + dt * 1.35) : Math.max(0, pr.progress - dt);
-        if (pr.progress >= 1) { pr.progress = 0; p.x -= 28; toggleDrawer("bag"); break; }
-      } else if (pr.kind === "companion_npc") {
-        pr.progress = inside ? Math.min(1, pr.progress + dt * 1.35) : Math.max(0, pr.progress - dt);
-        if (pr.progress >= 1) { pr.progress = 0; p.x += 28; toggleDrawer("story"); break; }
-      } else if (pr.kind === "blood_altar") {
-        pr.progress = inside ? Math.min(1, pr.progress + dt * 1.25) : Math.max(0, pr.progress - dt);
-        if (pr.progress >= 1) {
-          game.hp = Math.max(15, Math.round(game.hp * 0.75));
-          game.bonusSwords = (game.bonusSwords || 0) + 2;
-          syncFlyingSwords();
-          Sound.fanfare();
-          arena.flash = 0.30; arena.flashColor = "#ff6b6b";
-          addFloat("血祭成剑 · 飞剑永久 +2！", pr.x, pr.y - 44, "#ff9e9b", 20, true);
-          arena.props.splice(i, 1);
-          updateHud();
-          break;
-        }
-      } else if (pr.kind === "bounty_board") {
-        pr.progress = inside ? Math.min(1, pr.progress + dt * 1.45) : Math.max(0, pr.progress - dt);
-        if (pr.progress >= 1) {
-          pr.progress = 0;
-          p.x -= 26;
-          openObjectivesModal("bounties");
-          break;
-        }
-      } else if (pr.kind === "encounter_stele") {
-        pr.progress = inside ? Math.min(1, pr.progress + dt * 1.4) : Math.max(0, pr.progress - dt);
-        if (pr.progress >= 1) {
-          Sound.fanfare();
-          arena.props.splice(i, 1);
-          openEncounterModal();
-          break;
-        }
-      } else if (pr.kind === "elem_stele") {
-        pr.progress = inside ? Math.min(1, pr.progress + dt * 1.35) : Math.max(0, pr.progress - dt);
-        if (pr.progress >= 1) {
-          arena.stageElement = pr.elem;
-          Sound.fanfare();
-          const col = pr.elem === "frost" ? "#80ecff" : "#d69eff";
-          addRipple(pr.x, pr.y + 18, 95, col);
-          addFloat(pr.elem === "frost" ? "剑碑赐福 · 玄冥寒霜附刃！" : "剑碑赐福 · 九霄紫电附刃！", pr.x, pr.y - 44, col, 20, true);
-          arena.props.splice(i, 1);
-          updateHud();
-          break;
-        }
-      } else if (pr.kind === "cauldron") {
-        if (inside && (game.inventory.herb || 0) >= 2) {
-          pr.progress = Math.min(1, pr.progress + dt * 1.15);
-          if (pr.progress >= 1) {
-            pr.progress = 0;
-            game.inventory.herb -= 2;
-            const count = (hasLaw(game, "nine_pill") || currentOmen(game).id === "alchemy_star") ? 2 : 1;
-            game.inventory.healing_pill = (game.inventory.healing_pill || 0) + count;
-            game.maxHpBonus = (game.maxHpBonus || 0) + 12;
-            game.immortalPills += 1;
-            unlockAchievement("ach_pill");
-            Sound.fanfare();
-            addFloat(`九转成丹！生命上限+12 · 丹+${count}`, pr.x, pr.y - 42, "#f8e3ac", 17, true);
-            updateHud();
-          }
-        } else pr.progress = Math.max(0, pr.progress - dt);
-      } else if (pr.kind === "portal") {
-        pr.progress = inside ? Math.min(1, pr.progress + dt * 1.4) : Math.max(0, pr.progress - dt);
-        if (pr.progress >= 1) {
-          Sound.fanfare();
-          initArenaStage(pr.nextIdx, !!pr.toTower);
-          break;
-        }
-      } else if (pr.kind === "tower_next") {
-        pr.progress = inside ? Math.min(1, pr.progress + dt * 1.5) : Math.max(0, pr.progress - dt);
-        if (pr.progress >= 1) {
-          Sound.fanfare();
-          arena.props.splice(i, 1);
-          spawnCurrentWave();
-          break;
-        }
-      } else if (pr.kind === "ascend_gate") {
-        pr.progress = inside ? Math.min(1, pr.progress + dt * 1.35) : Math.max(0, pr.progress - dt);
-        if (pr.progress >= 1) {
-          pr.progress = 0;
-          triggerAscendGateAction();
-          break;
-        }
+      pr.nearby = false;
+      pr.progress = 0;
+      if (!INTERACTIVE_PROP_KINDS.has(pr.kind)) continue;
+      const distP = Math.hypot(p.x - pr.x, p.y - pr.y);
+      if (distP < pr.r + 36 && distP < closestInteractDist) {
+        closestInteractDist = distP;
+        closestInteract = pr;
       }
+    }
+    if (closestInteract) closestInteract.nearby = true;
+    if (arena.nearbyProp !== closestInteract) {
+      arena.nearbyProp = closestInteract;
+      renderPropInteractHud();
     }
 
     for (let i = arena.qiStreams.length - 1; i >= 0; i--) {
@@ -16418,8 +16983,328 @@ const ART = {
     }
   }
 
+  function renderPropInteractHud() {
+    const el = document.getElementById("prop-interact-hud");
+    if (!el) return;
+    const pr = arena.nearbyProp;
+    const onWelcome = document.getElementById("welcome-screen") && document.getElementById("welcome-screen").style.display !== "none";
+    if (!game || !pr || onWelcome || arena.paused || cutscene.active || !arena.props.includes(pr)) {
+      if (el.style.display !== "none" || el.dataset.propSig) {
+        el.style.display = "none";
+        el.innerHTML = "";
+        el.dataset.propSig = "";
+        el.classList.remove("danger-prop");
+      }
+      return;
+    }
+    const isDanger = pr.kind === "blood_altar" || pr.branch === "elite_loot" || pr.kind === "sect_defense_trigger";
+    const subTxt = pr.kind === "blood_altar"
+      ? "主动献祭 25% 当前气血 → 本命飞剑永久 +2"
+      : pr.kind === "cauldron" && !arena.sanctumMode
+        ? `消耗凝气草 ×2 凝练回春仙丹（当前持有 ${game.inventory.herb || 0}）`
+        : (pr.badge || "点击或按 Enter 确认交互");
+    const sig = `${pr.id || pr.kind}|${pr.name}|${subTxt}|${isDanger ? 1 : 0}`;
+    if (el.dataset.propSig === sig && el.style.display === "flex") return;
+    el.dataset.propSig = sig;
+    el.classList.toggle("danger-prop", isDanger);
+    el.style.display = "flex";
+    el.innerHTML = `
+      <span class="prop-interact-key">Enter / 点击</span>
+      <div style="display:flex;flex-direction:column;gap:1px;min-width:0;">
+        <strong style="font-size:12px;color:#fff2c4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${pr.name}</strong>
+        <span style="font-size:10.5px;color:${isDanger ? "#ffb4ae" : "var(--jade)"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${subTxt}</span>
+      </div>
+      <button type="button" id="btn-prop-interact" class="${isDanger ? "btn-gold" : "btn-jade"}" style="padding:4px 11px;font-size:11px;white-space:nowrap;" data-action="interact-nearby-prop">确认</button>
+    `;
+  }
+
+  function interactWithProp(pr) {
+    if (!game || !pr) return false;
+    const idx = arena.props.indexOf(pr);
+    if (idx < 0) return false;
+    const st = getCombatStats(game);
+    const p = arena.player;
+
+    if (pr.kind === "pedestal") {
+      activatePedestalChoice(pr);
+    } else if (pr.kind === "branch_portal") {
+      Sound.fanfare();
+      enterChosenBranchRoom(pr.branch);
+    } else if (pr.kind === "sanctum_portal") {
+      enterSanctumHub();
+    } else if (pr.kind === "merchant_npc") {
+      toggleDrawer("bag");
+    } else if (pr.kind === "companion_npc") {
+      toggleDrawer("story");
+    } else if (pr.kind === "bounty_board") {
+      openObjectivesModal("bounties");
+    } else if (pr.kind === "taixu_craft_alchemy") {
+      openTaixuCraftMinigameModal("alchemy");
+    } else if (pr.kind === "taixu_craft_forge") {
+      openTaixuCraftMinigameModal("forge");
+    } else if (pr.kind === "sect_defense_trigger") {
+      startSectDefenseSiege();
+    } else if (pr.kind === "encounter_stele") {
+      Sound.fanfare();
+      arena.props.splice(idx, 1);
+      openEncounterModal();
+    } else if (pr.kind === "elem_stele") {
+      arena.stageElement = pr.elem;
+      Sound.fanfare();
+      const col = pr.elem === "frost" ? "#80ecff" : "#d69eff";
+      addRipple(pr.x, pr.y + 18, 95, col);
+      addFloat(pr.elem === "frost" ? "剑碑赐福 · 玄冥寒霜附刃！" : "剑碑赐福 · 九霄紫电附刃！", pr.x, pr.y - 44, col, 20, true);
+      arena.props.splice(idx, 1);
+      saveGame();
+      updateHud();
+    } else if (pr.kind === "blood_altar") {
+      const costHp = Math.max(1, Math.round(game.hp * 0.25));
+      if (game.hp <= costHp + 5) {
+        showToast("气血过低，强行血祭将危及道心，请先疗伤后再择血祭！");
+        return false;
+      }
+      game.hp = Math.max(10, game.hp - costHp);
+      game.bonusSwords = (game.bonusSwords || 0) + 2;
+      syncFlyingSwords();
+      Sound.fanfare();
+      arena.flash = 0.30; arena.flashColor = "#ff6b6b";
+      addFloat(`血祭成剑(-${costHp}血) · 飞剑永久 +2！`, pr.x, pr.y - 44, "#ff9e9b", 20, true);
+      arena.props.splice(idx, 1);
+      saveGame();
+      updateHud();
+    } else if (pr.kind === "immortal_spring") {
+      game.hp = st.maxHp; game.mp = st.maxMp;
+      refillImmortalGourd();
+      arena.swordIntent = 100;
+      game.atkFlatBonus = (game.atkFlatBonus || 0) + 8;
+      Sound.fanfare();
+      addRipple(pr.x, pr.y + 16, 150, "#70ffe6");
+      addFloat("✨ 沐浴太初满灵泉 · 状态全满、剑意100%且永久剑攻+8！", pr.x, pr.y - 48, "#80ffea", 19, true);
+      arena.props.splice(idx, 1);
+      saveGame();
+      updateHud();
+    } else if (pr.kind === "ravine_zipline") {
+      triggerSwordGlideRavineDash(pr);
+    } else if (pr.kind === "cauldron") {
+      if (arena.sanctumMode) {
+        toggleDrawer("alchemy");
+      } else if ((game.inventory.herb || 0) >= 2) {
+        game.inventory.herb -= 2;
+        const count = (hasLaw(game, "nine_pill") || currentOmen(game).id === "alchemy_star") ? 2 : 1;
+        game.inventory.healing_pill = (game.inventory.healing_pill || 0) + count;
+        game.maxHpBonus = (game.maxHpBonus || 0) + 12;
+        game.immortalPills += 1;
+        unlockAchievement("ach_pill");
+        Sound.fanfare();
+        addFloat(`九转成丹！生命上限+12 · 丹+${count}`, pr.x, pr.y - 42, "#f8e3ac", 17, true);
+        saveGame();
+        updateHud();
+      } else {
+        showToast("灵脉丹鼎凝丹需消耗凝气草 ×2（当前灵草不足）");
+        return false;
+      }
+    } else if (pr.kind === "portal") {
+      Sound.fanfare();
+      initArenaStage(pr.nextIdx, !!pr.toTower);
+    } else if (pr.kind === "tower_next") {
+      Sound.fanfare();
+      arena.props.splice(idx, 1);
+      spawnCurrentWave();
+    } else if (pr.kind === "ascend_gate") {
+      triggerAscendGateAction();
+    } else {
+      return false;
+    }
+
+    if (!arena.props.includes(arena.nearbyProp)) {
+      arena.nearbyProp = null;
+    }
+    renderPropInteractHud();
+    return true;
+  }
+
+  function openDefeatDecisionModal(isTribulation = false) {
+    if (!game) return;
+    arena.paused = true;
+    arena.defeatPending = { isTribulation: !!isTribulation };
+    renderPropInteractHud();
+    const pills = game.inventory.healing_pill || 0;
+    const gourdCh = (game.gourd && game.gourd.charges) || 0;
+    const revivesLeft = Math.max(0, 1 - (arena.defeatRevivesUsed || 0));
+    const canPillRevive = revivesLeft > 0 && pills >= 1;
+    const canGourdRevive = !isTribulation && revivesLeft > 0 && gourdCh >= 2;
+    const r = REALMS[game.realm];
+    const keptXp = r && r.xpCap > 0 ? Math.round(r.xpCap * 0.75) : game.xp;
+
+    if (isTribulation) {
+      openModal(`
+        <div class="drawer-mural-banner" style="height:90px;">
+          <img src="${ART.banner_tribulation}" alt="渡劫受挫" />
+          <div class="drawer-mural-overlay">
+            <div>
+              <span class="cinnabar-seal">道心垂危 · 天劫反噬</span>
+              <h2 style="font-family:var(--font-serif);font-size:21px;color:#ffb4ae;margin-top:4px;">紫霄雷劫力竭 · 请择退守或续渡</h2>
+            </div>
+            <span class="tag-chip" style="border-color:#ff7870;color:#ffb4ae;">本劫续命余 ${revivesLeft} 次</span>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--text-sub);line-height:1.55;">
+          天雷贯脉、气血耗尽。系统不会自动扣丹或免费重聚气血——您可主动服丹强续本劫，或散功避劫安全退回整备（保留 75% 境界修为，绝不死档）。
+        </p>
+        <div class="defeat-decision-grid">
+          <button type="button" class="defeat-opt-btn" data-defeat-act="revive-trib-pill" ${canPillRevive ? "" : "disabled"}>
+            <div>
+              <div style="font-weight:700;color:#ffe28a;">💊 主动服回春丹 ×1 续渡天劫</div>
+              <div style="font-size:11px;color:var(--text-sub);">${canPillRevive ? `消耗回春丹 ×1（当前持有 ${pills}），恢复 50% 气血并获 1.6s 护体无敌` : revivesLeft <= 0 ? "本轮渡劫续命次数已用尽" : "行囊中无回春丹（当前 0 枚）"}</div>
+            </div>
+            <span class="tag-chip ${canPillRevive ? "mythic" : ""}">消耗 1 丹</span>
+          </button>
+          <button type="button" class="defeat-opt-btn retreat" data-defeat-act="abort-tribulation">
+            <div>
+              <div style="font-weight:700;color:#80ffea;">🕊 散功避劫 · 退回听雨洞府整备</div>
+              <div style="font-size:11px;color:var(--text-sub);">中止本次天劫，保留 75% 修为（${keptXp}/${r.xpCap || 0}）并携全部装备灵材安全返城</div>
+            </div>
+            <span class="tag-chip done">安全撤离</span>
+          </button>
+        </div>
+      `, false);
+      return;
+    }
+
+    openModal(`
+      <div class="drawer-mural-banner" style="height:90px;">
+        <img src="${ART.banner_sanctum}" alt="道心垂危" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">道心垂危</span>
+            <h2 style="font-family:var(--font-serif);font-size:21px;color:#ffb4ae;margin-top:4px;">气血耗尽 · 生死抉择</h2>
+          </div>
+          <span class="tag-chip" style="border-color:#ff7870;color:#ffb4ae;">本战续命余 ${revivesLeft} 次</span>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--text-sub);line-height:1.55;">
+        妖煞攻心、气血归零。请选择主动消耗丹药/仙葫强行重燃战意，或御剑遁走撤回听雨洞府整备炼丹、升级神兵后再战！
+      </p>
+      <div class="defeat-decision-grid">
+        <button type="button" class="defeat-opt-btn" data-defeat-act="revive-pill" ${canPillRevive ? "" : "disabled"}>
+          <div>
+            <div style="font-weight:700;color:#ffe28a;">💊 主动服回春丹 ×1 重燃战意</div>
+            <div style="font-size:11px;color:var(--text-sub);">${canPillRevive ? `消耗回春丹 ×1（持有 ${pills}），恢复 55% 气血、2.0s 无敌并震退近身妖兽` : revivesLeft <= 0 ? "本场战斗续命次数已用尽" : "行囊中无回春丹（持有 0 枚）"}</div>
+          </div>
+          <span class="tag-chip ${canPillRevive ? "mythic" : ""}">-1 回春丹</span>
+        </button>
+        <button type="button" class="defeat-opt-btn" data-defeat-act="revive-gourd" ${canGourdRevive ? "" : "disabled"}>
+          <div>
+            <div style="font-weight:700;color:#80ffea;">🍶 耗仙葫灵酿 ×2 强聚真元</div>
+            <div style="font-size:11px;color:var(--text-sub);">${canGourdRevive ? `消耗仙葫灵酿 ×2（余 ${gourdCh} 缕），恢复 45% 气血、1.8s 无敌并震退群妖` : revivesLeft <= 0 ? "本场战斗续命次数已用尽" : `仙葫灵酿不足 2 缕（当前 ${gourdCh}）`}</div>
+          </div>
+          <span class="tag-chip ${canGourdRevive ? "done" : ""}">-2 灵酿</span>
+        </button>
+        <button type="button" class="defeat-opt-btn retreat" data-defeat-act="retreat-sanctum">
+          <div>
+            <div style="font-weight:700;color:#a8ffec;">🕊 御剑遁走 · 撤回听雨洞府休整</div>
+            <div style="font-size:11px;color:var(--text-sub);">保留本趟已拾取的全部仙装、灵石与灵材，重置当前试炼并满状态返城整备</div>
+          </div>
+          <span class="tag-chip done">保物撤退</span>
+        </button>
+      </div>
+    `, false);
+  }
+
+  function resolveDefeatChoice(act) {
+    if (!game) return;
+    const st = getCombatStats(game);
+    const p = arena.player;
+
+    if (act === "revive-pill" || act === "revive-trib-pill") {
+      if ((arena.defeatRevivesUsed || 0) >= 1 || (game.inventory.healing_pill || 0) < 1) {
+        showToast("无法服丹续战，请选择其他抉择！");
+        return;
+      }
+      game.inventory.healing_pill -= 1;
+      arena.defeatRevivesUsed = (arena.defeatRevivesUsed || 0) + 1;
+      game.hp = Math.round(st.maxHp * (act === "revive-trib-pill" ? 0.50 : 0.55));
+      p.invuln = act === "revive-trib-pill" ? 1.6 : 2.0;
+      arena.defeatPending = null;
+      closeModal();
+      arena.paused = false;
+      Sound.fanfare();
+      addRipple(p.x, p.y + 18, 155, "#ffe28a");
+      arena.enemies.forEach(e => {
+        const d = Math.hypot(e.x - p.x, e.y - p.y) || 1;
+        if (d < 220) {
+          e.kx = ((e.x - p.x) / d) * 12;
+          e.ky = ((e.y - p.y) / d) * 12;
+        }
+      });
+      addFloat(act === "revive-trib-pill" ? "💊 回春丹续脉 · 重御天劫！" : "💊 丹元重燃 · 破境再战！", p.x, p.y - 54, "#ffe28a", 20, true);
+      saveGame();
+      updateHud();
+      return;
+    }
+
+    if (act === "revive-gourd") {
+      if ((arena.defeatRevivesUsed || 0) >= 1 || !game.gourd || (game.gourd.charges || 0) < 2) {
+        showToast("仙葫灵酿不足或本战续命已用尽！");
+        return;
+      }
+      game.gourd.charges -= 2;
+      arena.defeatRevivesUsed = (arena.defeatRevivesUsed || 0) + 1;
+      game.hp = Math.round(st.maxHp * 0.45);
+      p.invuln = 1.8;
+      arena.defeatPending = null;
+      closeModal();
+      arena.paused = false;
+      Sound.fanfare();
+      addRipple(p.x, p.y + 18, 150, "#70ffe6");
+      arena.enemies.forEach(e => {
+        const d = Math.hypot(e.x - p.x, e.y - p.y) || 1;
+        if (d < 210) {
+          e.kx = ((e.x - p.x) / d) * 11;
+          e.ky = ((e.y - p.y) / d) * 11;
+        }
+      });
+      addFloat("🍶 仙葫凝元 · 气血重聚！", p.x, p.y - 54, "#70ffe6", 20, true);
+      saveGame();
+      updateHud();
+      return;
+    }
+
+    if (act === "abort-tribulation") {
+      const r = REALMS[game.realm];
+      arena.tribulation = null;
+      arena.defeatPending = null;
+      game.tribulationFails = (game.tribulationFails || 0) + 1;
+      if (r && r.xpCap > 0) {
+        game.xp = Math.min(game.xp, Math.round(r.xpCap * 0.75));
+      }
+      if (Array.isArray(game.journal)) game.journal.unshift(`冲击【${REALMS[r.next || "ascended"].name}】渡劫受挫，保留七成五修为退返听雨洞府重整道基。`);
+      closeModal();
+      arena.paused = false;
+      enterSanctumHub();
+      showToast("⚡ 渡劫受挫 · 已保留 75% 修为安全返洞府，建议炼制破境丹或强化神兵后再冲关！");
+      return;
+    }
+
+    if (act === "retreat-sanctum") {
+      arena.defeatPending = null;
+      arena.tribulation = null;
+      arena.bossRush = null;
+      arena.celestialSpire = null;
+      arena.sectDefense = null;
+      arena.cloudFlight = null;
+      arena.customSeedRun = null;
+      game.retreats = (game.retreats || 0) + 1;
+      if (Array.isArray(game.journal)) game.journal.unshift(`秘境历练力竭御剑遁走（第 ${game.retreats} 次），携战利品安返听雨洞府。`);
+      closeModal();
+      arena.paused = false;
+      enterSanctumHub();
+      showToast("🕊 已御剑遁回【听雨洞府】· 战利品尽数保全，整备炼丹后再行出征！");
+    }
+  }
+
   function hurtPlayer(rawDmg) {
-    if (!game || arena.player.invuln > 0) return;
+    if (!game || arena.player.invuln > 0 || arena.defeatPending) return;
     const p = arena.player;
     p.meditating = false;
     const st = getCombatStats(game);
@@ -16457,11 +17342,9 @@ const ART = {
         updateHud();
         return;
       }
-      if ((game.inventory.healing_pill || 0) > 0) useQuickHealingPill();
-      else {
-        game.hp = Math.round(st.maxHp * 0.6);
-        addFloat("护身灵光 · 气血重聚！", p.x, p.y - 54, "#4ad2b8", 18, true);
-      }
+      updateHud();
+      openDefeatDecisionModal(!!arena.tribulation);
+      return;
     }
     updateHud();
   }
@@ -17247,13 +18130,16 @@ const ART = {
       drawBaguaCircle(pr.x, pr.y + 24, pr.r + 4, ringCol, nowSec * (pr.kind.includes("portal") || pr.kind === "ascend_gate" ? 1.15 : 0.42), 0.72, pr.r >= 38);
       drawPointLight(pr.x, pr.y + 8, pr.r * 1.45, (pr.kind === "blood_altar" || pr.branch === "elite_loot") ? "rgba(255, 82, 72, 0.18)" : "rgba(248, 215, 130, 0.15)");
 
-      if (pr.progress > 0) {
+      if (pr.nearby || pr.progress > 0) {
+        const pulse = 0.72 + Math.sin(nowSec * 5.2) * 0.24;
         ctx.save();
         ctx.translate(pr.x, pr.y);
         ctx.strokeStyle = (pr.kind === "blood_altar" || pr.branch === "elite_loot") ? "#ff6b6b" : "#70ffe6";
-        ctx.lineWidth = 4.5;
+        ctx.globalAlpha = pr.nearby ? pulse : 1;
+        ctx.lineWidth = pr.nearby ? 3.8 : 4.5;
         ctx.beginPath();
-        ctx.ellipse(0, 24, pr.r + 9, (pr.r + 9) * 0.54, 0, -Math.PI / 2, -Math.PI / 2 + pr.progress * Math.PI * 2);
+        const span = pr.progress > 0 ? pr.progress * Math.PI * 2 : Math.PI * 2;
+        ctx.ellipse(0, 24, pr.r + 9, (pr.r + 9) * 0.54, 0, -Math.PI / 2, -Math.PI / 2 + span);
         ctx.stroke();
         ctx.restore();
       }
@@ -19076,11 +19962,11 @@ const ART = {
     else if (arena.sanctumMode) subTag.textContent = "安全休整 · 3倍吐纳";
     else if (arena.domain) subTag.textContent = `☯ 太虚剑域 ${arena.domain.life.toFixed(1)}s`;
     else if (arena.player.meditating) subTag.textContent = `☯ 周天吐纳 (${xpPct}%)`;
-    else if (arena.towerMode) subTag.textContent = hostiles > 0 ? `余妖 ×${hostiles}` : "踏入下一层阵眼";
-    else if (arena.stageIdx === 0 && !game.openingChoice) subTag.textContent = hostiles > 0 ? `救沈清禾 (${hostiles})` : "踏入光柱领谢礼";
-    else if (arena.props.some(x => x.kind === "branch_portal")) subTag.textContent = "双门择路";
-    else if (arena.props.some(x => x.kind === "ascend_gate")) subTag.textContent = "踏入九霄仙门";
-    else if (arena.props.some(x => x.kind === "portal")) subTag.textContent = "踏入传送阵";
+    else if (arena.towerMode) subTag.textContent = hostiles > 0 ? `余妖 ×${hostiles}` : "点击/Enter 进下一层";
+    else if (arena.stageIdx === 0 && !game.openingChoice) subTag.textContent = hostiles > 0 ? `救沈清禾 (${hostiles})` : "点击/Enter 择玉莲仙缘";
+    else if (arena.props.some(x => x.kind === "branch_portal")) subTag.textContent = "双门择路 (点击/Enter)";
+    else if (arena.props.some(x => x.kind === "ascend_gate")) subTag.textContent = "点击/Enter 叩九霄仙门";
+    else if (arena.props.some(x => x.kind === "portal")) subTag.textContent = "点击/Enter 启传送阵";
     else subTag.textContent = stageLabels[Math.min(3, arena.waveIdx)];
 
     const dotsRow = document.getElementById("wave-dots-row");
@@ -19256,23 +20142,55 @@ const ART = {
     }
   }
 
+  function focusDialogSafely(containerEl) {
+    if (!containerEl) return;
+    try {
+      const target = containerEl.querySelector("button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])") || containerEl;
+      if (target && typeof target.focus === "function") target.focus({ preventScroll: true });
+    } catch (e) {}
+  }
+
+  function restoreTriggerFocus(el) {
+    if (!el || !el.isConnected || el.disabled) return;
+    try {
+      if (el.offsetParent !== null && typeof el.focus === "function") {
+        el.focus({ preventScroll: true });
+      }
+    } catch (e) {}
+  }
+
   function openModal(html, closeable = true) {
     clearTransientInputs();
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
-    modalCloseable = closeable;
-    arena.paused = true;
     const bd = document.getElementById("modal-backdrop");
     const box = document.getElementById("modal-content");
     if (!bd || !box) return;
+    if (!bd.classList.contains("open")) {
+      const ae = document.activeElement;
+      if (ae && ae !== document.body && !bd.contains(ae)) {
+        lastModalTriggerEl = ae;
+      }
+    }
+    modalCloseable = closeable;
+    arena.paused = true;
     box.innerHTML = html;
     bd.classList.add("open");
+    renderPropInteractHud();
+    focusDialogSafely(box);
   }
   function closeModal() {
     clearTransientInputs();
-    arena.paused = drawerOpen || cutscene.active;
     const bd = document.getElementById("modal-backdrop");
+    const wasOpen = !!(bd && bd.classList.contains("open"));
     if (bd) bd.classList.remove("open");
+    arena.paused = drawerOpen || cutscene.active;
+    renderPropInteractHud();
+    if (wasOpen && !drawerOpen) {
+      const target = lastModalTriggerEl;
+      lastModalTriggerEl = null;
+      restoreTriggerFocus(target);
+    }
   }
 
   function toggleDrawer(tab) {
@@ -19280,21 +20198,39 @@ const ART = {
     if (tipEl) tipEl.style.display = "none";
     if (drawerOpen && currentTab === tab) { closeDrawer(); return; }
     clearTransientInputs();
+    const panel = document.getElementById("jade-panel");
+    if (!drawerOpen) {
+      const ae = document.activeElement;
+      if (ae && ae !== document.body && panel && !panel.contains(ae)) {
+        lastDrawerTriggerEl = ae;
+      }
+    }
     currentTab = tab;
     drawerOpen = true;
     arena.paused = true;
-    document.getElementById("jade-panel").classList.add("drawer-open");
+    if (panel) panel.classList.add("drawer-open");
     document.querySelectorAll(".nav-tab-btn").forEach(b => b.classList.toggle("active", b.getAttribute("data-tab") === tab));
     renderDrawerContent();
+    renderPropInteractHud();
+    focusDialogSafely(panel);
   }
 
   function closeDrawer() {
     clearTransientInputs();
+    const wasOpen = drawerOpen;
     furnaceGame.active = false;
     drawerOpen = false;
-    arena.paused = cutscene.active || document.getElementById("modal-backdrop").classList.contains("open");
-    document.getElementById("jade-panel").classList.remove("drawer-open");
+    const modalOpen = !!(document.getElementById("modal-backdrop") && document.getElementById("modal-backdrop").classList.contains("open"));
+    arena.paused = cutscene.active || modalOpen;
+    const panel = document.getElementById("jade-panel");
+    if (panel) panel.classList.remove("drawer-open");
     document.querySelectorAll(".nav-tab-btn").forEach(b => b.classList.remove("active"));
+    renderPropInteractHud();
+    if (wasOpen && !modalOpen) {
+      const target = lastDrawerTriggerEl;
+      lastDrawerTriggerEl = null;
+      restoreTriggerFocus(target);
+    }
   }
 
   function muralHeader(artKey, sealTxt, titleTxt) {
@@ -20182,9 +21118,12 @@ const ART = {
             <button type="button" id="btn-import-cloud-save" class="btn-gold" style="padding:5px 12px;font-size:11px;white-space:nowrap;" data-action="import-cloud-save">📥 导入恢复</button>
           </div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-top:4px;">
           <span style="font-size:11px;color:var(--text-sub);">改键自动冲突检测互换并持久化保存（第 ${(metaState.ascensions || 0) + 1} 世 · 最高 ${metaState.bestScore || 0} 分）</span>
-          <button type="button" class="btn-ghost" data-action="reincarnate-now">返回标题主菜单</button>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button type="button" class="btn-ghost" data-action="return-title-safe">保存并返回标题主菜单</button>
+            <button type="button" class="btn-ghost" style="border-color:rgba(255,118,110,0.55);color:#ffb4ae;" data-action="confirm-reset-save">清空当前存档</button>
+          </div>
         </div>`;
     }
 
@@ -20314,8 +21253,12 @@ const ART = {
   }
 
   function renderWelcomeScreen() {
-    const saved = loadSavedBundle();
-    document.getElementById("btn-continue-save").style.display = saved ? "inline-flex" : "none";
+    const saveRes = inspectSavedBundle();
+    loadedSaveRev = saveRes.ok ? saveRes.rev : 0;
+    document.getElementById("btn-continue-save").style.display = saveRes.ok ? "inline-flex" : "none";
+    renderWelcomeSaveStatusBanner();
+    renderHudSaveAlert();
+    renderPropInteractHud();
     document.getElementById("welcome-screen").style.backgroundImage = `url(${ART.hero_aaa_keyart})`;
     document.getElementById("hud-avatar").src = ART.char_player;
     document.getElementById("stage-bg-img").src = ART.arena_wilderness;
@@ -20434,6 +21377,15 @@ const ART = {
       return;
     }
     if (!game || arena.paused) return;
+
+    if (ev.code === "Enter" && arena.nearbyProp) {
+      const aeTag = document.activeElement && document.activeElement.tagName;
+      if (!aeTag || !/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/i.test(aeTag)) {
+        ev.preventDefault();
+        interactWithProp(arena.nearbyProp);
+        return;
+      }
+    }
 
     let matchedBind = null;
     for (const [act, cfg] of Object.entries(keybinds)) {
@@ -20556,20 +21508,11 @@ const ART = {
       pointer.worldActive = true;
       for (const pr of arena.props) {
         if (Math.hypot(ev.clientX - pr.x, ev.clientY - pr.y) < pr.r + 26) {
-          if (pr.kind === "pedestal") { activatePedestalChoice(pr); return; }
-          if (pr.kind === "branch_portal") { enterChosenBranchRoom(pr.branch); return; }
-          if (pr.kind === "sanctum_portal") { enterSanctumHub(); return; }
-          if (pr.kind === "merchant_npc") { toggleDrawer("bag"); return; }
-          if (pr.kind === "companion_npc") { toggleDrawer("story"); return; }
-          if (pr.kind === "bounty_board") { openObjectivesModal("bounties"); return; }
-          if (pr.kind === "cauldron" && arena.sanctumMode) { toggleDrawer("alchemy"); return; }
-          if (pr.kind === "taixu_craft_alchemy") { openTaixuCraftMinigameModal("alchemy"); return; }
-          if (pr.kind === "taixu_craft_forge") { openTaixuCraftMinigameModal("forge"); return; }
-          if (pr.kind === "sect_defense_trigger") { startSectDefenseSiege(); return; }
-          if (pr.kind === "encounter_stele") { arena.props = arena.props.filter(x => x !== pr); openEncounterModal(); return; }
-          if (pr.kind === "portal") { initArenaStage(pr.nextIdx, !!pr.toTower); return; }
-          if (pr.kind === "tower_next") { arena.props = arena.props.filter(x => x !== pr); spawnCurrentWave(); return; }
-          if (pr.kind === "ascend_gate") { triggerAscendGateAction(); return; }
+          if (interactWithProp(pr)) {
+            pointer.down = false;
+            pointer.worldActive = false;
+            return;
+          }
         }
       }
       const clickedEnemy = arena.enemies.some(e => Math.hypot(ev.clientX - e.x, ev.clientY - e.y) < e.r + 42) || arena.props.some(pr => pr.destructible && Math.hypot(ev.clientX - pr.x, ev.clientY - pr.y) < pr.r + 36);
@@ -20616,26 +21559,237 @@ const ART = {
     if (t.id === "btn-toggle-origin") { document.getElementById("title-custom-drawer").classList.toggle("open"); return; }
     if (t.hasAttribute("data-perk")) { selectedPerkId = t.getAttribute("data-perk"); renderWelcomeScreen(); return; }
 
-    if (t.id === "btn-start-new") {
+    function startFreshGameSession(forceOverwriteCorrupt = false) {
+      if (forceOverwriteCorrupt) storageReadError = null;
+      saveReadOnlyMode = false;
+      saveConflictState = null;
+      storageWriteError = null;
+      saveAlertDismissed = false;
       const inp = document.getElementById("player-name-input");
       game = createFreshGame(inp ? inp.value : "顾长青", selectedPerkId);
       arena.stanceIdx = 0;
+      closeModal();
       document.getElementById("welcome-screen").style.display = "none";
       Sound.fanfare();
       initArenaStage(0, false);
-      saveGame();
+      saveGame({ forceOverwrite: true });
+      renderHudSaveAlert();
+    }
+
+    if (t.id === "btn-start-new") {
+      inspectSavedBundle();
+      if (storageReadError) {
+        renderWelcomeSaveStatusBanner();
+        openCorruptedOverwriteConfirmModal();
+        return;
+      }
+      startFreshGameSession(false);
       return;
     }
     if (t.id === "btn-continue-save") {
-      const s = loadSavedBundle();
-      if (s && s.game) {
-        game = normalizeLoadedGame(s.game);
-        arena.stanceIdx = typeof s.stanceIdx === "number" ? (s.stanceIdx % SWORD_STANCES.length) : 0;
-        document.getElementById("welcome-screen").style.display = "none";
-        if (s.sanctumMode) enterSanctumHub();
-        else initArenaStage(s.stageIdx || 0, !!s.towerMode);
-        updateHud();
+      const res = inspectSavedBundle();
+      if (!res.ok || !res.bundle || !res.bundle.game) {
+        renderWelcomeScreen();
+        showToast("存档读取失败，系统已保留原数据，请查看主界面提示！");
+        return;
       }
+      const s = res.bundle;
+      loadedSaveRev = res.rev;
+      saveReadOnlyMode = false;
+      saveConflictState = null;
+      storageWriteError = null;
+      saveAlertDismissed = false;
+      game = normalizeLoadedGame(s.game);
+      arena.stanceIdx = typeof s.stanceIdx === "number" ? (s.stanceIdx % SWORD_STANCES.length) : 0;
+      document.getElementById("welcome-screen").style.display = "none";
+      if (s.sanctumMode) enterSanctumHub();
+      else initArenaStage(s.stageIdx || 0, !!s.towerMode);
+      if (res.legacy) {
+        saveGame({ forceOverwrite: true });
+        showToast("已兼容载入旧版存档并自动升级校验封装！");
+      }
+      updateHud();
+      renderHudSaveAlert();
+      return;
+    }
+
+    if (t.hasAttribute("data-trib-start")) {
+      const mode = t.getAttribute("data-trib-start");
+      startLiveTribulation({ confirmed: true, mode });
+      return;
+    }
+    if (t.hasAttribute("data-trib-craft-pill")) {
+      const rid = t.getAttribute("data-trib-craft-pill");
+      if (RECIPES[rid]) furnaceGame.recipeId = rid;
+      closeModal();
+      toggleDrawer("alchemy");
+      return;
+    }
+    if (t.hasAttribute("data-defeat-act")) {
+      resolveDefeatChoice(t.getAttribute("data-defeat-act"));
+      return;
+    }
+
+    const m1Act = t.getAttribute("data-action");
+    if (m1Act === "interact-nearby-prop") {
+      if (game && arena.nearbyProp) interactWithProp(arena.nearbyProp);
+      return;
+    }
+    if (m1Act === "copy-corrupt-save-raw") {
+      const rawTxt = storageReadError && storageReadError.raw ? storageReadError.raw : "";
+      if (!rawTxt) { showToast("当前无可复制的受损存档原文"); return; }
+      const fallbackCopy = () => {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = rawTxt;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          showToast("已复制受损存档原文（本地原数据未修改）");
+        } catch (e) {
+          showToast("请手动在浏览器开发者工具查看本地存档键值");
+        }
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(rawTxt)
+          .then(() => showToast("已复制受损存档原文（本地原数据未修改）"))
+          .catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+      return;
+    }
+    if (m1Act === "prompt-overwrite-corrupt") {
+      openCorruptedOverwriteConfirmModal();
+      return;
+    }
+    if (m1Act === "confirm-overwrite-corrupt-new") {
+      startFreshGameSession(true);
+      showToast("已确认覆盖旧损坏存档并开启全新道途！");
+      return;
+    }
+    if (m1Act === "open-save-conflict") {
+      openSaveConflictModal();
+      return;
+    }
+    if (m1Act === "retry-save-now") {
+      if (saveGame()) showToast(`本地存档已恢复写入（v${loadedSaveRev}）！`);
+      return;
+    }
+    if (m1Act === "open-cloud-backup") {
+      currentSysTab = "controls";
+      openSettingsModal();
+      return;
+    }
+    if (m1Act === "dismiss-save-alert") {
+      saveAlertDismissed = true;
+      renderHudSaveAlert();
+      return;
+    }
+    if (m1Act === "load-latest-save") {
+      const res = inspectSavedBundle();
+      if (!res.ok || !res.bundle || !res.bundle.game) {
+        showToast("最新存档读取异常，保留本页只读态！");
+        saveReadOnlyMode = true;
+        saveConflictState = null;
+        closeModal();
+        renderHudSaveAlert();
+        return;
+      }
+      const s = res.bundle;
+      loadedSaveRev = res.rev;
+      saveReadOnlyMode = false;
+      saveConflictState = null;
+      storageWriteError = null;
+      saveAlertDismissed = false;
+      game = normalizeLoadedGame(s.game);
+      arena.stanceIdx = typeof s.stanceIdx === "number" ? (s.stanceIdx % SWORD_STANCES.length) : 0;
+      closeModal();
+      closeDrawer();
+      if (s.sanctumMode) enterSanctumHub();
+      else initArenaStage(s.stageIdx || 0, !!s.towerMode);
+      updateHud();
+      renderHudSaveAlert();
+      showToast(`已同步最新标签页存档（v${res.rev}）并恢复自动保存！`);
+      return;
+    }
+    if (m1Act === "stay-readonly-save") {
+      saveReadOnlyMode = true;
+      saveConflictState = null;
+      saveAlertDismissed = false;
+      closeModal();
+      renderHudSaveAlert();
+      showToast("已切入只读观览态：本页绝不会覆盖另一标签页的存档。");
+      return;
+    }
+    if (m1Act === "overwrite-with-current-save") {
+      saveReadOnlyMode = false;
+      saveConflictState = null;
+      saveAlertDismissed = false;
+      closeModal();
+      if (saveGame({ forceOverwrite: true })) {
+        showToast(`已以本页进度强制覆盖存档（v${loadedSaveRev}）！`);
+      }
+      return;
+    }
+    if (m1Act === "return-title-safe") {
+      if (game && !saveReadOnlyMode && !saveConflictState) {
+        saveGame();
+      }
+      game = null;
+      cutscene.active = false;
+      arena.nearbyProp = null;
+      arena.defeatPending = null;
+      document.getElementById("story-dialogue-bar").classList.remove("open");
+      closeModal();
+      closeDrawer();
+      document.getElementById("welcome-screen").style.display = "flex";
+      renderWelcomeScreen();
+      showToast("已保全当前进度并返回标题主菜单！");
+      return;
+    }
+    if (m1Act === "confirm-reset-save") {
+      openModal(`
+        <div class="drawer-mural-banner" style="height:80px;">
+          <img src="${ART.banner_archive}" alt="清空存档确认" />
+          <div class="drawer-mural-overlay">
+            <div>
+              <span class="cinnabar-seal">谨慎确认</span>
+              <h2 style="font-family:var(--font-serif);font-size:20px;color:#ffb4ae;margin-top:4px;">确认清空当前本地存档？</h2>
+            </div>
+            <button type="button" class="btn-ghost" data-modal-close="1">取消 ✕</button>
+          </div>
+        </div>
+        <p style="font-size:12.5px;color:var(--text-main);line-height:1.6;">
+          清空后将删除当前修途进度并返回标题界面（轮回飞升累世功德与最高纪录仍保留）。若仅想返回标题，请点击“取消”并选择“保存并返回标题主菜单”。
+        </p>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
+          <button type="button" class="btn-ghost" data-modal-close="1">取消保留</button>
+          <button type="button" class="btn-gold" style="background:linear-gradient(135deg,#8c2222,#cc483c);color:#fff;" data-action="execute-reset-save">确认清空存档</button>
+        </div>
+      `, true);
+      return;
+    }
+    if (m1Act === "execute-reset-save") {
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      game = null;
+      loadedSaveRev = 0;
+      saveReadOnlyMode = false;
+      saveConflictState = null;
+      storageWriteError = null;
+      storageReadError = null;
+      cutscene.active = false;
+      arena.nearbyProp = null;
+      arena.defeatPending = null;
+      document.getElementById("story-dialogue-bar").classList.remove("open");
+      closeModal();
+      closeDrawer();
+      document.getElementById("welcome-screen").style.display = "flex";
+      renderWelcomeScreen();
+      showToast("已清空当前本地存档。");
       return;
     }
 
@@ -21915,8 +23069,32 @@ const ART = {
       arena,
       pity: ensureDeterministicPity(game),
       drawerOpen,
-      realmSpec: game ? REALMS[game.realm] : null
+      realmSpec: game ? REALMS[game.realm] : null,
+      persistence: {
+        tabId: TAB_ID,
+        loadedSaveRev,
+        storageReadError,
+        storageWriteError,
+        saveConflictState,
+        saveReadOnlyMode
+      }
     }),
+    getPersistenceState: () => ({
+      tabId: TAB_ID,
+      loadedSaveRev,
+      storageReadError,
+      storageWriteError,
+      saveConflictState,
+      saveReadOnlyMode
+    }),
+    inspectSavedBundle,
+    saveGame,
+    openTribulationPrepModal,
+    startLiveTribulation,
+    openDefeatDecisionModal,
+    resolveDefeatChoice,
+    hurtPlayer,
+    interactWithProp,
     rollGearItem,
     openAffixEngraveModal,
     openIconicUpgradeDraft,
