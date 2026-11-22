@@ -4447,15 +4447,6 @@ const ART = {
     ascended:   { id: "ascended", name: "飞升真仙", xpCap: 0, baseYield: 0, maxHp: 850, maxMp: 380, lifespanMonths: 99999, power: 95, next: null, pill: null }
   };
 
-  const LOCATIONS = {
-    wilderness: { id: "wilderness", name: "青岚山野", min: "mortal", eyebrow: "山雨初歇 · 一念入道", art: "scene_wilderness", fx: "rain" },
-    cave:       { id: "cave", name: "听雨洞府", min: "mortal", eyebrow: "一盏清茶 · 半卷道经", art: "scene_cave_meditation", fx: "qi" },
-    sect:       { id: "sect", name: "青云宗", min: "qi", eyebrow: "青云有路 · 问道有师", art: "scene_sect", fx: "mist" },
-    market:     { id: "market", name: "云岚坊市", min: "qi", eyebrow: "人间烟火 · 奇珍赌玉", art: "scene_market", fx: "ember" },
-    secret:     { id: "secret", name: "照影古境", min: "foundation", eyebrow: "一境一心 · 旧碑新痕", art: "scene_secret", fx: "mist" },
-    terrace:    { id: "terrace", name: "登仙台", min: "spirit", eyebrow: "回望来路 · 问心叩天", art: "scene_terrace", fx: "thunder" }
-  };
-
   const ITEMS = {
     herb:            { id: "herb", name: "凝气草", min: "qi", buy: 6, sell: 3, kind: "material", art: "item_herb", desc: "山野灵草，炼丹与培育本命灵兽的基础灵材。" },
     dew:             { id: "dew", name: "晨曦灵露", min: "qi", buy: 12, sell: 5, kind: "material", art: "item_dew", desc: "破晓松针凝露，调和丹火躁性。" },
@@ -4485,19 +4476,6 @@ const ART = {
     spirit_seed: { id: "spirit_seed", name: "炼制化神丹", min: "nascent", inputs: { dew: 4, lotus: 2, soul: 4 }, stones: 170, months: 18, output: "spirit_seed" },
     ascension:   { id: "ascension", name: "炼制渡劫引", min: "spirit", inputs: { core: 2, soul: 3, dao: 4 }, stones: 240, months: 24, output: "ascension_seal" }
   };
-
-  const SOURCES = [
-    { id: "herbs", name: "山野寻药", location: "wilderness", min: "qi", months: 4, stones: 0, xp: 15, items: { herb: 3, dew: 1 }, art: "item_herb", tag: "采集" },
-    { id: "sect_herb_task", name: "药庐百草执务", location: "sect", min: "qi", months: 5, stones: 42, xp: 22, items: { herb: 2 }, art: "icon_scroll", tag: "委托" },
-    { id: "sect_escort", name: "山门护送灵车", location: "sect", min: "qi", months: 7, stones: 78, xp: 40, items: { core: 1, dew: 1 }, art: "icon_blade", tag: "委托" },
-    { id: "jade_mine", name: "古境寻脉采玉", location: "secret", min: "foundation", months: 6, stones: 0, xp: 52, items: { jade: 3 }, art: "item_jade", tag: "采集" },
-    { id: "jade_task", name: "青云勘脉重任", location: "sect", min: "foundation", months: 8, stones: 110, xp: 75, items: { jade: 2 }, art: "icon_seal", tag: "委托" },
-    { id: "lotus_pond", name: "寒池采摘月莲", location: "secret", min: "golden", months: 8, stones: 0, xp: 125, items: { lotus: 3 }, art: "item_lotus", tag: "采集" },
-    { id: "lotus_task", name: "传法授业大典", location: "sect", min: "golden", months: 10, stones: 190, xp: 155, items: { lotus: 2 }, art: "icon_scroll", tag: "委托" },
-    { id: "soul_pool", name: "静潭凝炼魂晶", location: "secret", min: "nascent", months: 10, stones: 0, xp: 260, items: { soul: 3 }, art: "item_soul", tag: "采集" },
-    { id: "soul_task", name: "护山大阵巡检", location: "sect", min: "nascent", months: 11, stones: 260, xp: 310, items: { soul: 2 }, art: "icon_seal", tag: "委托" },
-    { id: "dao_terrace", name: "云台参悟法则", location: "terrace", min: "spirit", months: 12, stones: 80, xp: 500, items: { dao: 3 }, art: "item_dao", tag: "参道" }
-  ];
 
   const SKILLS = {
     sword_mind:    { id: "sword_mind", name: "青锋心诀", school: "sword", slot: "mind", min: "qi", price: 0, branch: null, art: "icon_blade", desc: "基础剑道心法：左键四段剑舞叠剑印，右键切手派生与爆剑破除敌方架势。" },
@@ -4958,8 +4936,6 @@ const ART = {
     sweetWidth: 0.24,
     lastResult: null
   };
-
-  const CONSTELLATION_IDS = [{ id: "c0_0" }, { id: "c1_0" }, { id: "c1_1" }, { id: "c2_0" }, { id: "c2_1" }, { id: "c2_2" }, { id: "c3_0" }, { id: "c3_1" }, { id: "c4_0" }];
 
   // 5 Chapter Regions (Derived from CAMPAIGN_ACTS single source of truth; decoupled from Endless Demon-Lock Tower!)
   const STAGES = CAMPAIGN_ACTS.map(act => ({
@@ -5494,6 +5470,96 @@ const ART = {
     }
   };
 
+  // Phase 4: Chapter-Differentiated Enemy Variants (visual aura, combat trait & chapter lore without breaking base HP curves)
+  const CHAPTER_ENEMY_VARIANTS = {
+    0: {
+      wolf:   { name: "雾隐疾狼", tag: "疾扑", auraColor: "#7ddcc4", trait: "swift", windupMult: 0.94 },
+      warden: { name: "古庙石卫", tag: "镇石", auraColor: "#e6c278", trait: "stone" }
+    },
+    1: {
+      warden:  { name: "护门金石卫", tag: "金盾", auraColor: "#f6cf6b", trait: "gold_ward", wardRatio: 0.32 },
+      wolf:    { name: "青云妖狼",   tag: "迅爪", auraColor: "#7ee0c6", trait: "swift", windupMult: 0.92 },
+      serpent: { name: "外门灵蛇",   tag: "青鳞", auraColor: "#76daf5", trait: "chill" }
+    },
+    2: {
+      serpent: { name: "寒潭玄鳞", tag: "霜鳞", auraColor: "#72e6ff", trait: "chill" },
+      warden:  { name: "寒玉石傀", tag: "冰甲", auraColor: "#9ee8ff", trait: "chill", wardRatio: 0.28 },
+      puppet:  { name: "寒渊符傀", tag: "寒镜", auraColor: "#80d8ff", trait: "mirror_pulse" }
+    },
+    3: {
+      puppet:   { name: "残剑古傀", tag: "镜反", auraColor: "#e89eff", trait: "mirror_pulse" },
+      shadow:   { name: "古冢幽影", tag: "瞬影", auraColor: "#c985ff", trait: "blink_swift", windupMult: 0.90 },
+      serpent:  { name: "冢渊玄蟒", tag: "煞鳞", auraColor: "#d294ff", trait: "chill" },
+      sentinel: { name: "镇冢剑卫", tag: "剑阵", auraColor: "#f0b8ff", trait: "gold_ward", wardRatio: 0.34 }
+    },
+    4: {
+      sentinel:      { name: "巡天金甲卫", tag: "天雷阵", auraColor: "#ffd278", trait: "thunder_ward", wardRatio: 0.40 },
+      shadow:        { name: "劫雷道影",   tag: "雷瞬",   auraColor: "#d69eff", trait: "blink_swift", windupMult: 0.88 },
+      puppet:        { name: "天门剑卫",   tag: "天镜",   auraColor: "#ffe28a", trait: "mirror_pulse" },
+      trial_heart:   { name: "天门心魇",   tag: "摄心",   auraColor: "#e89eff", trait: "blink_swift", windupMult: 0.90 },
+      trial_thunder: { name: "九霄雷卫",   tag: "天雷",   auraColor: "#9ee8ff", trait: "thunder_ward", wardRatio: 0.30 }
+    }
+  };
+
+  function getDaoBonuses(g) {
+    const dao = (g && g.dao) || { benevolence: 6, edge: 10, serenity: 6 };
+    const b = Math.max(0, Number(dao.benevolence) || 0);
+    const e = Math.max(0, Number(dao.edge) || 0);
+    const s = Math.max(0, Number(dao.serenity) || 0);
+    const healMult = 1 + Math.min(0.28, b * 0.0045);
+    const shieldMult = 1 + Math.min(0.25, b * 0.004);
+    const postureMult = 1 + Math.min(0.25, e * 0.004);
+    const critBonus = Math.min(0.08, e * 0.0012);
+    const execMult = 1 + Math.min(0.18, e * 0.003);
+    const mpRegenMult = 1 + Math.min(0.32, s * 0.005);
+    const stoneMult = 1 + Math.min(0.24, s * 0.004);
+    let dominant = "edge";
+    if (b >= e && b >= s) dominant = "benevolence";
+    else if (s >= e && s >= b) dominant = "serenity";
+    const domMap = {
+      benevolence: { title: "仁心济世", color: "#70ffe6" },
+      edge:        { title: "锋芒凌霄", color: "#ffd278" },
+      serenity:    { title: "本真通明", color: "#c792ff" }
+    };
+    return {
+      benevolence: b, edge: e, serenity: s,
+      healMult, shieldMult, postureMult, critBonus, execMult, mpRegenMult, stoneMult,
+      dominant,
+      dominantTitle: domMap[dominant].title,
+      dominantColor: domMap[dominant].color
+    };
+  }
+
+  function getSchoolSpecBonus(g) {
+    const isTalisman = !!(g && g.school === "talisman");
+    if (isTalisman) {
+      return {
+        id: "talisman",
+        name: "紫霄雷符",
+        badge: "回蓝+25% · 剑域/爆发术法+16% · 终结引紫霄链雷",
+        hasteBonus: 0,
+        critMultBonus: 0,
+        swordSynergyMult: 1.0,
+        mpRegenMult: 1.25,
+        skillDmgMult: 1.16,
+        chainLightningOnFinisher: true,
+        color: "#d69eff"
+      };
+    }
+    return {
+      id: "sword",
+      name: "青霜御剑",
+      badge: "挥剑攻速+10% · 飞剑协同+18% · 暴伤+8% · 四式增剑",
+      hasteBonus: 0.10,
+      critMultBonus: 0.08,
+      swordSynergyMult: 1.18,
+      mpRegenMult: 1.0,
+      skillDmgMult: 1.0,
+      chainLightningOnFinisher: false,
+      color: "#70ffe6"
+    };
+  }
+
   let floatRadialSeq = 0;
   let relicToastTimer = null;
 
@@ -5824,8 +5890,13 @@ const ART = {
       { art: "char_lu", role: "青云山门 · 传功执事", speaker: "陆玄松", text: "秘境已启【五层分支星图】，随时按 9 键检视天候与奖励；善择前路、勤建洞府者，方得大道！" }
     ],
     enter_secret: [
-      { art: "char_pei", role: "青云剑阁 · 首座弟子", speaker: "裴照", text: "照影寒潭之下尽是上古剑傀，铜镜一开便会反震轻剑——道友若遇镜光，切记以【空格一闪】或【爆剑】破之！" },
-      { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "多谢裴兄指点剑理，且看今日谁先斩破这寒潭妖王！" }
+      { art: "char_pei", role: "青云剑阁 · 首座弟子", speaker: "裴照", text: "照影寒潭寒气刺骨，镇守妖王【寒潭玄蛇】半血便会布下玄冥冰域、散射连环霜弹——切记切换【Y键剑轮阵】斩碎弹幕，避开霜池！" },
+      { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "多谢裴兄指点剑理，且看今日剑意破寒潭、斩玄蛇！" }
+    ],
+    enter_sword_mound: [
+      { art: "char_yan", role: "古修剑冢 · 守碑老人", speaker: "砚尘", text: "此处便是上古剑修埋骨之地【古修剑冢】。残剑古傀与镇守首领【古境剑傀】皆通铜镜反震之法，轻剑直劈必遭弹反。" },
+      { art: "char_yan", role: "古修剑冢 · 守碑老人", speaker: "砚尘", text: "见铜镜浮空时，以【空格一闪】或【右键爆剑】正面碎镜，方能破开剑傀金身、夺取月华莲与元婴机缘！" },
+      { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "古剑未冷，道心不折——今日便在此剑冢问剑证婴！" }
     ],
     enter_terrace: [
       { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "九霄星盘已在脚下。护阵能挡天雷，却替不得你斩开天门道影——拔剑吧，故人皆在云海为你护道！" }
@@ -15084,16 +15155,20 @@ const ART = {
     const celCritMult = celPh.id === "blood_dusk" ? 0.16 : 0;
     const perkCritMult = g.perk === "sword_sovereign" ? 0.18 : 0;
     const perkHaste = g.perk === "primordial_sage" ? 0.10 : 0;
+    const daoB = getDaoBonuses(g);
+    const schoolB = getSchoolSpecBonus(g);
     const finalAtk = Math.max(8, Math.round(baseAtk * (1 + cappedPassivePct) * activeMult));
 
     return {
       maxHp: finalMaxHp, maxMp: maxMp + starB.mp,
       atk: finalAtk,
       dmgReduce: dmgReduce + (isHeavyPosture ? 16 : 0) + karmaDr + starB.dr + celDrBonus,
-      crit: Math.min(0.78, crit + pineCrit + gourdCrit + starB.crit),
-      critMult: Math.min(2.35, 1.48 + styleSpec.critDmg * 0.75 + starB.critMult + celCritMult + climCritMult + perkCritMult + (hasLaw(g, "crit_lotus") ? 0.18 : 0) + pineMult + ((setB && setB.critMult) || 0)),
-      atkHaste: Math.max(0.70, Math.min(1.85, 1 + gt.spd + starB.spd + styleSpec.haste * 0.7 + postureHasteBonus + gourdHaste + climHaste + perkHaste + (arena.domain ? 0.24 : 0) + ((arena.reversedDomainTimer || 0) > 0 ? 0.20 : 0))),
+      crit: Math.min(0.78, crit + pineCrit + gourdCrit + starB.crit + daoB.critBonus),
+      critMult: Math.min(2.35, 1.48 + styleSpec.critDmg * 0.75 + starB.critMult + celCritMult + climCritMult + perkCritMult + (schoolB.critMultBonus || 0) + (hasLaw(g, "crit_lotus") ? 0.18 : 0) + pineMult + ((setB && setB.critMult) || 0)),
+      atkHaste: Math.max(0.70, Math.min(1.85, 1 + gt.spd + starB.spd + styleSpec.haste * 0.7 + postureHasteBonus + gourdHaste + climHaste + perkHaste + (schoolB.hasteBonus || 0) + (arena.domain ? 0.24 : 0) + ((arena.reversedDomainTimer || 0) > 0 ? 0.20 : 0))),
       speed: speed * postureSpdMult * (1 + gourdHaste * 0.7 + starB.spd),
+      daoBonuses: daoB,
+      schoolSpec: schoolB,
       statBreakdown: {
         baseAtk: Math.round(baseAtk),
         rawPassivePct: Number(rawPassivePct.toFixed(3)),
@@ -15928,9 +16003,10 @@ const ART = {
       spawnEnemyPack(["wolf", "wolf", "wolf"], w * 0.52, h * 0.55, 85, 1.0);
     } else {
       spawnCurrentWave();
-      // Trigger atmospheric story dialogue on first arrival in Sect / Secret / Terrace!
+      // Trigger atmospheric story dialogue on first arrival in Sect / Secret / Sword Mound / Terrace!
       if (!towerMode && arena.stageIdx === 1) playCutscene("enter_sect");
       else if (!towerMode && arena.stageIdx === 2) playCutscene("enter_secret");
+      else if (!towerMode && arena.stageIdx === 3) playCutscene("enter_sword_mound");
       else if (!towerMode && arena.stageIdx === 4) playCutscene("enter_terrace");
     }
     updateHud();
@@ -16544,20 +16620,25 @@ const ART = {
     const bossHpMult = (bossMultTable[arena.stageIdx] || 9.6) * alphaWolfBonus;
     const hp = Math.round(spec.hp * mult * (isBoss ? bossHpMult : 1.0) * pactHpMult * calSpec.hpMult);
     const maxPos = Math.round((isBoss ? (160 + arena.stageIdx * 55) : (58 + arena.stageIdx * 16)) * pactPosMult * calSpec.postureMult);
-    const hasWard = (id === "warden" && isBoss) || id === "sentinel" || id === "trial_gate";
-    const wardVal = hasWard ? Math.round(maxPos * 0.65) : 0;
+    const stageVariants = (!isBoss && !customName && !arena.towerMode) ? CHAPTER_ENEMY_VARIANTS[arena.stageIdx] : null;
+    const vSpec = stageVariants ? (stageVariants[id] || null) : null;
+    const hasWard = (id === "warden" && isBoss) || id === "sentinel" || id === "trial_gate" || !!(vSpec && vSpec.wardRatio && arena.stageIdx >= 1);
+    const wardVal = hasWard ? Math.round(maxPos * (vSpec && vSpec.wardRatio && !isBoss ? vSpec.wardRatio : 0.65)) : 0;
     const atkScale = Math.max(0.75, 1 + (mult - 1) * 0.42) * ((isBoss && id === "wolf") ? 1.12 : 1.0);
-    const resolvedName = customName || ((isBoss && id === "wolf") ? "雾隐狼王" : spec.name);
+    const resolvedName = customName || ((isBoss && id === "wolf") ? "雾隐狼王" : (vSpec ? vSpec.name : spec.name));
 
     arena.enemies.push({
       uid: "e_" + Math.random().toString(36).slice(2),
       id, art: spec.art,
       name: resolvedName,
+      variantTag: vSpec ? vSpec.tag : null,
+      variantColor: vSpec ? vSpec.auraColor : null,
+      variantTrait: vSpec ? vSpec.trait : null,
       isBoss, isTreasure: false, enraged: !!(isBoss && game && hasPact(game, "blood_moon")), beamCd: 3.0,
-      mech: hasWard ? "ward" : spec.mech,
+      mech: hasWard ? "ward" : (vSpec && vSpec.trait === "mirror_pulse" ? "mirror" : spec.mech),
       wardHp: wardVal, maxWardHp: wardVal,
       mirrorTimer: 0,
-      blinkCd: (id === "shadow" || id === "trial_heart") ? 3.2 : 999,
+      blinkCd: (id === "shadow" || id === "trial_heart" || (vSpec && vSpec.trait === "blink_swift")) ? 3.2 : 999,
       x: pos.x, y: pos.y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
       r: isBoss ? 48 : 31,
       hp, maxHp: hp,
@@ -16566,7 +16647,7 @@ const ART = {
       heavy: Math.max(16, Math.round(spec.heavy * atkScale * climAtkMult * calSpec.atkMult)),
       state: "chase",
       timer: 0.65 + Math.random() * 0.65,
-      windupDur: isBoss ? 0.88 : 0.74,
+      windupDur: (isBoss ? 0.88 : 0.74) * (vSpec && vSpec.windupMult ? vSpec.windupMult : 1.0),
       aimX: 0, aimY: 0,
       attackType: (id === "warden" || id === "sentinel" || id === "trial_thunder") ? "slam" : (id === "serpent" || id === "shadow") ? "shot" : "charge",
       partHp: isBoss ? Math.max(120, Math.round(hp * 0.28)) : 0,
@@ -16702,11 +16783,13 @@ const ART = {
         spawnSpatialSwordRift(p.x + p.facing * 82, p.y + 4, p.facing >= 0 ? 0 : Math.PI);
       }
       p.slashCd = (step === 3 ? 0.39 : step === 2 ? 0.31 : 0.25) / st.atkHaste;
-      const mpGain = (game.loadout.mind === "talisman_calm" ? 6 : 3) + (step === 3 ? 3 : 0) + (game.loadout.relic === "cloud_mirror" ? 3 : 0);
+      const baseMpGain = (game.loadout.mind === "talisman_calm" ? 6 : 3) + (step === 3 ? 3 : 0) + (game.loadout.relic === "cloud_mirror" ? 3 : 0);
+      const mpGain = Math.max(1, Math.round(baseMpGain * (st.schoolSpec ? st.schoolSpec.mpRegenMult : 1.0)));
       game.mp = Math.min(st.maxMp, (game.mp || 0) + mpGain);
       if ((game.loadout.builder === "sword_guard" || game.loadout.builder === "talisman_build") && (p.guardShieldCd || 0) <= 0) {
         p.guardShieldCd = 1.1;
-        p.shieldHp = Math.min(Math.round(st.maxHp * 0.22), (p.shieldHp || 0) + Math.max(3, Math.round(st.maxHp * 0.03)));
+        const shMult = st.daoBonuses ? st.daoBonuses.shieldMult : 1.0;
+        p.shieldHp = Math.min(Math.round(st.maxHp * 0.24 * shMult), (p.shieldHp || 0) + Math.max(3, Math.round(st.maxHp * 0.03 * shMult)));
       }
     } else {
       step = forcedStep !== null ? forcedStep : 0;
@@ -16732,7 +16815,8 @@ const ART = {
       if (SWORD_STANCES[arena.stanceIdx].id === "hunt" && arena.swords.length > 0) {
         const synTarget = activeTarget || arena.enemies.find(e => e.hp > 0 && Math.hypot(e.x - p.x, e.y - p.y) < 380) || arena.props.find(pr => pr.kind === "rough_jade" && pr.hp > 0 && Math.hypot(pr.x - p.x, pr.y - p.y) < 280);
         if (synTarget) {
-          const launchBudget = step === 3 ? Math.min(4, arena.swords.length) : Math.min(2, Math.max(1, Math.floor((arena.swords.length + 1) / 3)));
+          const swordSpecBonus = game.school === "sword" ? 1 : 0;
+          const launchBudget = step === 3 ? Math.min(4 + swordSpecBonus, arena.swords.length) : Math.min(2, Math.max(1, Math.floor((arena.swords.length + 1) / 3)));
           let launched = 0;
           for (let si = 0; si < arena.swords.length && launched < launchBudget; si++) {
             const sw = arena.swords[si];
@@ -16954,9 +17038,13 @@ const ART = {
       }
     }
 
-    // Build Mutation 2: 【紫霄雷帝流】 triggers 3-target Chain Lightning on finishers!
+    // Build Mutation 2 & Talisman School Spec: 【紫霄雷符】 triggers 3-target Chain Lightning on finishers!
     if (!fromClone && thunderB && (step === 1 || step === 3)) {
-      triggerChainLightning(sx + Math.cos(ang) * 45, sy + Math.sin(ang) * 30, st.atk * 0.68, 3);
+      const talSkillAmp = st.schoolSpec ? st.schoolSpec.skillDmgMult : 1.0;
+      triggerChainLightning(sx + Math.cos(ang) * 45, sy + Math.sin(ang) * 30, st.atk * 0.68 * talSkillAmp, 3);
+      if (step === 3 && game.school === "talisman") {
+        addFloat("⚡ 紫霄雷符 · 链雷贯阵！", p.x, p.y - 74, "#d69eff", 15, true);
+      }
     }
 
     // M2 Run Boon 【剑影回响】: Every 3rd slash launches 3 piercing phantom sword blades!
@@ -17198,7 +17286,7 @@ const ART = {
         }
         spawnSparks(e.x, e.y, 12 + marks * 2, pullAng, 3.1, thunderSyn ? "#d69eff" : "#ffb347");
         arena.slashes.push({ x: e.x, y: e.y, r: 64 + marks * 11, ang: 0, t: 0, color: thunderSyn ? "#d69eff" : "#ff9f43", heavy: true, rain: thunderSyn });
-        const synBonus = (thunderSyn ? 1.38 : 1.0) * (hasDestinyFruit(game, "zhuxian_edge") ? 1.55 : 1.0);
+        const synBonus = (thunderSyn ? 1.38 : 1.0) * (hasDestinyFruit(game, "zhuxian_edge") ? 1.55 : 1.0) * (st.schoolSpec ? st.schoolSpec.skillDmgMult : 1.0);
         if (marks >= 5 && hasDestinyFruit(game, "zhuxian_edge")) p.recallCd = Math.min(p.recallCd, 0.55);
         damageEnemy(e, Math.round(st.atk * (1.0 + marks * 0.72) * synBonus * zenMult), true, 22 + marks * 9, pullAng, 6, true);
       } else if (Math.hypot(e.x - p.x, e.y - p.y) < 320) {
@@ -17484,7 +17572,8 @@ const ART = {
         arena.enemies.slice().forEach(e => {
           if (Math.hypot(e.x - pos.x, e.y - pos.y) < e.r + 76) {
             e.swordMarks = Math.min(6, (e.swordMarks || 0) + 1);
-            damageEnemy(e, Math.round(st.atk * 0.72 * zenMult), i % 4 === 0, 10, 0, 2, true);
+            const domSkillAmp = st.schoolSpec ? st.schoolSpec.skillDmgMult : 1.0;
+            damageEnemy(e, Math.round(st.atk * 0.72 * zenMult * domSkillAmp), i % 4 === 0, 10, 0, 2, true);
           }
         });
       }, i * 68);
@@ -17627,7 +17716,9 @@ const ART = {
       game.atkFlatBonus = (game.atkFlatBonus || 0) + 6;
       game.maxHpBonus = (game.maxHpBonus || 0) + 18;
     }
-    const shenAmp = (hasKeepsake(game, "shen") ? 1.25 : 1.0) * (getCurrentCelestialPhase().id === "dawn" ? 1.25 : 1.0);
+    const daoHealAmp = st.daoBonuses ? st.daoBonuses.healMult : 1.0;
+    const daoShieldAmp = st.daoBonuses ? st.daoBonuses.shieldMult : 1.0;
+    const shenAmp = (hasKeepsake(game, "shen") ? 1.25 : 1.0) * (getCurrentCelestialPhase().id === "dawn" ? 1.25 : 1.0) * daoHealAmp;
     const heal = Math.round(st.maxHp * (hasPact(game, "bitter_pill") ? 0.36 : 0.46) * shenAmp);
     game.hp = Math.min(st.maxHp, game.hp + heal);
     if (ensurePrimordialCrafts(game).goldenAcolyte) {
@@ -17636,7 +17727,7 @@ const ART = {
       addFloat("👶 丹雷神引 ·【金甲丹童】显圣护法 (14s)！", p.x, p.y - 74, "#ffe28a", 19, true);
     }
     if (hasKeepsake(game, "shen")) {
-      p.shieldHp = Math.max(p.shieldHp || 0, Math.round(st.maxHp * 0.18));
+      p.shieldHp = Math.max(p.shieldHp || 0, Math.round(st.maxHp * 0.18 * daoShieldAmp));
     }
     if (hasRunBoon("gourd_overload")) {
       p.boonOverloadTimer = 7.0;
@@ -18360,6 +18451,7 @@ const ART = {
     }
 
     if (hasGearAffix(game, "posture_crush")) postureDmg = Math.round(postureDmg * 1.30);
+    if (st.daoBonuses && st.daoBonuses.postureMult > 1.0) postureDmg = Math.round(postureDmg * st.daoBonuses.postureMult);
     // V19 3-State Differentiated Dynamic Execution Camera & Finishers (`万剑穿心` vs `开山断岳` vs `天外飞仙`)!
     let execBonus = 1.0;
     const coopReadyForExec = !!(arena.coop2P && arena.coop2P.active && !arena.coop2P.downed && Math.hypot(e.x - arena.coop2P.x, e.y - arena.coop2P.y) < 320);
@@ -18442,6 +18534,9 @@ const ART = {
       }
     }
 
+    if (execBonus > 1.0 && st.daoBonuses && st.daoBonuses.execMult > 1.0) {
+      execBonus *= st.daoBonuses.execMult;
+    }
     const brokenMult = (e.state === "stun" ? (hasLaw(game, "stagger_surge") ? 1.65 : 1.45) : 1.0) * execBonus;
     if (arena.shanheDomain && arena.shanheDomain.active) {
       rawDmg = Math.round(rawDmg * 1.30);
@@ -18568,10 +18663,10 @@ const ART = {
       const bSig = BOSS_SIGNATURE_MOVES[e.id] || BOSS_SIGNATURE_MOVES.wolf;
       arena.bossDomain = { id: e.id, name: bSig.domainName, skyTint: bSig.skyTint, weather: bSig.weather };
       spawnBossPhase2WardPylons(e);
-      showBossCutIn("boss_phase2_totem", `${e.name} · 展开【${bSig.domainName}】`, `金光招可剑反碎势，红光${bSig.perilousName}需空格极限闪避凝时！`);
+      showBossCutIn("boss_phase2_totem", `${e.name} · 二阶段【${bSig.domainName}】`, `先摧毁护法阵柱破减伤 · 金招${bSig.goldName}可剑反 · 红招${bSig.perilousName}空格闪避！`);
       arena.shockRings.push({ x: e.x, y: e.y + 14, r: 28, maxR: 340, spd: 210, hitPlayer: false, color: "#ff6b6b" });
       arena.slashes.push({ x: e.x, y: e.y, r: e.r + 110, ang: 0, t: 0, color: "#ff5252", heavy: true });
-      addFloat("🔥 二阶妖丹狂暴 · 裂地妖光！", e.x, e.y - e.r - 40, "#ff9f7f", 22, true);
+      addFloat(`🔥 ${e.name} · 二阶【${bSig.domainName}】展开！`, e.x, e.y - e.r - 40, "#ff9f7f", 22, true);
       for (let k = 0; k < 8; k++) {
         const oa = (k * Math.PI * 2) / 8;
         arena.projectiles.push({
@@ -18753,7 +18848,8 @@ const ART = {
           ? Math.max(2, Math.round(baseEnemyXp * roomXpMult * realmPenalty))
           : Math.max(Math.min(baseEnemyXp * roomXpMult, capShare * 1.45), capShare));
     const xpOrbVal = Math.max(2, Math.round(rawXpOrb * calDrop.rewardMult));
-    const wolfStarMult = (currentOmen(game).id === "wolf_star" ? 1.4 : 1.0) * (hasRunBoon("gold_alchemist") ? 1.45 : 1.0) * calDrop.rewardMult;
+    const daoDropB = getDaoBonuses(game);
+    const wolfStarMult = (currentOmen(game).id === "wolf_star" ? 1.4 : 1.0) * (hasRunBoon("gold_alchemist") ? 1.45 : 1.0) * calDrop.rewardMult * daoDropB.stoneMult;
     spawnDrop("qi", e.x, e.y, xpOrbVal);
     spawnDrop("stone", e.x + 12, e.y - 8, Math.round((e.isBoss ? 48 + arena.stageIdx * 24 : 10 + arena.stageIdx * 5) * wolfStarMult));
 
@@ -19142,7 +19238,8 @@ const ART = {
       game.hp = Math.min(st.maxHp, game.hp + st.maxHp * 0.012 * dt);
     }
     if (game.mp < st.maxMp) {
-      game.mp = Math.min(st.maxMp, (game.mp || 0) + (0.9 + st.maxMp * 0.014) * dt);
+      const mpRegenAmp = (st.daoBonuses ? st.daoBonuses.mpRegenMult : 1.0) * (st.schoolSpec ? st.schoolSpec.mpRegenMult : 1.0);
+      game.mp = Math.min(st.maxMp, (game.mp || 0) + (0.9 + st.maxMp * 0.014) * mpRegenAmp * dt);
     }
 
     burnTickTimer -= dt;
@@ -19163,10 +19260,11 @@ const ART = {
       dm.tickCd -= dt;
       if (dm.tickCd <= 0) {
         dm.tickCd = 0.52;
+        const domAmp = st.schoolSpec ? st.schoolSpec.skillDmgMult : 1.0;
         arena.enemies.slice().forEach(e => {
           if (Math.hypot(e.x - dm.x, (e.y - dm.y) / 0.62) < dm.r + e.r) {
             e.swordMarks = Math.min(6, (e.swordMarks || 0) + 1);
-            damageEnemy(e, Math.round(st.atk * 0.34), false, 4, 0, 1.0, false);
+            damageEnemy(e, Math.round(st.atk * 0.34 * domAmp), false, 4, 0, 1.0, false);
           }
         });
       }
@@ -19440,7 +19538,8 @@ const ART = {
               } else {
                 Sound.pluck(523.25 + (idx % 4) * 65, 0.11, 0.032, "triangle");
                 tgt.swordMarks = Math.min(6, (tgt.swordMarks || 0) + 1);
-                const swMult = sw.isActiveSynergy ? 0.28 : 0.20;
+                const synSchoolAmp = (sw.isActiveSynergy && st.schoolSpec) ? st.schoolSpec.swordSynergyMult : 1.0;
+                const swMult = (sw.isActiveSynergy ? 0.28 : 0.20) * synSchoolAmp;
                 const swPosture = sw.isActiveSynergy ? 4 : 2;
                 damageEnemy(tgt, Math.max(2, Math.round(st.atk * swMult)), false, swPosture, Math.atan2(dy, dx), 1.6, false);
               }
@@ -19899,7 +19998,7 @@ const ART = {
           e.timer = e.windupDur * ((e.perilous || e.lowSweepWindup || e.grabWindup) ? 1.12 : 0.92) * (e.enraged ? 0.84 : 1.0);
           e.curWindupTotal = e.timer;
           e.aimX = p.x; e.aimY = p.y;
-          if (e.id === "puppet" && !e.perilous && !e.lowSweepWindup && !e.grabWindup && !e.partSevered) e.mirrorTimer = e.timer;
+          if ((e.id === "puppet" || e.variantTrait === "mirror_pulse") && !e.perilous && !e.lowSweepWindup && !e.grabWindup && !e.partSevered) e.mirrorTimer = e.timer;
           if (e.grabWindup) {
             Sound.perilousGong();
             addFloat("🤜【擒】暗金夺命投 · 出重击/易剑/C魂印正面拼刀反制！", e.x, e.y - e.r - 40, "#ffae33", 16.5, true);
@@ -20011,11 +20110,12 @@ const ART = {
           } else {
             const baseAng = Math.atan2(p.y - e.y, p.x - e.x);
             const angles = e.enraged ? [-0.44, -0.22, 0, 0.22, 0.44] : [-0.24, 0, 0.24];
+            const orbCol = e.variantTrait === "chill" ? "#72e6ff" : (e.variantColor || "#ff6b81");
             angles.forEach(off => {
               arena.projectiles.push({
                 friendly: false, kind: "orb", x: e.x, y: e.y,
                 vx: Math.cos(baseAng + off) * 6.0, vy: Math.sin(baseAng + off) * 6.0,
-                ang: baseAng + off, r: 12, dmg: e.atk, life: 2.2, color: "#ff6b81"
+                ang: baseAng + off, r: 12, dmg: e.atk, life: 2.2, color: orbCol
               });
             });
             e.state = "chase"; e.timer = e.enraged ? 0.90 : 1.15;
@@ -22111,13 +22211,14 @@ const ART = {
           const rMap = { shield_vanguard: ["🛡 盾卫", "#ffe28a"], hex_chanter: ["🔮 妖师", "#e2b8ff"], flank_assassin: ["🗡 影袭", "#ff8787"] };
           const rm = rMap[e.tacticalRole];
           if (rm) {
+            const roleLift = e.variantTag ? 17 : 0;
             ctx.save();
             ctx.font = "bold 10px sans-serif";
             ctx.textAlign = "center";
-            ctx.fillStyle = "rgba(5, 13, 18, 0.82)";
-            ctx.fillRect(e.x - 24, e.y - e.r - 44 - liftZ, 48, 14);
+            ctx.fillStyle = "rgba(5, 13, 18, 0.84)";
+            ctx.fillRect(e.x - 24, e.y - e.r - 44 - roleLift - liftZ, 48, 14);
             ctx.fillStyle = rm[1];
-            ctx.fillText(rm[0], e.x, e.y - e.r - 33 - liftZ);
+            ctx.fillText(rm[0], e.x, e.y - e.r - 33 - roleLift - liftZ);
             ctx.restore();
           }
         }
@@ -22159,6 +22260,18 @@ const ART = {
             ctx.restore();
           }
         } else {
+          if (e.variantColor && !e.isBoss && !e.isTreasure) {
+            ctx.save();
+            ctx.translate(e.x, e.y + 18);
+            ctx.scale(1, 0.52);
+            ctx.strokeStyle = e.variantColor;
+            ctx.globalAlpha = 0.42 + Math.sin(nowSec * 4 + e.x * 0.02) * 0.14;
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.arc(0, 0, e.r + 6, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
           drawSprite(e.art, e.x, e.y - 8 - liftZ, e.isBoss ? 132 : e.isTreasure ? 58 : 90, e.x > arena.player.x, e.hitFlash > 0, 1.0, e.sx, e.sy);
         }
 
@@ -22320,6 +22433,11 @@ const ART = {
           ctx.fillStyle = "#ffb86c";
           ctx.textAlign = "center";
           ctx.fillText(`剑印×${marks} 右键引爆`, e.x, by - 6);
+        } else if (e.variantTag && !e.isBoss) {
+          ctx.font = "600 10.5px sans-serif";
+          ctx.fillStyle = e.variantColor || "#cdeae3";
+          ctx.textAlign = "center";
+          ctx.fillText(`${e.name} · ${e.variantTag}`, e.x, by - 6);
         }
         ctx.restore();
       } else {
@@ -23739,20 +23857,30 @@ const ART = {
       const maxYears = lf.maxYears;
       const longPills = game.inventory.longevity_pill || 0;
       const lifeColor = lf.status === "critical" ? "#ff8080" : lf.status === "warning" ? "#ffe28a" : "var(--gold-bright)";
+      const daoB = st.daoBonuses || getDaoBonuses(game);
+      const schoolB = st.schoolSpec || getSchoolSpecBonus(game);
 
       body.innerHTML = `
         ${muralHeader("banner_sanctum", "命盘道统", `${game.name} · ${REALMS[game.realm].name}期命盘`)}
 
         <!-- Complete RPG Character Attribute & 5D Dao Radar Sheet -->
-        <div class="jade-card" style="flex-direction:row;align-items:center;gap:10px;">
-          ${buildDaoRadarSvg(game)}
-          <div class="stat-kv-grid" style="flex:1;">
-            <div class="stat-kv-row"><span>骨龄寿元</span><b style="color:${lifeColor};">${ageYears}/${maxYears}载</b></div>
-            <div class="stat-kv-row"><span>环身飞剑</span><b>×${getSwordCount(game)} 柄</b></div>
-            <div class="stat-kv-row"><span>剑道攻击</span><b>${st.atk}</b></div>
-            <div class="stat-kv-row"><span>护体减伤</span><b>${st.dmgReduce} (${Math.round((1 - Math.max(0.35, 100 / (100 + Math.max(0, st.dmgReduce || 0)))) * 100)}%)</b></div>
-            <div class="stat-kv-row"><span>暴击概率</span><b>${Math.round(st.crit * 100)}%</b></div>
-            <div class="stat-kv-row"><span>暴击倍率</span><b>${Math.round(st.critMult * 100)}%</b></div>
+        <div class="jade-card" style="gap:8px;">
+          <div style="display:flex;flex-direction:row;align-items:center;gap:10px;">
+            ${buildDaoRadarSvg(game)}
+            <div class="stat-kv-grid" style="flex:1;">
+              <div class="stat-kv-row"><span>骨龄寿元</span><b style="color:${lifeColor};">${ageYears}/${maxYears}载</b></div>
+              <div class="stat-kv-row"><span>环身飞剑</span><b>×${getSwordCount(game)} 柄</b></div>
+              <div class="stat-kv-row"><span>剑道攻击</span><b>${st.atk}</b></div>
+              <div class="stat-kv-row"><span>护体减伤</span><b>${st.dmgReduce} (${Math.round((1 - Math.max(0.35, 100 / (100 + Math.max(0, st.dmgReduce || 0)))) * 100)}%)</b></div>
+              <div class="stat-kv-row"><span>暴击概率</span><b>${Math.round(st.crit * 100)}%</b></div>
+              <div class="stat-kv-row"><span>暴击倍率</span><b>${Math.round(st.critMult * 100)}%</b></div>
+            </div>
+          </div>
+          <div id="dao-bonuses-strip" style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding-top:6px;border-top:1px solid rgba(132,208,194,0.16);font-size:10px;">
+            <span class="tag-chip" style="border-color:${daoB.dominantColor};color:${daoB.dominantColor};">☯ ${daoB.dominantTitle}</span>
+            <span class="tag-chip" data-tip="仁心道果 (${daoB.benevolence})|剧情善念与结缘提升仁心，永久增强仙葫疗愈与护盾上限">仁心 疗+${Math.round((daoB.healMult - 1) * 100)}%</span>
+            <span class="tag-chip" data-tip="锋芒道果 (${daoB.edge})|锐意进取提升锋芒，永久增强削韧、暴击率与处决伤害">锋芒 破+${Math.round((daoB.postureMult - 1) * 100)}%</span>
+            <span class="tag-chip" data-tip="本真道果 (${daoB.serenity})|明心见性提升本真，永久增强回蓝速率与灵石收益">本真 灵+${Math.round((daoB.mpRegenMult - 1) * 100)}%</span>
           </div>
         </div>
 
@@ -23848,6 +23976,9 @@ const ART = {
               <button class="btn-ghost ${game.school === "talisman" ? "active-pill" : ""}" data-school="talisman">紫霄雷符</button>
             </div>
             <span style="font-size:11px;color:var(--text-sub);">${showQiTier ? "三才剑阵 (Y键)" : "流派心法"}</span>
+          </div>
+          <div id="school-spec-banner" style="font-size:10.5px;padding:5px 8px;border-radius:7px;background:rgba(12,26,32,0.72);border:1px solid ${schoolB.color}55;color:${schoolB.color};">
+            ✦ ${schoolB.name}专精 · ${schoolB.badge}
           </div>
           ${showQiTier ? `
           <div class="grid-3">
@@ -24803,7 +24934,7 @@ const ART = {
     closeDrawer();
     game.openingChoice = "help";
     game.aids.shen = true;
-    game.seenCutscenes = { prologue_rescue: true, enter_sect: true, enter_secret: true, enter_terrace: true };
+    game.seenCutscenes = { prologue_rescue: true, enter_sect: true, enter_secret: true, enter_sword_mound: true, enter_terrace: true };
     game.choices = { shen_return: "warm", pei_meet: "cooperate", lu_intro: "listen" };
     if (preset === "judge_showcase") {
       game.realm = "golden";
@@ -26708,27 +26839,6 @@ const ART = {
       resolveStoryChoice(t.getAttribute("data-story-id"), t.getAttribute("data-opt-id"), false);
       return;
     }
-    if (t.hasAttribute("data-source")) {
-      if (arena.sourceCd > 0) { showToast(`历练调息中 (${arena.sourceCd.toFixed(1)}s)`); return; }
-      const src = SOURCES.find(s => s.id === t.getAttribute("data-source"));
-      if (src) {
-        arena.sourceCd = 2.8;
-        const sb = getSanctumBonuses(game);
-        const scLv = getSanctumLevel(game, "scripture_hall");
-        const bonusItem = (currentOmen(game).id === "harvest" || hasLaw(game, "destiny_eye") || (scLv >= 5 && Math.random() < 0.5)) ? 1 : 0;
-        Object.entries(src.items).forEach(([k, n]) => { game.inventory[k] = (game.inventory[k] || 0) + n + bonusItem; });
-        const gainedStones = Math.round((src.stones || 0) * sb.sourceMult);
-        const gainedXp = Math.round((src.xp || 0) * sb.sourceMult);
-        game.stones += gainedStones;
-        game.elapsedMonths = (game.elapsedMonths || 0) + (hasLaw(game, "age_might") ? Math.ceil(src.months * 0.5) : src.months);
-        gainRealmXp(gainedXp);
-        Sound.qiOrb(3);
-        showToast(`${src.name}归来 · 修为+${gainedXp}${gainedStones ? ` · 灵石+${gainedStones}` : ""}`);
-        saveGame(); updateHud(); renderDrawerContent();
-        setTimeout(() => { if (drawerOpen && currentTab === "explore") renderDrawerContent(); }, 2850);
-      }
-      return;
-    }
     if (t.hasAttribute("data-quick-craft")) {
       const rec = RECIPES[t.getAttribute("data-quick-craft")];
       if (!rec) return;
@@ -27045,7 +27155,14 @@ const ART = {
     fireManualSlash,
     recallAndDetonateSwords,
     renderOnboardingCoach,
-    advanceOnboardingStep
+    advanceOnboardingStep,
+    getDaoBonuses,
+    getSchoolSpecBonus,
+    CHAPTER_CUTSCENES,
+    CHAPTER_ENEMY_VARIANTS,
+    BOSS_SIGNATURE_MOVES,
+    useQuickHealingPill,
+    activatePedestalChoice
   };
   window.__CHENYUAN_V24__ = {
     getState: () => ({
