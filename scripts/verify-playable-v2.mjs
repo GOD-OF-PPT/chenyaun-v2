@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 · 共 19 项）
+ * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P4 · 共 23 项）
  *
  * 用法：
  *   node scripts/verify-playable-v2.mjs
@@ -1206,6 +1206,475 @@ try {
     await page.waitForTimeout(140);
     assert.equal(await page.evaluate(() => document.getElementById("modal-backdrop").classList.contains("open")), false);
     assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), "btn-goals-modal", "Closing chained modal should restore focus to original trigger #btn-goals-modal");
+
+    await ctx.close();
+  });
+
+  // =========================================================================
+  // OVERHAUL GUARDRAIL SUITES (P1-1 .. P4-1): Combat Balance, Mainflow, UI & Content
+  // =========================================================================
+  await runSuite("P1-1", "Phase 1 Guardrails: Anti-AFK Prologue, Ch1-Ch5 TTK & %HP Pressure, Real MP Loop & Mortal Locks", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "P1-1", false);
+
+    // 1. 4.2s AFK test in prologue: wolves must stay alive & player must take real HP damage
+    const startSnap = await page.evaluate(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      return { hp: s.game.hp, enemies: s.arena.enemies.length };
+    });
+    await page.waitForTimeout(3600);
+    const afkSnap = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      const snap = {
+        hp: s.game.hp,
+        alive: s.arena.enemies.filter(e => e.hp > 0).length
+      };
+      api.closeModal();
+      s.arena.paused = false;
+      s.game.hp = api.getCombatStats(s.game).maxHp;
+      return snap;
+    });
+    assert.ok(afkSnap.alive >= 2, `AFK 3.6s must NOT auto-clear prologue wolves (alive=${afkSnap.alive})`);
+    assert.ok(afkSnap.hp < startSnap.hp, `AFK 3.6s must cause real HP damage (start=${startSnap.hp}, after=${afkSnap.hp})`);
+
+    // 2. All Mortal realm locks enforced on API & keyboard (4/5/6/E blocked)
+    const lockCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const { game } = api.getState();
+      const lockedActs = ["stance", "jump", "ult", "ally", "pet", "posture", "soul", "swordBlink", "finisher", "tagSwitch", "weapon_form", "astral", "mount", "qimen", "sanqing", "shanhe", "warship", "sequencer"];
+      return lockedActs.filter(a => api.isActionUnlockedByRealm(game, a));
+    });
+    assert.equal(lockCheck.length, 0, `Mortal must have 0 high-realm actions unlocked, got: ${lockCheck.join(",")}`);
+
+    const mpBeforeKeys = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.mp);
+    for (const key of ["Digit4", "Digit5", "Digit6", "KeyE"]) {
+      await page.keyboard.press(key);
+      await page.waitForTimeout(80);
+    }
+    const afterKeys = await page.evaluate(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      const s24 = window.__CHENYUAN_V24__.getState();
+      return {
+        mp: s.game.mp,
+        domain: !!s.arena.domain,
+        sanqing: !!(s24.sanqing && s24.sanqing.active),
+        shanhe: !!(s24.shanhe && s24.shanhe.active),
+        warship: !!(s24.warship && s24.warship.active)
+      };
+    });
+    assert.equal(afterKeys.domain, false);
+    assert.equal(afterKeys.sanqing, false);
+    assert.equal(afterKeys.shanhe, false);
+    assert.equal(afterKeys.warship, false);
+    assert.ok(afterKeys.mp >= mpBeforeKeys, "Locked keys must not spend MP");
+
+    // 3. Ch1-Ch5 combat calibration (%HP light hit pressure + healthy Boss TTK, deterministic representative loadouts)
+    const curveRows = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const presets = [
+        { realm: "mortal",     wpnAtk: 8,   armHp: 18,  armDr: 4,  rngCrit: 0.03, relic: null,          laws: [] },
+        { realm: "qi",         wpnAtk: 24,  armHp: 45,  armDr: 10, rngCrit: 0.05, relic: "frost_sword", laws: ["wanjian"] },
+        { realm: "foundation", wpnAtk: 56,  armHp: 95,  armDr: 18, rngCrit: 0.08, relic: "frost_sword", laws: ["wanjian", "void_haste"] },
+        { realm: "golden",     wpnAtk: 112, armHp: 175, armDr: 28, rngCrit: 0.10, relic: "frost_sword", laws: ["wanjian", "void_haste", "crit_lotus"] },
+        { realm: "nascent",    wpnAtk: 195, armHp: 280, armDr: 40, rngCrit: 0.12, relic: "frost_sword", laws: ["wanjian", "void_haste", "crit_lotus", "yinyang"] }
+      ];
+      const out = [];
+      for (let i = 0; i < 5; i++) {
+        const s = api.getState();
+        const pr = presets[i];
+        s.game.realm = pr.realm;
+        s.game.openingChoice = "help";
+        s.game.seenCutscenes = { prologue_rescue: true, enter_sect: true, enter_secret: true, enter_sword_mound: true, enter_terrace: true };
+        s.game.laws = pr.laws.slice();
+        s.game.loadout.relic = pr.relic;
+        s.game.equippedGear = {
+          weapon: { uid: "det_w_" + i, slot: "weapon", rarity: Math.min(3, i), name: "制式佩剑", art: "icon_blade", atk: pr.wpnAtk, hp: 0, dr: 0, crit: pr.rngCrit, spd: 0, bonusSword: 0, lvl: 0 },
+          armor:  { uid: "det_a_" + i, slot: "armor",  rarity: Math.min(3, i), name: "制式仙衣", art: "icon_heart", atk: 0, hp: pr.armHp, dr: pr.armDr, crit: 0, spd: 0, bonusSword: 0, lvl: 0 },
+          ring:   { uid: "det_r_" + i, slot: "ring",   rarity: Math.min(3, i), name: "制式灵佩", art: "item_jade",  atk: Math.round(pr.wpnAtk * 0.25), hp: 0, dr: 2, crit: pr.rngCrit, spd: 0, bonusSword: 0, lvl: 0 }
+        };
+        api.initArenaStage(i, false);
+        if (s.arena.dungeonMap) s.arena.dungeonMap.activeClimate = "spirit_mist";
+        const st = api.getCombatStats(s.game);
+        s.game.hp = st.maxHp;
+        s.arena.player.invuln = 0;
+        s.arena.player.shieldHp = 0;
+        s.arena.enemies = [];
+        const mult = api.STAGE_SCALING[i];
+        const act = api.CAMPAIGN_ACTS[i];
+        api.spawnSingleEnemy(act.waves[0][0], 700, 460, mult, false);
+        const mob = s.arena.enemies[0];
+        const hpBefore = s.game.hp;
+        api.hurtPlayer(mob.atk);
+        const lightHit = hpBefore - s.game.hp;
+        s.game.hp = st.maxHp;
+        s.arena.enemies = [];
+        api.spawnSingleEnemy(act.boss, 700, 460, mult, true, act.bossName);
+        const boss = s.arena.enemies[0];
+        const activeDpsEst = st.atk * (1 + st.crit * (st.critMult - 1)) * 2.15 * st.atkHaste;
+        out.push({
+          stage: i,
+          lightPct: (lightHit / st.maxHp) * 100,
+          bossTtk: boss.maxHp / Math.max(1, activeDpsEst)
+        });
+      }
+      return out;
+    });
+    for (const row of curveRows) {
+      assert.ok(row.lightPct >= 6.5 && row.lightPct <= 28, `Stage ${row.stage} light hit %HP (${row.lightPct.toFixed(1)}%) out of healthy [6.5%, 28%]`);
+      assert.ok(row.bossTtk >= 20 && row.bossTtk <= 120, `Stage ${row.stage} boss TTK (${row.bossTtk.toFixed(1)}s) out of healthy [20s, 120s]`);
+    }
+
+    // 4. Real MP spend & cooldown on Golden Core E & Digit4
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      api.closeModal();
+      s.arena.paused = false;
+      s.game.realm = "golden";
+      const st = api.getCombatStats(s.game);
+      s.game.hp = st.maxHp;
+      s.game.mp = st.maxMp;
+      s.arena.player.ultCd = 0;
+      s.arena.sanqingCd = 0;
+    });
+    const mpStartGold = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.mp);
+    await page.keyboard.press("KeyE");
+    await page.waitForTimeout(120);
+    await page.keyboard.press("Digit4");
+    await page.waitForTimeout(120);
+    const goldAfter = await page.evaluate(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      return { mp: s.game.mp, ultCd: s.arena.player.ultCd, sanqingCd: s.arena.sanqingCd || 0 };
+    });
+    assert.ok(goldAfter.mp < mpStartGold - 35, `Expected KeyE + Digit4 to spend real MP (before=${mpStartGold}, after=${goldAfter.mp})`);
+    assert.ok(goldAfter.ultCd >= 5, `Expected real KeyE cooldown >= 5s, got ${goldAfter.ultCd}`);
+    assert.ok(goldAfter.sanqingCd >= 15, `Expected real Digit4 cooldown >= 15s, got ${goldAfter.sanqingCd}`);
+    await ctx.close();
+  });
+
+  await runSuite("P2-1", "Phase 2 Guardrails: 5-Act Parity, Dual Prologue Portals, Portal Realm Gate, Pacing & 7-Material Drops", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "P2-1", false);
+
+    // 1. 5-Act Single-Source-of-Truth parity
+    const parity = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const expected = [
+        { boss: "wolf", bossName: "雾隐狼王" },
+        { boss: "warden", bossName: "守山石卫" },
+        { boss: "serpent", bossName: "寒潭玄蛇" },
+        { boss: "puppet", bossName: "古境剑傀" },
+        { boss: "trial_gate", bossName: "天门道影" }
+      ];
+      return expected.every((ex, i) => {
+        const mapNode = api.KYUSHU_MAP_NODES.find(n => n.kind === "stage" && n.stageIdx === i);
+        return (
+          api.CAMPAIGN_ACTS[i].boss === ex.boss &&
+          api.CAMPAIGN_ACTS[i].bossName === ex.bossName &&
+          api.STAGES[i].boss === ex.boss &&
+          api.STAGES[i].bossName === ex.bossName &&
+          Boolean(mapNode && mapNode.sub.includes(ex.bossName)) &&
+          Boolean(api.REGION_POEMS["stg_" + i]) &&
+          Boolean(api.BOSS_SIGNATURE_MOVES[ex.boss])
+        );
+      });
+    });
+    assert.equal(parity, true, "All 5 campaign acts must stay 100% aligned across CAMPAIGN_ACTS/STAGES/KYUSHU_MAP_NODES/REGION_POEMS/BOSS_SIGNATURE_MOVES");
+
+    // 2. Prologue pedestal opens two player-chosen portals with 0 in-place wolf ambush
+    const pedCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.arena.enemies = [];
+      api.activatePedestalChoice("help");
+      return {
+        enemiesAfter: s.arena.enemies.length,
+        hasWildPortal: s.arena.props.some(p => p.id === "portal_act1_wilderness"),
+        hasSanctumPortal: s.arena.props.some(p => p.id === "portal_sanctum_prep")
+      };
+    });
+    assert.equal(pedCheck.enemiesAfter, 0, "Pedestal choice must NOT ambush with in-place wolves");
+    assert.equal(pedCheck.hasWildPortal, true);
+    assert.equal(pedCheck.hasSanctumPortal, true);
+
+    // 3. portal_next (kind="portal") realm gate blocks Mortal and allows Qi
+    const gateCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "mortal";
+      api.initArenaStage(0, false);
+      const fakePortal = { id: "portal_next", kind: "portal", nextIdx: 1, toTower: false, x: 700, y: 450, r: 50 };
+      s.arena.props.push(fakePortal);
+      const allowedMortal = api.interactWithProp(fakePortal);
+      const stageWhenMortal = s.arena.stageIdx;
+      api.closeModal();
+      s.arena.paused = false;
+      s.game.realm = "qi";
+      s.game.seenCutscenes.enter_sect = true;
+      const allowedQi = api.interactWithProp(fakePortal);
+      const stageWhenQi = s.arena.stageIdx;
+      return { allowedMortal, stageWhenMortal, allowedQi, stageWhenQi };
+    });
+    assert.equal(gateCheck.allowedMortal, false, "Mortal must be rejected by Stage 1 realm portal gate");
+    assert.equal(gateCheck.stageWhenMortal, 0, "Mortal must remain in Stage 0");
+    assert.equal(gateCheck.allowedQi, true, "Qi cultivator must pass Stage 1 realm portal gate");
+    assert.equal(gateCheck.stageWhenQi, 1, "Qi cultivator must enter Stage 1");
+
+    // 4. Golden Core Sanctum meditation pacing (<12% in 2.2s, never 100%)
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "golden";
+      s.game.xp = 0;
+      api.enterSanctumHub();
+    });
+    await page.keyboard.press("KeyB");
+    await page.waitForTimeout(2200);
+    const medCheck = await page.evaluate(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      return { xp: s.game.xp, cap: s.realmSpec.xpCap, pct: (s.game.xp / s.realmSpec.xpCap) * 100 };
+    });
+    assert.ok(medCheck.pct > 0.5 && medCheck.pct < 12, `Golden Core 2.2s meditation XP (${medCheck.pct.toFixed(2)}%) must stay paced in (0.5%, 12%)`);
+
+    // 5. High-realm low-stage XP attenuation & 7-material combat drops across Ch1-Ch5
+    const dropCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "spirit";
+      s.game.seenCutscenes = { prologue_rescue: true, enter_sect: true, enter_secret: true, enter_sword_mound: true, enter_terrace: true };
+      api.initArenaStage(0, false);
+      s.arena.enemies = [];
+      s.arena.drops = [];
+      api.spawnSingleEnemy("wolf", 720, 450, 1.0, false);
+      api.handleEnemyDeath(s.arena.enemies[0]);
+      const qiDrop = s.arena.drops.find(d => d.kind === "qi");
+      const spiritCh1WolfXp = qiDrop ? qiDrop.val : 999;
+
+      const matSet = new Set();
+      for (let i = 0; i < 5; i++) {
+        api.initArenaStage(i, false);
+        s.arena.enemies = [];
+        s.arena.drops = [];
+        const act = api.CAMPAIGN_ACTS[i];
+        api.spawnSingleEnemy(act.boss, 720, 450, api.STAGE_SCALING[i], true, act.bossName);
+        api.handleEnemyDeath(s.arena.enemies[0]);
+        s.arena.drops.forEach(d => {
+          if (["herb", "dew", "core", "jade", "lotus", "soul", "dao"].includes(d.kind)) matSet.add(d.kind);
+        });
+      }
+      return { spiritCh1WolfXp, droppedMats: Array.from(matSet).sort() };
+    });
+    assert.ok(dropCheck.spiritCh1WolfXp <= 15, `Spirit killing Ch1 wolf must yield attenuated XP <= 15, got ${dropCheck.spiritCh1WolfXp}`);
+    assert.deepEqual(dropCheck.droppedMats, ["core", "dao", "dew", "herb", "jade", "lotus", "soul"], "All 7 crafting materials must drop across Ch1-Ch5 bosses");
+
+    // 6. Explore drawer has 0 legacy [data-source] buttons
+    await page.evaluate(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      s.game.openingChoice = "help";
+      window.__CHENYUAN_V25__.updateHud();
+    });
+    await page.click('#nav-btn-explore');
+    await page.waitForTimeout(160);
+    assert.equal(await page.locator('#panel-scroll-body [data-source]').count(), 0, "Legacy SOURCES buttons must remain removed");
+    await ctx.close();
+  });
+
+  await runSuite("P3-1", "Phase 3 Guardrails: Mortal HUD Declutter, 4-Step Onboarding Persistence, Progressive Drawer & Tiered Keybinds", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "P3-1", false);
+
+    // 1. Mortal HUD visible button count <= 14 & onboarding bar active at step 0
+    const hudSnap = await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll("button")).filter(el => {
+        if (el.closest("#welcome-screen, #side-panel, #modal-backdrop, #pavilion-popover, #story-dialogue-bar, #ending-overlay")) return false;
+        const cs = getComputedStyle(el);
+        const r = el.getBoundingClientRect();
+        return cs.display !== "none" && cs.visibility !== "hidden" && Number(cs.opacity) > 0 && r.width > 2 && r.height > 2;
+      });
+      const coach = document.getElementById("onboarding-coach-bar");
+      return {
+        visibleBtnCount: btns.length,
+        coachVisible: !!(coach && coach.classList.contains("show")),
+        step: window.__CHENYUAN_V25__.getState().game.tutorialStep
+      };
+    });
+    assert.ok(hudSnap.visibleBtnCount <= 14, `Mortal start HUD must have <= 14 visible buttons, got ${hudSnap.visibleBtnCount}`);
+    assert.equal(hudSnap.coachVisible, true, "Onboarding coach bar must appear on fresh Mortal start");
+    assert.equal(hudSnap.step, 0);
+    await maybeShot(page, "p3_01_mortal_hud_onboarding.png");
+
+    // 2. Onboarding advances 0 -> 1 on 3 manual slashes, 1 -> 2 on Space dash parry
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      for (let i = 0; i < 3; i++) {
+        s.arena.player.slashCd = 0;
+        api.fireManualSlash();
+      }
+    });
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.tutorialStep), 1);
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(120);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.tutorialStep), 2);
+
+    // 3. Skip onboarding & verify persistence across reload
+    await page.click("#btn-skip-onboarding");
+    await page.waitForTimeout(150);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.tutorialDismissed), true);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#btn-continue-save");
+    await page.click("#btn-continue-save");
+    await page.waitForTimeout(240);
+    const postReloadTut = await page.evaluate(() => ({
+      dismissed: window.__CHENYUAN_V25__.getState().game.tutorialDismissed,
+      coachOpen: document.getElementById("onboarding-coach-bar").classList.contains("show")
+    }));
+    assert.equal(postReloadTut.dismissed, true);
+    assert.equal(postReloadTut.coachOpen, false);
+
+    // 4. Progressive disclosure in Mortal cultivate drawer (<= 14 buttons)
+    await page.click('#nav-btn-cultivate');
+    await page.waitForTimeout(180);
+    const mortalCultBtns = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('#panel-scroll-body button')).filter(b => getComputedStyle(b).display !== "none").length
+    );
+    assert.ok(mortalCultBtns <= 14, `Mortal cultivate drawer must have <= 14 buttons, got ${mortalCultBtns}`);
+    await maybeShot(page, "p3_02_mortal_cultivate_drawer.png");
+
+    // 5. Unified alchemy drawer (0 duplicate horizontal furnace track)
+    await page.evaluate(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      s.game.openingChoice = "help";
+      window.__CHENYUAN_V25__.updateHud();
+    });
+    await page.click('#nav-btn-alchemy');
+    await page.waitForTimeout(160);
+    assert.equal(await page.locator('#panel-scroll-body .furnace-minigame-box, #panel-scroll-body #furnace-track').count(), 0);
+
+    // 6. Tiered Settings keybinds (3 tiers)
+    await page.click("#btn-open-settings");
+    await page.waitForTimeout(160);
+    await page.click('[data-sys-tab="controls"]');
+    await page.waitForTimeout(140);
+    assert.equal(await page.locator('#modal-content .kb-tier-hdr').count(), 3, "Keybinds modal must group controls into 3 tiers");
+    await page.keyboard.press("Escape");
+    await ctx.close();
+  });
+
+  await runSuite("P4-1", "Phase 4 Guardrails: Ch4 Cutscene, Chapter Enemy Variants, 3D Dao Real Bonuses & School Specialization", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "P4-1", true);
+
+    // 1. Cutscene alignment (Ch3 Frost Serpent + Ch4 Sword Mound) & live Ch4 trigger
+    const csCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const secText = (api.CHAPTER_CUTSCENES.enter_secret || []).map(l => l.text).join("");
+      const moundText = (api.CHAPTER_CUTSCENES.enter_sword_mound || []).map(l => l.text).join("");
+      const s = api.getState();
+      s.game.realm = "golden";
+      s.game.openingChoice = "help";
+      s.game.seenCutscenes = { prologue_rescue: true };
+      api.initArenaStage(3, false);
+      return {
+        secHasSerpent: secText.includes("寒潭玄蛇") && !secText.includes("上古剑傀"),
+        moundHasPuppet: moundText.includes("古修剑冢") && moundText.includes("古境剑傀"),
+        ch4DlgOpen: document.getElementById("story-dialogue-bar").classList.contains("open"),
+        ch4Seen: !!(s.game.seenCutscenes && s.game.seenCutscenes.enter_sword_mound),
+        ch4Variants: s.arena.enemies.map(e => ({ name: e.name, tag: e.variantTag, color: e.variantColor }))
+      };
+    });
+    assert.equal(csCheck.secHasSerpent, true, "Ch3 enter_secret cutscene must reference 寒潭玄蛇");
+    assert.equal(csCheck.moundHasPuppet, true, "Ch4 enter_sword_mound cutscene must reference 古修剑冢 & 古境剑傀");
+    assert.equal(csCheck.ch4DlgOpen, true, "Entering Ch4 Sword Mound first time must open cutscene dialogue bar");
+    assert.equal(csCheck.ch4Seen, true);
+    assert.ok(csCheck.ch4Variants.length > 0 && csCheck.ch4Variants.every(v => v.tag && v.color), "Ch4 enemies must carry chapter variant metadata");
+    await maybeShot(page, "p4_01_ch4_sword_mound_cutscene.png");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(120);
+
+    // 2. All 5 Chapters spawn distinct chapter-flavored enemy variants
+    const allStageVariants = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.seenCutscenes = { prologue_rescue: true, enter_sect: true, enter_secret: true, enter_sword_mound: true, enter_terrace: true };
+      const namesByStage = [];
+      for (let i = 0; i < 5; i++) {
+        api.initArenaStage(i, false);
+        const mobs = s.arena.enemies.filter(e => !e.isBoss);
+        namesByStage.push({ stage: i, names: mobs.map(m => m.name), tags: mobs.map(m => m.variantTag) });
+      }
+      return namesByStage;
+    });
+    for (const sv of allStageVariants) {
+      assert.ok(sv.tags.length > 0 && sv.tags.every(Boolean), `Stage ${sv.stage} must spawn chapter enemy variants with non-empty tags`);
+    }
+    const uniqueStageVariantNames = new Set(allStageVariants.flatMap(sv => sv.names));
+    assert.ok(uniqueStageVariantNames.size >= 5, `Expected >= 5 unique chapter enemy variant names across 5 Acts, got ${uniqueStageVariantNames.size}`);
+
+    // 3. 3D Dao Heart real gameplay impact (heal, crit, posture, MP regen, stone drops)
+    const daoCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "foundation";
+      s.game.dao = { benevolence: 6, edge: 10, serenity: 6 };
+      const baseB = api.getDaoBonuses(s.game);
+      const baseSt = api.getCombatStats(s.game);
+      s.game.hp = 10;
+      s.game.gourd.charges = 3;
+      api.useQuickHealingPill();
+      const baseHeal = s.game.hp - 10;
+
+      s.game.dao = { benevolence: 55, edge: 55, serenity: 55 };
+      const highB = api.getDaoBonuses(s.game);
+      const highSt = api.getCombatStats(s.game);
+      s.game.hp = 10;
+      s.game.gourd.charges = 3;
+      api.useQuickHealingPill();
+      const highHeal = s.game.hp - 10;
+      return { baseB, highB, baseCrit: baseSt.crit, highCrit: highSt.crit, baseHeal, highHeal };
+    });
+    assert.ok(daoCheck.highB.healMult > daoCheck.baseB.healMult);
+    assert.ok(daoCheck.highB.postureMult > daoCheck.baseB.postureMult);
+    assert.ok(daoCheck.highB.mpRegenMult > daoCheck.baseB.mpRegenMult);
+    assert.ok(daoCheck.highB.stoneMult > daoCheck.baseB.stoneMult);
+    assert.ok(daoCheck.highCrit > daoCheck.baseCrit, "High Dao edge must increase real combat crit");
+    assert.ok(daoCheck.highHeal > daoCheck.baseHeal, `High Dao benevolence must heal more HP (base=${daoCheck.baseHeal}, high=${daoCheck.highHeal})`);
+
+    // 4. Sword vs Talisman school specialization + UI strip verification
+    await page.click('#nav-btn-cultivate');
+    await page.waitForTimeout(160);
+    await page.click('#panel-scroll-body [data-school="sword"]');
+    await page.waitForTimeout(140);
+    const swordSnap = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const st = api.getCombatStats(api.getState().game);
+      return {
+        haste: st.atkHaste,
+        critMult: st.critMult,
+        spec: st.schoolSpec,
+        daoStrip: document.getElementById("dao-bonuses-strip")?.textContent || "",
+        schoolBanner: document.getElementById("school-spec-banner")?.textContent || ""
+      };
+    });
+    await page.click('#panel-scroll-body [data-school="talisman"]');
+    await page.waitForTimeout(140);
+    const talSnap = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const st = api.getCombatStats(api.getState().game);
+      return {
+        haste: st.atkHaste,
+        critMult: st.critMult,
+        spec: st.schoolSpec,
+        schoolBanner: document.getElementById("school-spec-banner")?.textContent || ""
+      };
+    });
+    assert.ok(swordSnap.daoStrip.includes("仁心") && swordSnap.daoStrip.includes("锋芒") && swordSnap.daoStrip.includes("本真"), "Character Sheet must render active 3D Dao bonuses");
+    assert.ok(swordSnap.schoolBanner.includes("青霜御剑专精"));
+    assert.ok(talSnap.schoolBanner.includes("紫霄雷符专精"));
+    assert.ok(swordSnap.haste > talSnap.haste, `Sword school haste (${swordSnap.haste}) must exceed Talisman (${talSnap.haste})`);
+    assert.ok(swordSnap.critMult > talSnap.critMult, `Sword school critMult (${swordSnap.critMult}) must exceed Talisman (${talSnap.critMult})`);
+    assert.ok(swordSnap.spec.swordSynergyMult > talSnap.spec.swordSynergyMult);
+    assert.ok(talSnap.spec.mpRegenMult > swordSnap.spec.mpRegenMult);
+    assert.ok(talSnap.spec.skillDmgMult > swordSnap.spec.skillDmgMult);
+    assert.equal(talSnap.spec.chainLightningOnFinisher, true);
+    await maybeShot(page, "p4_02_cultivate_dao_school.png");
 
     await ctx.close();
   });
