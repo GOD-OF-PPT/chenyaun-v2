@@ -4470,11 +4470,11 @@ const ART = {
     healing:     { id: "healing", name: "炼制回春丹", min: "qi", inputs: { herb: 2 }, stones: 2, months: 3, output: "healing_pill" },
     spirit:      { id: "spirit", name: "炼制回灵丹", min: "qi", inputs: { herb: 1, dew: 1 }, stones: 3, months: 3, output: "spirit_pill" },
     longevity:   { id: "longevity", name: "炼制延寿青莲丹", min: "qi", reqCauldronLv: 2, inputs: { herb: 3, dew: 2, lotus: 1 }, stones: 65, months: 6, output: "longevity_pill" },
-    foundation:  { id: "foundation", name: "炼制筑基丹", min: "qi", inputs: { herb: 6, dew: 2, core: 1 }, stones: 20, months: 6, output: "foundation_pill" },
-    golden:      { id: "golden", name: "炼制凝金丹", min: "foundation", inputs: { herb: 4, dew: 2, core: 2, jade: 3 }, stones: 55, months: 10, output: "golden_pill" },
-    nascent:     { id: "nascent", name: "炼制结婴丹", min: "golden", inputs: { dew: 3, jade: 2, lotus: 4 }, stones: 105, months: 14, output: "nascent_pill" },
-    spirit_seed: { id: "spirit_seed", name: "炼制化神丹", min: "nascent", inputs: { dew: 4, lotus: 2, soul: 4 }, stones: 170, months: 18, output: "spirit_seed" },
-    ascension:   { id: "ascension", name: "炼制渡劫引", min: "spirit", inputs: { core: 2, soul: 3, dao: 4 }, stones: 240, months: 24, output: "ascension_seal" }
+    foundation:  { id: "foundation", name: "炼制筑基丹", min: "qi", inputs: { herb: 2, dew: 3, core: 2 }, stones: 20, months: 6, output: "foundation_pill" },
+    golden:      { id: "golden", name: "炼制凝金丹", min: "foundation", inputs: { core: 3, jade: 4, lotus: 1 }, stones: 55, months: 10, output: "golden_pill" },
+    nascent:     { id: "nascent", name: "炼制结婴丹", min: "golden", inputs: { jade: 3, lotus: 4, soul: 1 }, stones: 105, months: 14, output: "nascent_pill" },
+    spirit_seed: { id: "spirit_seed", name: "炼制化神丹", min: "nascent", inputs: { soul: 5, dao: 2 }, stones: 170, months: 18, output: "spirit_seed" },
+    ascension:   { id: "ascension", name: "炼制渡劫引", min: "spirit", inputs: { soul: 4, dao: 5 }, stones: 240, months: 24, output: "ascension_seal" }
   };
 
   const SKILLS = {
@@ -4587,7 +4587,7 @@ const ART = {
       poem: "云海石阶闻道钟 · 镇山金卫试青锋",
       waves: [["wolf", "warden", "warden"], ["warden", "warden", "wolf"], ["warden", "serpent", "warden"]],
       boss: "warden", bossName: "守山石卫", bossTitle: "镇山金卫 · 守山石卫",
-      matDrops: ["core", "dew"], bossMats: ["core", "dew", "jade"], dropPreview: "妖核 · 晨曦灵露 · 玄品仙衣"
+      matDrops: ["core", "dew", "herb"], bossMats: ["core", "dew", "jade"], dropPreview: "妖核 · 晨曦灵露 · 凝气草"
     },
     {
       stageIdx: 2, id: "secret", actLabel: "第三幕", seal: "第三秘境",
@@ -4645,7 +4645,8 @@ const ART = {
       steps: [
         { id: "s2_school", text: "缔结灵宠：在【修行】面板契约首只随行本命灵兽", tab: "cultivate", loc: "cave", route: "drawer_cultivate", reward: { stones: 60, herb: 3 }, rewardTxt: "60灵石 · 凝气草×3", check: g => !!g.pet.id },
         { id: "s2_lu",     text: "洞府整备：回听雨洞府炼丹1次或结交执事陆玄松", tab: "alchemy", loc: "cave", route: "hub", reward: { stones: 75, pill: "spirit_pill" }, rewardTxt: "75灵石 · 回灵丹×1", check: g => (g.immortalPills || 0) >= 1 || !!g.choices.lu_intro },
-        { id: "s2_break",  text: "剑破外门：击败【青云外门 · 守山石卫】并渡劫晋升【筑基期】", tab: "explore", loc: "sect", route: "stage_1", reward: { stones: 95, gearMin: 2 }, rewardTxt: "95灵石 · 玄品仙装", check: g => rankOf(g.realm) >= 2 || ((g.stageStars && g.stageStars[1]) >= 1) }
+        { id: "s2_warden", text: "剑破外门：击败【青云外门 · 守山石卫】", tab: "explore", loc: "sect", route: "stage_1", reward: { stones: 85, core: 1 }, rewardTxt: "85灵石 · 妖核×1", check: g => ((g.stageStars && g.stageStars[1]) >= 1) || rankOf(g.realm) >= 2 },
+        { id: "s2_break",  text: "渡劫筑基：集妖核炼筑基丹，按 B 渡劫晋升【筑基期】", tab: "cultivate", loc: "cave", route: "tribulate", reward: { stones: 95, gearMin: 2 }, rewardTxt: "95灵石 · 玄品仙装", check: g => rankOf(g.realm) >= 2 }
       ]
     },
     {
@@ -4664,7 +4665,7 @@ const ART = {
       desc: "铸造本命法宝并启周天星图，踏入【古修剑冢】破除镜阵斩灭【古境剑傀】，采月华莲碎丹成婴！",
       steps: [
         { id: "s4_relic", text: "本命神兵：在【百工】铸造并佩带一件镇魂本命法宝", tab: "alchemy", loc: "cave", route: "drawer_alchemy", reward: { stones: 130, core: 2 }, rewardTxt: "130灵石 · 妖核×2", check: g => !!g.loadout.relic },
-        { id: "s4_npc",   text: "古冢斩傀：配齐三件仙装并击败【古修剑冢 · 古境剑傀】", tab: "explore", loc: "secret", route: "stage_3", reward: { stones: 150, gearMin: 3 }, rewardTxt: "150灵石 · 仙品宝匣", check: g => ((g.stageStars && g.stageStars[3]) >= 1) || !!(g.equippedGear.weapon && g.equippedGear.armor && g.equippedGear.ring) },
+        { id: "s4_npc",   text: "古冢斩傀：深入【古修剑冢】击败镇守首领【古境剑傀】", tab: "explore", loc: "secret", route: "stage_3", reward: { stones: 150, gearMin: 3 }, rewardTxt: "150灵石 · 仙品宝匣", check: g => ((g.stageStars && g.stageStars[3]) >= 1) || rankOf(g.realm) >= 4 },
         { id: "s4_break", text: "碎丹成婴：携结婴丹渡紫霄雷劫晋升【元婴期】真君", tab: "cultivate", loc: "cave", route: "tribulate", reward: { stones: 185, bonusSword: 1 }, rewardTxt: "185灵石 · 飞剑永久+1", check: g => rankOf(g.realm) >= 4 }
       ]
     },
@@ -8204,9 +8205,9 @@ const ART = {
     if (spec.isTitan) {
       // Spawn Mythic 7th Finale: Colossal Half-Screen Dharma-Titan 【太古烛龙 · 魔神法相】 with 3 Independently Lockable Body Parts!
       const st = getCombatStats(game);
-      const titanHp = Math.max(2200, Math.round(st.atk * 44));
-      const armHp = Math.max(320, Math.round(titanHp * 0.22));
-      const eyeHp = Math.max(420, Math.round(titanHp * 0.28));
+      const titanHp = Math.max(6000, Math.round(st.atk * 136));
+      const armHp = Math.max(900, Math.round(titanHp * 0.22));
+      const eyeHp = Math.max(1200, Math.round(titanHp * 0.28));
       const tx = w * 0.70, ty = h * 0.45;
       const titan = {
         uid: "zhulong_titan_" + Date.now(),
@@ -8222,11 +8223,11 @@ const ART = {
         mech: "colossal_titan", wardHp: 0, maxWardHp: 0, mirrorTimer: 0, blinkCd: 99, beamCd: 4.2,
         x: tx, y: ty, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
         r: 108, hp: titanHp, maxHp: titanHp,
-        posture: 180, maxPosture: 180,
+        posture: 260, maxPosture: 260,
         partHp: eyeHp, maxPartHp: eyeHp,
         weakpointExposed: true, partSevered: false,
-        atk: Math.max(22, Math.round(st.maxHp * 0.14)),
-        heavy: Math.max(34, Math.round(st.maxHp * 0.23)),
+        atk: Math.max(28, Math.round(st.maxHp * 0.16)),
+        heavy: Math.max(46, Math.round(st.maxHp * 0.28)),
         state: "chase", timer: 1.15, windupDur: 1.0,
         aimX: arena.player.x, aimY: arena.player.y, attackType: "slam",
         hitFlash: 0, swordMarks: 0, chillTimer: 0, burnTimer: 0, airborneZ: 0, airborneVz: 0
@@ -8240,7 +8241,7 @@ const ART = {
     } else if (spec.isDemon) {
       // Spawn Climactic Boss 6: 【太虚心魔镜像】 (Wields Player's Dual Postures, Orbiting Mirror Swords & Parry Stance!)
       const st = getCombatStats(game);
-      const demonHp = Math.max(950, Math.round(st.atk * 24));
+      const demonHp = Math.max(4000, Math.round(st.atk * 104));
       const pos = clampToPlaza(bx, by, w, h);
       const demon = {
         uid: "inner_demon_" + Date.now(),
@@ -8251,11 +8252,11 @@ const ART = {
         mech: "mirror_demon", wardHp: 0, maxWardHp: 0, mirrorTimer: 0, blinkCd: 3.4, beamCd: 4.0,
         x: pos.x, y: pos.y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
         r: 46, hp: demonHp, maxHp: demonHp,
-        posture: 135, maxPosture: 135,
+        posture: 220, maxPosture: 220,
         partHp: Math.round(demonHp * 0.28), maxPartHp: Math.round(demonHp * 0.28),
         weakpointExposed: true, partSevered: false,
-        atk: Math.max(18, Math.round(st.maxHp * 0.13)),
-        heavy: Math.max(28, Math.round(st.maxHp * 0.22)),
+        atk: Math.max(24, Math.round(st.maxHp * 0.14)),
+        heavy: Math.max(40, Math.round(st.maxHp * 0.25)),
         state: "chase", timer: 0.95, windupDur: 0.88,
         aimX: arena.player.x, aimY: arena.player.y, attackType: "charge",
         hitFlash: 0, swordMarks: 0, chillTimer: 0, burnTimer: 0, airborneZ: 0, airborneVz: 0
@@ -8265,10 +8266,20 @@ const ART = {
       Sound.coreSeverBoom();
       showBossCutIn("actor_inner_demon", demon.name, "【宿命同源】实时切换疾剑/巨阙双式并具心魔剑反，以玄重巨阙或易剑斩破之！");
     } else {
-      const realmScale = 0.85 + rankOf(game.realm) * 0.32;
-      spawnSingleEnemy(spec.id, bx, by, spec.mult * realmScale, true, `万剑冢#${spec.bout} · ${ENEMIES[spec.id].name}`);
+      const st = getCombatStats(game);
+      const realmStageScale = STAGE_SCALING[Math.min(4, Math.max(2, rankOf(game.realm)))] || 5.1;
+      spawnSingleEnemy(spec.id, bx, by, realmStageScale * 0.72, true, `万剑冢#${spec.bout} · ${ENEMIES[spec.id].name}`);
       const spawned = arena.enemies[arena.enemies.length - 1];
-      if (spawned) spawned.weakpointExposed = true;
+      if (spawned) {
+        const calSpec = getCalamityCycleSpec(game);
+        const pactHp = hasPact(game, "frenzy_hp") ? 1.25 : 1.0;
+        const rushHp = Math.max(2500, Math.round(st.atk * (36 + spec.bout * 10) * pactHp * calSpec.hpMult));
+        spawned.hp = rushHp;
+        spawned.maxHp = rushHp;
+        spawned.partHp = Math.max(240, Math.round(rushHp * 0.28));
+        spawned.maxPartHp = spawned.partHp;
+        spawned.weakpointExposed = true;
+      }
       showBossCutIn(spec.art, spec.title, `暴露【${(BOSS_WEAKPOINTS[spec.id] || {}).shortName || "本命妖丹"}】时切 Tab 玄重巨阙式碎核破招！`);
     }
     updateHud();
@@ -8780,14 +8791,16 @@ const ART = {
     if (!sd || !sd.active) return;
     const cv = document.getElementById("fx-canvas");
     const w = (cv && cv.width) || 1440, h = (cv && cv.height) || 900;
-    const rScale = 0.85 + rankOf(game.realm) * 0.26 + (waveNum - 1) * 0.22;
+    const realmBase = STAGE_SCALING[Math.min(4, Math.max(1, rankOf(game.realm)))] || 3.1;
+    const rScale = realmBase * (0.85 + (waveNum - 1) * 0.16);
     const edgeAngles = [0.15, 0.85, 2.25, 2.95, -0.55, -2.55];
     const pool = waveNum === 1 ? ["wolf", "warden", "wolf", "serpent"] : waveNum === 2 ? ["warden", "shadow", "serpent", "puppet", "wolf"] : ["sentinel", "warden", "serpent", "shadow", "puppet"];
     pool.forEach((eid, idx) => {
       const a = edgeAngles[idx % edgeAngles.length];
       const pos = clampToPlaza(sd.coreX + Math.cos(a) * (w * 0.30), sd.coreY + Math.sin(a) * (h * 0.26), w, h);
       const isWaveBoss = waveNum === 3 && idx === 0;
-      spawnSingleEnemy(eid, pos.x, pos.y, rScale * (isWaveBoss ? 1.35 : 0.85), isWaveBoss, isWaveBoss ? "百鬼夜行统帅 · 雷狱魔将" : `攻山凶妖 · ${ENEMIES[eid].name}`);
+      const mult = isWaveBoss ? rScale * 0.48 : rScale;
+      spawnSingleEnemy(eid, pos.x, pos.y, mult, isWaveBoss, isWaveBoss ? "百鬼夜行统帅 · 雷狱魔将" : `攻山凶妖 · ${ENEMIES[eid].name}`);
     });
     addFloat(`🛡 护山守卫战 · 第 ${waveNum}/3 波百鬼夜行来袭！`, sd.coreX, sd.coreY - 72, "#70ffe6", 20, true);
   }
@@ -9220,22 +9233,22 @@ const ART = {
     const cv = document.getElementById("fx-canvas");
     const w = (cv && cv.width) || 1440, h = (cv && cv.height) || 900;
     const st = getCombatStats(game);
-    const scale = 0.95 + rankOf(game.realm) * 0.28;
+    const scale = (STAGE_SCALING[Math.min(4, Math.max(2, rankOf(game.realm)))] || 5.1) * 0.72;
 
     if (spawnCommander) {
       cf.bossSpawned = true;
-      const bossHp = Math.max(920, Math.round(st.atk * 22));
+      const bossHp = Math.max(4200, Math.round(st.atk * 56));
       const rocBoss = {
         uid: "sky_roc_boss_" + Date.now(),
         id: "sky_roc", art: "enemy_roc_sky_general",
         name: "巡天金甲神将 · 紫电雷鹏王",
         isBoss: true, isSkyUnit: true, isTreasure: false, enraged: false,
         x: w * 0.76, y: h * 0.48, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
-        r: 58, hp: bossHp, maxHp: bossHp, posture: 120, maxPosture: 120,
+        r: 58, hp: bossHp, maxHp: bossHp, posture: 165, maxPosture: 165,
         partHp: Math.round(bossHp * 0.3), maxPartHp: Math.round(bossHp * 0.3),
         weakpointExposed: true, partSevered: false,
-        atk: Math.max(18, Math.round(st.maxHp * 0.12)),
-        heavy: Math.max(28, Math.round(st.maxHp * 0.19)),
+        atk: Math.max(22, Math.round(st.maxHp * 0.13)),
+        heavy: Math.max(34, Math.round(st.maxHp * 0.22)),
         state: "chase", timer: 0.9, windupDur: 0.85, salvoCd: 1.35,
         aimX: arena.player.x, aimY: arena.player.y, attackType: "shot",
         hitFlash: 0, swordMarks: 0, chillTimer: 0, burnTimer: 0, airborneZ: 36, airborneVz: 0
@@ -9501,7 +9514,7 @@ const ART = {
   const SPIRE_ROOM_TYPES = [
     { id: "elite_trial",     icon: "⚔", name: "巡天妖王房", desc: "迎战巡天雷鹏与秘境妖王，通关必选太古天道奇物！" },
     { id: "spirit_blessing", icon: "🌸", name: "太初灵脉房", desc: "内蕴太初满灵泉与聚宝金灵，休整回满状态并选奇物！" },
-    { id: "chaos_wager",     icon: "🎲", name: "混沌赌局房", desc: "燃血30%博取【奇物双层直升 Lv+2】与双倍灵石悬赏！" },
+    { id: "chaos_wager",     icon: "🎲", name: "混沌赌局房", desc: "可主动点击【混沌燃血赌坛】献祭25%气血，博取【奇物双层直升 Lv+2】与双倍灵石悬赏！" },
     { id: "curio_vault",     icon: "🏺", name: "天工秘宝房", desc: "镇守五行八卦藏宝壁，破壁爆神装并额外多领1件奇物！" }
   ];
 
@@ -9614,13 +9627,19 @@ const ART = {
     spawnStageInteractiveHazards();
 
     const st = getCombatStats(game);
-    const fScale = 1.0 + rankOf(game.realm) * 0.25 + sp.floor * 0.18;
+    const realmBase = STAGE_SCALING[Math.min(4, Math.max(2, rankOf(game.realm)))] || 5.1;
+    const mobScale = realmBase * (0.95 + sp.floor * 0.12);
+    const bossScale = realmBase * (0.42 + sp.floor * 0.04);
 
     if (sp.roomType === "chaos_wager") {
-      // Chaos Wager Altar + Elite Guardians: sacrifice 25% HP on Blood Altar or clear for double Curio stacks!
-      sp.wagerDouble = true;
-      game.hp = Math.max(25, Math.round(game.hp * 0.75));
-      addFloat("🎲 混沌天命赌局：燃血入局 · 本层通关奇物直升 Lv.+2！！", arena.player.x, arena.player.y - 66, "#ff9eff", 19, true);
+      // Explicit player choice: spawn interactive Blood Wager Altar instead of auto-draining HP!
+      const wgPos = clampToPlaza(w * 0.48, h * 0.44, w, h);
+      arena.props.push({
+        id: "spire_wager_altar_" + Date.now(), kind: "spire_wager_altar", destructible: false, art: "icon_blade",
+        name: "混沌燃血赌坛", badge: "主动献祭 25% 气血 → 本层奇物直升 Lv.+2 & 双倍灵石",
+        x: wgPos.x, y: wgPos.y, r: 44, progress: 0
+      });
+      addFloat("🎲 混沌天命赌局：可主动点击【混沌燃血赌坛】燃血博双倍奇物！", arena.player.x, arena.player.y - 66, "#ff9eff", 18, true);
     } else if (sp.roomType === "spirit_blessing") {
       const spPos = clampToPlaza(w * 0.50, h * 0.48, w, h);
       arena.props.push({
@@ -9630,16 +9649,17 @@ const ART = {
     }
 
     if (sp.floor === 9) {
-      // Floor 9 Apex Boss: Sky-Patrol Thunder-Roc Sovereign + Inner Demon Twin Trial!
-      spawnSingleEnemy("sky_roc", w * 0.66, h * 0.48, fScale * 1.65, true, "登仙台九重帝君 · 九霄雷鹏神将");
-      spawnSingleEnemy("sentinel", w * 0.60, h * 0.60, fScale * 1.15, false, "凌霄护殿金甲卫");
+      // Floor 9 Apex Boss: Sky-Patrol Thunder-Roc Sovereign + Escort!
+      spawnSingleEnemy("sky_roc", w * 0.66, h * 0.48, realmBase * 0.68, true, "登仙台九重帝君 · 九霄雷鹏神将");
+      spawnSingleEnemy("sentinel", w * 0.60, h * 0.60, mobScale * 0.85, false, "凌霄护殿金甲卫");
     } else {
       const bossPool = ["warden", "serpent", "puppet", "sky_roc", "sentinel"];
       const mainId = bossPool[(sp.floor - 1) % bossPool.length];
-      spawnSingleEnemy(mainId, w * 0.65, h * 0.52, fScale * 1.25, sp.floor % 3 === 0, `第${sp.floor}重天镇守 · ${ENEMIES[mainId].name}`);
-      spawnSingleEnemy("wolf", w * 0.56, h * 0.44, fScale * 0.85, false, "天宫巡狩灵兽");
+      const isSpireBoss = sp.floor % 3 === 0;
+      spawnSingleEnemy(mainId, w * 0.65, h * 0.52, isSpireBoss ? bossScale : mobScale * 1.15, isSpireBoss, `第${sp.floor}重天镇守 · ${ENEMIES[mainId].name}`);
+      spawnSingleEnemy("warden", w * 0.56, h * 0.44, mobScale * 0.88, false, "天宫巡狩灵卫");
       if (sp.roomType === "spirit_blessing") {
-        spawnSingleEnemy("warden", w * 0.62, h * 0.62, fScale * 0.65, false, "聚宝天官幻影");
+        spawnSingleEnemy("serpent", w * 0.62, h * 0.62, mobScale * 0.72, false, "聚宝天官幻影");
         arena.enemies[arena.enemies.length - 1].isTreasure = false;
       }
     }
@@ -16369,10 +16389,12 @@ const ART = {
         if (!arena.props.some(p => p.kind === "ascend_gate")) {
           const gatePos = clampToPlaza(w * 0.66, h * 0.48, w, h);
           const towPos = clampToPlaza(w * 0.64, h * 0.64, w, h);
+          const isAscended = game.status === "ascended";
+          const isSpirit = game.realm === "spirit";
           arena.props.push({
             id: "ascend_gate", kind: "ascend_gate", art: "item_ascension_seal",
-            name: game.status === "ascended" ? "道果金榜 · 仙途总览" : "九霄仙门 · 叩天飞升",
-            badge: game.status === "ascended" ? "查看本世五维道果" : "点击/Enter 引动终极飞升天劫!",
+            name: isAscended ? "道果金榜 · 仙途总览" : isSpirit ? "九霄仙门 · 叩天飞升" : "九霄化神台 · 破境化神",
+            badge: isAscended ? "查看本世五维道果" : isSpirit ? "点击/Enter 引动终极飞升天劫!" : "元婴圆满后点击/Enter 引动化神劫（化神后再叩仙门）",
             x: gatePos.x, y: gatePos.y, r: 50, progress: 0
           });
           arena.props.push({
@@ -16382,7 +16404,9 @@ const ART = {
           if (game && game.stageStars) game.stageStars[4] = 3;
           if (game) game.elapsedMonths = (game.elapsedMonths || 0) + 6;
           spawnGearDrop(w * 0.56, h * 0.53, 4);
-          showToast("★★★ 天门道影已破！达成三星通关，点击/Enter【九霄仙门】飞升证道！");
+          showToast(isSpirit
+            ? "★★★ 天门道影已破！达成三星通关，点击/Enter【九霄仙门】飞升证道！"
+            : "★★★ 天门道影已破！元婴圆满后点击【九霄化神台】晋升化神，再登仙门飞升！");
         }
       } else if (!arena.props.some(p => p.kind === "portal")) {
         if (game) game.elapsedMonths = (game.elapsedMonths || 0) + 6;
@@ -16616,15 +16640,17 @@ const ART = {
     const clim = getActiveDungeonClimate();
     const climAtkMult = (clim && clim.id === "blood_haze") ? 1.18 : 1.0;
     const bossMultTable = [9.2, 9.8, 10.2, 10.5, 9.6];
+    const effStage = arena.towerMode ? Math.min(4, Math.floor(Math.max(0, ((game && game.towerFloor) || 1) - 1) / 3)) : arena.stageIdx;
     const alphaWolfBonus = (isBoss && id === "wolf") ? 1.25 : 1.0;
-    const bossHpMult = (bossMultTable[arena.stageIdx] || 9.6) * alphaWolfBonus;
+    const bossHpMult = (bossMultTable[effStage] || 9.6) * alphaWolfBonus;
     const hp = Math.round(spec.hp * mult * (isBoss ? bossHpMult : 1.0) * pactHpMult * calSpec.hpMult);
-    const maxPos = Math.round((isBoss ? (160 + arena.stageIdx * 55) : (58 + arena.stageIdx * 16)) * pactPosMult * calSpec.postureMult);
+    const maxPos = Math.round((isBoss ? (160 + effStage * 55) : (58 + effStage * 16)) * pactPosMult * calSpec.postureMult);
     const stageVariants = (!isBoss && !customName && !arena.towerMode) ? CHAPTER_ENEMY_VARIANTS[arena.stageIdx] : null;
     const vSpec = stageVariants ? (stageVariants[id] || null) : null;
     const hasWard = (id === "warden" && isBoss) || id === "sentinel" || id === "trial_gate" || !!(vSpec && vSpec.wardRatio && arena.stageIdx >= 1);
     const wardVal = hasWard ? Math.round(maxPos * (vSpec && vSpec.wardRatio && !isBoss ? vSpec.wardRatio : 0.65)) : 0;
-    const atkScale = Math.max(0.75, 1 + (mult - 1) * 0.42) * ((isBoss && id === "wolf") ? 1.12 : 1.0);
+    const atkScale = Math.max(0.75, 1 + (mult - 1) * 0.90) * ((isBoss && id === "wolf") ? 1.12 : 1.0);
+    const bossHeavyAmp = isBoss ? 1.15 : 1.0;
     const resolvedName = customName || ((isBoss && id === "wolf") ? "雾隐狼王" : (vSpec ? vSpec.name : spec.name));
 
     arena.enemies.push({
@@ -16644,7 +16670,7 @@ const ART = {
       hp, maxHp: hp,
       posture: maxPos, maxPosture: maxPos,
       atk: Math.max(8, Math.round(spec.attack * atkScale * climAtkMult * calSpec.atkMult)),
-      heavy: Math.max(16, Math.round(spec.heavy * atkScale * climAtkMult * calSpec.atkMult)),
+      heavy: Math.max(16, Math.round(spec.heavy * atkScale * bossHeavyAmp * climAtkMult * calSpec.atkMult)),
       state: "chase",
       timer: 0.65 + Math.random() * 0.65,
       windupDur: (isBoss ? 0.88 : 0.74) * (vSpec && vSpec.windupMult ? vSpec.windupMult : 1.0),
@@ -18947,7 +18973,7 @@ const ART = {
           });
           arena.props.push({
             id: "ped_sword", kind: "pedestal", choice: "trade", art: "relic_frost_sword",
-            name: "惊鸿剑诀", badge: "点击/Enter 获环身飞剑 +2", x: p2.x, y: p2.y, r: 42, progress: 0
+            name: "惊鸿剑诀", badge: "点击/Enter 获飞剑 +1 与灵品惊鸿青霜剑", x: p2.x, y: p2.y, r: 42, progress: 0
           });
           // Trigger Prologue Portrait Cutscene!
           playCutscene("prologue_rescue");
@@ -20244,7 +20270,7 @@ const ART = {
     const INTERACTIVE_PROP_KINDS = new Set([
       "immortal_spring", "ravine_zipline", "sect_defense_trigger", "pedestal",
       "branch_portal", "sanctum_portal", "merchant_npc", "companion_npc",
-      "blood_altar", "bounty_board", "encounter_stele", "elem_stele",
+      "blood_altar", "spire_wager_altar", "bounty_board", "encounter_stele", "elem_stele",
       "cauldron", "taixu_craft_alchemy", "taixu_craft_forge", "portal",
       "tower_next", "ascend_gate", "boon_stele", "map_node_gate", "sanctum_upgrade"
     ]);
@@ -20379,12 +20405,14 @@ const ART = {
       }
       return;
     }
-    const isDanger = pr.kind === "blood_altar" || pr.branch === "elite_loot" || pr.kind === "sect_defense_trigger";
+    const isDanger = pr.kind === "blood_altar" || pr.kind === "spire_wager_altar" || pr.branch === "elite_loot" || pr.kind === "sect_defense_trigger";
     const subTxt = pr.kind === "blood_altar"
       ? "主动献祭 25% 当前气血 → 本命飞剑永久 +2"
-      : pr.kind === "cauldron" && !arena.sanctumMode
-        ? `消耗凝气草 ×2 凝练回春仙丹（当前持有 ${game.inventory.herb || 0}）`
-        : (pr.badge || "点击或按 Enter 确认交互");
+      : pr.kind === "spire_wager_altar"
+        ? "主动献祭 25% 当前气血 → 本层通关奇物直升 Lv.+2 & 双倍灵石"
+        : pr.kind === "cauldron" && !arena.sanctumMode
+          ? `消耗凝气草 ×2 凝练回春仙丹（当前持有 ${game.inventory.herb || 0}）`
+          : (pr.badge || "点击或按 Enter 确认交互");
     const sig = `${pr.id || pr.kind}|${pr.name}|${subTxt}|${isDanger ? 1 : 0}`;
     if (el.dataset.propSig === sig && el.style.display === "flex") return;
     el.dataset.propSig = sig;
@@ -20454,6 +20482,22 @@ const ART = {
       Sound.fanfare();
       arena.flash = 0.30; arena.flashColor = "#ff6b6b";
       addFloat(`血祭成剑(-${costHp}血) · 飞剑永久 +2！`, pr.x, pr.y - 44, "#ff9e9b", 20, true);
+      arena.props.splice(idx, 1);
+      saveGame();
+      updateHud();
+    } else if (pr.kind === "spire_wager_altar") {
+      const costHp = Math.max(1, Math.round(game.hp * 0.25));
+      if (game.hp <= costHp + 5) {
+        showToast("气血过低，强行燃血入局将危及道心，请先疗伤！");
+        return false;
+      }
+      game.hp = Math.max(10, game.hp - costHp);
+      if (arena.celestialSpire) arena.celestialSpire.wagerDouble = true;
+      const bonusSt = 80 + ((arena.celestialSpire && arena.celestialSpire.floor) || 1) * 20;
+      game.stones += bonusSt;
+      Sound.fanfare();
+      arena.flash = 0.28; arena.flashColor = "#ff78c4";
+      addFloat(`🎲 燃血赌约成！-${costHp}血 · 奇物双倍直升 & +${bonusSt}灵石！`, pr.x, pr.y - 46, "#ff9eff", 19, true);
       arena.props.splice(idx, 1);
       saveGame();
       updateHud();
@@ -21383,7 +21427,7 @@ const ART = {
       ctx.font = "bold 11px sans-serif";
       ctx.fillStyle = "rgba(248, 227, 172, 0.78)";
       ctx.textAlign = "center";
-      ctx.fillText(arena.sanctumMode ? "☯ 三倍聚灵阵眼 · 按 V 吐纳" : "☯ 灵眼 · 按 V 吐纳聚气", center.x, center.y + 42);
+      ctx.fillText(arena.sanctumMode ? "☯ 聚灵阵眼 · 按 B 吐纳养剑" : "☯ 灵眼 · 按 B 吐纳聚气", center.x, center.y + 42);
       ctx.restore();
     }
 
@@ -21554,7 +21598,8 @@ const ART = {
 
     for (const pr of arena.props) {
       const bLv = (pr.sanctumKey && game) ? getSanctumLevel(game, pr.sanctumKey) : 1;
-      const ringCol = pr.kind === "blood_altar" ? "#ff5e57"
+      const isBloodProp = pr.kind === "blood_altar" || pr.kind === "spire_wager_altar";
+      const ringCol = isBloodProp ? "#ff5e57"
         : pr.kind === "branch_portal" ? (pr.branch === "elite_loot" ? "#ff7870" : "#70ffe6")
         : pr.kind === "sanctum_portal" ? "#70ffe6"
         : pr.kind === "sanctum_upgrade" ? "#b998fa"
@@ -21569,13 +21614,13 @@ const ART = {
       if (bLv >= 2) {
         drawBaguaCircle(pr.x, pr.y + 24, pr.r + 12 + (bLv - 2) * 4, "#ffe28a", -nowSec * 0.55, 0.25 + (bLv - 1) * 0.09, false);
       }
-      drawPointLight(pr.x, pr.y + 8, pr.r * (1.45 + (bLv - 1) * 0.18), (pr.kind === "blood_altar" || pr.branch === "elite_loot") ? "rgba(255, 82, 72, 0.18)" : bLv >= 3 ? "rgba(112, 255, 230, 0.22)" : "rgba(248, 215, 130, 0.15)");
+      drawPointLight(pr.x, pr.y + 8, pr.r * (1.45 + (bLv - 1) * 0.18), (isBloodProp || pr.branch === "elite_loot") ? "rgba(255, 82, 72, 0.18)" : bLv >= 3 ? "rgba(112, 255, 230, 0.22)" : "rgba(248, 215, 130, 0.15)");
 
       if (pr.nearby || pr.progress > 0) {
         const pulse = 0.72 + Math.sin(nowSec * 5.2) * 0.24;
         ctx.save();
         ctx.translate(pr.x, pr.y);
-        ctx.strokeStyle = (pr.kind === "blood_altar" || pr.branch === "elite_loot") ? "#ff6b6b" : "#70ffe6";
+        ctx.strokeStyle = (isBloodProp || pr.branch === "elite_loot") ? "#ff6b6b" : "#70ffe6";
         ctx.globalAlpha = pr.nearby ? pulse : 1;
         ctx.lineWidth = pr.nearby ? 3.8 : 4.5;
         ctx.beginPath();
@@ -23494,12 +23539,12 @@ const ART = {
     else if (arena.celestialSpire && arena.celestialSpire.active) subTag.textContent = "奇物深渊";
     else if (arena.bossRush && arena.bossRush.active) subTag.textContent = `⏱ ${arena.bossRush.elapsed.toFixed(1)}s · 碎核×${arena.bossRush.partBreaks}`;
     else if (arena.tribulation) subTag.textContent = `⚡ 天劫余 ${arena.tribulation.boltsLeft + arena.tribulation.strikes.length} 道`;
-    else if (arena.sanctumMode) subTag.textContent = "安全休整 · 3倍吐纳";
+    else if (arena.sanctumMode) subTag.textContent = "安全休整 · 聚灵养剑";
     else if (arena.domain) subTag.textContent = `☯ 太虚剑域 ${arena.domain.life.toFixed(1)}s`;
     else if (arena.player.meditating) subTag.textContent = `☯ 周天吐纳 (${xpPct}%)`;
     else if (arena.towerMode) subTag.textContent = hostiles > 0 ? `余妖 ×${hostiles}` : "点击/Enter 进下一层";
     else if (arena.stageIdx === 0 && !game.openingChoice) subTag.textContent = hostiles > 0 ? `救沈清禾 (${hostiles})` : "点击/Enter 择玉莲仙缘";
-    else if (arena.props.some(x => x.kind === "ascend_gate")) subTag.textContent = "点击/Enter 叩九霄仙门";
+    else if (arena.props.some(x => x.kind === "ascend_gate")) subTag.textContent = game.realm === "spirit" ? "点击/Enter 叩九霄仙门" : "点击/Enter 登九霄化神台";
     else if (arena.props.some(x => x.kind === "portal")) subTag.textContent = "点击/Enter 启下章传送阵";
     else if (selectableHud.length > 0) subTag.textContent = "本层已清 · 按 9 择路";
     else if (curRoomSpec) subTag.textContent = `${curRoomSpec.icon} ${curRoomSpec.name}`;
@@ -27161,6 +27206,8 @@ const ART = {
     CHAPTER_CUTSCENES,
     CHAPTER_ENEMY_VARIANTS,
     BOSS_SIGNATURE_MOVES,
+    RECIPES,
+    spawnBossRushBout,
     useQuickHealingPill,
     activatePedestalChoice
   };

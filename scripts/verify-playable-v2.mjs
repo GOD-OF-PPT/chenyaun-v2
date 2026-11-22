@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P4 · 共 23 项）
+ * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P5 · 共 24 项）
  *
  * 用法：
  *   node scripts/verify-playable-v2.mjs
@@ -1675,6 +1675,136 @@ try {
     assert.ok(talSnap.spec.skillDmgMult > swordSnap.spec.skillDmgMult);
     assert.equal(talSnap.spec.chainLightningOnFinisher, true);
     await maybeShot(page, "p4_02_cultivate_dao_school.png");
+
+    await ctx.close();
+  });
+
+  await runSuite("P5-1", "Polish Guardrails: Quest Conditions, Native Pill Recipes, Explicit Spire Wager Altar, Act 5 Gate Copy & Monotonic Boss Rush", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "P5-1", false);
+
+    // 1. Quest progression cannot skip Act 2 Foundation breakthrough or Act 4 Sword Mound boss
+    const questCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      const ch2 = api.CHAPTERS.find(c => c.index === 2);
+      const ch4 = api.CHAPTERS.find(c => c.index === 4);
+      const s2Break = ch2.steps.find(st => st.id === "s2_break");
+      const s4Npc = ch4.steps.find(st => st.id === "s4_npc");
+
+      s.game.realm = "qi";
+      s.game.stageStars = { 0: 3, 1: 3, 2: 0, 3: 0, 4: 0 };
+      const qiBreakDone = s2Break.check(s.game);
+
+      s.game.realm = "golden";
+      s.game.equippedGear = {
+        weapon: api.rollGearItem(1, 1, "weapon"),
+        armor: api.rollGearItem(1, 1, "armor"),
+        ring: api.rollGearItem(1, 1, "ring")
+      };
+      const ch4SkippedByGear = s4Npc.check(s.game);
+      s.game.stageStars[3] = 1;
+      const ch4DoneAfterBoss = s4Npc.check(s.game);
+      return { qiBreakDone, ch4SkippedByGear, ch4DoneAfterBoss };
+    });
+    assert.equal(questCheck.qiBreakDone, false, "Act 2 s2_break must NOT complete while still Qi realm");
+    assert.equal(questCheck.ch4SkippedByGear, false, "Act 4 s4_npc must NOT complete solely from 3 equipped gear items");
+    assert.equal(questCheck.ch4DoneAfterBoss, true, "Act 4 s4_npc must complete after clearing Stage 3 boss");
+
+    // 2. Every Act's breakthrough pill recipe uses ONLY materials natively dropped by that Act
+    const recipeCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const pairs = [
+        { actIdx: 1, recipeId: "foundation" },
+        { actIdx: 2, recipeId: "golden" },
+        { actIdx: 3, recipeId: "nascent" },
+        { actIdx: 4, recipeId: "spirit_seed" },
+        { actIdx: 4, recipeId: "ascension" }
+      ];
+      const bad = [];
+      for (const { actIdx, recipeId } of pairs) {
+        const act = api.CAMPAIGN_ACTS[actIdx];
+        const rec = api.RECIPES[recipeId];
+        const pool = new Set([...(act.matDrops || []), ...(act.bossMats || [])]);
+        for (const mat of Object.keys(rec.inputs || {})) {
+          if (!pool.has(mat)) bad.push(`${recipeId} needs ${mat} not in Act ${actIdx + 1}`);
+        }
+      }
+      return bad;
+    });
+    assert.deepEqual(recipeCheck, [], `Breakthrough pill recipes must only require native Act materials, got: ${recipeCheck.join("; ")}`);
+
+    // 3. Act 5 ascend_gate differentiates Nascent (化神台) vs Spirit (九霄仙门)
+    const gateLabels = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.openingChoice = "help";
+      s.game.seenCutscenes = { prologue_rescue: true, enter_sect: true, enter_secret: true, enter_sword_mound: true, enter_terrace: true };
+
+      s.game.realm = "nascent";
+      api.initArenaStage(4, false);
+      s.arena.waveIdx = 5;
+      s.arena.props = [];
+      api.spawnCurrentWave();
+      const nascentGate = (s.arena.props.find(p => p.kind === "ascend_gate") || {}).name || "";
+
+      s.game.realm = "spirit";
+      api.initArenaStage(4, false);
+      s.arena.waveIdx = 5;
+      s.arena.props = [];
+      api.spawnCurrentWave();
+      const spiritGate = (s.arena.props.find(p => p.kind === "ascend_gate") || {}).name || "";
+      return { nascentGate, spiritGate };
+    });
+    assert.ok(gateLabels.nascentGate.includes("化神"), `Nascent Stage 4 gate should mention 化神, got ${gateLabels.nascentGate}`);
+    assert.ok(gateLabels.spiritGate.includes("飞升"), `Spirit Stage 4 gate should mention 飞升, got ${gateLabels.spiritGate}`);
+
+    // 4. Celestial Spire Floor 3 (chaos_wager) must NOT auto-drain HP; interactive spire_wager_altar requires explicit click
+    const spireWager = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "golden";
+      const st = api.getCombatStats(s.game);
+      s.game.hp = st.maxHp;
+      window.__CHENYUAN_V21__.startCelestialSpireRun(3);
+      const hpAfterEnter = s.game.hp;
+      const wagerBeforeClick = s.arena.celestialSpire.wagerDouble;
+      const altar = s.arena.props.find(p => p.kind === "spire_wager_altar");
+      let okClick = false;
+      if (altar) okClick = api.interactWithProp(altar);
+      return {
+        maxHp: st.maxHp,
+        hpAfterEnter,
+        wagerBeforeClick,
+        hasAltar: !!altar,
+        okClick,
+        hpAfterClick: s.game.hp,
+        wagerAfterClick: s.arena.celestialSpire.wagerDouble
+      };
+    });
+    assert.equal(spireWager.hpAfterEnter, spireWager.maxHp, "Entering Spire chaos_wager floor must NOT auto-drain player HP");
+    assert.equal(spireWager.wagerBeforeClick, false, "wagerDouble must remain false until player explicitly activates wager altar");
+    assert.equal(spireWager.hasAltar, true, "Spire chaos_wager floor must spawn interactive spire_wager_altar");
+    assert.equal(spireWager.okClick, true);
+    assert.ok(spireWager.hpAfterClick < spireWager.maxHp, "Explicitly activating spire_wager_altar must deduct 25% HP");
+    assert.equal(spireWager.wagerAfterClick, true);
+
+    // 5. Boss Rush 7-bout HP strictly increases from Bout 1 -> Bout 5 -> Bout 6 Inner Demon -> Bout 7 Colossal Titan
+    const rushHps = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "nascent";
+      s.game.calamityTier = 0;
+      const out = {};
+      for (const b of [1, 5, 6, 7]) {
+        s.arena.bossRush = { active: true, bout: b, maxBouts: 7, timer: 0, noHit: true };
+        s.arena.enemies = [];
+        api.spawnBossRushBout();
+        out["b" + b] = s.arena.enemies[0] ? s.arena.enemies[0].maxHp : 0;
+      }
+      return out;
+    });
+    assert.ok(rushHps.b1 > 0 && rushHps.b1 < rushHps.b5 && rushHps.b5 < rushHps.b6 && rushHps.b6 < rushHps.b7,
+      `Boss Rush HP must climb monotonically b1 < b5 < b6 < b7, got ${JSON.stringify(rushHps)}`);
 
     await ctx.close();
   });
