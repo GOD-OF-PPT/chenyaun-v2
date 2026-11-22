@@ -4514,16 +4514,16 @@ const ART = {
   ];
 
   const ENEMIES = {
-    wolf:          { id: "wolf", name: "雾隐妖狼", min: "qi", location: "wilderness", art: "enemy_wolf", hp: 82, attack: 13, heavy: 32, stones: 24, xp: 26, loot: { core: 1, herb: 1 }, mech: null, mechDesc: "凶猛突进扑击：金芒蓄力时按【空格一闪】可识破剑反，红光血月爪需极限闪避触发凝时！" },
-    warden:        { id: "warden", name: "守山石卫", min: "qi", location: "wilderness", art: "enemy_warden", hp: 125, attack: 17, heavy: 42, stones: 38, xp: 38, loot: { core: 2 }, mech: null, mechDesc: "重锤震地与下段裂地波：按【Z键御风腾跃】可踏剑跃破地脉波，重劈/爆剑可速破其金阵！" },
-    serpent:       { id: "serpent", name: "寒潭玄蛇", min: "foundation", location: "secret", art: "enemy_serpent", hp: 175, attack: 23, heavy: 56, stones: 56, xp: 72, loot: { jade: 2, core: 1 }, mech: null, mechDesc: "盘踞古境寒潭并喷吐冰池弹幕：按【Y键切剑轮阵】斩碎弹幕，切手重击快速破势。" },
-    puppet:        { id: "puppet", name: "古境剑傀", min: "golden", location: "secret", art: "enemy_puppet", hp: 265, attack: 33, heavy: 78, stones: 90, xp: 140, loot: { lotus: 2, jade: 1 }, mech: "reflection", mechDesc: "【镜照反震】展开铜镜架势时反弹轻剑伤害，宜用【空格一闪】或【右键爆剑】强破镜阵！" },
-    shadow:        { id: "shadow", name: "照影心魇", min: "nascent", location: "secret", art: "enemy_shadow", hp: 380, attack: 50, heavy: 118, stones: 140, xp: 270, loot: { soul: 2, lotus: 1 }, mech: "drain", mechDesc: "【噬血魔影】瞬步绕后突袭并吸血，看准金芒识破剑反或开【Y键剑轮阵】压制。" },
-    sentinel:      { id: "sentinel", name: "云台守灵", min: "spirit", location: "terrace", art: "enemy_sentinel", hp: 520, attack: 68, heavy: 168, stones: 195, xp: 460, loot: { dao: 2, soul: 1 }, mech: "ward", mechDesc: "【护山灵阵】护阵期大幅减伤，切【Tab玄重巨阙式】重劈或右键爆剑崩碎其金盾！" },
-    trial_heart:   { id: "trial_heart", name: "第一劫 · 往昔心魔", min: "spirit", location: "terrace", art: "enemy_trial_heart", hp: 360, attack: 42, heavy: 105, stones: 0, xp: 0, loot: {}, trial: true, mech: "drain", mechDesc: "九霄第一劫：幻化执念噬血攻心，识破其蓄势方见真我。" },
-    trial_thunder: { id: "trial_thunder", name: "第二劫 · 九霄雷劫", min: "spirit", location: "terrace", art: "enemy_trial_thunder", hp: 450, attack: 64, heavy: 185, stones: 0, xp: 0, loot: {}, trial: true, mech: null, mechDesc: "九霄第二劫：沈清禾【灵枢药阵】与裴照【剑痕】将在此劫显化护持！" },
-    trial_gate:    { id: "trial_gate", name: "第三劫 · 天门道影", min: "spirit", location: "terrace", art: "enemy_trial_gate", hp: 540, attack: 72, heavy: 198, stones: 0, xp: 0, loot: {}, trial: true, mech: "ward", mechDesc: "九霄终劫：倾尽双姿态连携、法宝剑域、灵兽与故人合击斩开仙门！" },
-    sky_roc:       { id: "sky_roc",    name: "巡天金甲雷鹏将",   min: "golden", location: "terrace", art: "enemy_roc_sky_general", hp: 460, attack: 58, heavy: 145, stones: 180, xp: 320, loot: { soul: 2, core: 2 }, mech: "sky_barrage", mechDesc: "【九霄巡天】振翅布下天雷激光网并攒射漫天雷球：按空格【滚筒侧闪】穿激光，按右键【太虚剑盾】将漫天法球原路震回破其金甲！" }
+    wolf:          { id: "wolf", name: "雾隐妖狼", min: "qi", location: "wilderness", art: "enemy_wolf", hp: 290, attack: 15, heavy: 28, stones: 24, xp: 22, loot: { core: 1, herb: 1 }, mech: null, mechDesc: "凶猛突进扑击：金芒蓄力时按【空格一闪】可识破剑反，红光血月爪需极限闪避触发凝时！" },
+    warden:        { id: "warden", name: "守山石卫", min: "qi", location: "wilderness", art: "enemy_warden", hp: 460, attack: 18, heavy: 36, stones: 38, xp: 36, loot: { core: 2, dew: 1 }, mech: null, mechDesc: "重锤震地与下段裂地波：按【Z键御风腾跃】可踏剑跃破地脉波，重劈/爆剑可速破其金阵！" },
+    serpent:       { id: "serpent", name: "寒潭玄蛇", min: "foundation", location: "secret", art: "enemy_serpent", hp: 680, attack: 21, heavy: 44, stones: 56, xp: 75, loot: { jade: 2, core: 1 }, mech: null, mechDesc: "盘踞古境寒潭并喷吐冰池弹幕：按【Y键切剑轮阵】斩碎弹幕，切手重击快速破势。" },
+    puppet:        { id: "puppet", name: "古境剑傀", min: "golden", location: "secret", art: "enemy_puppet", hp: 960, attack: 25, heavy: 54, stones: 90, xp: 155, loot: { lotus: 2, jade: 1 }, mech: "reflection", mechDesc: "【镜照反震】展开铜镜架势时反弹轻剑伤害，宜用【空格一闪】或【右键爆剑】强破镜阵！" },
+    shadow:        { id: "shadow", name: "照影心魇", min: "nascent", location: "secret", art: "enemy_shadow", hp: 1240, attack: 28, heavy: 64, stones: 140, xp: 310, loot: { soul: 2, lotus: 1 }, mech: "drain", mechDesc: "【噬血魔影】瞬步绕后突袭并吸血，看准金芒识破剑反或开【Y键剑轮阵】压制。" },
+    sentinel:      { id: "sentinel", name: "云台守灵", min: "spirit", location: "terrace", art: "enemy_sentinel", hp: 1520, attack: 32, heavy: 72, stones: 195, xp: 520, loot: { dao: 2, soul: 1 }, mech: "ward", mechDesc: "【护山灵阵】护阵期大幅减伤，切【Tab玄重巨阙式】重劈或右键爆剑崩碎其金盾！" },
+    trial_heart:   { id: "trial_heart", name: "第一劫 · 往昔心魔", min: "spirit", location: "terrace", art: "enemy_trial_heart", hp: 1380, attack: 30, heavy: 66, stones: 0, xp: 0, loot: {}, trial: true, mech: "drain", mechDesc: "九霄第一劫：幻化执念噬血攻心，识破其蓄势方见真我。" },
+    trial_thunder: { id: "trial_thunder", name: "第二劫 · 九霄雷劫", min: "spirit", location: "terrace", art: "enemy_trial_thunder", hp: 1620, attack: 33, heavy: 76, stones: 0, xp: 0, loot: {}, trial: true, mech: null, mechDesc: "九霄第二劫：沈清禾【灵枢药阵】与裴照【剑痕】将在此劫显化护持！" },
+    trial_gate:    { id: "trial_gate", name: "第三劫 · 天门道影", min: "spirit", location: "terrace", art: "enemy_trial_gate", hp: 1820, attack: 36, heavy: 84, stones: 0, xp: 0, loot: {}, trial: true, mech: "ward", mechDesc: "九霄终劫：倾尽双姿态连携、法宝剑域、灵兽与故人合击斩开仙门！" },
+    sky_roc:       { id: "sky_roc",    name: "巡天金甲雷鹏将",   min: "golden", location: "terrace", art: "enemy_roc_sky_general", hp: 1200, attack: 28, heavy: 64, stones: 180, xp: 340, loot: { soul: 2, core: 2 }, mech: "sky_barrage", mechDesc: "【九霄巡天】振翅布下天雷激光网并攒射漫天雷球：按空格【滚筒侧闪】穿激光，按右键【太虚剑盾】将漫天法球原路震回破其金甲！" }
   };
 
   // ==================== 4. V13 4-TIER GOALS: 7-CHAPTER MAINLINE, SECT BOUNTIES, STAR CHESTS & ENDGAME MANDATE ====================
@@ -4856,7 +4856,7 @@ const ART = {
     { id: "terrace",     min: "nascent",    loc: "terrace",    arenaArt: "arena_terrace",    particleKind: "star_dust",   shape: "ellipse", rx: 0.36, ry: 0.30, cy: 0.53, name: "九霄星盘仙台", waves: [["sentinel", "trial_heart", "puppet"], ["trial_thunder", "sentinel", "shadow"], ["trial_heart", "trial_thunder", "sentinel"]], boss: "trial_gate", bossTitle: "九霄守门者 · 天门道影" }
   ];
 
-  const STAGE_SCALING = [1.0, 1.15, 1.35, 1.60, 1.85];
+  const STAGE_SCALING = [1.0, 1.85, 3.10, 5.10, 7.80];
 
   // ==================== 5A-M2. 5-LAYER EXPEDITION STAR-MAP, CLIMATES & 12 RUN-SCOPED BOONS ====================
   const DUNGEON_CLIMATES = {
@@ -4883,7 +4883,7 @@ const ART = {
     { id: "blood_intent",   name: "背水剑意", badge: "残血暴击", art: "icon_blade",        desc: "本趟秘境：气血低于 55% 时暴击率 +25%，剑意获取速度翻倍！" },
     { id: "lightning_chain",name: "九霄链雷", badge: "暴击链雷", art: "relic_soul_lamp",   desc: "本趟秘境：每次暴击引动 2 道九霄紫电跳跃连锁打击周围妖兽。" },
     { id: "sword_echo",     name: "剑影回响", badge: "三剑齐射", art: "icon_blade",        desc: "本趟秘境：每第 3 次挥剑额外激射 3 道贯穿敌阵的灵剑残影！" },
-    { id: "posture_shatter",name: "崩岳破势", badge: "破势真伤", art: "relic_jade_seal",   desc: "本趟秘境：削势效率 +55%；击破敌方架势瞬间引爆目标 18% 最大气血真伤！" },
+    { id: "posture_shatter",name: "崩岳破势", badge: "破势真伤", art: "relic_jade_seal",   desc: "本趟秘境：削势效率 +55%；击破敌方架势瞬间引爆目标高额破势真伤（杂兵18%/首领8%）！" },
     { id: "gourd_overload", name: "仙酿剑狂", badge: "饮葫狂暴", art: "item_immortal_gourd", desc: "本趟秘境：饮用仙葫后 7 秒内剑攻 +38%、攻速 +30% 并获霸体护身！" },
     { id: "vampiric_qi",    name: "噬灵归元", badge: "斩妖回血", art: "item_lotus",        desc: "本趟秘境：每次斩杀妖兽或破势立即回复 8% 最大气血与 12 点真元。" },
     { id: "recall_nova",    name: "万剑归墟", badge: "爆剑清弹", art: "relic_frost_sword", desc: "本趟秘境：右键爆剑引爆印记时清散周身妖丹并绽放范围剑莲震爆！" },
@@ -4894,12 +4894,12 @@ const ART = {
 
   // ==================== 5B. IMMORTAL GEAR & MARKET SYSTEM (4-SLOT LOOT ENGINE) ====================
   const RARITIES = [
-    { tier: 0, name: "凡品", color: "#d0ddd8", mult: 1.0, sell: 12 },
-    { tier: 1, name: "灵品", color: "#4ad2b8", mult: 1.35, sell: 28 },
-    { tier: 2, name: "玄品", color: "#63c5ff", mult: 1.75, sell: 55 },
-    { tier: 3, name: "仙品", color: "#d09eff", mult: 2.30, sell: 95 },
-    { tier: 4, name: "鸿蒙", color: "#ffd86b", mult: 3.10, sell: 160 },
-    { tier: 5, name: "紫气鸿蒙", color: "#ff9eff", mult: 4.15, sell: 320 }
+    { tier: 0, name: "凡品", color: "#d0ddd8", mult: 1.00, sell: 12 },
+    { tier: 1, name: "灵品", color: "#4ad2b8", mult: 1.25, sell: 28 },
+    { tier: 2, name: "玄品", color: "#63c5ff", mult: 1.55, sell: 55 },
+    { tier: 3, name: "仙品", color: "#d09eff", mult: 1.90, sell: 95 },
+    { tier: 4, name: "鸿蒙", color: "#ffd86b", mult: 2.35, sell: 160 },
+    { tier: 5, name: "紫气鸿蒙", color: "#ff9eff", mult: 2.85, sell: 320 }
   ];
 
   const PRIMORDIAL_AWAKENINGS = {
@@ -5338,12 +5338,12 @@ const ART = {
     const items = ["weapon", "armor", "ring"].map(sl => g.equippedGear[sl]);
     if (items.some(x => !x)) return null;
     const minR = Math.min(...items.map(x => x.rarity || 0));
-    if (minR >= 5) return { minR: 5, name: "太初紫气三件套", desc: "剑道攻击+68% · 暴伤+75% · 飞剑+4 · 鸿蒙紫气圣环", atkMult: 0.68, critMult: 0.75, swords: 4, aura: "#ff9eff" };
-    if (minR >= 4) return { minR: 4, name: "鸿蒙造化三件套", desc: "剑道攻击+45% · 暴伤+50% · 飞剑+3 · 鸿蒙圣环", atkMult: 0.45, critMult: 0.50, swords: 3, aura: "#ffe28a" };
-    if (minR >= 3) return { minR: 3, name: "仙品诛仙三件套", desc: "剑道攻击+30% · 暴伤+30% · 飞剑+2 · 紫霞仙环", atkMult: 0.30, critMult: 0.30, swords: 2, aura: "#d69eff" };
-    if (minR >= 2) return { minR: 2, name: "玄品太清三件套", desc: "剑道攻击+20% · 暴击+8% · 飞剑+1 · 太清灵环",  atkMult: 0.20, crit: 0.08, swords: 1, aura: "#70ffe6" };
-    if (minR >= 1) return { minR: 1, name: "灵品青锋三件套", desc: "剑道攻击+12% · 护体减伤+6", atkMult: 0.12, dr: 6, swords: 0, aura: "#4ad2b8" };
-    return { minR: 0, name: "凡铁初鸣三件套", desc: "剑道攻击+6%", atkMult: 0.06, swords: 0, aura: null };
+    if (minR >= 5) return { minR: 5, name: "太初紫气三件套", desc: "剑道攻击+42% · 暴伤+38% · 飞剑+2 · 鸿蒙紫气圣环", atkMult: 0.42, critMult: 0.38, swords: 2, aura: "#ff9eff" };
+    if (minR >= 4) return { minR: 4, name: "鸿蒙造化三件套", desc: "剑道攻击+32% · 暴伤+28% · 飞剑+2 · 鸿蒙圣环", atkMult: 0.32, critMult: 0.28, swords: 2, aura: "#ffe28a" };
+    if (minR >= 3) return { minR: 3, name: "仙品诛仙三件套", desc: "剑道攻击+22% · 暴伤+18% · 飞剑+1 · 紫霞仙环", atkMult: 0.22, critMult: 0.18, swords: 1, aura: "#d69eff" };
+    if (minR >= 2) return { minR: 2, name: "玄品太清三件套", desc: "剑道攻击+15% · 暴击+6% · 飞剑+1 · 太清灵环",  atkMult: 0.15, crit: 0.06, swords: 1, aura: "#70ffe6" };
+    if (minR >= 1) return { minR: 1, name: "灵品青锋三件套", desc: "剑道攻击+10% · 护体减伤+5", atkMult: 0.10, dr: 5, swords: 0, aura: "#4ad2b8" };
+    return { minR: 0, name: "凡铁初鸣三件套", desc: "剑道攻击+5%", atkMult: 0.05, swords: 0, aura: null };
   }
 
 
@@ -5484,7 +5484,7 @@ const ART = {
 
     const rSpec = RARITIES[rarity];
     const tmpl = GEAR_TEMPLATES[slot][Math.min(4, rarity)];
-    const lvlScale = 1 + stageTier * 0.48 + (game ? rankOf(game.realm) * 0.35 : 0);
+    const lvlScale = 1 + stageTier * 0.32 + (game ? rankOf(game.realm) * 0.22 : 0);
 
     const item = {
       uid: "g_" + Math.random().toString(36).slice(2, 9),
@@ -5499,16 +5499,16 @@ const ART = {
     };
 
     if (slot === "weapon") {
-      item.atk = Math.max(4, Math.round(9 * rSpec.mult * lvlScale));
-      item.crit = Number((0.03 * (rarity + 1)).toFixed(2));
+      item.atk = Math.max(4, Math.round(7 * rSpec.mult * lvlScale));
+      item.crit = Number((0.022 * (rarity + 1)).toFixed(2));
       if (rarity >= 3) item.bonusSword = 1;
     } else if (slot === "armor") {
-      item.hp = Math.max(18, Math.round(32 * rSpec.mult * lvlScale));
-      item.dr = Math.max(2, Math.round(3.5 * rSpec.mult * (1 + stageTier * 0.3)));
+      item.hp = Math.max(16, Math.round(24 * rSpec.mult * lvlScale));
+      item.dr = Math.max(2, Math.round(3.0 * rSpec.mult * (1 + stageTier * 0.25)));
     } else {
-      item.atk = Math.max(2, Math.round(5 * rSpec.mult * lvlScale));
-      item.spd = Number((0.04 * (rarity + 1)).toFixed(2));
-      item.crit = Number((0.025 * (rarity + 1)).toFixed(2));
+      item.atk = Math.max(2, Math.round(4 * rSpec.mult * lvlScale));
+      item.spd = Number((0.03 * (rarity + 1)).toFixed(2));
+      item.crit = Number((0.018 * (rarity + 1)).toFixed(2));
     }
     item.lvl = 0;
     if (rarity >= 2) {
@@ -5562,7 +5562,7 @@ const ART = {
   function formatGearStats(it) {
     if (!it) return "未佩带";
     const parts = [];
-    const enh = 1 + (it.lvl || 0) * 0.14;
+    const enh = 1 + (it.lvl || 0) * 0.08;
     if (it.atk) parts.push(`攻+${Math.round(it.atk * enh)}`);
     if (it.hp) parts.push(`血+${Math.round(it.hp * enh)}`);
     if (it.dr) parts.push(`减伤+${Math.round(it.dr * enh)}`);
@@ -7074,7 +7074,9 @@ const ART = {
   // Pillar 1: 【太虚镇妖魂印 · 精魄化身技 (`Soul-Cancel` + Cross-Elemental Fusion)】
   function castSoulSpiritSkill() {
     if (!game || arena.paused) return;
+    if (!guardActionRealm("soul")) return;
     if ((arena.soulCd || 0) > 0) return;
+    if (!consumePlayerMp(18, "镇妖魂印")) return;
     const eqId = (game.equippedSoul && SOUL_SPIRITS[game.equippedSoul]) ? game.equippedSoul : "blood_warden";
     const sp = SOUL_SPIRITS[eqId];
     const p = arena.player;
@@ -8459,6 +8461,7 @@ const ART = {
 
   function cycleWeaponArsenalForm(targetForm = null) {
     if (!game) return;
+    if (!guardActionRealm("weapon_form")) return;
     const order = ["sword", "spear", "chakram"];
     const cur = game.weaponForm || "sword";
     game.weaponForm = (targetForm && WEAPON_ARSENAL_SPECS[targetForm]) ? targetForm : order[(order.indexOf(cur) + 1) % order.length];
@@ -9744,17 +9747,26 @@ const ART = {
   // ==================== PILLAR 1: ASTRAL GIANT AVATAR (`法天象地·十丈元神真身`) & TITAN-VS-TITAN CLASH ====================
   function triggerAstralGiantForm() {
     if (!game) return false;
+    if (!guardActionRealm("astral")) return false;
     if (arena.astralForm && arena.astralForm.active) {
       // Already in Astral Form -> unleash Star-River Sword-Finger Bombardment (`星河剑指轰击`)!
+      if ((arena.astralBombCd || 0) > 0) return false;
+      arena.astralBombCd = 2.6;
       castAstralStarRiverBombardment();
       return true;
+    }
+    if ((arena.astralCd || 0) > 0) {
+      showToast(`法天象地调息中 (${arena.astralCd.toFixed(1)}s)`);
+      return false;
     }
     const rankSSS = getStyleRankSpec(arena.styleScore || 0).rank === "SSS";
     if ((arena.astralEnergy || 0) < 100 && !rankSSS) {
       showToast(`元神灵力蓄积中 (${Math.floor(arena.astralEnergy || 0)}/100%) · 达成 SSS 评级或破势斩妖可立即激发【法天象地】！`);
       return false;
     }
+    if (!consumePlayerMp(30, "法天象地")) return false;
     arena.astralEnergy = 0;
+    arena.astralCd = 30.0;
     const ks = getKarmaState(game);
     const isDemonic = ks.mode === "demonic";
     const artKey = isDemonic ? "avatar_asura_demon" : "avatar_taiqing_immortal";
@@ -9928,6 +9940,13 @@ const ART = {
   // ==================== PILLAR 2: MYTHIC MOUNT COMBAT (`山海神兽灵骑 · J键冲锋 & 跃马坠星劈`) ====================
   function triggerMythicMountAction() {
     if (!game) return false;
+    if (!guardActionRealm("mount")) return false;
+    if ((arena.mountCd || 0) > 0) {
+      showToast(`灵骑冲锋调息中 (${arena.mountCd.toFixed(1)}s)`);
+      return false;
+    }
+    if (!consumePlayerMp(18, "山海灵骑")) return false;
+    arena.mountCd = 8.0;
     if (!game.equippedMount) game.equippedMount = "qilin";
     const mSpec = MYTHIC_MOUNTS[game.equippedMount] || MYTHIC_MOUNTS.qilin;
     const p = arena.player;
@@ -10043,6 +10062,13 @@ const ART = {
   // ==================== PILLAR 3: QIMEN EIGHT-GATES TACTICAL FIELD ARRAY (`奇门遁甲·U键四门阵盘 & 阵剑附魔`) ====================
   function deployOrCycleQimenArray() {
     if (!game) return false;
+    if (!guardActionRealm("qimen")) return false;
+    if ((arena.qimenCd || 0) > 0) {
+      showToast(`奇门阵盘调息中 (${arena.qimenCd.toFixed(1)}s)`);
+      return false;
+    }
+    if (!consumePlayerMp(22, "奇门八门阵")) return false;
+    arena.qimenCd = 12.0;
     const p = arena.player;
     const nextIdx = arena.qimenArray && arena.qimenArray.active
       ? ((arena.qimenGateIdx || 0) + 1) % QIMEN_GATES.length
@@ -11550,6 +11576,7 @@ const ART = {
 
   function openComboSequencerModal() {
     if (!game) return;
+    if (!guardActionRealm("sequencer")) return;
     closeDrawer();
     arena.paused = true;
     const seq = ensureCustomComboSeq(game);
@@ -11627,12 +11654,18 @@ const ART = {
 
   function triggerSanqingTriClones() {
     if (!game) return false;
+    if (!guardActionRealm("sanqing")) return false;
     const sq = ensureSanqingState();
     const p = arena.player;
     const st = getCombatStats(game);
 
-    // If ALREADY active -> Execute 2nd-Stage 【移形换位 · 三清归元十字穿心合击】!
+    // If ALREADY active -> Execute 2nd-Stage 【移形换位 · 三清归元十字穿心合击】 (once per activation)!
     if (sq.active && sq.life > 0.2) {
+      if (sq.swapUsed) {
+        showToast("本次一气化三清的【移形归元斩】已施放！");
+        return false;
+      }
+      sq.swapUsed = true;
       const cv = document.getElementById("fx-canvas");
       const w = (cv && cv.width) || 1440, h = (cv && cv.height) || 900;
       const foe = arena.enemies.find(e => e.hp > 0 && !e.isTreasure) || arena.enemies[0];
@@ -11650,7 +11683,7 @@ const ART = {
       leadClone.y = oldPy;
       p.x = forwardPos.x;
       p.y = forwardPos.y;
-      p.invuln = Math.max(p.invuln || 0, 0.88);
+      p.invuln = Math.max(p.invuln || 0, 0.65);
       sq.swapCount = (sq.swapCount || 0) + 1;
 
       const cx = foe ? foe.x : p.x, cy = foe ? foe.y : p.y;
@@ -11664,11 +11697,11 @@ const ART = {
       registerStyleAction("sanqing_swap", 185);
       pushTelemetryInput("☯移形·三清归元斩!", false);
 
-      const burstDmg = Math.round(st.atk * 3.65);
+      const burstDmg = Math.round(st.atk * 2.45);
       arena.enemies.slice().forEach(e => {
         if (e.hp > 0 && Math.hypot(e.x - cx, e.y - cy) < e.r + 225) {
           e.swordMarks = 6;
-          damageEnemy(e, burstDmg, true, 54, Math.atan2(e.y - cy, e.x - cx), 12, true);
+          damageEnemy(e, burstDmg, true, 46, Math.atan2(e.y - cy, e.x - cx), 12, true);
         }
       });
       triggerKillCamStamp("三清归元");
@@ -11679,10 +11712,18 @@ const ART = {
       return true;
     }
 
-    // Activate 12s Tri-Clone Phantom Resonance!
+    if ((arena.sanqingCd || 0) > 0) {
+      showToast(`一气化三清调息中 (${arena.sanqingCd.toFixed(1)}s)`);
+      return false;
+    }
+    if (!consumePlayerMp(32, "一气化三清")) return false;
+    arena.sanqingCd = 24.0;
+
+    // Activate 10s Tri-Clone Phantom Resonance!
     sq.active = true;
-    sq.life = 12.0;
-    sq.maxLife = 12.0;
+    sq.swapUsed = false;
+    sq.life = 10.0;
+    sq.maxLife = 10.0;
     sq.clones[0].x = p.x - 66; sq.clones[0].y = p.y + 18; sq.clones[0].facing = p.facing;
     sq.clones[1].x = p.x + 66; sq.clones[1].y = p.y + 18; sq.clones[1].facing = p.facing;
     arena.sanqingEchoQueue = [];
@@ -11742,10 +11783,17 @@ const ART = {
 
   function castShanheShejiDomain() {
     if (!game) return false;
+    if (!guardActionRealm("shanhe")) return false;
     if (arena.shanheDomain && arena.shanheDomain.active && arena.shanheDomain.mantras.length >= 3) {
       detonateShanheScrollBreak();
       return true;
     }
+    if ((arena.shanheCd || 0) > 0) {
+      showToast(`山河社稷图调息中 (${arena.shanheCd.toFixed(1)}s)`);
+      return false;
+    }
+    if (!consumePlayerMp(36, "山河社稷图")) return false;
+    arena.shanheCd = 28.0;
     arena.shanheDomain = {
       active: true,
       life: 10.0,
@@ -11759,7 +11807,7 @@ const ART = {
     Sound.fanfare();
     Sound.bianzhong(523.25, 0.14);
     spawnDistortionRing(arena.player.x, arena.player.y, 320, "#ffe28a");
-    showBossCutIn("scroll_shanhe_sheji", "创世至宝 ·【山河社稷图】展开", "群妖已摄入太古青绿画中界（移速-42%·破防+45%）！挥剑烙印【临兵斗者皆阵列在前】九字破画！");
+    showBossCutIn("scroll_shanhe_sheji", "创世至宝 ·【山河社稷图】展开", "群妖已摄入太古青绿画中界（移速-42%·破防+30%）！挥剑烙印【临兵斗者皆阵列在前】九字破画！");
     addFloat("🏞 山河社稷图 ·【青绿山水画中界】展开 (10s)！", arena.player.x, arena.player.y - 78, "#ffe28a", 21, true);
     syncV24GenesisDock();
     updateHud();
@@ -11800,7 +11848,7 @@ const ART = {
 
     const p = arena.player;
     const st = getCombatStats(game);
-    const totalMult = 3.2 + count * 0.36; // Up to 6.44x ATK at 9/9 Mantras!
+    const totalMult = 2.0 + count * 0.24; // Up to 4.16x ATK at 9/9 Mantras!
     const totalDmg = Math.round(st.atk * totalMult);
 
     Sound.coreSeverBoom();
@@ -11848,14 +11896,14 @@ const ART = {
   ];
 
   function ensureExpeditionState(g) {
-    if (!g) return { assignments: {}, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 5.5 };
+    if (!g) return { assignments: {}, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 };
     if (!g.expeditions) {
       g.expeditions = {
-        assignments: { qinglan_vein: "shen", qingyun_peak: "lu" },
-        bankedStones: 36,
-        bankedStars: 1,
+        assignments: {},
+        bankedStones: 0,
+        bankedStars: 0,
         supportThunderCount: 0,
-        tickTimer: 5.5
+        tickTimer: 8.5
       };
     }
     return g.expeditions;
@@ -11863,10 +11911,17 @@ const ART = {
 
   function triggerWarshipOrbitalStrike() {
     if (!game) return false;
+    if (!guardActionRealm("warship")) return false;
     if (arena.warshipStrike && arena.warshipStrike.active) {
       showToast("⛵ 听雨凌霄仙舟正在天际倾泻主炮齐射中！");
       return false;
     }
+    if ((arena.warshipCd || 0) > 0) {
+      showToast(`凌霄仙舟充能中 (${arena.warshipCd.toFixed(1)}s)`);
+      return false;
+    }
+    if (!consumePlayerMp(42, "凌霄仙舟")) return false;
+    arena.warshipCd = 35.0;
     const cv = document.getElementById("fx-canvas");
     const w = (cv && cv.width) || 1440, h = (cv && cv.height) || 900;
     const boss = arena.enemies.find(e => e.hp > 0 && e.isBoss) || arena.enemies.find(e => e.hp > 0 && !e.isTreasure);
@@ -12129,12 +12184,12 @@ const ART = {
         triggerRadialChromaticBurst(1.55, "#80ffea", ws.targetX, ws.targetY - 16);
         spawnDistortionRing(ws.targetX, ws.targetY, 310, "#80ffea");
         addDecal(ws.targetX, ws.targetY + 12, 0, 105, "spider_crack");
-        const cannonDmg = Math.round(st.atk * 5.2);
+        const cannonDmg = Math.round(st.atk * 3.0);
         arena.enemies.slice().forEach(e => {
           if (e.hp > 0 && Math.hypot(e.x - ws.targetX, e.y - ws.targetY) < e.r + 250) {
             e.wardHp = 0;
             e.frontShieldHp = 0;
-            damageEnemy(e, cannonDmg, true, 68, Math.atan2(e.y - ws.targetY, e.x - ws.targetX), 16, true);
+            damageEnemy(e, cannonDmg, true, 54, Math.atan2(e.y - ws.targetY, e.x - ws.targetX), 14, true);
           }
         });
         triggerKillCamStamp("仙舟破界");
@@ -12148,21 +12203,21 @@ const ART = {
       }
     }
 
-    // D. Step Jiuzhou Expedition Garrison Passive Yield & Cross-Region Sect Thunder Support (`仙门护道雷援`)
-    if (game && !arena.paused) {
+    // D. Step Jiuzhou Expedition Garrison Passive Yield & Cross-Region Sect Thunder Support (ONLY once unlocked at Golden Core!)
+    if (game && !arena.paused && isEcosystemSystemUnlocked(game, "vein_expedition")) {
       const ex = ensureExpeditionState(game);
       const activeNodes = EXPEDITION_NODES.filter(nd => ex.assignments && ex.assignments[nd.id]);
       if (activeNodes.length > 0) {
-        ex.tickTimer = (ex.tickTimer || 5.5) - dt;
+        ex.tickTimer = (ex.tickTimer || 8.5) - dt;
         if (ex.tickTimer <= 0) {
-          ex.tickTimer = 5.5;
+          ex.tickTimer = 8.5;
           ex.bankedStones = (ex.bankedStones || 0) + activeNodes.reduce((s, n) => s + Math.round(n.stoneRate * 0.35), 0);
-          if (Math.random() < 0.35) ex.bankedStars = (ex.bankedStars || 0) + 1;
+          if (Math.random() < 0.25) ex.bankedStars = (ex.bankedStars || 0) + 1;
           const foe = arena.enemies.find(e => e.hp > 0 && !e.isTreasure);
           if (foe && !arena.sanctumMode) {
             ex.supportThunderCount = (ex.supportThunderCount || 0) + 1;
             arena.skyBolts.push({ x: foe.x, y: foe.y, t: 0, color: "#80ffea" });
-            damageEnemy(foe, Math.round(st.atk * (0.85 + activeNodes.length * 0.22)), true, 16, 0, 3, false);
+            damageEnemy(foe, Math.round(st.atk * (0.52 + activeNodes.length * 0.12)), false, 10, 0, 2, false);
             addFloat(`⚡ 九州驻防 · 仙门护道雷援！`, foe.x, foe.y - 58, "#80ffea", 14, true);
           }
         }
@@ -12276,8 +12331,60 @@ const ART = {
     `, true);
   }
 
+  const ACTION_REALM_REQ = {
+    slash: 0, recall: 0, dash: 0, meditate: 0, pill: 0, hub: 0, photo: 0, telemetry: 0,
+    stance: 1, jump: 1, ult: 1, ally: 1, pet: 1,
+    posture: 2, soul: 2, swordBlink: 2, finisher: 2, tagSwitch: 2, weapon_form: 2,
+    astral: 3, mount: 3, qimen: 3, sanqing: 3, shanhe: 3, warship: 3, sequencer: 3
+  };
+  const ACTION_DISPLAY_NAME = {
+    stance: "三才剑阵 (Y)", jump: "御风腾跃 (Z)", ult: "法宝剑域 (E)", ally: "故人助阵 (R)", pet: "灵宠绝技 (G)",
+    posture: "双剑意姿态 (Tab)", soul: "镇妖魂印 (C)", swordBlink: "缩地瞬身 (F)", finisher: "流派奥义 (X)",
+    tagSwitch: "道侣瞬切 (V)", weapon_form: "太虚剑匣 (1/2/3)",
+    astral: "法天象地 (O)", mount: "山海灵骑 (J)", qimen: "奇门八门阵 (U)",
+    sanqing: "一气化三清 (4)", shanhe: "山河社稷图 (5)", warship: "凌霄仙舟 (6)", sequencer: "自创剑谱 (7)"
+  };
+
+  function isActionUnlockedByRealm(g, act) {
+    if (!g) return false;
+    if (g.unlockAllArcana) return true;
+    const req = ACTION_REALM_REQ[act] !== undefined ? ACTION_REALM_REQ[act] : 0;
+    if (req <= 0) return true;
+    if (act === "ally" && countBondedAllies(g) > 0) return true;
+    if (act === "pet" && g.pet && g.pet.id) return true;
+    return rankOf(g.realm) >= req;
+  }
+
+  function guardActionRealm(act) {
+    if (!game) return false;
+    if (isActionUnlockedByRealm(game, act)) return true;
+    const reqRank = ACTION_REALM_REQ[act] || 1;
+    const reqRealmId = REALM_ORDER[reqRank] || "qi";
+    const reqName = (REALMS[reqRealmId] && REALMS[reqRealmId].name) || "高阶";
+    const actName = ACTION_DISPLAY_NAME[act] || act;
+    showToast(`🔒 【${actName}】将于【${reqName}期】解封（或在右上【仙阁】开启全神通演武）`);
+    return false;
+  }
+
+  function consumePlayerMp(baseCost, label = "神通") {
+    if (!game || baseCost <= 0) return true;
+    const discount = (game.loadout && game.loadout.mind === "talisman_calm" ? 0.78 : 1.0) * (hasLaw(game, "relic_awake") ? 0.85 : 1.0);
+    const cost = Math.max(4, Math.round(baseCost * discount));
+    const curMp = Math.floor(game.mp || 0);
+    if (curMp < cost) {
+      showToast(`💧 剑元不足！施展【${label}】需 ${cost} 点剑元（当前 ${curMp} · 普攻/识破/回灵丹恢复）`);
+      if (arena && arena.player) {
+        addFloat(`剑元不足(${curMp}/${cost})`, arena.player.x, arena.player.y - 46, "#80c8ff", 14);
+      }
+      return false;
+    }
+    game.mp = Math.max(0, (game.mp || 0) - cost);
+    return true;
+  }
+
   function canExecuteActionImmediately(act) {
     if (!game || arena.paused) return false;
+    if (!isActionUnlockedByRealm(game, act)) return false;
     if (act === "astral" || act === "mount" || act === "qimen") return true;
     if (act === "jump" && arena.mountState && arena.mountState.active) return true;
     if (arena.hitStop > 0.005) return false;
@@ -12299,6 +12406,7 @@ const ART = {
   }
 
   function executeActionImmediate(act, fromBuffer = false) {
+    if (!guardActionRealm(act)) return;
     const labelMap = { posture: (arena.player.comboWindow > 0.12 || arena.player.dashTimer > 0) ? "☯易剑连携斩" : "易剑切姿", slash: `${arena.weaponPosture === "xuanzhong" ? "巨阙" : "疾剑"}S${((arena.player.comboWindow > 0 ? arena.player.comboStep + 1 : 0) % 4) + 1}`, recall: (arena.player.comboWindow > 0.25 && (arena.morphCd || 0) <= 0) ? "切手重技" : "收剑爆印", dash: "闪身/剑反", stance: "变阵", ult: "法宝剑域", finisher: "真传奥义", ally: "故人助阵", pet: "灵兽绝技", pill: "灵丹", meditate: "吐纳" };
     if (labelMap[act]) pushTelemetryInput((fromBuffer ? "⚡" : "") + labelMap[act], fromBuffer);
     if (arena.bladeClash && ["slash", "recall", "dash", "soul", "posture"].includes(act)) {
@@ -12346,6 +12454,7 @@ const ART = {
       return;
     }
     if (!game || arena.paused) return;
+    if (!guardActionRealm(act)) return;
     if (act === "tagSwitch" && (arena.tagSwitchCd || 0) <= 0) {
       executeActionImmediate("tagSwitch", false);
       return;
@@ -13052,13 +13161,13 @@ const ART = {
   function escTip(t, d) { return `${String(t).replace(/"/g, "&quot;")}|${String(d).replace(/"/g, "&quot;")}`; }
 
   function countBondedAllies(g) {
-    if (!g) return 1;
+    if (!g) return 0;
     let n = 0;
-    if (g.openingChoice === "help" || g.aids.shen || Object.keys(g.choices).some(k => k.startsWith("shen"))) n++;
-    if (g.aids.pei || Object.keys(g.choices).some(k => k.startsWith("pei"))) n++;
-    if (g.aids.lu || Object.keys(g.choices).some(k => k.startsWith("lu"))) n++;
-    if (g.aids.yan || Object.keys(g.choices).some(k => k.startsWith("yan"))) n++;
-    return Math.max(1, n);
+    if (g.openingChoice === "help" || (g.aids && g.aids.shen) || Object.keys(g.choices || {}).some(k => k.startsWith("shen"))) n++;
+    if ((g.aids && g.aids.pei) || Object.keys(g.choices || {}).some(k => k.startsWith("pei"))) n++;
+    if ((g.aids && g.aids.lu) || Object.keys(g.choices || {}).some(k => k.startsWith("lu"))) n++;
+    if ((g.aids && g.aids.yan) || Object.keys(g.choices || {}).some(k => k.startsWith("yan"))) n++;
+    return n;
   }
 
   function getEquippedRelicStars(g) {
@@ -13072,12 +13181,12 @@ const ART = {
     ["weapon", "armor", "ring"].forEach(sl => {
       const it = g.equippedGear[sl];
       if (it) {
-        const enh = 1 + (it.lvl || 0) * 0.14;
+        const enh = 1 + (it.lvl || 0) * 0.08;
         tot.atk += Math.round((it.atk || 0) * enh);
         tot.hp += Math.round((it.hp || 0) * enh);
         tot.dr += Math.round((it.dr || 0) * enh);
         tot.crit += it.crit || 0;
-        tot.spd += (it.spd || 0) + (it.affix === "wind_rider" ? 0.12 : 0);
+        tot.spd += (it.spd || 0) + (it.affix === "wind_rider" ? 0.10 : 0);
         tot.bonusSword += it.bonusSword || 0;
       }
     });
@@ -13093,12 +13202,15 @@ const ART = {
   function getSwordCount(g) {
     if (!g) return 2;
     const stars = getEquippedRelicStars(g);
-    const starSwords = (stars >= 3 ? 1 : 0) + (stars >= 5 ? 1 : 0);
-    const gearSwords = getGearTotals(g).bonusSword;
-    const fruitSwords = hasDestinyFruit(g, "sword_twin") ? 3 : 0;
-    const dragonSwords = hasStarCore(g, "azure_dragon") ? 2 : 0;
-    const curioSw = getCurioStacks(g, 'curio_hongmeng_omni') * 3;
-    return Math.min(28, curioSw + 2 + rankOf(g.realm) + (g.bonusSwords || 0) + gearSwords + fruitSwords + dragonSwords + (hasLaw(g, "wanjian") ? 2 : 0) + (g.loadout.relic === "frost_sword" ? 1 : 0) + starSwords);
+    const starSwords = stars >= 4 ? 1 : 0;
+    const gearSwords = Math.min(2, getGearTotals(g).bonusSword);
+    const fruitSwords = hasDestinyFruit(g, "sword_twin") ? 2 : 0;
+    const dragonSwords = hasStarCore(g, "azure_dragon") ? 1 : 0;
+    const curioSw = Math.min(2, getCurioStacks(g, "curio_hongmeng_omni"));
+    const realmSw = Math.min(3, Math.floor((rankOf(g.realm) + 1) / 2));
+    const bonusSw = Math.min(3, g.bonusSwords || 0);
+    const extraSw = Math.min(3, gearSwords + fruitSwords + dragonSwords + curioSw + (hasLaw(g, "wanjian") ? 1 : 0) + (g.loadout.relic === "frost_sword" ? 1 : 0) + starSwords);
+    return Math.min(10, 2 + realmSw + bonusSw + extraSw);
   }
 
   function createFreshGame(playerName, perkId, calamityTier = 0) {
@@ -13149,7 +13261,7 @@ const ART = {
       realm: "mortal",
       foundationQuality: {},
       statMultBonus: 1.0 + Math.min(0.30, (metaState.ascensions || 0) * 0.05),
-      bonusSwords: effectivePerk === "sword_sovereign" ? 2 : effectivePerk === "sword_bone" ? 1 : 0,
+      bonusSwords: effectivePerk === "sword_sovereign" ? 2 : 0,
       atkFlatBonus: 0,
       xp: 0,
       overflowXp: 0,
@@ -14772,89 +14884,89 @@ const ART = {
     const r = REALMS[g.realm] || REALMS.mortal;
     const gt = getGearTotals(g);
     const maxHp = getMaxHp(g);
-    const maxMp = Math.round(r.maxMp * (1 + Math.min(0.95, Math.max(0, (g.statMultBonus || 1) - 1))));
+    const maxMp = Math.round(r.maxMp * (1 + Math.min(0.65, Math.max(0, (g.statMultBonus || 1) - 1))));
     const stars = getEquippedRelicStars(g);
-    const starScale = 1 + Math.max(0, stars - 1) * 0.24;
-    const mindBonus = g.loadout.mind === "sword_pierce" ? 14 : g.loadout.mind === "talisman_clear" ? 6 : 0;
-    const relicBonus = Math.round(((g.loadout.relic === "frost_sword" ? 10 : g.loadout.relic === "soul_lamp" ? 9 : 5) * (g.loadout.relic ? starScale : 0)));
+    const starScale = 1 + Math.max(0, stars - 1) * 0.18;
+    const mindBonus = g.loadout.mind === "sword_pierce" ? 10 : g.loadout.mind === "talisman_clear" ? 5 : 0;
+    const relicBonus = Math.round(((g.loadout.relic === "frost_sword" ? 9 : g.loadout.relic === "soul_lamp" ? 8 : 4) * (g.loadout.relic ? starScale : 0)));
     const starB = getStarChartBonuses(g);
     const sanctumB = getSanctumBonuses(g);
     const years = Math.floor(((g.startAgeMonths || 216) + (g.elapsedMonths || 0)) / 12);
 
     // Bucket 1: Flat Foundation ATK
-    const perkFlatAtk = g.perk === "sword_sovereign" ? 16 : g.perk === "sword_bone" ? 8 : 0;
-    const baseAtk = 16 + r.power * 1.62 + gt.atk + (g.atkFlatBonus || 0) + perkFlatAtk + mindBonus + relicBonus + starB.atk + sanctumB.forgeAtk;
+    const perkFlatAtk = g.perk === "sword_sovereign" ? 12 : g.perk === "sword_bone" ? 5 : 0;
+    const baseAtk = 14 + r.power * 1.25 + gt.atk + (g.atkFlatBonus || 0) + perkFlatAtk + mindBonus + relicBonus + starB.atk + sanctumB.forgeAtk;
 
-    // Bucket 2: Passive Additive Bonus Pool (with diminishing soft-cap so late builds feel strong without 1-shotting bosses!)
+    // Bucket 2: Passive Additive Bonus Pool (tighter diminishing soft-cap so late builds feel rewarding without 1-shotting bosses!)
     const setB = getActiveSetBonus(g);
     const ks = getKarmaState(g);
     const celPh = typeof getCurrentCelestialPhase === "function" ? getCurrentCelestialPhase() : { id: "dawn" };
     const stoneCurioLv = getCurioStacks(g, "curio_stone_alchemy");
     const shieldThornLv = getCurioStacks(g, "curio_shield_thorns");
     const phoenixLowHp = g.perk === "calamity_phoenix" && g.hp <= maxHp * 0.45;
-    let rawPassivePct = Math.max(0, (g.statMultBonus || 1) - 1);
-    if (phoenixLowHp) rawPassivePct += 0.28;
-    if (hasLaw(g, "age_might")) rawPassivePct += Math.min(0.40, Math.floor(Math.max(0, years - 18) / 10) * 0.08);
-    if (hasLaw(g, "karma_resonance")) rawPassivePct += Math.min(0.36, Object.keys(g.choices || {}).length * 0.06);
-    if (hasLaw(g, "wealth_power")) rawPassivePct += Math.min(0.55, Math.floor((g.stones || 0) / 100) * 0.05);
-    if (stoneCurioLv > 0) rawPassivePct += Math.min(0.60, Math.floor((g.stones || 0) / 100) * 0.05 * stoneCurioLv);
-    if (shieldThornLv > 0 && arena && arena.player && (arena.player.shieldHp || 0) > 0) rawPassivePct += Math.min(0.64, 0.28 * shieldThornLv);
+    let rawPassivePct = Math.max(0, (g.statMultBonus || 1) - 1) * 0.75;
+    if (phoenixLowHp) rawPassivePct += 0.22;
+    if (hasLaw(g, "age_might")) rawPassivePct += Math.min(0.30, Math.floor(Math.max(0, years - 18) / 10) * 0.06);
+    if (hasLaw(g, "karma_resonance")) rawPassivePct += Math.min(0.28, Object.keys(g.choices || {}).length * 0.05);
+    if (hasLaw(g, "wealth_power")) rawPassivePct += Math.min(0.36, Math.floor((g.stones || 0) / 100) * 0.04);
+    if (stoneCurioLv > 0) rawPassivePct += Math.min(0.40, Math.floor((g.stones || 0) / 100) * 0.04 * stoneCurioLv);
+    if (shieldThornLv > 0 && arena && arena.player && (arena.player.shieldHp || 0) > 0) rawPassivePct += Math.min(0.45, 0.20 * shieldThornLv);
     if (setB && setB.atkMult) rawPassivePct += setB.atkMult;
-    rawPassivePct += ks.mode === "demonic" ? 0.24 : ks.mode === "righteous" ? 0.08 : 0;
-    rawPassivePct += celPh.id === "noon" ? 0.14 : (celPh.id === "blood_dusk" ? (ks.mode === "demonic" ? 0.34 : 0.18) : 0);
-    if (hasRunBoon("gold_alchemist")) rawPassivePct += Math.min(0.36, Math.floor((g.stones || 0) / 100) * 0.04);
-    if (arena && arena.player && (arena.player.boonOverloadTimer || 0) > 0) rawPassivePct += 0.38;
-    const cappedPassivePct = softCapPct(rawPassivePct, 1.80, 3.20);
+    rawPassivePct += ks.mode === "demonic" ? 0.18 : ks.mode === "righteous" ? 0.06 : 0;
+    rawPassivePct += celPh.id === "noon" ? 0.10 : (celPh.id === "blood_dusk" ? (ks.mode === "demonic" ? 0.22 : 0.12) : 0);
+    if (hasRunBoon("gold_alchemist")) rawPassivePct += Math.min(0.28, Math.floor((g.stones || 0) / 100) * 0.03);
+    if (arena && arena.player && (arena.player.boonOverloadTimer || 0) > 0) rawPassivePct += 0.28;
+    const cappedPassivePct = softCapPct(rawPassivePct, 0.95, 1.65);
 
-    // Bucket 3: Active Stance / Burst / Climate Multiplier (capped cleanly at 2.85x)
-    const revMult = (arena.reversedDomainTimer || 0) > 0 ? 1.28 : 1.0;
+    // Bucket 3: Active Stance / Burst / Climate Multiplier (capped cleanly at 1.95x)
+    const revMult = (arena.reversedDomainTimer || 0) > 0 ? 1.20 : 1.0;
     const isHeavyPosture = arena.weaponPosture === "xuanzhong";
-    const postureAtkMult = isHeavyPosture ? 1.42 : 1.0;
+    const postureAtkMult = isHeavyPosture ? 1.28 : 1.0;
     const rushGlass = !!(arena.bossRush && arena.bossRush.active && arena.rushAffixes.includes("rush_glass"));
-    const rushAtkMult = rushGlass ? 1.50 : 1.0;
-    const astralMult = (arena && arena.astralForm && arena.astralForm.active) ? (arena.astralForm.mode === "demonic" ? 1.72 : 1.58) : 1.0;
+    const rushAtkMult = rushGlass ? 1.38 : 1.0;
+    const astralMult = (arena && arena.astralForm && arena.astralForm.active) ? (arena.astralForm.mode === "demonic" ? 1.45 : 1.35) : 1.0;
     const clim = getActiveDungeonClimate();
-    const climateAtkMult = (clim && clim.id === "blood_haze") ? 1.18 : 1.0;
-    const activeMult = Math.min(2.85, revMult * postureAtkMult * rushAtkMult * astralMult * climateAtkMult);
+    const climateAtkMult = (clim && clim.id === "blood_haze") ? 1.15 : 1.0;
+    const activeMult = Math.min(1.95, revMult * postureAtkMult * rushAtkMult * astralMult * climateAtkMult);
 
     const dmgReduce = gt.dr
-      + (g.pet.id === "turtle" ? 8 : 0)
-      + (g.loadout.mind === "sword_still" ? 6 : 0)
-      + (g.loadout.mind === "talisman_clear" ? 10 : 0)
-      + (g.loadout.relic === "jade_seal" ? Math.round(10 * starScale) : 0)
+      + (g.pet.id === "turtle" ? 10 : 0)
+      + (g.loadout.mind === "sword_still" ? 8 : 0)
+      + (g.loadout.mind === "talisman_clear" ? 12 : 0)
+      + (g.loadout.relic === "jade_seal" ? Math.round(12 * starScale) : 0)
       + sanctumB.guardDr
       + (phoenixLowHp ? 18 : 0);
 
     const tier = getComboTier(arena.comboCount);
-    const lowHpBoonCrit = (hasRunBoon("blood_intent") && g.hp <= maxHp * 0.55) ? 0.25 : 0;
-    const crit = Math.min(0.95, 0.14 + gt.crit + (g.perk === "sword_bone" ? 0.1 : 0) + (g.pet.id === "fox" ? 0.12 : 0) + (hasLaw(g, "crit_lotus") ? 0.25 : 0) + (currentOmen(g).id === "wolf_star" ? 0.18 : 0) + lowHpBoonCrit);
+    const lowHpBoonCrit = (hasRunBoon("blood_intent") && g.hp <= maxHp * 0.55) ? 0.20 : 0;
+    const crit = Math.min(0.78, 0.10 + gt.crit + (g.perk === "sword_bone" ? 0.08 : 0) + (g.pet.id === "fox" ? 0.10 : 0) + (hasLaw(g, "crit_lotus") ? 0.18 : 0) + (currentOmen(g).id === "wolf_star" ? 0.12 : 0) + lowHpBoonCrit);
     const climSpdMult = (clim && clim.id === "sword_wind") ? 1.10 : 1.0;
-    const climHaste = (clim && clim.id === "sword_wind") ? 0.15 : 0;
-    const climCritMult = (clim && clim.id === "thunder_loom") ? 0.18 : 0;
-    const speed = 3.85 * (1 + gt.spd) * (hasLaw(g, "void_haste") ? 1.22 : 1.0) * (1 + tier.spdBonus * 0.35) * climSpdMult;
-    const pineCrit = hasDestinyFruit(g, "eternal_pine") ? 0.12 : 0;
-    const pineMult = hasDestinyFruit(g, "eternal_pine") ? Math.min(0.50, Math.floor((g.stones || 0) / 80) * 0.04) : 0;
-    const postureHasteBonus = isHeavyPosture ? -0.14 : 0.26;
-    const postureSpdMult = isHeavyPosture ? 0.92 : 1.14;
+    const climHaste = (clim && clim.id === "sword_wind") ? 0.12 : 0;
+    const climCritMult = (clim && clim.id === "thunder_loom") ? 0.14 : 0;
+    const speed = 3.85 * (1 + gt.spd) * (hasLaw(g, "void_haste") ? 1.18 : 1.0) * (1 + tier.spdBonus * 0.30) * climSpdMult;
+    const pineCrit = hasDestinyFruit(g, "eternal_pine") ? 0.10 : 0;
+    const pineMult = hasDestinyFruit(g, "eternal_pine") ? Math.min(0.32, Math.floor((g.stones || 0) / 80) * 0.03) : 0;
+    const postureHasteBonus = isHeavyPosture ? -0.14 : 0.14;
+    const postureSpdMult = isHeavyPosture ? 0.92 : 1.10;
     const finalMaxHp = rushGlass ? Math.max(40, Math.round(maxHp * 0.5)) : maxHp;
-    const karmaDr = (g.karmaDrBonus || 0) + (ks.mode === "righteous" ? 10 : 0);
-    const gourdHaste = (arena.player && (arena.player.gourdHasteTimer || 0) > 0) ? 0.30 : 0;
-    const gourdCrit = (arena.player && (arena.player.gourdCritTimer || 0) > 0) ? 0.25 : 0;
+    const karmaDr = (g.karmaDrBonus || 0) + (ks.mode === "righteous" ? 12 : 0);
+    const gourdHaste = (arena.player && (arena.player.gourdHasteTimer || 0) > 0) ? 0.22 : 0;
+    const gourdCrit = (arena.player && (arena.player.gourdCritTimer || 0) > 0) ? 0.18 : 0;
     const styleSpec = getStyleRankSpec(arena ? (arena.styleScore || 0) : 0);
-    const celDrBonus = celPh.id === "dawn" ? 10 : 0;
-    const celCritMult = celPh.id === "blood_dusk" ? 0.24 : 0;
-    const perkCritMult = g.perk === "sword_sovereign" ? 0.25 : 0;
-    const perkHaste = g.perk === "primordial_sage" ? 0.12 : 0;
+    const celDrBonus = celPh.id === "dawn" ? 4 : 0;
+    const celCritMult = celPh.id === "blood_dusk" ? 0.16 : 0;
+    const perkCritMult = g.perk === "sword_sovereign" ? 0.18 : 0;
+    const perkHaste = g.perk === "primordial_sage" ? 0.10 : 0;
     const finalAtk = Math.max(8, Math.round(baseAtk * (1 + cappedPassivePct) * activeMult));
 
     return {
       maxHp: finalMaxHp, maxMp: maxMp + starB.mp,
       atk: finalAtk,
-      dmgReduce: dmgReduce + (isHeavyPosture ? 14 : 0) + karmaDr + starB.dr + celDrBonus,
-      crit: Math.min(0.95, crit + pineCrit + gourdCrit + starB.crit),
-      critMult: Math.min(3.35, 1.6 + styleSpec.critDmg + starB.critMult + celCritMult + climCritMult + perkCritMult + (hasLaw(g, "crit_lotus") ? 0.22 : 0) + pineMult + ((setB && setB.critMult) || 0)),
-      atkHaste: Math.max(0.65, Math.min(2.65, 1 + gt.spd + starB.spd + styleSpec.haste + postureHasteBonus + gourdHaste + climHaste + perkHaste + (arena.domain ? 0.38 : 0) + ((arena.reversedDomainTimer || 0) > 0 ? 0.30 : 0))),
-      speed: speed * postureSpdMult * (1 + gourdHaste + starB.spd),
+      dmgReduce: dmgReduce + (isHeavyPosture ? 16 : 0) + karmaDr + starB.dr + celDrBonus,
+      crit: Math.min(0.78, crit + pineCrit + gourdCrit + starB.crit),
+      critMult: Math.min(2.35, 1.48 + styleSpec.critDmg * 0.75 + starB.critMult + celCritMult + climCritMult + perkCritMult + (hasLaw(g, "crit_lotus") ? 0.18 : 0) + pineMult + ((setB && setB.critMult) || 0)),
+      atkHaste: Math.max(0.70, Math.min(1.85, 1 + gt.spd + starB.spd + styleSpec.haste * 0.7 + postureHasteBonus + gourdHaste + climHaste + perkHaste + (arena.domain ? 0.24 : 0) + ((arena.reversedDomainTimer || 0) > 0 ? 0.20 : 0))),
+      speed: speed * postureSpdMult * (1 + gourdHaste * 0.7 + starB.spd),
       statBreakdown: {
         baseAtk: Math.round(baseAtk),
         rawPassivePct: Number(rawPassivePct.toFixed(3)),
@@ -15624,13 +15736,13 @@ const ART = {
     syncFlyingSwords();
 
     if (arena.stageIdx === 0 && !towerMode && !game.openingChoice) {
-      // Prologue Rescue Scene: Clean rainy temple courtyard with ONLY Shen Qinghe & the 4 wolves!
+      // Prologue Rescue Scene: Clean rainy temple courtyard with Shen Qinghe & 3 wolves!
       const shenPos = clampToPlaza(w * 0.67, h * 0.54, w, h);
       arena.props.push({
         id: "shen_rescue", kind: "npc_ward", art: "actor_shen", onLotus: true, name: "沈清禾",
         x: shenPos.x, y: shenPos.y, r: 48, rescued: false, bubble: "妖狼围困 · 道友拔剑助我！"
       });
-      spawnEnemyPack(["wolf", "wolf", "wolf", "wolf"], w * 0.52, h * 0.55, 85);
+      spawnEnemyPack(["wolf", "wolf", "wolf"], w * 0.52, h * 0.55, 85, 1.0);
     } else {
       spawnCurrentWave();
       // Trigger atmospheric story dialogue on first arrival in Sect / Secret / Terrace!
@@ -16226,19 +16338,22 @@ const ART = {
     const w = canvas.width || 1440, h = canvas.height || 900;
     const pos = clampToPlaza(x, y, w, h);
     const pactHpMult = game && hasPact(game, "frenzy_hp") ? 1.25 : 1.0;
+    const pactPosMult = (isBoss && game && hasPact(game, "iron_posture")) ? 1.35 : 1.0;
     const calSpec = game ? getCalamityCycleSpec(game) : CALAMITY_CYCLES[0];
     const clim = getActiveDungeonClimate();
     const climAtkMult = (clim && clim.id === "blood_haze") ? 1.18 : 1.0;
-    const hp = Math.round(spec.hp * mult * (isBoss ? 2.15 : 0.92) * pactHpMult * calSpec.hpMult);
-    const maxPos = Math.round((isBoss ? (118 + arena.stageIdx * 24) : (46 + arena.stageIdx * 8)) * calSpec.postureMult);
+    const bossHpMult = 7.4 + arena.stageIdx * 0.55;
+    const hp = Math.round(spec.hp * mult * (isBoss ? bossHpMult : 1.0) * pactHpMult * calSpec.hpMult);
+    const maxPos = Math.round((isBoss ? (160 + arena.stageIdx * 55) : (58 + arena.stageIdx * 16)) * pactPosMult * calSpec.postureMult);
     const hasWard = (id === "warden" && isBoss) || id === "sentinel" || id === "trial_gate";
     const wardVal = hasWard ? Math.round(maxPos * 0.65) : 0;
+    const atkScale = Math.max(0.75, 1 + (mult - 1) * 0.42);
 
     arena.enemies.push({
       uid: "e_" + Math.random().toString(36).slice(2),
       id, art: spec.art,
       name: customName || spec.name,
-      isBoss, isTreasure: false, enraged: !!(isBoss && game && hasPact(game, "blood_moon")), beamCd: 3.2,
+      isBoss, isTreasure: false, enraged: !!(isBoss && game && hasPact(game, "blood_moon")), beamCd: 3.0,
       mech: hasWard ? "ward" : spec.mech,
       wardHp: wardVal, maxWardHp: wardVal,
       mirrorTimer: 0,
@@ -16247,17 +16362,19 @@ const ART = {
       r: isBoss ? 48 : 31,
       hp, maxHp: hp,
       posture: maxPos, maxPosture: maxPos,
-      atk: Math.max(7, Math.round(spec.attack * mult * 0.70 * climAtkMult * calSpec.atkMult)),
-      heavy: Math.max(15, Math.round(spec.heavy * mult * 0.66 * climAtkMult * calSpec.atkMult)),
+      atk: Math.max(8, Math.round(spec.attack * atkScale * climAtkMult * calSpec.atkMult)),
+      heavy: Math.max(16, Math.round(spec.heavy * atkScale * climAtkMult * calSpec.atkMult)),
       state: "chase",
-      timer: 0.95 + Math.random() * 1.0,
-      windupDur: isBoss ? 1.02 : 0.84,
+      timer: 0.65 + Math.random() * 0.65,
+      windupDur: isBoss ? 0.88 : 0.74,
       aimX: 0, aimY: 0,
       attackType: (id === "warden" || id === "sentinel" || id === "trial_thunder") ? "slam" : (id === "serpent" || id === "shadow") ? "shot" : "charge",
-      partHp: isBoss ? Math.max(72, Math.round(hp * 0.30)) : 0,
-      maxPartHp: isBoss ? Math.max(72, Math.round(hp * 0.30)) : 0,
+      partHp: isBoss ? Math.max(120, Math.round(hp * 0.28)) : 0,
+      maxPartHp: isBoss ? Math.max(120, Math.round(hp * 0.28)) : 0,
       weakpointExposed: isBoss,
       partSevered: false,
+      flinchCount: 0,
+      poiseArmorTimer: 0,
       airborneZ: 0,
       airborneVz: 0,
       wallSplatCd: 0,
@@ -16380,11 +16497,12 @@ const ART = {
       if (step === 3 || arena.weaponPosture === "xuanzhong") {
         spawnSpatialSwordRift(p.x + p.facing * 82, p.y + 4, p.facing >= 0 ? 0 : Math.PI);
       }
-      p.slashCd = (step === 3 ? 0.32 : step === 2 ? 0.25 : 0.19) / st.atkHaste;
-      const mpGain = (game.loadout.mind === "talisman_calm" ? 5 : 2) + (game.loadout.relic === "cloud_mirror" ? 3 : 0);
+      p.slashCd = (step === 3 ? 0.39 : step === 2 ? 0.31 : 0.25) / st.atkHaste;
+      const mpGain = (game.loadout.mind === "talisman_calm" ? 6 : 3) + (step === 3 ? 3 : 0) + (game.loadout.relic === "cloud_mirror" ? 3 : 0);
       game.mp = Math.min(st.maxMp, (game.mp || 0) + mpGain);
-      if (game.loadout.builder === "sword_guard" || game.loadout.builder === "talisman_build") {
-        p.shieldHp = Math.min(Math.round(st.maxHp * 0.25), (p.shieldHp || 0) + 5);
+      if ((game.loadout.builder === "sword_guard" || game.loadout.builder === "talisman_build") && (p.guardShieldCd || 0) <= 0) {
+        p.guardShieldCd = 1.1;
+        p.shieldHp = Math.min(Math.round(st.maxHp * 0.22), (p.shieldHp || 0) + Math.max(3, Math.round(st.maxHp * 0.03)));
       }
     } else {
       step = forcedStep !== null ? forcedStep : 0;
@@ -16393,8 +16511,10 @@ const ART = {
     const sx = originX !== null ? originX : p.x;
     const sy = originY !== null ? originY : p.y;
     let ang = Math.atan2(pointer.y - sy, pointer.x - sx);
+    let activeTarget = null;
     if (!fromClone) {
       const lockTgt = acquireSoftLockTarget(sx, sy, ang);
+      activeTarget = lockTgt;
       if (lockTgt) {
         ang = Math.atan2(lockTgt.y - sy, lockTgt.x - sx);
         const gap = Math.hypot(lockTgt.x - p.x, lockTgt.y - p.y);
@@ -16402,6 +16522,27 @@ const ART = {
           const snap = Math.min(18, (gap - 58) * 0.24);
           p.x += Math.cos(ang) * snap;
           p.y += Math.sin(ang) * snap * 0.65;
+        }
+      }
+      // Active-driven Flying Sword Synergy: orbiting swords strike WITH player swings instead of AFK auto-clearing!
+      if (SWORD_STANCES[arena.stanceIdx].id === "hunt" && arena.swords.length > 0) {
+        const synTarget = activeTarget || arena.enemies.find(e => e.hp > 0 && Math.hypot(e.x - p.x, e.y - p.y) < 380) || arena.props.find(pr => pr.kind === "rough_jade" && pr.hp > 0 && Math.hypot(pr.x - p.x, pr.y - p.y) < 280);
+        if (synTarget) {
+          const launchBudget = step === 3 ? Math.min(4, arena.swords.length) : Math.min(2, Math.max(1, Math.floor((arena.swords.length + 1) / 3)));
+          let launched = 0;
+          for (let si = 0; si < arena.swords.length && launched < launchBudget; si++) {
+            const sw = arena.swords[si];
+            if (sw.state === "orbit") {
+              sw.state = "strike";
+              sw.target = synTarget;
+              sw.isActiveSynergy = true;
+              sw.timer = 0.42;
+              sw.maxStrikeT = 0.42;
+              sw.curveSign = (si % 2 === 0 ? 1 : -1) * (0.65 + (si % 3) * 0.22);
+              sw.zDepth = 1;
+              launched += 1;
+            }
+          }
         }
       }
     }
@@ -17060,9 +17201,13 @@ const ART = {
 
   function castSwordRainUlt() {
     if (!game || arena.player.ultCd > 0) return;
+    if (!guardActionRealm("ult")) return;
+    const relicMetaCheck = (game.loadout.relic && RELICS[game.loadout.relic]) ? RELICS[game.loadout.relic] : null;
+    const mpCost = relicMetaCheck ? (relicMetaCheck.mp + 10) : 24;
+    if (!consumePlayerMp(mpCost, relicMetaCheck ? relicMetaCheck.activeName : "太虚剑域")) return;
     const zenMult = consumeZenEmpowerment();
     const stars = getEquippedRelicStars(game);
-    arena.player.ultCd = hasLaw(game, "relic_awake") ? 5.0 : 7.6;
+    arena.player.ultCd = hasLaw(game, "relic_awake") ? 7.5 : 11.0;
     const st = getCombatStats(game);
     const canvas = document.getElementById("fx-canvas");
     const w = canvas.width || 1440, h = canvas.height || 900;
@@ -17074,18 +17219,18 @@ const ART = {
     arena.domain = {
       x: dPos.x, y: dPos.y, r: 240 + Math.max(0, stars - 1) * 18,
       life: 6.0 + Math.max(0, stars - 1) * 0.5, maxLife: 6.0 + Math.max(0, stars - 1) * 0.5,
-      rot: 0, tickCd: 0.25, relicId
+      rot: 0, tickCd: 0.35, relicId
     };
 
     if (relicId === "jade_seal") {
-      arena.player.shieldHp = Math.round(st.maxHp * (0.42 + stars * 0.06));
-      arena.player.invuln = Math.max(arena.player.invuln, 1.5);
+      arena.player.shieldHp = Math.min(Math.round(st.maxHp * 0.32), (arena.player.shieldHp || 0) + Math.round(st.maxHp * (0.24 + stars * 0.03)));
+      arena.player.invuln = Math.max(arena.player.invuln, 1.0);
       addFloat(`玄玉印 ★${stars} · 金钟镇岳盾！`, arena.player.x, arena.player.y - 76, "#ffe28a", 20, true);
     } else if (relicId === "cloud_mirror") {
-      game.hp = Math.min(st.maxHp, game.hp + Math.round(st.maxHp * 0.35));
-      game.mp = Math.min(st.maxMp, game.mp + Math.round(st.maxMp * 0.40));
+      game.hp = Math.min(st.maxHp, game.hp + Math.round(st.maxHp * 0.25));
+      game.mp = Math.min(st.maxMp, game.mp + Math.round(st.maxMp * 0.25));
       arena.projectiles.forEach(pr => {
-        if (!pr.friendly) { pr.friendly = true; pr.vx *= -1.6; pr.vy *= -1.6; pr.dmg = st.atk * 2; pr.pierced = new Set(); pr.color = "#80ecff"; }
+        if (!pr.friendly) { pr.friendly = true; pr.vx *= -1.6; pr.vy *= -1.6; pr.dmg = st.atk * 1.5; pr.pierced = new Set(); pr.color = "#80ecff"; }
       });
       addFloat(`流云镜 ★${stars} · 返照回春！`, arena.player.x, arena.player.y - 76, "#80ecff", 20, true);
     } else if (relicId === "soul_lamp") {
@@ -17114,7 +17259,7 @@ const ART = {
         arena.enemies.slice().forEach(e => {
           if (Math.hypot(e.x - al.x, e.y - al.y) < 220) {
             e.swordMarks = Math.min(6, (e.swordMarks || 0) + 2);
-            damageEnemy(e, Math.round(st.atk * 1.85), true, 26, 0, 6, true);
+            damageEnemy(e, Math.round(st.atk * 1.25), false, 20, 0, 6, true);
           }
         });
       });
@@ -17122,7 +17267,7 @@ const ART = {
     }
 
     const castEpoch = arena.stageEpoch;
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 10; i++) {
       setTimeout(() => {
         if (!game || arena.stageEpoch !== castEpoch || arena.paused) return;
         const pos = clampToPlaza(dPos.x + (Math.random() - 0.5) * 260, dPos.y + (Math.random() - 0.5) * 170, canvas.width || 1440, canvas.height || 900);
@@ -17133,21 +17278,23 @@ const ART = {
         arena.enemies.slice().forEach(e => {
           if (Math.hypot(e.x - pos.x, e.y - pos.y) < e.r + 76) {
             e.swordMarks = Math.min(6, (e.swordMarks || 0) + 1);
-            damageEnemy(e, Math.round(st.atk * 1.42 * zenMult), i % 3 === 0, 14, 0, 2, true);
+            damageEnemy(e, Math.round(st.atk * 0.72 * zenMult), i % 4 === 0, 10, 0, 2, true);
           }
         });
-      }, i * 58);
+      }, i * 68);
     }
     updateHud();
   }
 
   function summonAllyCoop() {
     if (!game || arena.player.allyCd > 0) return;
-    arena.player.allyCd = hasLaw(game, "karma_resonance") ? 7.5 : 11.0;
+    if (!guardActionRealm("ally")) return;
+    if (!consumePlayerMp(20, "故人助阵")) return;
+    arena.player.allyCd = hasLaw(game, "karma_resonance") ? 10.5 : 14.5;
     unlockAchievement("ach_coop");
     const p = arena.player;
     const st = getCombatStats(game);
-    const allyCount = countBondedAllies(game);
+    const allyCount = Math.max(1, countBondedAllies(game));
     Sound.fanfare();
     Sound.drum(0.20);
     arena.camZoom = 1.045;
@@ -17169,25 +17316,25 @@ const ART = {
       addRipple(ax, ay + 22, 68, al.color);
       arena.activeAllies.push({
         id: al.id, name: al.name, art: al.art, color: al.color, style: al.style,
-        x: ax, y: ay, facing: p.facing, life: 10.0, maxLife: 10.0, atkCd: 0.25 + idx * 0.22
+        x: ax, y: ay, facing: p.facing, life: 8.5, maxLife: 8.5, atkCd: 0.45 + idx * 0.25
       });
     });
 
     arena.zones.push({
-      kind: "lotus_heal", x: p.x, y: p.y, r: 145, life: 6.0
+      kind: "lotus_heal", x: p.x, y: p.y, r: 145, life: 5.0
     });
     if (hasLu) {
-      p.shieldHp = Math.round(st.maxHp * 0.40);
-      game.mp = Math.min(st.maxMp, (game.mp || 0) + Math.round(st.maxMp * 0.45));
+      p.shieldHp = Math.min(Math.round(st.maxHp * 0.30), (p.shieldHp || 0) + Math.round(st.maxHp * 0.24));
+      game.mp = Math.min(st.maxMp, (game.mp || 0) + Math.round(st.maxMp * 0.35));
     }
     addFloat(`故人真身降临 ×${roster.slice(0, 3).length} · 协同御敌！`, p.x, p.y - 62, "#ffe89e", 21, true);
     arena.slashes.push({ x: p.x + p.facing * 85, y: p.y, r: 195, ang: p.facing > 0 ? 0 : Math.PI, t: 0, color: "#f8e3ac", heavy: true });
 
-    const mult = 2.4 + allyCount * 0.48;
+    const mult = 1.65 + allyCount * 0.30;
     arena.enemies.slice().forEach(e => {
       if (Math.hypot(e.x - p.x, e.y - p.y) < 320) {
-        e.swordMarks = Math.min(6, (e.swordMarks || 0) + 2 + (hasYan ? 2 : 0));
-        damageEnemy(e, Math.round(st.atk * mult), true, 38 + (hasPei ? 24 : 0), Math.atan2(e.y - p.y, e.x - p.x), 8, true);
+        e.swordMarks = Math.min(6, (e.swordMarks || 0) + 2 + (hasYan ? 1 : 0));
+        damageEnemy(e, Math.round(st.atk * mult), false, 30 + (hasPei ? 18 : 0), Math.atan2(e.y - p.y, e.x - p.x), 8, true);
       }
     });
     updateHud();
@@ -17195,17 +17342,19 @@ const ART = {
 
   function castPetUltimate() {
     if (!game) return;
+    if (!guardActionRealm("pet")) return;
     if (!game.pet || !game.pet.id || !SPIRIT_PETS[game.pet.id]) {
       toggleDrawer("cultivate");
       showToast("请在【修行 → 本命灵兽】中缔结随行灵宠！");
       return;
     }
     if ((arena.petUltCd || 0) > 0) return;
+    if (!consumePlayerMp(22, "灵宠觉醒技")) return;
     const sp = SPIRIT_PETS[game.pet.id];
     const p = arena.player;
     const st = getCombatStats(game);
-    const lvScale = 1 + ((game.pet.level || 1) - 1) * 0.28;
-    arena.petUltCd = hasLaw(game, "beast_soul") ? 8.0 : 12.0;
+    const lvScale = 1 + ((game.pet.level || 1) - 1) * 0.20;
+    arena.petUltCd = hasLaw(game, "beast_soul") ? 11.0 : 15.5;
     arena.camZoom = 1.055;
     arena.shake = 10;
     Sound.fanfare();
@@ -17213,40 +17362,40 @@ const ART = {
 
     if (sp.id === "fox") {
       addFloat("🦊 青丘火狐 · 九尾焚天火莲！", p.x, p.y - 64, "#ff9f68", 21, true);
-      for (let i = 0; i < 10; i++) {
-        const a = (i * Math.PI * 2) / 10;
+      for (let i = 0; i < 8; i++) {
+        const a = (i * Math.PI * 2) / 8;
         arena.projectiles.push({
           friendly: true, kind: "crescent", x: p.x, y: p.y,
-          vx: Math.cos(a) * 12.5, vy: Math.sin(a) * 8.5, ang: a, r: 58,
-          dmg: Math.round(st.atk * 1.85 * lvScale), postureDmg: 22, knock: 6, addMark: 2, life: 0.68,
+          vx: Math.cos(a) * 12.5, vy: Math.sin(a) * 8.5, ang: a, r: 54,
+          dmg: Math.round(st.atk * 1.25 * lvScale), postureDmg: 16, knock: 6, addMark: 2, life: 0.68,
           pierced: new Set(), color: "#ff8a5b"
         });
       }
     } else if (sp.id === "turtle") {
       addFloat("🐢 玄水灵龟 · 玄武不动金钟！", p.x, p.y - 64, "#70ffe6", 21, true);
-      game.hp = Math.min(st.maxHp, game.hp + Math.round(st.maxHp * 0.42));
-      p.shieldHp = Math.round(st.maxHp * 0.60 * lvScale);
-      p.invuln = Math.max(p.invuln, 2.2);
+      game.hp = Math.min(st.maxHp, game.hp + Math.round(st.maxHp * 0.28));
+      p.shieldHp = Math.min(Math.round(st.maxHp * 0.34), (p.shieldHp || 0) + Math.round(st.maxHp * 0.26 * lvScale));
+      p.invuln = Math.max(p.invuln, 1.3);
       addRipple(p.x, p.y + 20, 190, "#70ffe6");
       arena.enemies.slice().forEach(e => {
-        e.chillTimer = 4.5;
-        damageEnemy(e, Math.round(st.atk * 1.9 * lvScale), true, 30, Math.atan2(e.y - p.y, e.x - p.x), 10, true);
+        e.chillTimer = 4.0;
+        damageEnemy(e, Math.round(st.atk * 1.35 * lvScale), false, 24, Math.atan2(e.y - p.y, e.x - p.x), 10, true);
       });
     } else if (sp.id === "sword_spirit") {
       addFloat("🗡 太虚剑灵 · 百剑归元斩！", p.x, p.y - 64, "#ffe28a", 21, true);
-      game.mp = st.maxMp;
+      game.mp = Math.min(st.maxMp, (game.mp || 0) + Math.round(st.maxMp * 0.45));
       p.recallCd = 0;
       arena.enemies.slice().forEach(e => {
         e.swordMarks = 6;
         arena.skyBolts.push({ x: e.x, y: e.y, t: 0, color: "#ffe28a" });
-        damageEnemy(e, Math.round(st.atk * 2.65 * lvScale), true, 42, 0, 6, true);
+        damageEnemy(e, Math.round(st.atk * 1.75 * lvScale), false, 32, 0, 6, true);
       });
     } else {
       addFloat("🦅 九霄雷鹏 · 万雷劫狱破！", p.x, p.y - 64, "#d69eff", 21, true);
       arena.enemies.slice().forEach(e => {
         arena.skyBolts.push({ x: e.x, y: e.y, t: 0, color: "#d69eff" });
         e.swordMarks = Math.min(6, (e.swordMarks || 0) + 3);
-        damageEnemy(e, Math.round(st.atk * 2.85 * lvScale), true, 46, 0, 7, true);
+        damageEnemy(e, Math.round(st.atk * 1.85 * lvScale), false, 36, 0, 7, true);
       });
     }
     updateHud();
@@ -18019,11 +18168,11 @@ const ART = {
       arena.camFocusT = 0.72;
 
       if (coopReadyForExec) {
-        // V23 Co-Op Exclusive: 【双人同步斩仙处决 (2.5x 伤害 · 双剑诛仙)】
+        // V23 Co-Op Exclusive: 【双人同步斩仙处决 (双剑诛仙)】
         const c2 = arena.coop2P;
         const sp2 = PLAYABLE_COMPANIONS[c2.partnerId] || PLAYABLE_COMPANIONS.shen;
-        execBonus = 2.50 * tigerExecAmp;
-        arena.lastCoopExecMult = 2.50;
+        execBonus = 2.05 * tigerExecAmp;
+        arena.lastCoopExecMult = 2.05;
         arena.camZoom = 1.18;
         arena.shake = 22;
         pEx.x = e.x - 62; pEx.y = e.y + 8; pEx.facing = 1;
@@ -18035,12 +18184,12 @@ const ART = {
         spawnDistortionRing(e.x, e.y, 260, "#ffe28a");
         triggerKillCamStamp("双剑诛仙");
         registerStyleAction("coop_exec", 220);
-        pushTelemetryInput(`👥双人2.5x处决·${sp2.name}!`, false);
-        addFloat(`👥 双人同步斩仙处决 ×2.5 ·【双剑诛仙】！！`, e.x, e.y - e.r - 52, "#fff2a8", 25, true);
-        captureBattleHighlightFrame("双剑诛仙", `1P×${sp2.name} 双人2.5x同步处决`, Math.round(rawDmg * 2.5), 5);
+        pushTelemetryInput(`👥双人同步处决·${sp2.name}!`, false);
+        addFloat(`👥 双人同步斩仙处决 ·【双剑诛仙】！！`, e.x, e.y - e.r - 52, "#fff2a8", 25, true);
+        captureBattleHighlightFrame("双剑诛仙", `1P×${sp2.name} 双人同步处决`, Math.round(rawDmg * 2.05), 5);
       } else if (isAerialExec) {
         // State 3 (Aerial): 【天外飞仙 · 落星贯日刺】
-        execBonus = 2.45 * tigerExecAmp;
+        execBonus = 1.80 * tigerExecAmp;
         arena.camZoom = 1.17;
         triggerImpactFrame(3, "#38f9d7", e.x, e.y - 26);
         arena.meteorBursts.push({ x: e.x, y: e.y + 8, r: 168, t: 0 });
@@ -18050,7 +18199,7 @@ const ART = {
         addFloat("☄ 凌空处决 · 【天外飞仙落星刺】！！", e.x, e.y - e.r - 48, "#80ecff", 24, true);
       } else if (isHeavyExec) {
         // State 2 (Xuanzhong Greatsword): 【开山断岳 · 巨阙镇魔斩】
-        execBonus = 2.55 * tigerExecAmp;
+        execBonus = 1.85 * tigerExecAmp;
         arena.camZoom = 1.16;
         arena.shake = 20;
         triggerImpactFrame(3, "#ffb84d", e.x, e.y - 16);
@@ -18062,7 +18211,7 @@ const ART = {
         addFloat("⛰ 巨阙处决 · 【开山断岳镇魔斩】！！", e.x, e.y - e.r - 48, "#ffd278", 24, true);
       } else {
         // State 1 (Qinglian Swift Sword): 【万剑穿心 · 青莲诛仙诀】
-        execBonus = 2.35 * tigerExecAmp;
+        execBonus = 1.70 * tigerExecAmp;
         arena.camZoom = 1.14;
         triggerImpactFrame(3, "#e62e2d", e.x, e.y - 18);
         for (let k = 0; k < 3; k++) {
@@ -18080,49 +18229,49 @@ const ART = {
       }
     }
 
-    const brokenMult = (e.state === "stun" ? (hasLaw(game, "stagger_surge") ? 2.25 : 1.8) : 1.0) * execBonus;
+    const brokenMult = (e.state === "stun" ? (hasLaw(game, "stagger_surge") ? 1.65 : 1.45) : 1.0) * execBonus;
     if (arena.shanheDomain && arena.shanheDomain.active) {
-      rawDmg = Math.round(rawDmg * 1.45);
-      postureDmg = Math.round(postureDmg * 1.60);
+      rawDmg = Math.round(rawDmg * 1.30);
+      postureDmg = Math.round(postureDmg * 1.45);
     }
     const inSiGate = !!(arena.qimenArray && arena.qimenArray.active && arena.qimenArray.gate.id === "si" && (Math.hypot(arena.player.x - arena.qimenArray.x, arena.player.y - arena.qimenArray.y) < arena.qimenArray.r + 30 || Math.hypot(e.x - arena.qimenArray.x, e.y - arena.qimenArray.y) < arena.qimenArray.r + 30));
     if (inSiGate) {
-      postureDmg = Math.round(postureDmg * 2.0);
+      postureDmg = Math.round(postureDmg * 1.65);
       if ((e.frontShieldHp || 0) > 0) e.frontShieldHp = 0;
-      if ((e.wardHp || 0) > 0) e.wardHp = Math.max(0, e.wardHp - Math.round(rawDmg * 1.2));
+      if ((e.wardHp || 0) > 0) e.wardHp = Math.max(0, e.wardHp - Math.round(rawDmg * 1.0));
     }
     const celNow = getCurrentCelestialPhase();
-    const celEnergyAmp = celNow.id === "noon" ? 1.35 : 1.0;
-    arena.astralEnergy = Math.min(100, (arena.astralEnergy || 0) + (isHeavySkill ? 6.5 : 3.0) * celEnergyAmp);
+    const celEnergyAmp = celNow.id === "noon" ? 1.25 : 1.0;
+    arena.astralEnergy = Math.min(100, (arena.astralEnergy || 0) + (isHeavySkill ? 5.0 : 2.2) * celEnergyAmp);
     if (celNow.id === "blood_dusk" && isHeavySkill && game) {
-      game.hp = Math.min(st.maxHp, game.hp + Math.max(2, Math.round(st.maxHp * 0.025)));
+      game.hp = Math.min(st.maxHp, game.hp + Math.max(2, Math.round(st.maxHp * 0.02)));
     }
     const ptCombat = ensureDeterministicPity(game);
-    let isCrit = forceCrit || inSiGate || e.state === "stun";
+    let isCrit = forceCrit || inSiGate || (execBonus > 1.0);
     if (!isCrit) {
-      const effCritRate = Math.min(1, st.crit + ptCombat.critAcc);
+      const effCritRate = Math.min(0.90, st.crit + ptCombat.critAcc);
       if (Math.random() < effCritRate) {
         isCrit = true;
         ptCombat.critAcc = 0;
       } else {
-        ptCombat.critAcc = Math.min(0.85, ptCombat.critAcc + Math.max(0.08, st.crit * 0.52));
+        ptCombat.critAcc = Math.min(0.45, ptCombat.critAcc + Math.max(0.03, st.crit * 0.22));
       }
     } else {
       ptCombat.critAcc = 0;
     }
     const omniLv = getCurioStacks(game, "curio_hongmeng_omni");
-    const effCritMult = st.critMult + omniLv * 0.35;
+    const effCritMult = Math.min(2.65, st.critMult + omniLv * 0.22);
     let hexGuardMult = ((e.hexBuffTimer || 0) > 0 && e.state !== "stun") ? 0.75 : 1.0;
-    const aerialBoonMult = (hasRunBoon("aerial_reign") && ((arena.player.z || 0) > 10 || arena.player.plunging)) ? 1.65 : 1.0;
+    const aerialBoonMult = (hasRunBoon("aerial_reign") && ((arena.player.z || 0) > 10 || arena.player.plunging)) ? 1.45 : 1.0;
     let dmg = Math.max(1, Math.round(rawDmg * hexGuardMult * aerialBoonMult * brokenMult * (isCrit ? effCritMult : 1.0)));
     if (isCrit && getCurioStacks(game, "curio_crit_silk") > 0) {
-      dmg = Math.round(dmg * (1 + 0.28 * getCurioStacks(game, "curio_crit_silk")));
-      arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + 4);
-      arena.bondSynergy = Math.min(100, (arena.bondSynergy || 0) + 4);
+      dmg = Math.round(dmg * (1 + 0.18 * getCurioStacks(game, "curio_crit_silk")));
+      arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + 3);
+      arena.bondSynergy = Math.min(100, (arena.bondSynergy || 0) + 3);
     }
     if (execBonus > 1.2 && getCurioStacks(game, "curio_exec_reset") > 0) {
       arena.player.dashCd = 0; arena.player.blinkCd = 0; arena.soulCd = 0;
-      game.hp = Math.min(st.maxHp, game.hp + Math.round(st.maxHp * 0.18));
+      game.hp = Math.min(st.maxHp, game.hp + Math.round(st.maxHp * 0.12));
     }
     e.hp -= dmg;
     if (e.isTitan) {
@@ -18131,18 +18280,18 @@ const ART = {
     }
     if (e.isDummy && e.hp < 5000) e.hp = e.maxHp;
     recordDamageTelemetry(dmg);
-    const intentAmp = (hasRunBoon("blood_intent") && game.hp <= st.maxHp * 0.55) ? 2.0 : 1.0;
-    arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + (isHeavySkill ? 3.2 : 1.6) * intentAmp);
-    if (aerialBoonMult > 1.0 && !e.isBoss && e.state !== "stun") {
+    const intentAmp = (hasRunBoon("blood_intent") && game.hp <= st.maxHp * 0.55) ? 1.65 : 1.0;
+    arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + (isHeavySkill ? 2.8 : 1.3) * intentAmp);
+    if (aerialBoonMult > 1.0 && !e.isBoss && e.state !== "stun" && (e.poiseArmorTimer || 0) <= 0) {
       e.state = "stun";
-      e.timer = Math.max(e.timer || 0, 1.35);
+      e.timer = Math.max(e.timer || 0, 1.15);
     }
 
     if (hasGearAffix(game, "vamp_blade")) {
       ptCombat.vampHits += 1;
-      if (ptCombat.vampHits >= 2) {
+      if (ptCombat.vampHits >= 3) {
         ptCombat.vampHits = 0;
-        game.hp = Math.min(st.maxHp, game.hp + 3);
+        game.hp = Math.min(st.maxHp, game.hp + Math.max(2, Math.round(st.maxHp * 0.015)));
       }
     }
     if (hasGearAffix(game, "sky_thunder") && !isHeavySkill) {
@@ -18150,18 +18299,24 @@ const ART = {
       if (ptCombat.thunderHits >= 4) {
         ptCombat.thunderHits = 0;
         arena.skyBolts.push({ x: e.x, y: e.y, t: 0, color: "#d69eff" });
-        e.hp -= Math.round(st.atk * 0.55);
+        e.hp -= Math.round(st.atk * 0.42);
       }
     }
     e.hitFlash = 0.14;
     bumpCombo(1);
     if (isHeavySkill || isCrit) Sound.fleshHit(isHeavySkill ? 2 : 1);
-    if (isHeavySkill && !e.isBoss && e.state !== "stun") {
-      e.flinchTimer = Math.max(e.flinchTimer || 0, 0.24);
+    if (isHeavySkill && !e.isBoss && e.state !== "stun" && (e.poiseArmorTimer || 0) <= 0) {
+      e.flinchCount = (e.flinchCount || 0) + 1;
+      e.flinchTimer = Math.max(e.flinchTimer || 0, 0.20);
+      if (e.flinchCount >= 2) {
+        e.flinchCount = 0;
+        e.poiseArmorTimer = 2.2;
+        addFloat("🛡 妖躯霸体!", e.x, e.y - e.r - 18, "#ffb86b", 12);
+      }
     }
 
     const kAng = hitAng !== null ? hitAng : Math.atan2(e.y - arena.player.y, e.x - arena.player.x);
-    const resist = e.isBoss ? 0.34 : 1.0;
+    const resist = e.isBoss ? 0.25 : ((e.poiseArmorTimer || 0) > 0 ? 0.35 : 0.85);
     e.kx = (e.kx || 0) + Math.cos(kAng) * knockImpulse * resist;
     e.ky = (e.ky || 0) + Math.sin(kAng) * knockImpulse * 0.65 * resist;
     e.sx = 1.18; e.sy = 0.85;
@@ -18176,7 +18331,7 @@ const ART = {
     if (hasRunBoon("frost_splash") && Math.random() < 0.38) {
       e.chillTimer = Math.max(e.chillTimer || 0, 3.0);
       addRipple(e.x, e.y + 12, 118, "#80ecff");
-      const splashDmg = Math.max(5, Math.round(st.atk * 0.52));
+      const splashDmg = Math.max(5, Math.round(st.atk * 0.42));
       arena.enemies.slice().forEach(o => {
         if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) < 125) {
           o.chillTimer = Math.max(o.chillTimer || 0, 2.8);
@@ -18214,13 +18369,13 @@ const ART = {
       }
     }
 
-    if (hasRunBoon("posture_shatter")) postureDmg = Math.round(postureDmg * 1.55);
+    if (hasRunBoon("posture_shatter")) postureDmg = Math.round(postureDmg * 1.45);
     if (e.state !== "stun" && e.posture >= 0) {
       e.posture = Math.max(0, e.posture - postureDmg);
       if (e.posture <= 0) {
         e.state = "stun";
         e.executedThisStun = false;
-        e.timer = 3.6;
+        e.timer = e.isBoss ? 2.4 : 2.1;
         e.posture = e.maxPosture;
         unlockAchievement("ach_break");
         if (hasLaw(game, "stagger_surge")) {
@@ -18228,12 +18383,13 @@ const ART = {
           arena.player.ultCd = Math.max(0, arena.player.ultCd - 1.5);
         }
         if (hasRunBoon("posture_shatter") && !e.isDummy) {
-          const shatterTrue = Math.max(12, Math.round(e.maxHp * 0.18));
+          const shatterRatio = e.isBoss ? 0.08 : 0.18;
+          const shatterTrue = Math.max(12, Math.round(e.maxHp * shatterRatio));
           e.hp -= shatterTrue;
           addFloat(`💥 崩岳破势真伤 -${shatterTrue}！`, e.x, e.y - e.r - 46, "#ffd166", 20, true);
         }
         if (hasRunBoon("vampiric_qi")) {
-          const vHeal = Math.max(5, Math.round(st.maxHp * 0.08));
+          const vHeal = Math.max(5, Math.round(st.maxHp * 0.06));
           game.hp = Math.min(st.maxHp, game.hp + vHeal);
           game.mp = Math.min(st.maxMp, (game.mp || 0) + 12);
           addFloat(`✦ 噬灵归元 +${vHeal}血`, arena.player.x, arena.player.y - 44, "#70ffe6", 14);
@@ -18556,7 +18712,7 @@ const ART = {
     const p = arena.player;
     const st = getCombatStats(game);
 
-    if (p.dashCd > 0) p.dashCd = Math.max(0, p.dashCd - dt * (arena.domain ? 1.3 : 1));
+    if (p.dashCd > 0) p.dashCd = Math.max(0, p.dashCd - dt * (arena.domain ? 1.2 : 1));
     if (p.recallCd > 0) p.recallCd = Math.max(0, p.recallCd - dt);
     if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
     if (p.slashCd > 0) p.slashCd = Math.max(0, p.slashCd - dt);
@@ -18565,10 +18721,29 @@ const ART = {
     if (p.allyCd > 0) p.allyCd = Math.max(0, p.allyCd - dt);
     if (p.jumpCd > 0) p.jumpCd = Math.max(0, p.jumpCd - dt);
     if (p.blinkCd > 0) p.blinkCd = Math.max(0, p.blinkCd - dt);
+    if (p.guardShieldCd > 0) p.guardShieldCd = Math.max(0, p.guardShieldCd - dt);
     if (p.gourdHasteTimer > 0) p.gourdHasteTimer = Math.max(0, p.gourdHasteTimer - dt);
     if (p.boonOverloadTimer > 0) p.boonOverloadTimer = Math.max(0, p.boonOverloadTimer - dt);
     if (p.gourdCritTimer > 0) p.gourdCritTimer = Math.max(0, p.gourdCritTimer - dt);
     if (arena.soulCd > 0) arena.soulCd = Math.max(0, arena.soulCd - dt);
+    if (arena.sanqingCd > 0) arena.sanqingCd = Math.max(0, arena.sanqingCd - dt);
+    if (arena.shanheCd > 0) arena.shanheCd = Math.max(0, arena.shanheCd - dt);
+    if (arena.warshipCd > 0) arena.warshipCd = Math.max(0, arena.warshipCd - dt);
+    if (arena.mountCd > 0) arena.mountCd = Math.max(0, arena.mountCd - dt);
+    if (arena.qimenCd > 0) arena.qimenCd = Math.max(0, arena.qimenCd - dt);
+    if (arena.astralCd > 0) arena.astralCd = Math.max(0, arena.astralCd - dt);
+    if (arena.astralBombCd > 0) arena.astralBombCd = Math.max(0, arena.astralBombCd - dt);
+    if (arena.autoProbeCd > 0) arena.autoProbeCd = Math.max(0, arena.autoProbeCd - dt);
+    if (arena.stunHaloCd > 0) arena.stunHaloCd = Math.max(0, arena.stunHaloCd - dt);
+    if ((p.shieldHp || 0) > 0) {
+      const shCap = Math.round(st.maxHp * 0.34);
+      if (p.shieldHp > shCap) p.shieldHp = shCap;
+      p.shieldDecayAcc = (p.shieldDecayAcc || 0) + dt;
+      if (p.shieldDecayAcc >= 1.2) {
+        p.shieldDecayAcc -= 1.2;
+        p.shieldHp = Math.max(0, p.shieldHp - Math.max(1, Math.round(st.maxHp * 0.025)));
+      }
+    }
     stepGhostRecorder(dt);
 
     // Decay Sword Style Meter smoothly outside active exchanges
@@ -18619,10 +18794,10 @@ const ART = {
 
     // V18 Righteous Karma Passive Immortal Art: 【太清镇世诀】 Periodic Lotus Barrier & Purifying Wave!
     if (getKarmaState(game).mode === "righteous" && arena.enemies.length > 0) {
-      p.righteousPulseCd = (p.righteousPulseCd === undefined ? 5.0 : p.righteousPulseCd) - dt;
+      p.righteousPulseCd = (p.righteousPulseCd === undefined ? 7.0 : p.righteousPulseCd) - dt;
       if (p.righteousPulseCd <= 0) {
-        p.righteousPulseCd = 7.5;
-        p.shieldHp = Math.min(Math.round(st.maxHp * 0.45), (p.shieldHp || 0) + Math.round(st.maxHp * 0.16));
+        p.righteousPulseCd = 11.0;
+        p.shieldHp = Math.min(Math.round(st.maxHp * 0.28), (p.shieldHp || 0) + Math.round(st.maxHp * 0.10));
         addRipple(p.x, p.y + 26, 118, "#70ffe6");
         addFloat("☯ 太清镇世 · 净莲护体！", p.x, p.y - (p.z || 0) - 56, "#70ffe6", 16, true);
       }
@@ -18649,7 +18824,7 @@ const ART = {
         hc.rot += dt * 14.0;
         hc.tickCd -= dt;
         if (hc.tickCd <= 0) {
-          hc.tickCd = 0.19;
+          hc.tickCd = 0.22;
           arena.props.slice().forEach(pr => {
             if (pr.destructible && pr.hp > 0 && Math.hypot(pr.x - hc.x, pr.y - hc.y) < pr.r + hc.r) {
               damageBattleProp(pr, hc.dmg, "wind");
@@ -18657,15 +18832,15 @@ const ART = {
           });
           arena.enemies.slice().forEach(e => {
             if (e.hp > 0 && Math.hypot(e.x - hc.x, e.y - hc.y) < e.r + hc.r) {
-              const pullStrength = hc.gravityPull || 0.16;
+              const pullStrength = hc.gravityPull || 0.14;
               e.x += (hc.x - e.x) * pullStrength;
               e.y += (hc.y - e.y) * pullStrength;
               if (hc.heavySaw) { e.frontShieldHp = 0; e.wardHp = 0; }
               e.swordMarks = Math.min(6, (e.swordMarks || 0) + 1);
               if (getCurioStacks(game, "curio_chakram_thunder") > 0) {
-                triggerChainLightning(hc.x, hc.y, st.atk * 0.65, 2);
+                triggerChainLightning(hc.x, hc.y, st.atk * 0.45, 2);
               }
-              damageEnemy(e, hc.dmg, !!hc.heavySaw, hc.heavySaw ? 18 : 9, hc.rot, 1.5, false);
+              damageEnemy(e, hc.dmg, !!hc.heavySaw, hc.heavySaw ? 14 : 7, hc.rot, 1.5, false);
             }
           });
         }
@@ -18722,10 +18897,10 @@ const ART = {
     }
 
     if ((hasLaw(game, "eternal_spring") || game.loadout.mind === "sword_still" || game.loadout.relic === "cloud_mirror") && game.hp < st.maxHp) {
-      game.hp = Math.min(st.maxHp, game.hp + st.maxHp * 0.022 * dt);
+      game.hp = Math.min(st.maxHp, game.hp + st.maxHp * 0.012 * dt);
     }
     if (game.mp < st.maxMp) {
-      game.mp = Math.min(st.maxMp, (game.mp || 0) + (2.2 + st.maxMp * 0.03) * dt);
+      game.mp = Math.min(st.maxMp, (game.mp || 0) + (0.9 + st.maxMp * 0.014) * dt);
     }
 
     burnTickTimer -= dt;
@@ -18734,7 +18909,7 @@ const ART = {
       const burnBonus = (game.loadout.builder === "talisman_ember" ? 1.45 : 1.0) * (game.loadout.relic === "soul_lamp" ? 1.35 : 1.0);
       arena.enemies.slice().forEach(e => {
         if ((e.burnTimer || 0) > 0 && e.hp > 0) {
-          damageEnemy(e, Math.max(2, Math.round(st.atk * 0.34 * burnBonus)), false, 3, 0, 0.5, false);
+          damageEnemy(e, Math.max(2, Math.round(st.atk * 0.30 * burnBonus)), false, 3, 0, 0.5, false);
         }
       });
     }
@@ -18745,11 +18920,11 @@ const ART = {
       dm.rot += dt * 0.85;
       dm.tickCd -= dt;
       if (dm.tickCd <= 0) {
-        dm.tickCd = 0.42;
+        dm.tickCd = 0.52;
         arena.enemies.slice().forEach(e => {
           if (Math.hypot(e.x - dm.x, (e.y - dm.y) / 0.62) < dm.r + e.r) {
             e.swordMarks = Math.min(6, (e.swordMarks || 0) + 1);
-            damageEnemy(e, Math.round(st.atk * 0.45), false, 6, 0, 1.0, false);
+            damageEnemy(e, Math.round(st.atk * 0.34), false, 4, 0, 1.0, false);
           }
         });
       }
@@ -18846,12 +19021,12 @@ const ART = {
         gs.x += (destX - gs.x) * 0.14;
         gs.y += (destY - gs.y) * 0.14;
         gs.z += (68 - gs.z) * 0.18;
-        gs.timer -= dt * st.atkHaste;
+        gs.timer -= dt * Math.min(1.4, st.atkHaste);
         if (tgt && gs.timer <= 0) {
           gs.state = "slam";
           gs.targetX = tgt.x;
           gs.targetY = tgt.y;
-          gs.timer = 0.20;
+          gs.timer = 0.24;
         }
       } else if (gs.state === "slam") {
         gs.x += (gs.targetX - gs.x) * 0.45;
@@ -18868,11 +19043,11 @@ const ART = {
           spawnSparks(gs.x, gs.y, 20, -Math.PI / 2, 3.14, "#ffe28a");
           arena.slashes.push({ x: gs.x, y: gs.y, r: 120, ang: 0, t: 0, color: "#ffe28a", heavy: true });
 
-          const slamDmg = Math.round(st.atk * (1.55 + totalSw * 0.22));
+          const slamDmg = Math.round(st.atk * (1.15 + Math.min(6, totalSw) * 0.10));
           arena.enemies.slice().forEach(e => {
             if (Math.hypot(e.x - gs.x, e.y - gs.y) < e.r + 112) {
               e.swordMarks = Math.min(6, (e.swordMarks || 0) + 2);
-              damageEnemy(e, slamDmg, true, 36, Math.atan2(e.y - gs.y, e.x - gs.x), 9.5, true);
+              damageEnemy(e, slamDmg, false, 24, Math.atan2(e.y - gs.y, e.x - gs.x), 8.0, true);
             }
           });
           arena.props.slice().forEach(pr => {
@@ -18887,12 +19062,12 @@ const ART = {
             }
           });
           gs.state = "recover";
-          gs.timer = 0.34;
+          gs.timer = 0.45;
         }
       } else {
         gs.z += (68 - gs.z) * 0.16;
         gs.timer -= dt;
-        if (gs.timer <= 0) { gs.state = "hover"; gs.timer = 0.85; }
+        if (gs.timer <= 0) { gs.state = "hover"; gs.timer = 2.8; }
       }
 
       arena.swords.forEach((sw, idx) => {
@@ -18905,15 +19080,16 @@ const ART = {
         if (sw.trail.length > 6) sw.trail.shift();
       });
     } else {
+      let probeDispatchedThisFrame = false;
       arena.swords.forEach((sw, idx) => {
-        const spinSpd = curStance === "ring" ? 8.8 : (stunnedBoss ? 7.6 : 2.8 * st.atkHaste);
+        const spinSpd = curStance === "ring" ? 8.8 : (stunnedBoss ? 7.6 : 2.8 * Math.min(1.4, st.atkHaste));
         sw.angle += dt * spinSpd;
         if (sw.ringHitCd > 0) sw.ringHitCd -= dt;
 
         if (sw.state === "volley") {
           sw.x += sw.vx; sw.y += sw.vy;
           sw.timer -= dt;
-          if (sw.timer <= 0) { sw.state = "orbit"; sw.timer = 0.18; }
+          if (sw.timer <= 0) { sw.state = "orbit"; sw.timer = 0.24; }
         } else if (chargingVolley) {
           const aimAng = Math.atan2(pointer.y - p.y, pointer.x - p.x);
           const arcOff = totalSw > 1 ? ((idx / (totalSw - 1)) - 0.5) * 1.4 : 0;
@@ -18922,14 +19098,14 @@ const ART = {
           sw.x += (hx - sw.x) * 0.35;
           sw.y += (hy - sw.y) * 0.35;
         } else if (stunnedBoss) {
+          // Visual golden sword-halo locking stunned boss; single shared slow pulse leaves execution burst to player input!
           const vx = stunnedBoss.x + Math.cos(sw.angle + (idx * Math.PI * 2) / totalSw) * 62;
           const vy = stunnedBoss.y + Math.sin(sw.angle + (idx * Math.PI * 2) / totalSw) * 42;
           sw.x += (vx - sw.x) * 0.36;
           sw.y += (vy - sw.y) * 0.36;
-          sw.timer -= dt;
-          if (sw.timer <= 0) {
-            sw.timer = 0.26;
-            damageEnemy(stunnedBoss, Math.round(st.atk * 0.56), true, 0, sw.angle, 1.5, false);
+          if (idx === 0 && (arena.stunHaloCd || 0) <= 0) {
+            arena.stunHaloCd = 0.95;
+            damageEnemy(stunnedBoss, Math.round(st.atk * 0.32), false, 0, sw.angle, 1.0, false);
           }
         } else if (curStance === "ring") {
           const ringR = 82;
@@ -18951,9 +19127,9 @@ const ART = {
           if (sw.ringHitCd <= 0) {
             for (const e of arena.enemies.slice()) {
               if (Math.hypot(e.x - sw.x, e.y - sw.y) < e.r + 22) {
-                sw.ringHitCd = 0.28;
+                sw.ringHitCd = 0.55;
                 e.swordMarks = Math.min(6, (e.swordMarks || 0) + 1);
-                damageEnemy(e, Math.round(st.atk * 0.48), false, 6, Math.atan2(e.y - p.y, e.x - p.x), 3.2, false);
+                damageEnemy(e, Math.round(st.atk * 0.26), false, 4, Math.atan2(e.y - p.y, e.x - p.x), 2.5, false);
                 break;
               }
             }
@@ -18966,32 +19142,37 @@ const ART = {
           const homeY = p.y - 6 + Math.sin(phase) * (orbitR * 0.52);
           sw.x += (homeX - sw.x) * 0.26;
           sw.y += (homeY - sw.y) * 0.26;
-          sw.timer -= dt * st.atkHaste;
-          if (sw.timer <= 0) {
-            let best = null, bestDist = 390;
+          // Single slow probing sword every ~2.2s to seed sword marks; bulk sword launches come from active player LMB/RMB!
+          if (!probeDispatchedThisFrame && (arena.autoProbeCd || 0) <= 0) {
+            let best = null, bestDist = 290;
             for (const e of arena.enemies) {
               const d = Math.hypot(e.x - p.x, e.y - p.y);
               if (d < bestDist) { bestDist = d; best = e; }
             }
             if (!best) {
               for (const pr of arena.props) {
-                if (pr.kind === "rough_jade" && pr.hp > 0 && Math.hypot(pr.x - p.x, pr.y - p.y) < 265) { best = pr; break; }
+                if (pr.kind === "rough_jade" && pr.hp > 0 && Math.hypot(pr.x - p.x, pr.y - p.y) < 250) { best = pr; break; }
               }
             }
             if (best) {
+              probeDispatchedThisFrame = true;
+              arena.autoProbeCd = (hasLaw(game, "void_haste") ? 1.85 : 2.25) / Math.min(1.35, st.atkHaste);
               sw.state = "strike";
               sw.target = best;
+              sw.isActiveSynergy = false;
               sw.timer = 0.42;
               sw.maxStrikeT = 0.42;
               sw.curveSign = (idx % 2 === 0 ? 1 : -1) * (0.65 + (idx % 3) * 0.22);
               sw.zDepth = 1;
-            } else sw.timer = 0.18;
+            } else {
+              arena.autoProbeCd = 0.35;
+            }
           }
         } else if (sw.state === "strike") {
           sw.zDepth = 1;
           const tgt = sw.target;
           if (!tgt || (tgt.hp !== undefined && tgt.hp <= 0)) {
-            sw.state = "orbit"; sw.timer = 0.2;
+            sw.state = "orbit"; sw.isActiveSynergy = false; sw.timer = 0.25;
           } else {
             const dx = tgt.x - sw.x, dy = tgt.y - sw.y;
             const d = Math.hypot(dx, dy) || 1;
@@ -19015,14 +19196,17 @@ const ART = {
                   arena.props = arena.props.filter(x => x !== tgt);
                 }
               } else {
-                Sound.pluck(523.25 + (idx % 4) * 65, 0.11, 0.038, "triangle");
+                Sound.pluck(523.25 + (idx % 4) * 65, 0.11, 0.032, "triangle");
                 tgt.swordMarks = Math.min(6, (tgt.swordMarks || 0) + 1);
-                damageEnemy(tgt, Math.round(st.atk * 0.58), false, 6, Math.atan2(dy, dx), 2.0, false);
+                const swMult = sw.isActiveSynergy ? 0.28 : 0.20;
+                const swPosture = sw.isActiveSynergy ? 4 : 2;
+                damageEnemy(tgt, Math.max(2, Math.round(st.atk * swMult)), false, swPosture, Math.atan2(dy, dx), 1.6, false);
               }
               sw.state = "orbit";
-              sw.timer = (hasLaw(game, "void_haste") ? 0.28 : 0.42) / st.atkHaste;
+              sw.isActiveSynergy = false;
+              sw.timer = 0.45;
             } else if (sw.timer <= 0) {
-              sw.state = "orbit"; sw.timer = 0.28;
+              sw.state = "orbit"; sw.isActiveSynergy = false; sw.timer = 0.28;
             }
           }
         }
@@ -19034,31 +19218,31 @@ const ART = {
     if (game.pet.id && arena.enemies.length > 0) {
       petAssistTimer -= dt;
       if (petAssistTimer <= 0) {
-        petAssistTimer = hasLaw(game, "beast_soul") ? 1.15 : 1.95;
+        petAssistTimer = hasLaw(game, "beast_soul") ? 2.2 : 3.2;
         const sp = SPIRIT_PETS[game.pet.id];
         const tgt = arena.enemies[0];
-        const petScale = 1 + (game.pet.level - 1) * 0.3;
+        const petScale = 1 + (game.pet.level - 1) * 0.22;
         if (sp && sp.id === "fox") {
           const ang = Math.atan2(tgt.y - p.y, tgt.x - p.x);
           arena.projectiles.push({
             friendly: true, kind: "fireball", x: p.x - p.facing * 28, y: p.y - 16,
             vx: Math.cos(ang) * 10.8, vy: Math.sin(ang) * 10.8, ang, r: 20,
-            dmg: Math.round(st.atk * 0.96 * petScale), postureDmg: 8, knock: 3.5, addMark: 1, life: 0.9, pierced: new Set(), color: "#ff8a65"
+            dmg: Math.round(st.atk * 0.48 * petScale), postureDmg: 6, knock: 3.0, addMark: 1, life: 0.9, pierced: new Set(), color: "#ff8a65"
           });
         } else if (sp && sp.id === "turtle") {
-          game.hp = Math.min(st.maxHp, game.hp + Math.round(10 * petScale));
-          p.shieldHp = Math.min(Math.round(st.maxHp * 0.25), (p.shieldHp || 0) + Math.round(6 * petScale));
+          game.hp = Math.min(st.maxHp, game.hp + Math.round(st.maxHp * 0.03 * petScale));
+          p.shieldHp = Math.min(Math.round(st.maxHp * 0.20), (p.shieldHp || 0) + Math.round(st.maxHp * 0.03 * petScale));
         } else if (sp && sp.id === "sword_spirit") {
           const ang = Math.atan2(tgt.y - p.y, tgt.x - p.x);
-          game.mp = Math.min(st.maxMp, (game.mp || 0) + 6);
+          game.mp = Math.min(st.maxMp, (game.mp || 0) + 5);
           arena.projectiles.push({
             friendly: true, kind: "twin_x", x: p.x - p.facing * 24, y: p.y - 18,
             vx: Math.cos(ang) * 15.0, vy: Math.sin(ang) * 15.0, ang, r: 52,
-            dmg: Math.round(st.atk * 1.12 * petScale), postureDmg: 14, knock: 4.5, addMark: 2, life: 0.55, pierced: new Set(), color: "#ffe28a"
+            dmg: Math.round(st.atk * 0.55 * petScale), postureDmg: 8, knock: 3.5, addMark: 1, life: 0.55, pierced: new Set(), color: "#ffe28a"
           });
         } else {
           arena.lightnings.push({ x1: p.x, y1: p.y - 40, x2: tgt.x, y2: tgt.y, t: 0, color: "#c792ff" });
-          damageEnemy(tgt, Math.round(st.atk * 1.16 * petScale), false, 15, 0, 3, true);
+          damageEnemy(tgt, Math.round(st.atk * 0.55 * petScale), false, 8, 0, 2.5, false);
         }
       }
     }
@@ -19066,11 +19250,11 @@ const ART = {
     if (hasLaw(game, "thunder_body") && arena.enemies.length > 0) {
       thunderAuraTimer -= dt;
       if (thunderAuraTimer <= 0) {
-        thunderAuraTimer = 1.45;
+        thunderAuraTimer = 2.6;
         const near = arena.enemies.find(e => Math.hypot(e.x - p.x, e.y - p.y) < 195);
         if (near) {
           arena.lightnings.push({ x1: p.x, y1: p.y - 20, x2: near.x, y2: near.y, t: 0, color: "#d69eff" });
-          damageEnemy(near, Math.round(st.atk * 0.86), false, 10, 0, 2, false);
+          damageEnemy(near, Math.round(st.atk * 0.45), false, 6, 0, 1.5, false);
         }
       }
     }
@@ -19317,6 +19501,7 @@ const ART = {
       if (e.chillTimer > 0) e.chillTimer = Math.max(0, e.chillTimer - dt);
       if (e.burnTimer > 0) e.burnTimer = Math.max(0, e.burnTimer - dt);
       if (e.mirrorTimer > 0) e.mirrorTimer = Math.max(0, e.mirrorTimer - dt);
+      if (e.poiseArmorTimer > 0) e.poiseArmorTimer = Math.max(0, e.poiseArmorTimer - dt);
 
       if (e.wallSplatCd > 0) e.wallSplatCd = Math.max(0, e.wallSplatCd - dt);
       if ((e.airborneZ || 0) > 0 || (e.airborneVz || 0) !== 0) {
@@ -19336,17 +19521,17 @@ const ART = {
             e.wallSplatCd = 3.0;
             e.kx *= -0.35; e.ky *= -0.35;
             e.state = "stun";
-            e.timer = Math.max(e.timer || 0, 2.2);
+            e.timer = Math.max(e.timer || 0, 1.8);
             e.airborneZ = 34;
             e.airborneVz = 4.6;
             Sound.wallSplatCrunch();
             GamepadSystem.rumble(0.68, 0.58, 130);
             spawnDistortionRing(testClamp.x, testClamp.y, 135, "#ffe28a");
             addDecal(testClamp.x, testClamp.y + 12, 0, 56, "spider_crack");
-            const splatDmg = Math.max(8, Math.round(st.atk * 1.35));
+            const splatDmg = Math.max(8, Math.round(st.atk * 1.05));
             e.hp = Math.max(1, e.hp - splatDmg);
             recordDamageTelemetry(splatDmg, "combo_morph");
-            if (hitProp && hitProp.destructible) damageBattleProp(hitProp, st.atk * 1.4);
+            if (hitProp && hitProp.destructible) damageBattleProp(hitProp, st.atk * 1.2);
             addFloat("💥 破壁崩震 · 浮空追击！", testClamp.x, testClamp.y - e.r - 32, "#ffd97d", 19, true);
           }
         }
@@ -19383,14 +19568,14 @@ const ART = {
       const rushSpdMult = (arena.bossRush && arena.bossRush.active && arena.rushAffixes.includes("rush_haste")) ? 1.25 : 1.0;
       const pactSpdMult = (hasPact(game, "swift_windup") ? 1.20 : 1.0) * rushSpdMult * ((e.hexBuffTimer || 0) > 0 ? 1.22 : 1.0);
       if (e.hexBuffTimer > 0) e.hexBuffTimer = Math.max(0, e.hexBuffTimer - dt);
-      const slowMult = (inDomain ? 0.58 : 1.0) * (e.chillTimer > 0 ? 0.65 : 1.0) * (e.enraged ? 1.24 : 1.0) * witchMult * pactSpdMult;
+      const slowMult = (inDomain ? 0.65 : 1.0) * (e.chillTimer > 0 ? 0.70 : 1.0) * (e.enraged ? 1.24 : 1.0) * witchMult * pactSpdMult;
       const dx = p.x - e.x, dy = p.y - e.y;
       const dist = Math.hypot(dx, dy) || 1;
 
       if (e.state === "chase" && (e.id === "shadow" || e.id === "trial_heart")) {
         e.blinkCd -= dt;
         if (e.blinkCd <= 0 && dist > 110) {
-          e.blinkCd = 4.5;
+          e.blinkCd = 4.0;
           addRipple(e.x, e.y + 12, 42, "#c792ff");
           const flankPos = clampToPlaza(p.x - p.facing * 95, p.y + (Math.random() - 0.5) * 60, w, h);
           e.x = flankPos.x; e.y = flankPos.y;
@@ -19422,23 +19607,23 @@ const ART = {
               hurtPlayer(Math.round(e.atk * 1.18));
               addFloat("🗡 影袭背刺!", p.x, p.y - 46, "#ff7875", 15, true);
             }
-            e.flankCd = 4.6 + Math.random() * 1.4;
+            e.flankCd = 4.2 + Math.random() * 1.2;
           }
         } else {
-          e.flankCd = (e.flankCd === undefined ? 3.5 : e.flankCd) - dt * slowMult;
+          e.flankCd = (e.flankCd === undefined ? 3.0 : e.flankCd) - dt * slowMult;
           if (e.flankCd <= 0 && dist > 80 && dist < 440 && e.state === "chase") {
             const behind = clampToPlaza(p.x - p.facing * 72, p.y + (Math.random() - 0.5) * 42, w, h);
             e.flankTargetX = behind.x;
             e.flankTargetY = behind.y;
-            e.flankTelegraph = 0.72;
+            e.flankTelegraph = 0.68;
             addFloat("⚠ 影袭绕背 · 空格一闪反杀！", e.x, e.y - e.r - 26, "#ff8787", 14, true);
           }
         }
       }
       if (e.isBoss && e.enraged && e.state !== "stun" && !e.partSevered) {
-        e.beamCd = (e.beamCd === undefined ? 3.2 : e.beamCd) - dt;
+        e.beamCd = (e.beamCd === undefined ? 2.8 : e.beamCd) - dt;
         if (e.beamCd <= 0) {
-          e.beamCd = 4.6;
+          e.beamCd = 4.2;
           const bAng = Math.atan2(p.y - e.y, p.x - e.x) - 0.52;
           arena.bossBeams.push({
             x: e.x, y: e.y - 6, startAng: bAng, curAng: bAng, sweep: 1.04,
@@ -19451,9 +19636,9 @@ const ART = {
       }
       if (e.state === "stun") {
         e.timer -= dt;
-        if (e.timer <= 0) { e.state = "chase"; e.timer = 0.85; }
+        if (e.timer <= 0) { e.state = "chase"; e.timer = 0.65; }
       } else if (e.state === "chase") {
-        const moveSpd = (e.isBoss ? 1.55 : 1.72) * slowMult;
+        const moveSpd = (e.isBoss ? 2.15 : 2.35) * slowMult;
         if (e.tacticalRole === "hex_chanter" && dist < 225) {
           e.x -= (dx / dist) * moveSpd * 0.85;
           e.y -= (dy / dist) * moveSpd * 0.85;
@@ -19462,14 +19647,14 @@ const ART = {
           e.y += (dy / dist) * moveSpd;
         }
         e.timer -= dt * slowMult;
-        if (e.timer <= 0 && dist < (e.attackType === "shot" ? 420 : 265)) {
+        if (e.timer <= 0 && dist < (e.attackType === "shot" ? 420 : 285)) {
           e.state = "windup";
           e.atkSeq = (e.atkSeq || 0) + 1;
           // V19 4-Way Tactical Telegraph Rotation: Golden (`✦`), Crimson (`【危】`), Cyan-Violet Low Sweep (`【下危·跃】`), & Dark-Gold Grab (`【擒】拼刀反制`)!
           e.grabWindup = e.isBoss && (e.atkSeq % 4 === 3);
           e.lowSweepWindup = !e.grabWindup && ((e.isBoss && e.atkSeq % 4 === 2) || (!e.isBoss && e.attackType === "slam" && e.atkSeq % 2 === 0));
           e.perilous = !e.grabWindup && !e.lowSweepWindup && (e.isBoss ? (e.atkSeq % 4 === 0) : (e.attackType === "slam" && e.atkSeq % 3 === 1));
-          e.timer = e.windupDur * ((e.perilous || e.lowSweepWindup || e.grabWindup) ? 1.15 : 0.95) * (e.enraged ? 0.84 : 1.0);
+          e.timer = e.windupDur * ((e.perilous || e.lowSweepWindup || e.grabWindup) ? 1.12 : 0.92) * (e.enraged ? 0.84 : 1.0);
           e.curWindupTotal = e.timer;
           e.aimX = p.x; e.aimY = p.y;
           if (e.id === "puppet" && !e.perilous && !e.lowSweepWindup && !e.grabWindup && !e.partSevered) e.mirrorTimer = e.timer;
@@ -19486,7 +19671,7 @@ const ART = {
           }
         }
       } else if (e.state === "windup") {
-        e.timer -= dt * (inDomain ? 0.78 : 1.0) * witchMult;
+        e.timer -= dt * (inDomain ? 0.82 : 1.0) * witchMult;
         if (e.timer <= 0) {
           if (e.grabWindup) {
             e.grabWindup = false;
@@ -19500,18 +19685,18 @@ const ART = {
               addFloat("⚠ 被夺命投技擒中！(下次迎击触发拼刀)", p.x, p.y - 54, "#ffae33", 15, true);
             }
             e.state = "chase";
-            e.timer = 1.65;
+            e.timer = e.enraged ? 0.88 : 1.08;
           } else if (e.lowSweepWindup) {
             e.lowSweepWindup = false;
             Sound.drum(0.24);
             addDecal(e.x, e.y + 14, 0, e.r + 52, "spider_crack");
             arena.groundSweeps.push({
               x: e.x, y: e.y + 14, r: 24, maxR: e.isBoss ? 310 : 230,
-              spd: e.isBoss ? 182 : 158, dmg: Math.max(10, Math.round(e.heavy * 0.85)),
+              spd: e.isBoss ? 190 : 165, dmg: Math.max(10, Math.round(e.heavy * 0.88)),
               hitPlayer: false, vaulted: false, owner: e
             });
             e.state = "chase";
-            e.timer = e.enraged ? 1.35 : 1.7;
+            e.timer = e.enraged ? 0.85 : 1.08;
           } else if (e.isBoss && e.perilous) {
             // Execute Differentiated Boss Perilous Signature Move!
             const bAng = Math.atan2(e.aimY - e.y, e.aimX - e.x);
@@ -19521,14 +19706,14 @@ const ART = {
               (e.partSevered ? [0] : [-0.36, 0, 0.36]).forEach(off => {
                 arena.projectiles.push({
                   friendly: false, kind: "crescent", x: e.x, y: e.y,
-                  vx: Math.cos(bAng + off) * 9.2, vy: Math.sin(bAng + off) * 9.2,
+                  vx: Math.cos(bAng + off) * 9.5, vy: Math.sin(bAng + off) * 9.5,
                   ang: bAng + off, r: 44, dmg: e.heavy, life: 1.35, color: "#ff4d4f"
                 });
               });
             } else if (e.id === "warden") {
               // Mountain Colossus: Triple Meteor Crater Shockwaves!
               addDecal(e.x, e.y + 14, 0, 72, "spider_crack");
-              arena.shockRings.push({ x: e.x, y: e.y + 14, r: 22, maxR: e.partSevered ? 135 : 310, spd: 195, hitPlayer: false, color: "#ffb142" });
+              arena.shockRings.push({ x: e.x, y: e.y + 14, r: 22, maxR: e.partSevered ? 135 : 310, spd: 205, hitPlayer: false, color: "#ffb142" });
               if (p.invuln <= 0 && Math.hypot(p.x - e.x, p.y - e.y) < e.r + 86) hurtPlayer(e.heavy);
             } else if (e.id === "serpent") {
               // Frost Serpent: Lingering Abyssal Frost Pool + Fan Orbs!
@@ -19536,7 +19721,7 @@ const ART = {
               for (let k = -2; k <= 2; k++) {
                 arena.projectiles.push({
                   friendly: false, kind: "orb", x: e.x, y: e.y,
-                  vx: Math.cos(bAng + k * 0.22) * 6.4, vy: Math.sin(bAng + k * 0.22) * 6.4,
+                  vx: Math.cos(bAng + k * 0.22) * 6.8, vy: Math.sin(bAng + k * 0.22) * 6.8,
                   ang: bAng + k * 0.22, r: 13, dmg: e.atk, life: 2.0, color: "#80ecff"
                 });
               }
@@ -19546,22 +19731,22 @@ const ART = {
                 const qa = bAng + (q * Math.PI) / 2;
                 arena.projectiles.push({
                   friendly: false, kind: "crescent", x: e.x, y: e.y,
-                  vx: Math.cos(qa) * 8.6, vy: Math.sin(qa) * 8.6,
+                  vx: Math.cos(qa) * 9.0, vy: Math.sin(qa) * 9.0,
                   ang: qa, r: 46, dmg: e.heavy, life: 1.5, color: "#ff7875"
                 });
               }
             } else {
               // Celestial Gatekeeper: Twin Counter-Rotating Beams + Sky Thunder!
               arena.skyBolts.push({ x: e.aimX, y: e.aimY, t: 0, color: "#ff7875" });
-              arena.shockRings.push({ x: e.aimX, y: e.aimY, r: 18, maxR: 220, spd: 180, hitPlayer: false, color: "#d69eff" });
+              arena.shockRings.push({ x: e.aimX, y: e.aimY, r: 18, maxR: 220, spd: 190, hitPlayer: false, color: "#d69eff" });
               if (p.invuln <= 0 && Math.hypot(p.x - e.aimX, p.y - e.aimY) < 76) hurtPlayer(e.heavy);
             }
             e.perilous = false;
             e.state = "chase";
-            e.timer = e.enraged ? 1.35 : 1.75;
+            e.timer = e.enraged ? 0.88 : 1.12;
           } else if (e.attackType === "charge") {
             const ang = Math.atan2(e.aimY - e.y, e.aimX - e.x);
-            const lSpd = e.enraged ? 13.5 : 11.5;
+            const lSpd = e.enraged ? 14.0 : 12.2;
             e.vx = Math.cos(ang) * lSpd; e.vy = Math.sin(ang) * lSpd;
             e.state = "lunge"; e.timer = 0.28;
           } else if (e.attackType === "slam") {
@@ -19575,23 +19760,23 @@ const ART = {
                 const oa = (k * Math.PI * 2) / 6 + 0.3;
                 arena.projectiles.push({
                   friendly: false, kind: "orb", x: e.x, y: e.y,
-                  vx: Math.cos(oa) * 5.2, vy: Math.sin(oa) * 5.2 * 0.75,
+                  vx: Math.cos(oa) * 5.6, vy: Math.sin(oa) * 5.6 * 0.75,
                   ang: oa, r: 12, dmg: e.atk, life: 2.0, color: "#ff6b81"
                 });
               }
             }
-            e.state = "chase"; e.timer = e.enraged ? 1.25 : 1.6;
+            e.state = "chase"; e.timer = e.enraged ? 0.82 : 1.05;
           } else {
             const baseAng = Math.atan2(p.y - e.y, p.x - e.x);
             const angles = e.enraged ? [-0.44, -0.22, 0, 0.22, 0.44] : [-0.24, 0, 0.24];
             angles.forEach(off => {
               arena.projectiles.push({
                 friendly: false, kind: "orb", x: e.x, y: e.y,
-                vx: Math.cos(baseAng + off) * 5.6, vy: Math.sin(baseAng + off) * 5.6,
+                vx: Math.cos(baseAng + off) * 6.0, vy: Math.sin(baseAng + off) * 6.0,
                 ang: baseAng + off, r: 12, dmg: e.atk, life: 2.2, color: "#ff6b81"
               });
             });
-            e.state = "chase"; e.timer = e.enraged ? 1.35 : 1.8;
+            e.state = "chase"; e.timer = e.enraged ? 0.90 : 1.15;
           }
         }
       } else if (e.state === "lunge") {
@@ -19602,7 +19787,7 @@ const ART = {
           e.timer = 0;
           if (e.mech === "drain") e.hp = Math.min(e.maxHp, e.hp + Math.round(e.maxHp * 0.08));
         }
-        if (e.timer <= 0) { e.state = "chase"; e.timer = e.enraged ? 1.15 : 1.5; }
+        if (e.timer <= 0) { e.state = "chase"; e.timer = e.enraged ? 0.72 : 0.92; }
       }
       const ce = clampToPlaza(e.x, e.y, w, h);
       e.x = ce.x; e.y = ce.y;
@@ -20173,11 +20358,12 @@ const ART = {
     const hasLotusSoak = game && game.gourd && Array.isArray(game.gourd.soaks) && game.gourd.soaks.includes("iron_lotus");
     const hyperMult = (p.hyperArmorTimer || 0) > 0 ? (hasLotusSoak ? 0.52 : 0.65) : 1.0;
     const wardMult = (hasGearAffix(game, "xuanwu_ward") ? 0.86 : 1.0) * hyperMult;
-    let dmg = Math.max(3, Math.round((rawDmg * pactEnemyMult - st.dmgReduce) * wardMult));
+    const drMult = Math.max(0.35, 100 / (100 + Math.max(0, st.dmgReduce || 0)));
+    let dmg = Math.max(4, Math.round(rawDmg * pactEnemyMult * drMult * wardMult));
 
-    if (hasPrimordialAwakening(game, "primordial_aegis") && (p.primordialShieldCd || 0) <= 0 && dmg >= st.maxHp * 0.12) {
-      p.primordialShieldCd = 9.0;
-      p.shieldHp = Math.max(p.shieldHp || 0, Math.round(st.maxHp * 0.30));
+    if (hasPrimordialAwakening(game, "primordial_aegis") && (p.primordialShieldCd || 0) <= 0 && dmg >= st.maxHp * 0.14) {
+      p.primordialShieldCd = 11.0;
+      p.shieldHp = Math.max(p.shieldHp || 0, Math.round(st.maxHp * 0.25));
       addFloat("🌌 混元紫气 · 不灭护体激活！", p.x, p.y - 62, "#ffb3ff", 18, true);
     }
     if ((p.shieldHp || 0) > 0) {
@@ -20185,7 +20371,7 @@ const ART = {
       p.shieldHp -= absorbed;
       dmg -= absorbed;
       if (dmg <= 0) {
-        p.invuln = 0.35;
+        p.invuln = 0.32;
         addFloat("灵盾抵御！", p.x, p.y - 44, "#70ffe6", 16);
         updateHud();
         return;
@@ -20193,7 +20379,7 @@ const ART = {
     }
 
     game.hp = Math.max(0, game.hp - dmg);
-    p.invuln = 0.55;
+    p.invuln = 0.42;
     arena.comboCount = Math.floor(arena.comboCount * 0.5);
     arena.shake = 7;
     Sound.drum(0.14);
@@ -20218,18 +20404,18 @@ const ART = {
       game.dao.benevolence += 10;
       acquireGearItem({
         uid: "g_shen_gift", slot: "armor", rarity: 1, name: "灵品·青莲药师袍", art: "icon_heart",
-        atk: 0, hp: 48, dr: 5, crit: 0, spd: 0, bonusSword: 0, price: 65, sell: 26, power: 44
+        atk: 0, hp: 34, dr: 4, crit: 0, spd: 0, bonusSword: 0, price: 65, sell: 26, power: 38
       });
       addFloat("结契【沈清禾】· 获赐青莲药师袍！", arena.player.x, arena.player.y - 54, "#4ad2b8", 20, true);
     } else {
-      game.bonusSwords = (game.bonusSwords || 0) + 2;
+      game.bonusSwords = (game.bonusSwords || 0) + 1;
       game.dao.edge += 10;
       acquireGearItem({
         uid: "g_sword_gift", slot: "weapon", rarity: 1, name: "灵品·惊鸿青霜剑", art: "relic_frost_sword",
-        atk: 14, hp: 0, dr: 0, crit: 0.06, spd: 0, bonusSword: 0, price: 68, sell: 28, power: 56
+        atk: 10, hp: 0, dr: 0, crit: 0.04, spd: 0, bonusSword: 0, price: 68, sell: 28, power: 44
       });
       syncFlyingSwords();
-      addFloat("参透《惊鸿剑诀》· 飞剑+2 且获惊鸿剑！", arena.player.x, arena.player.y - 54, "#f8e3ac", 20, true);
+      addFloat("参透《惊鸿剑诀》· 飞剑+1 且获惊鸿剑！", arena.player.x, arena.player.y - 54, "#f8e3ac", 20, true);
     }
     Sound.fanfare();
     arena.props = arena.props.filter(x => x.kind !== "pedestal" && x.id !== "shen_rescue");
@@ -26501,7 +26687,17 @@ const ART = {
     openTaixuCraftMinigameModal,
     openWorldMapModal,
     openObjectivesModal,
-    computeCompetitionScore
+    computeCompetitionScore,
+    ENEMIES,
+    STAGE_SCALING,
+    CHAPTERS,
+    KYUSHU_MAP_NODES,
+    REGION_POEMS,
+    isActionUnlockedByRealm,
+    getSwordCount,
+    spawnSingleEnemy,
+    fireManualSlash,
+    recallAndDetonateSwords
   };
   window.__CHENYUAN_V24__ = {
     getState: () => ({
