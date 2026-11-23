@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
- * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P5 · 共 24 项）
+ * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P5 + R2–R6 · 共 44 项）
  *
  * 用法：
  *   node scripts/verify-playable-v2.mjs
  *   node scripts/verify-playable-v2.mjs --filter M4
- *   node scripts/verify-playable-v2.mjs --screenshots /tmp/cy_shots --report /tmp/cy_report.json
+ *   node scripts/verify-playable-v2.mjs --screenshots test-results/shots --report test-results/regression-report.json
  *   node scripts/verify-playable-v2.mjs --url http://127.0.0.1:5174/playable-v2.html
+ *   node scripts/verify-playable-v2.mjs --fail-fast --timeout 45000
  */
 
 import assert from "node:assert/strict";
@@ -25,14 +26,89 @@ const META_KEY = "chenyuan_wendao_v11_meta";
 
 // ==================== CLI ARGUMENTS ====================
 const args = process.argv.slice(2);
-function getArg(flag) {
-  const idx = args.indexOf(flag);
-  return idx >= 0 && idx + 1 < args.length ? args[idx + 1] : null;
+function printHelp() {
+  console.log(`Usage: node scripts/verify-playable-v2.mjs [options]
+Options:
+  --filter <substr>      Run only suites whose "<id>. <title>" matches <substr> (case-insensitive)
+  --screenshots <dir>    Directory for milestone & failure screenshots (fail_<id>_<idx>.png)
+  --report <path>        Write schemaVersion 2 JSON report unconditionally
+  --url <url>            Test against an already-running playable-v2.html URL
+  --fail-fast            Stop running remaining suites after the first failure (default: false)
+  --timeout <ms>         Per-suite timeout in milliseconds (default: 45000)
+  --help, -h             Show this help message`);
 }
-const FILTER = getArg("--filter") || "";
-const SHOTS_DIR = getArg("--screenshots");
-const REPORT_PATH = getArg("--report");
-const EXPLICIT_URL = getArg("--url");
+
+function parseCliArgs(argv) {
+  const opts = {
+    filter: "",
+    screenshots: null,
+    report: null,
+    url: null,
+    failFast: false,
+    timeoutRaw: null,
+    help: false
+  };
+  const valueFlags = new Set(["--filter", "--screenshots", "--report", "--url", "--timeout"]);
+  for (let i = 0; i < argv.length; i++) {
+    const token = argv[i];
+    if (token === "--help" || token === "-h") {
+      opts.help = true;
+      continue;
+    }
+    if (token === "--fail-fast") {
+      opts.failFast = true;
+      continue;
+    }
+    let flag = token;
+    let inlineVal = null;
+    const eqIdx = token.indexOf("=");
+    if (eqIdx > 0) {
+      flag = token.slice(0, eqIdx);
+      inlineVal = token.slice(eqIdx + 1);
+    }
+    if (valueFlags.has(flag)) {
+      let val = inlineVal;
+      if (val === null) {
+        if (i + 1 >= argv.length || argv[i + 1].startsWith("--") || argv[i + 1] === "-h") {
+          console.error(`Missing value for ${flag}`);
+          process.exit(2);
+        }
+        val = argv[++i];
+      }
+      if (val === "") {
+        console.error(`Empty value for ${flag}`);
+        process.exit(2);
+      }
+      if (flag === "--filter") opts.filter = val;
+      else if (flag === "--screenshots") opts.screenshots = val;
+      else if (flag === "--report") opts.report = val;
+      else if (flag === "--url") opts.url = val;
+      else if (flag === "--timeout") opts.timeoutRaw = val;
+      continue;
+    }
+    console.error(`Unknown argument: ${token}`);
+    printHelp();
+    process.exit(2);
+  }
+  return opts;
+}
+
+const CLI = parseCliArgs(args);
+if (CLI.help) {
+  printHelp();
+  process.exit(0);
+}
+const FILTER = CLI.filter;
+const SHOTS_DIR = CLI.screenshots;
+const REPORT_PATH = CLI.report;
+const EXPLICIT_URL = CLI.url;
+const FAIL_FAST = CLI.failFast;
+const TIMEOUT_RAW = CLI.timeoutRaw;
+const SUITE_TIMEOUT_MS = TIMEOUT_RAW !== null ? Number(TIMEOUT_RAW) : 45000;
+if (!Number.isFinite(SUITE_TIMEOUT_MS) || SUITE_TIMEOUT_MS <= 0) {
+  console.error(`Invalid --timeout value: ${TIMEOUT_RAW}`);
+  process.exit(2);
+}
 
 if (SHOTS_DIR) fs.mkdirSync(SHOTS_DIR, { recursive: true });
 
@@ -65,7 +141,11 @@ async function loadChromium() {
 }
 
 function resolveExecutablePath() {
-  if (process.env.CHROMIUM_PATH && fs.existsSync(process.env.CHROMIUM_PATH)) {
+  if (process.env.CHROMIUM_PATH !== undefined && process.env.CHROMIUM_PATH !== "") {
+    if (!fs.existsSync(process.env.CHROMIUM_PATH)) {
+      console.error(`CHROMIUM_PATH does not exist: ${process.env.CHROMIUM_PATH}`);
+      process.exit(2);
+    }
     return process.env.CHROMIUM_PATH;
   }
   for (const p of ["/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome"]) {
@@ -112,46 +192,241 @@ function startStaticServer(rootDir) {
 // ==================== TEST HARNESS ====================
 const results = [];
 const allErrors = [];
+const attachedErrorPages = new WeakSet();
+let currentSuiteTracker = null;
+let failFastTriggered = false;
 let targetUrl = EXPLICIT_URL;
 let staticServer = null;
+const runStartedAt = Date.now();
 
 function attachErrorListeners(page, label) {
-  page.on("pageerror", (err) => allErrors.push(`[${label} pageerror] ${err.message}`));
-  page.on("console", (msg) => {
-    if (msg.type() === "error") allErrors.push(`[${label} console.error] ${msg.text()}`);
+  if (attachedErrorPages.has(page)) return;
+  attachedErrorPages.add(page);
+  const tracker = currentSuiteTracker;
+  page.on("pageerror", (err) => {
+    const msg = `[${label} pageerror] ${err.message}`;
+    allErrors.push(msg);
+    if (tracker) tracker.runtimeErrors.push(msg);
   });
+  page.on("console", (msg) => {
+    if (msg.type() === "error") {
+      const text = `[${label} console.error] ${msg.text()}`;
+      allErrors.push(text);
+      if (tracker) tracker.runtimeErrors.push(text);
+    }
+  });
+}
+
+async function captureFailureScreenshots(suiteId, tracker) {
+  if (!SHOTS_DIR || !tracker) return [];
+  const safeId = String(suiteId).replace(/[^A-Za-z0-9_-]/g, "_");
+  const saved = [];
+  let idx = 0;
+  for (const page of tracker.pages) {
+    if (!page || page.isClosed()) continue;
+    const filename = `fail_${safeId}_${idx}.png`;
+    const outPath = path.join(SHOTS_DIR, filename);
+    try {
+      await page.screenshot({ path: outPath, fullPage: true, timeout: 5000 });
+      saved.push(outPath);
+      idx += 1;
+    } catch (_) {}
+  }
+  return saved;
 }
 
 async function runSuite(id, title, fn) {
   const fullName = `${id}. ${title}`;
-  if (FILTER && !fullName.toLowerCase().includes(FILTER.toLowerCase())) return;
+  if (FILTER && !fullName.toLowerCase().includes(FILTER.toLowerCase())) {
+    results.push({
+      id,
+      title,
+      status: "skipped",
+      ok: null,
+      durationMs: 0,
+      error: null,
+      errorKind: null,
+      runtimeErrors: [],
+      screenshots: []
+    });
+    return;
+  }
+  if (failFastTriggered) {
+    results.push({
+      id,
+      title,
+      status: "skipped",
+      ok: null,
+      durationMs: 0,
+      error: "Skipped due to --fail-fast",
+      errorKind: null,
+      runtimeErrors: [],
+      screenshots: []
+    });
+    return;
+  }
+
   const started = Date.now();
+  const tracker = {
+    id,
+    contexts: new Set(),
+    pages: new Set(),
+    runtimeErrors: [],
+    runtimeErrorShots: [],
+    aborted: false
+  };
+  currentSuiteTracker = tracker;
   process.stdout.write(`▶ ${fullName} ... `);
+  let timer = null;
+
   try {
-    await fn();
+    await Promise.race([
+      Promise.resolve().then(() => fn()),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          const timeoutErr = new Error(`Suite ${id} timed out after ${SUITE_TIMEOUT_MS}ms`);
+          timeoutErr.name = "TimeoutError";
+          reject(timeoutErr);
+        }, SUITE_TIMEOUT_MS);
+      })
+    ]);
+
     const durationMs = Date.now() - started;
-    results.push({ id, title, ok: true, durationMs });
-    console.log(`PASS (${durationMs}ms)`);
+    if (tracker.runtimeErrors.length > 0) {
+      const screenshots = tracker.runtimeErrorShots.length > 0
+        ? tracker.runtimeErrorShots.slice()
+        : await captureFailureScreenshots(id, tracker);
+      const errMsg = `Runtime console/page errors (${tracker.runtimeErrors.length}): ${tracker.runtimeErrors.join(" | ")}`;
+      results.push({
+        id,
+        title,
+        status: "failed",
+        ok: false,
+        durationMs,
+        error: errMsg,
+        errorKind: "runtime_error",
+        runtimeErrors: tracker.runtimeErrors.slice(),
+        screenshots
+      });
+      console.log(`FAIL (${durationMs}ms): ${errMsg}`);
+      if (FAIL_FAST) failFastTriggered = true;
+    } else {
+      results.push({
+        id,
+        title,
+        status: "passed",
+        ok: true,
+        durationMs,
+        error: null,
+        errorKind: null,
+        runtimeErrors: [],
+        screenshots: []
+      });
+      console.log(`PASS (${durationMs}ms)`);
+    }
   } catch (err) {
     const durationMs = Date.now() - started;
-    results.push({ id, title, ok: false, durationMs, error: err.message });
-    console.log(`FAIL (${durationMs}ms):`, err.message);
-    throw err;
+    const isAssertion = Boolean(err && (err.code === "ERR_ASSERTION" || err.name === "AssertionError"));
+    const status = isAssertion ? "failed" : "error";
+    const errorKind = isAssertion ? "assertion" : (err && err.name === "TimeoutError" ? "timeout" : "error");
+    const errMsg = err && err.message ? err.message : String(err);
+    const liveShots = await captureFailureScreenshots(id, tracker);
+    const screenshots = liveShots.length > 0 ? liveShots : tracker.runtimeErrorShots.slice();
+    results.push({
+      id,
+      title,
+      status,
+      ok: false,
+      durationMs,
+      error: errMsg,
+      errorKind,
+      runtimeErrors: tracker.runtimeErrors.slice(),
+      screenshots
+    });
+    console.log(`${status.toUpperCase()} (${durationMs}ms): ${errMsg}`);
+    if (FAIL_FAST) failFastTriggered = true;
+  } finally {
+    if (timer) clearTimeout(timer);
+    tracker.aborted = true;
+    currentSuiteTracker = null;
+    for (const ctx of Array.from(tracker.contexts)) {
+      try {
+        await ctx.close();
+      } catch (_) {}
+    }
+    tracker.contexts.clear();
+    tracker.pages.clear();
   }
 }
 
 async function newIsolatedContext(browser, extraOpts = {}) {
-  return browser.newContext({ viewport: { width: 1440, height: 900 }, ...extraOpts });
+  const tracker = currentSuiteTracker;
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...extraOpts });
+  if (tracker && tracker.aborted) {
+    try {
+      await ctx.close();
+    } catch (_) {}
+    return ctx;
+  }
+  if (tracker) {
+    tracker.contexts.add(ctx);
+    const origNewPage = ctx.newPage.bind(ctx);
+    ctx.newPage = async (...pageArgs) => {
+      const page = await origNewPage(...pageArgs);
+      if (!tracker.aborted) {
+        tracker.pages.add(page);
+        page.on("close", () => tracker.pages.delete(page));
+      }
+      return page;
+    };
+    const origClose = ctx.close.bind(ctx);
+    ctx.close = async (...closeArgs) => {
+      if (SHOTS_DIR && !tracker.aborted && tracker.runtimeErrors.length > 0 && tracker.runtimeErrorShots.length === 0) {
+        const shots = await captureFailureScreenshots(tracker.id, tracker);
+        tracker.runtimeErrorShots.push(...shots);
+      }
+      tracker.contexts.delete(ctx);
+      return origClose(...closeArgs);
+    };
+  }
+  return ctx;
 }
 
-async function startCleanGamePage(browser, tag, markPrologueDone = true) {
+async function dismissOpeningScroll(page, timeoutMs = 1500) {
+  try {
+    await page.waitForSelector("#story-dialogue-bar.open", { timeout: timeoutMs });
+  } catch (_) {
+    return false;
+  }
+  const skipBtn = await page.$("#story-dialogue-bar.open #btn-dlg-skip");
+  if (skipBtn) {
+    await skipBtn.click();
+  } else {
+    await page.keyboard.press("Escape");
+  }
+  await page.waitForFunction(
+    () => !document.getElementById("story-dialogue-bar")?.classList.contains("open"),
+    { timeout: 3000 }
+  );
+  return true;
+}
+
+async function dismissActiveCutscene(page, timeoutMs = 900) {
+  return dismissOpeningScroll(page, timeoutMs);
+}
+
+async function startCleanGamePage(browser, tag, markPrologueDone = true, { dismissOpening = true } = {}) {
   const ctx = await newIsolatedContext(browser);
   const page = await ctx.newPage();
   attachErrorListeners(page, tag);
   await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
   await page.waitForSelector("#btn-start-new");
   await page.click("#btn-start-new");
-  await page.waitForTimeout(280);
+  await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+  if (dismissOpening) {
+    await dismissOpeningScroll(page);
+  }
+  await page.waitForTimeout(160);
   if (markPrologueDone) {
     await page.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
@@ -163,6 +438,7 @@ async function startCleanGamePage(browser, tag, markPrologueDone = true) {
 }
 
 // ==================== MAIN EXECUTION ====================
+const execPath = resolveExecutablePath();
 const chromium = await loadChromium();
 if (!targetUrl) {
   const srv = await startStaticServer(PUBLIC_DIR);
@@ -170,12 +446,12 @@ if (!targetUrl) {
   targetUrl = srv.url;
 }
 
-const execPath = resolveExecutablePath();
 const browser = await chromium.launch({
   ...(execPath ? { executablePath: execPath } : {}),
   headless: true,
   args: ["--no-sandbox", "--disable-gpu"]
 });
+const browserVersion = browser.version();
 
 try {
   // =========================================================================
@@ -305,12 +581,31 @@ try {
 
   await runSuite("M1-2", "Real Defeat & Retreat Stakes (No Immortality / No Auto-Pill / 1x Revive Limit)", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "M1-2", false);
+
+    // M3 G3 single-hit cap guardrail: ordinary hurtPlayer(99999) MUST be capped at <= 45% maxHp
+    const capCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      const maxHp = api.getCombatStats(s.game).maxHp;
+      s.game.hp = maxHp;
+      s.arena.player.invuln = 0;
+      s.arena.player.shieldHp = 0;
+      api.hurtPlayer(99999);
+      const dmgTaken = maxHp - s.game.hp;
+      return { maxHp, hpAfter: s.game.hp, dmgTaken, capRatio: api.SINGLE_HIT_CAP_RATIO };
+    });
+    assert.ok(capCheck.hpAfter > 0, `Normal hurtPlayer(99999) must not one-shot full-HP player (hpAfter=${capCheck.hpAfter})`);
+    assert.ok(
+      capCheck.dmgTaken <= Math.ceil(capCheck.maxHp * (capCheck.capRatio || 0.45)) + 1,
+      `Normal single hit (${capCheck.dmgTaken}) must respect 45% maxHp cap (maxHp=${capCheck.maxHp})`
+    );
+
     await page.evaluate(() => {
       const s = window.__CHENYUAN_V25__.getState();
       s.game.inventory.healing_pill = 1;
       s.game.stones = 333;
       s.arena.player.invuln = 0;
-      window.__CHENYUAN_V25__.hurtPlayer(99999);
+      window.__CHENYUAN_V25__.hurtPlayer(99999, { uncapped: true });
     });
     await page.waitForTimeout(180);
 
@@ -341,7 +636,7 @@ try {
       s.game.inventory.healing_pill = 5;
       s.game.gourd.charges = 5;
       s.arena.player.invuln = 0;
-      window.__CHENYUAN_V25__.hurtPlayer(99999);
+      window.__CHENYUAN_V25__.hurtPlayer(99999, { uncapped: true });
     });
     await page.waitForTimeout(180);
     const secondDefeat = await page.evaluate(() => ({
@@ -366,14 +661,38 @@ try {
 
   await runSuite("M1-3", "Tribulation Preparation Ritual (Pill vs Defiant) & Lethal Tribulation Failure", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "M1-3", false);
+
+    // M3 S1 Boss-gate check: Qi -> Foundation tribulation must be blocked until Stage 1 Boss (守山石卫) is defeated
     await page.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const s = api.getState();
       s.game.realm = "qi";
       s.game.xp = api.getState().realmSpec.xpCap;
+      s.game.defeatedStageBosses = {};
+      s.game.stageStars = {};
       s.game.inventory.foundation_pill = 1;
       s.game.inventory.healing_pill = 0;
       s.game.tribShield = 0;
+      api.updateHud();
+      api.startLiveTribulation();
+    });
+    await page.waitForTimeout(180);
+    const bossGateBlocked = await page.evaluate(() => ({
+      gotoBossVisible: Boolean(document.getElementById("btn-trib-goto-boss")),
+      pillStartVisible: Boolean(document.querySelector('[data-trib-start="pill"]')),
+      modalText: document.getElementById("modal-content")?.textContent || ""
+    }));
+    assert.equal(bossGateBlocked.gotoBossVisible, true, "Qi tribulation must show #btn-trib-goto-boss before Stage 1 Boss defeat");
+    assert.equal(bossGateBlocked.pillStartVisible, false, "Qi tribulation must block [data-trib-start=pill] before Stage 1 Boss defeat");
+    assert.ok(bossGateBlocked.modalText.includes("守山石卫"), `Boss-gate modal should name 守山石卫, got: ${bossGateBlocked.modalText}`);
+
+    // Now record Stage 1 Boss defeat and open Tribulation Prep Ritual
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      api.closeModal();
+      s.game.defeatedStageBosses[1] = true;
+      s.game.stageStars[1] = 1;
       api.updateHud();
       api.startLiveTribulation();
     });
@@ -395,7 +714,7 @@ try {
       const s = window.__CHENYUAN_V25__.getState();
       s.game.tribShield = 0;
       s.arena.player.invuln = 0;
-      window.__CHENYUAN_V25__.hurtPlayer(99999);
+      window.__CHENYUAN_V25__.hurtPlayer(99999, { uncapped: true });
     });
     await page.waitForTimeout(180);
     assert.equal(await page.isVisible('[data-defeat-act="abort-tribulation"]'), true);
@@ -518,7 +837,8 @@ try {
     attachErrorListeners(tabA, "M1-7A");
     await tabA.goto(targetUrl, { waitUntil: "domcontentloaded" });
     await tabA.click("#btn-start-new");
-    await tabA.waitForTimeout(250);
+    await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await dismissOpeningScroll(tabA);
     await tabA.evaluate(() => {
       window.__CHENYUAN_V25__.getState().game.stones = 100;
       window.__CHENYUAN_V25__.saveGame();
@@ -577,13 +897,45 @@ try {
       const s = api.getState();
       s.game.realm = "golden";
       api.initArenaStage(2, false);
+    });
+    await dismissActiveCutscene(page);
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
       s.arena.dungeonMap.currentNodeId = "n4_0";
       s.arena.waveIdx = 4;
       s.arena.enemies = [];
       api.spawnCurrentWave();
+    });
+    await dismissActiveCutscene(page);
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
       for (const e of s.arena.enemies.slice()) api.handleEnemyDeath(e);
     });
     await page.waitForTimeout(700);
+    for (let k = 0; k < 3; k++) {
+      const keepSoulBtn = await page.$("#modal-backdrop.open #btn-soul-keep-current");
+      if (!keepSoulBtn) break;
+      await keepSoulBtn.click();
+      await page.waitForTimeout(120);
+    }
+    await dismissActiveCutscene(page);
+    await page.waitForSelector("#modal-backdrop.open #btn-volume-recap-confirm");
+    const portalBeforeRecap2 = await page.evaluate(() =>
+      window.__CHENYUAN_V25__.getState().arena.props.some(x => x.id === "portal_next")
+    );
+    assert.equal(portalBeforeRecap2, false, "portal_next must wait until Volume-End Recap modal is confirmed (Stage 2)");
+    await page.click("#btn-volume-recap-confirm");
+    await page.waitForFunction(() => !document.querySelector("#modal-backdrop.open #btn-volume-recap-confirm"));
+    await page.waitForTimeout(80);
+    for (let k = 0; k < 3; k++) {
+      const keepSoulBtn = await page.$("#modal-backdrop.open #btn-soul-keep-current");
+      if (!keepSoulBtn) break;
+      await keepSoulBtn.click();
+      await page.waitForTimeout(120);
+    }
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
     const p2 = await page.evaluate(() => {
       const p = window.__CHENYUAN_V25__.getState().arena.props.find(x => x.id === "portal_next");
       return p ? { nextIdx: p.nextIdx, toTower: p.toTower } : null;
@@ -596,6 +948,7 @@ try {
       api.interactWithProp(api.getState().arena.props.find(x => x.id === "portal_next"));
     });
     await page.waitForTimeout(200);
+    await dismissActiveCutscene(page);
     assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.stageIdx), 3);
 
     await page.evaluate(() => {
@@ -605,9 +958,36 @@ try {
       s.arena.waveIdx = 4;
       s.arena.enemies = [];
       api.spawnCurrentWave();
+    });
+    await dismissActiveCutscene(page);
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
       for (const e of s.arena.enemies.slice()) api.handleEnemyDeath(e);
     });
     await page.waitForTimeout(700);
+    for (let k = 0; k < 3; k++) {
+      const keepSoulBtn = await page.$("#modal-backdrop.open #btn-soul-keep-current");
+      if (!keepSoulBtn) break;
+      await keepSoulBtn.click();
+      await page.waitForTimeout(120);
+    }
+    await dismissActiveCutscene(page);
+    await page.waitForSelector("#modal-backdrop.open #btn-volume-recap-confirm");
+    const portalBeforeRecap3 = await page.evaluate(() =>
+      window.__CHENYUAN_V25__.getState().arena.props.some(x => x.id === "portal_next")
+    );
+    assert.equal(portalBeforeRecap3, false, "portal_next must wait until Volume-End Recap modal is confirmed (Stage 3)");
+    await page.click("#btn-volume-recap-confirm");
+    await page.waitForFunction(() => !document.querySelector("#modal-backdrop.open #btn-volume-recap-confirm"));
+    await page.waitForTimeout(80);
+    for (let k = 0; k < 3; k++) {
+      const keepSoulBtn = await page.$("#modal-backdrop.open #btn-soul-keep-current");
+      if (!keepSoulBtn) break;
+      await keepSoulBtn.click();
+      await page.waitForTimeout(120);
+    }
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
     assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.props.find(x => x.id === "portal_next")?.nextIdx), 4);
     await ctx.close();
   });
@@ -907,24 +1287,83 @@ try {
     assert.equal(lockedCount, 14, "All 14 endgame systems should show locked in Mortal realm");
     await maybeShot(page, "m4_01_ascension_roadmap_locked.png");
 
-    // 3. Toggle 【全神通演武】 inside Roadmap -> all 14 systems immediately unlock!
+    // 3. Toggle 【全神通演武】 inside Roadmap -> requires explicit confirmation modal (#btn-confirm-enter-sandbox) & isolates live save
+    // Flush paused live state once before snapshotting so enterSandboxMode()'s pre-sandbox saveGame() matches the canonical checksum
+    await page.evaluate(() => window.__CHENYUAN_V25__.saveGame());
+    const beforeSandboxSnap = await page.evaluate((sk) => {
+      const raw = localStorage.getItem(sk);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return {
+        raw,
+        checksum: parsed?.checksum || null,
+        stones: parsed?.game?.stones,
+        realm: parsed?.game?.realm,
+        unlockAllArcana: Boolean(parsed?.game?.unlockAllArcana)
+      };
+    }, STORAGE_KEY);
+    assert.equal(beforeSandboxSnap.unlockAllArcana, false, "Live save before sandbox must have unlockAllArcana=false");
     await page.click('[data-action="toggle-arcana-all-roadmap"]');
-    await page.waitForTimeout(200);
-    assert.equal(await page.locator(".roadmap-sys-btn.locked").count(), 0, "Sandbox toggle must unlock all 14 systems immediately");
+    await page.waitForSelector("#modal-backdrop.open #btn-confirm-enter-sandbox");
+    await page.click("#btn-confirm-enter-sandbox");
+    // enterSandboxMode({ source: "roadmap" }) flushes pre-sandbox live save once and immediately reopens Ascension Roadmap
+    await page.waitForSelector("#modal-backdrop.open .roadmap-sys-btn");
+    const sandboxEntered = await page.evaluate((sk) => {
+      const raw = localStorage.getItem(sk);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return {
+        isSandbox: window.__CHENYUAN_V25__.isSandboxMode(),
+        badgeVisible: getComputedStyle(document.getElementById("hud-sandbox-badge")).display !== "none",
+        rawSaveInsideSandbox: raw,
+        persistedChecksum: parsed?.checksum || null,
+        persistedStones: parsed?.game?.stones,
+        persistedRealm: parsed?.game?.realm,
+        persistedUnlockAllArcana: Boolean(parsed?.game?.unlockAllArcana)
+      };
+    }, STORAGE_KEY);
+    assert.equal(sandboxEntered.isSandbox, true, "Confirming sandbox modal must enter isolated sandbox mode");
+    assert.equal(sandboxEntered.badgeVisible, true, "#hud-sandbox-badge must be visible in sandbox mode");
+    assert.equal(sandboxEntered.persistedUnlockAllArcana, false, "Entering sandbox must NOT persist unlockAllArcana=true to live save");
+    assert.equal(sandboxEntered.persistedRealm, beforeSandboxSnap.realm, "Entering sandbox must preserve live save realm");
+    assert.equal(sandboxEntered.persistedStones, beforeSandboxSnap.stones, "Entering sandbox must preserve live save stones");
+    if (beforeSandboxSnap.checksum) {
+      assert.equal(sandboxEntered.persistedChecksum, beforeSandboxSnap.checksum, "Entering sandbox must preserve live save canonical game checksum");
+    }
+
+    // Ascension Roadmap is reopened automatically in sandbox -> all 14 systems immediately unlocked
+    assert.equal(await page.locator(".roadmap-sys-btn.locked").count(), 0, "Sandbox mode must unlock all 14 systems immediately");
     await maybeShot(page, "m4_02_ascension_roadmap_sandbox.png");
 
-    // Verify sandbox toggle actually lets Mortal player open Seed Workshop, then restore gradual progression!
+    // Verify sandbox mode lets Mortal player open Seed Workshop, mutate in-sandbox state without touching live save, then exit via #btn-exit-sandbox
     await page.click('[data-roadmap-sys="seed_workshop"]');
     await page.waitForTimeout(180);
     assert.ok((await page.textContent("#modal-content")).includes("太虚造化工坊"));
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.getState().game.stones = 999999;
+      api.getState().game.unlockAllArcana = true;
+      api.saveGame();
+    });
     await page.keyboard.press("Escape");
     await page.waitForTimeout(140);
+    await page.click("#btn-exit-sandbox");
+    await page.waitForTimeout(180);
+    const afterExitSandbox = await page.evaluate((sk) => ({
+      isSandbox: window.__CHENYUAN_V25__.isSandboxMode(),
+      liveSaveNow: localStorage.getItem(sk),
+      stonesNow: window.__CHENYUAN_V25__.getState().game.stones
+    }), STORAGE_KEY);
+    assert.equal(afterExitSandbox.isSandbox, false, "#btn-exit-sandbox must cleanly exit sandbox mode");
+    assert.equal(
+      afterExitSandbox.liveSaveNow,
+      sandboxEntered.rawSaveInsideSandbox,
+      "In-sandbox mutations and exiting sandbox must leave live localStorage byte-for-byte identical"
+    );
+    assert.notEqual(afterExitSandbox.stonesNow, 999999, "In-sandbox stone mutation must not leak after exiting sandbox");
 
-    // 4. Turn off sandbox & step through realms (qi -> foundation -> golden -> nascent -> spirit)
+    // 4. Step through realms (qi -> foundation -> golden -> nascent -> spirit) matching M6 SYSTEM_ECOSYSTEM_LADDER
     const ladderCheck = await page.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const { game } = api.getState();
-      game.unlockAllArcana = false;
       const out = {};
       for (const r of ["qi", "foundation", "golden", "nascent", "spirit"]) {
         game.realm = r;
@@ -934,6 +1373,7 @@ try {
           tagTeam: api.isEcosystemSystemUnlocked(game, "tag_team"),
           cloudSea: api.isEcosystemSystemUnlocked(game, "cloud_sea_trial"),
           spire: api.isEcosystemSystemUnlocked(game, "celestial_spire"),
+          expedition: api.isEcosystemSystemUnlocked(game, "vein_expedition"),
           rush: api.isEcosystemSystemUnlocked(game, "sword_tomb_rush"),
           pacts: api.isEcosystemSystemUnlocked(game, "heavenly_pacts"),
           workshop: api.isEcosystemSystemUnlocked(game, "seed_workshop")
@@ -947,11 +1387,15 @@ try {
     assert.equal(ladderCheck.foundation.tagTeam, true);
     assert.equal(ladderCheck.foundation.cloudSea, false);
     assert.equal(ladderCheck.golden.cloudSea, true);
-    assert.equal(ladderCheck.golden.spire, true);
+    assert.equal(ladderCheck.golden.spire, false, "M6 ladder: celestial_spire unlocks at nascent, not golden");
+    assert.equal(ladderCheck.golden.expedition, false, "M6 ladder: vein_expedition unlocks at nascent, not golden");
     assert.equal(ladderCheck.golden.rush, false);
+    assert.equal(ladderCheck.nascent.spire, true);
+    assert.equal(ladderCheck.nascent.expedition, true);
     assert.equal(ladderCheck.nascent.rush, true);
-    assert.equal(ladderCheck.nascent.pacts, true);
+    assert.equal(ladderCheck.nascent.pacts, false, "M6 ladder: heavenly_pacts unlocks at spirit, not nascent");
     assert.equal(ladderCheck.nascent.workshop, false);
+    assert.equal(ladderCheck.spirit.pacts, true);
     assert.equal(ladderCheck.spirit.workshop, true);
 
     // 5. Golden Core Cloud Sea Climax Trial -> defeat commander & verify permanent seal + +12 ATK + +15% Expedition bonus
@@ -1110,7 +1554,9 @@ try {
 
     // Start 2nd Life in Calamity Fire Tier 2!
     await page.click("#btn-start-new");
-    await page.waitForTimeout(320);
+    await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await dismissOpeningScroll(page);
+    await page.waitForTimeout(160);
 
     const ngPlusCheck = await page.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
@@ -1325,7 +1771,7 @@ try {
       assert.ok(row.bossTtk >= 20 && row.bossTtk <= 120, `Stage ${row.stage} boss TTK (${row.bossTtk.toFixed(1)}s) out of healthy [20s, 120s]`);
     }
 
-    // 4. Real MP spend & cooldown on Golden Core E & Digit4
+    // 4. Real MP spend & cooldown on Golden Core E (Digit4 blocked until Nascent per M6), then Nascent E + Digit4
     await page.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const s = api.getState();
@@ -1337,19 +1783,51 @@ try {
       s.game.mp = st.maxMp;
       s.arena.player.ultCd = 0;
       s.arena.sanqingCd = 0;
+      api.syncProgressiveSkillVisibility();
     });
     const mpStartGold = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.mp);
+    await page.keyboard.press("Digit4");
+    await page.waitForTimeout(100);
+    const goldBlockedDigit4 = await page.evaluate(() => ({
+      mp: window.__CHENYUAN_V25__.getState().game.mp,
+      sanqingCd: window.__CHENYUAN_V25__.getState().arena.sanqingCd || 0
+    }));
+    assert.equal(goldBlockedDigit4.sanqingCd, 0, "M6 gate: Digit4 (一气三清) must stay blocked in Golden Core realm");
+    assert.ok(goldBlockedDigit4.mp >= mpStartGold, "Blocked Digit4 in Golden Core must not spend MP");
+
+    await page.keyboard.press("KeyE");
+    await page.waitForTimeout(120);
+    const goldAfterE = await page.evaluate(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      return { mp: s.game.mp, ultCd: s.arena.player.ultCd };
+    });
+    assert.ok(goldAfterE.mp < mpStartGold, `Expected Golden Core KeyE to spend real MP (before=${mpStartGold}, after=${goldAfterE.mp})`);
+    assert.ok(goldAfterE.ultCd >= 5, `Expected real KeyE cooldown >= 5s in Golden Core, got ${goldAfterE.ultCd}`);
+
+    // Now advance to Nascent Soul where both KeyE and Digit4 are unlocked
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "nascent";
+      const st = api.getCombatStats(s.game);
+      s.game.hp = st.maxHp;
+      s.game.mp = st.maxMp;
+      s.arena.player.ultCd = 0;
+      s.arena.sanqingCd = 0;
+      api.syncProgressiveSkillVisibility();
+    });
+    const mpStartNascent = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.mp);
     await page.keyboard.press("KeyE");
     await page.waitForTimeout(120);
     await page.keyboard.press("Digit4");
     await page.waitForTimeout(120);
-    const goldAfter = await page.evaluate(() => {
+    const nascentAfter = await page.evaluate(() => {
       const s = window.__CHENYUAN_V25__.getState();
       return { mp: s.game.mp, ultCd: s.arena.player.ultCd, sanqingCd: s.arena.sanqingCd || 0 };
     });
-    assert.ok(goldAfter.mp < mpStartGold - 35, `Expected KeyE + Digit4 to spend real MP (before=${mpStartGold}, after=${goldAfter.mp})`);
-    assert.ok(goldAfter.ultCd >= 5, `Expected real KeyE cooldown >= 5s, got ${goldAfter.ultCd}`);
-    assert.ok(goldAfter.sanqingCd >= 15, `Expected real Digit4 cooldown >= 15s, got ${goldAfter.sanqingCd}`);
+    assert.ok(nascentAfter.mp < mpStartNascent - 35, `Expected Nascent KeyE + Digit4 to spend real MP (before=${mpStartNascent}, after=${nascentAfter.mp})`);
+    assert.ok(nascentAfter.ultCd >= 5, `Expected real KeyE cooldown >= 5s, got ${nascentAfter.ultCd}`);
+    assert.ok(nascentAfter.sanqingCd >= 15, `Expected real Digit4 cooldown >= 15s in Nascent, got ${nascentAfter.sanqingCd}`);
     await ctx.close();
   });
 
@@ -1468,10 +1946,21 @@ try {
     assert.deepEqual(dropCheck.droppedMats, ["core", "dao", "dew", "herb", "jade", "lotus", "soul"], "All 7 crafting materials must drop across Ch1-Ch5 bosses");
 
     // 6. Explore drawer has 0 legacy [data-source] buttons
+    await page.waitForTimeout(200);
+    for (let k = 0; k < 6; k++) {
+      const btn = await page.$("#modal-backdrop.open #btn-soul-keep-current, #modal-backdrop.open #btn-volume-recap-confirm, #modal-backdrop.open [data-modal-close='1']");
+      if (!btn) break;
+      await btn.click();
+      await page.waitForTimeout(100);
+    }
+    await dismissActiveCutscene(page, 300);
     await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
       s.game.openingChoice = "help";
-      window.__CHENYUAN_V25__.updateHud();
+      api.closeModal();
+      api.syncProgressiveSkillVisibility();
+      api.updateHud();
     });
     await page.click('#nav-btn-explore');
     await page.waitForTimeout(160);
@@ -1690,7 +2179,7 @@ try {
       const ch2 = api.CHAPTERS.find(c => c.index === 2);
       const ch4 = api.CHAPTERS.find(c => c.index === 4);
       const s2Break = ch2.steps.find(st => st.id === "s2_break");
-      const s4Npc = ch4.steps.find(st => st.id === "s4_npc");
+      const s4Puppet = ch4.steps.find(st => st.id === "s4_puppet");
 
       s.game.realm = "qi";
       s.game.stageStars = { 0: 3, 1: 3, 2: 0, 3: 0, 4: 0 };
@@ -1702,14 +2191,20 @@ try {
         armor: api.rollGearItem(1, 1, "armor"),
         ring: api.rollGearItem(1, 1, "ring")
       };
-      const ch4SkippedByGear = s4Npc.check(s.game);
+      const ch4SkippedByGear = s4Puppet.check(s.game);
       s.game.stageStars[3] = 1;
-      const ch4DoneAfterBoss = s4Npc.check(s.game);
-      return { qiBreakDone, ch4SkippedByGear, ch4DoneAfterBoss };
+      const ch4DoneAfterBoss = s4Puppet.check(s.game);
+      return {
+        qiBreakDone,
+        ch4SkippedByGear,
+        ch4DoneAfterBoss,
+        legacyMapTarget: api.LEGACY_STEP_ID_MAP && api.LEGACY_STEP_ID_MAP.s4_npc
+      };
     });
     assert.equal(questCheck.qiBreakDone, false, "Act 2 s2_break must NOT complete while still Qi realm");
-    assert.equal(questCheck.ch4SkippedByGear, false, "Act 4 s4_npc must NOT complete solely from 3 equipped gear items");
-    assert.equal(questCheck.ch4DoneAfterBoss, true, "Act 4 s4_npc must complete after clearing Stage 3 boss");
+    assert.equal(questCheck.ch4SkippedByGear, false, "Act 4 s4_puppet must NOT complete solely from 3 equipped gear items");
+    assert.equal(questCheck.ch4DoneAfterBoss, true, "Act 4 s4_puppet must complete after clearing Stage 3 boss");
+    assert.equal(questCheck.legacyMapTarget, "s4_puppet", "LEGACY_STEP_ID_MAP must map legacy s4_npc -> s4_puppet");
 
     // 2. Every Act's breakthrough pill recipe uses ONLY materials natively dropped by that Act
     const recipeCheck = await page.evaluate(() => {
@@ -1734,36 +2229,54 @@ try {
     });
     assert.deepEqual(recipeCheck, [], `Breakthrough pill recipes must only require native Act materials, got: ${recipeCheck.join("; ")}`);
 
-    // 3. Act 5 ascend_gate differentiates Nascent (化神台) vs Spirit (九霄仙门)
-    const gateLabels = await page.evaluate(() => {
+    // 3. Act 5 ascend_gate waits for Volume-End Recap confirm and differentiates Nascent (化神台) vs Spirit (九霄仙门)
+    await page.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const s = api.getState();
       s.game.openingChoice = "help";
       s.game.seenCutscenes = { prologue_rescue: true, enter_sect: true, enter_secret: true, enter_sword_mound: true, enter_terrace: true };
-
       s.game.realm = "nascent";
       api.initArenaStage(4, false);
       s.arena.waveIdx = 5;
       s.arena.props = [];
       api.spawnCurrentWave();
-      const nascentGate = (s.arena.props.find(p => p.kind === "ascend_gate") || {}).name || "";
+    });
+    await dismissActiveCutscene(page);
+    await page.waitForSelector("#modal-backdrop.open #btn-volume-recap-confirm");
+    const nascentGateBeforeConfirm = await page.evaluate(() =>
+      window.__CHENYUAN_V25__.getState().arena.props.some(p => p.kind === "ascend_gate")
+    );
+    assert.equal(nascentGateBeforeConfirm, false, "Stage 4 ascend_gate must wait until Volume-End Recap modal is confirmed");
+    await page.click("#btn-volume-recap-confirm");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    const nascentGate = await page.evaluate(() =>
+      (window.__CHENYUAN_V25__.getState().arena.props.find(p => p.kind === "ascend_gate") || {}).name || ""
+    );
 
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
       s.game.realm = "spirit";
       api.initArenaStage(4, false);
       s.arena.waveIdx = 5;
       s.arena.props = [];
       api.spawnCurrentWave();
-      const spiritGate = (s.arena.props.find(p => p.kind === "ascend_gate") || {}).name || "";
-      return { nascentGate, spiritGate };
     });
-    assert.ok(gateLabels.nascentGate.includes("化神"), `Nascent Stage 4 gate should mention 化神, got ${gateLabels.nascentGate}`);
-    assert.ok(gateLabels.spiritGate.includes("飞升"), `Spirit Stage 4 gate should mention 飞升, got ${gateLabels.spiritGate}`);
+    await dismissActiveCutscene(page);
+    await page.waitForSelector("#modal-backdrop.open #btn-volume-recap-confirm");
+    await page.click("#btn-volume-recap-confirm");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    const spiritGate = await page.evaluate(() =>
+      (window.__CHENYUAN_V25__.getState().arena.props.find(p => p.kind === "ascend_gate") || {}).name || ""
+    );
+    assert.ok(nascentGate.includes("化神"), `Nascent Stage 4 gate should mention 化神, got ${nascentGate}`);
+    assert.ok(spiritGate.includes("飞升"), `Spirit Stage 4 gate should mention 飞升, got ${spiritGate}`);
 
     // 4. Celestial Spire Floor 3 (chaos_wager) must NOT auto-drain HP; interactive spire_wager_altar requires explicit click
     const spireWager = await page.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const s = api.getState();
-      s.game.realm = "golden";
+      s.game.realm = "nascent";
       const st = api.getCombatStats(s.game);
       s.game.hp = st.maxHp;
       window.__CHENYUAN_V21__.startCelestialSpireRun(3);
@@ -1852,6 +2365,7 @@ try {
     // Start a fresh game and trigger saveGame() + saveMeta() — corrupt meta MUST NOT be overwritten!
     await page.click("#btn-start-new");
     await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+    await dismissOpeningScroll(page);
     await page.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       api.getState().game.stones += 55;
@@ -2336,6 +2850,7 @@ try {
     await tabA.reload({ waitUntil: "domcontentloaded" });
     await tabA.click("#btn-start-new");
     await tabA.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+    await dismissOpeningScroll(tabA);
     await tabA.evaluate(() => {
       window.__CHENYUAN_V25__.getState().game.openingChoice = "help";
       window.__CHENYUAN_V25__.saveGame();
@@ -2453,6 +2968,7 @@ try {
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.click("#btn-start-new");
     await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+    await dismissOpeningScroll(page);
 
     const check = await page.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
@@ -2628,6 +3144,7 @@ try {
       await page.fill("#player-name-input", "\u202E" + P_TYPED);
       await page.click("#btn-start-new");
       await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      await dismissOpeningScroll(page);
 
       const hudName1 = await page.textContent("#hud-name");
       assert.equal(hudName1, P_TYPED, `#hud-name must strip bidi controls on initial session and show literal typed name, got: ${hudName1}`);
@@ -3196,6 +3713,7 @@ try {
       // Start game -> T5/G-T1b meta write quota failure renders visible #hud-save-alert
       await page.click("#btn-start-new");
       await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      await dismissOpeningScroll(page);
       const metaQuotaUi = await page.evaluate((mk) => {
         const orig = Storage.prototype.setItem;
         Storage.prototype.setItem = function (k, v) {
@@ -3266,6 +3784,7 @@ try {
       await tabA.reload({ waitUntil: "domcontentloaded" });
       await tabA.click("#btn-start-new");
       await tabA.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      await dismissOpeningScroll(tabA);
 
       // G-T6a: no-op flushSaveOnLifecycle MUST NOT increment saveRev; visibilitychange hidden flushes real mutation
       const lifecycleCheck = await tabA.evaluate((sk) => {
@@ -3365,7 +3884,7 @@ try {
       await ctx.close();
     }
 
-    // ---- (d2b) G-T6a REAL idle animation-frame no-op flush (fresh start + Golden Core Sanctum Hub active expedition) ----
+    // ---- (d2b) G-T6a REAL idle animation-frame no-op flush (fresh start + Nascent Sanctum Hub paused expedition + live combat ticking expedition) ----
     {
       // Case 1: Fresh start + >=280ms real rAF frames -> hidden/pagehide MUST NOT bump saveRev or trigger false conflict in Tab B
       const ctxIdle1 = await newIsolatedContext(browser);
@@ -3376,6 +3895,7 @@ try {
       await tabA.reload({ waitUntil: "domcontentloaded" });
       await tabA.click("#btn-start-new");
       await tabA.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      await dismissOpeningScroll(tabA);
 
       const revFresh0 = await tabA.evaluate((sk) => JSON.parse(localStorage.getItem(sk)).saveRev, STORAGE_KEY);
       const tabB = await ctxIdle1.newPage();
@@ -3403,7 +3923,7 @@ try {
       assert.equal(idleFreshRes.tabBConflict, null, "G-T6a fresh idle rAF must NOT trigger false conflict in Tab B");
       await ctxIdle1.close();
 
-      // Case 2: Golden Core player in Sanctum Hub with active qinglan_vein expedition -> >=280ms real rAF frames (tickTimer ticks!) -> tab hide/switch MUST NOT bump saveRev or trigger false conflict
+      // Case 2: Nascent player with active qinglan_vein expedition -> M4 G1 pauses in Sanctum Hub (tickTimer stays 8.5), while live combat ticks (< 8.5), and idle tab hide NEVER bumps saveRev
       const ctxIdle2 = await newIsolatedContext(browser);
       const tabS1 = await ctxIdle2.newPage();
       attachErrorListeners(tabS1, "R2-7d-IdleSanctumA");
@@ -3412,14 +3932,16 @@ try {
       await tabS1.reload({ waitUntil: "domcontentloaded" });
       await tabS1.click("#btn-start-new");
       await tabS1.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      await dismissOpeningScroll(tabS1);
       const revBeforeSanctumContinue = await tabS1.evaluate((sk) => {
         const api = window.__CHENYUAN_V25__;
         const g = api.getState().game;
-        g.realm = "golden";
+        g.realm = "nascent";
         g.openingChoice = "help";
         g.tutorialStep = 4;
         g.seenCutscenes.prologue = true;
         g.seenCutscenes.enter_sanctum = true;
+        g.bondTiers = Object.assign({}, g.bondTiers, { shen: 1 });
         g.expeditions = { assignments: { qinglan_vein: "shen" }, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 };
         api.enterSanctumHub();
         return JSON.parse(localStorage.getItem(sk)).saveRev;
@@ -3433,9 +3955,11 @@ try {
 
       const tickCheck = await tabS1.evaluate((sk) => ({
         tickTimer: window.__CHENYUAN_V25__.getState().game.expeditions.tickTimer,
+        sanctumMode: window.__CHENYUAN_V25__.getState().arena.sanctumMode,
         revAfterContinue: JSON.parse(localStorage.getItem(sk)).saveRev
       }), STORAGE_KEY);
-      assert.ok(tickCheck.tickTimer < 8.5, `Expected expedition tickTimer to decrement during idle rAF, got: ${tickCheck.tickTimer}`);
+      assert.equal(tickCheck.sanctumMode, true, "Resumed save should be in Sanctum Hub");
+      assert.equal(tickCheck.tickTimer, 8.5, `M4 G1: expedition tickTimer must stay paused in Sanctum Hub (got: ${tickCheck.tickTimer})`);
       assert.equal(tickCheck.revAfterContinue, revBeforeSanctumContinue, "Continuing Sanctum Hub save must NOT bump saveRev");
 
       const tabS2 = await ctxIdle2.newPage();
@@ -3477,6 +4001,35 @@ try {
       });
       const revAfterRealMut = await tabS1.evaluate((sk) => JSON.parse(localStorage.getItem(sk)).saveRev, STORAGE_KEY);
       assert.equal(revAfterRealMut, revBeforeSanctumContinue + 1, "Genuine mutation in Sanctum Hub must still flush on visibilitychange(hidden)");
+
+      // Sub-check 2b: In active non-Sanctum combat (Nascent + bonded shen + live enemy), expedition tickTimer MUST decrement (< 8.5), while idle tab hide still does NOT bump saveRev
+      await tabS2.close();
+      const revBeforeCombatTick = await tabS1.evaluate((sk) => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.expeditions.tickTimer = 8.5;
+        api.initArenaStage(0, false);
+        s.arena.paused = false;
+        if (!s.arena.enemies.some(e => e.hp > 0 && !e.isDummy && !e.isTreasure)) {
+          api.spawnSingleEnemy("wolf", 920, 460, 1.0, false);
+        }
+        api.saveGame();
+        return JSON.parse(localStorage.getItem(sk)).saveRev;
+      }, STORAGE_KEY);
+      await tabS1.waitForTimeout(320);
+      const combatTickRes = await tabS1.evaluate((sk) => {
+        const origDesc = Object.getOwnPropertyDescriptor(Document.prototype, "visibilityState");
+        Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+        document.dispatchEvent(new Event("visibilitychange"));
+        if (origDesc) Object.defineProperty(document, "visibilityState", origDesc);
+        else delete document.visibilityState;
+        return {
+          tickTimer: window.__CHENYUAN_V25__.getState().game.expeditions.tickTimer,
+          revNow: JSON.parse(localStorage.getItem(sk)).saveRev
+        };
+      }, STORAGE_KEY);
+      assert.ok(combatTickRes.tickTimer < 8.5, `M4 G1: expedition tickTimer must decrement during live combat rAF (got: ${combatTickRes.tickTimer})`);
+      assert.equal(combatTickRes.revNow, revBeforeCombatTick, "G-T6a: expedition tickTimer-only decrement in live combat must NOT bump saveRev on idle tab hide");
       await ctxIdle2.close();
     }
 
@@ -3700,18 +4253,24 @@ try {
       assert.equal(corruptOverwriteCheck.rawAfter, corruptRawBeforeOverwrite, "Failed corrupt overwrite must preserve original raw payload");
       assert.equal(corruptOverwriteCheck.hasWriteErr, true, "Failed corrupt overwrite must set storageWriteError");
       assert.equal(corruptOverwriteCheck.toastTxt.includes("已确认覆盖旧损坏存档"), false, `Failed corrupt overwrite must not emit false success toast, got: ${corruptOverwriteCheck.toastTxt}`);
+      await ctx.close();
 
       // N1-continue + N2 (bonusSwords: 1.5, stones: 42.7) + N3 (karmaEventsDone: 1.5) + N5 (own __proto__ in customComboSeq/primordialCrafts/pity)
-      await page.evaluate((sk) => {
+      // Use a fresh context still on welcome screen (game === null) so pagehide cannot flush a v11 save over LEGACY_V10_KEY on reload.
+      const ctxN235 = await newIsolatedContext(browser);
+      const pageN235 = await ctxN235.newPage();
+      attachErrorListeners(pageN235, "R2-7-N1-N5");
+      await pageN235.goto(targetUrl, { waitUntil: "domcontentloaded" });
+      await pageN235.evaluate((sk) => {
         localStorage.clear();
         const rawLegacy = '{"game":{"realm":"qi","name":{"toString":1,"valueOf":2},"stones":42.7,"bonusSwords":1.5,"karmaEventsDone":1.5,"equippedGear":{"weapon":{"slot":"weapon","name":{"toString":1,"valueOf":2},"atk":10}},"customComboSeq":{"__proto__":{"polluted":1},"enabled":true,"slots":["sword_crescent","spear_flurry","chakram_vortex","greatsword_cleave"],"morphCount":0},"primordialCrafts":{"__proto__":{"polluted":1},"goldenAcolyte":false,"voidSwordRift":false,"pillBatches":0,"forgedBlades":0},"pity":{"__proto__":{"polluted":1},"epic":0,"mythic":0,"critAcc":0,"vampHits":0,"thunderHits":0,"gearDrops":0}},"stageIdx":0,"stanceIdx":0,"towerMode":false,"sanctumMode":false}';
         localStorage.setItem(sk, rawLegacy);
       }, LEGACY_V10_KEY);
-      await page.reload({ waitUntil: "domcontentloaded" });
-      await page.waitForSelector("#btn-continue-save");
-      await page.click("#btn-continue-save");
-      await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
-      const n235State = await page.evaluate(() => {
+      await pageN235.reload({ waitUntil: "domcontentloaded" });
+      await pageN235.waitForSelector("#btn-continue-save");
+      await pageN235.click("#btn-continue-save");
+      await pageN235.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      const n235State = await pageN235.evaluate(() => {
         const g = window.__CHENYUAN_V25__.getState().game;
         return {
           hudName: (document.getElementById("hud-name")?.textContent || "").trim(),
@@ -3736,16 +4295,16 @@ try {
       assert.equal(n235State.pityOwnProto, false, "N5: pity must not retain own __proto__ key");
 
       // N3 UI check: open Karma Dilemma modal cleanly even if karmaEventsDone is mutated to 1.5 in memory
-      await page.evaluate(() => { window.__CHENYUAN_V25__.getState().game.karmaEventsDone = 1.5; });
-      await page.click("#nav-btn-story");
-      await page.waitForSelector('#jade-panel.drawer-open [data-action="open-karma-dilemma"]');
-      await page.click('#jade-panel [data-action="open-karma-dilemma"]');
-      await page.waitForSelector("#modal-backdrop.open [data-karma-dilemma]");
-      await page.keyboard.press("Escape");
-      await page.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+      await pageN235.evaluate(() => { window.__CHENYUAN_V25__.getState().game.karmaEventsDone = 1.5; });
+      await pageN235.click("#nav-btn-story");
+      await pageN235.waitForSelector('#jade-panel.drawer-open [data-action="open-karma-dilemma"]');
+      await pageN235.click('#jade-panel [data-action="open-karma-dilemma"]');
+      await pageN235.waitForSelector("#modal-backdrop.open [data-karma-dilemma]");
+      await pageN235.keyboard.press("Escape");
+      await pageN235.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
 
       // N1-cross-tab: valid v2 envelope with poisoned game.name={"toString":1,"valueOf":2} must open conflict modal cleanly
-      const crossTabRes = await page.evaluate((sk) => {
+      const crossTabRes = await pageN235.evaluate((sk) => {
         const payloadObj = {
           game: { realm: "mortal", name: { toString: 1, valueOf: 2 }, stones: 99 },
           stageIdx: 0, stanceIdx: 0, towerMode: false, sanctumMode: false
@@ -3763,25 +4322,1150 @@ try {
       }, STORAGE_KEY);
       assert.equal(crossTabRes.modalOpen, true, "N1: cross-tab conflict with poisoned game.name must open conflict modal cleanly");
       assert.ok(crossTabRes.modalTxt.includes("顾长青"), "N1: conflict modal must fall back poisoned externalName to 顾长青");
-      await ctx.close();
+      await ctxN235.close();
     }
   });
 
-  assert.equal(allErrors.length, 0, `Expected 0 console/page errors, got:\n${allErrors.join("\n")}`);
-  console.log(`\n✅ ALL ${results.length} REGRESSION SUITES PASSED WITH 0 RUNTIME ERRORS!`);
+  // =========================================================================
+  // MILESTONE 3 REGRESSION SUITES (R3-1 .. R3-3): S1, S2, S5, S6, G3
+  // =========================================================================
+  await runSuite("R3-1", "M3 S1 境界突破妖王门控(6重边界+前往挑战指引)与旧档零回退5场景迁移", async () => {
+    // 1. Fresh start: verify all 6 REALM_BOSS_GATE boundaries block until stage boss defeated, and #btn-trib-goto-boss navigates cleanly
+    const { ctx, page } = await startCleanGamePage(browser, "R3-1", true);
+    const gateMatrix = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      const realms = ["mortal", "qi", "foundation", "golden", "nascent", "spirit"];
+      const out = [];
+      for (const r of realms) {
+        s.game.realm = r;
+        s.game.defeatedStageBosses = {};
+        s.game.stageStars = {};
+        const lockedGate = api.getBreakthroughBossGate(s.game);
+        s.game.xp = api.getState().realmSpec.xpCap;
+        api.openTribulationPrepModal();
+        const modalTxt = document.getElementById("modal-content")?.textContent || "";
+        const hasGotoBtn = Boolean(document.getElementById("btn-trib-goto-boss"));
+        const hasPillBtn = Boolean(document.querySelector('[data-trib-start="pill"]'));
+        api.closeModal();
+        s.game.defeatedStageBosses[lockedGate.stageIdx] = true;
+        const unlockedGate = api.getBreakthroughBossGate(s.game);
+        out.push({
+          realm: r,
+          reqStage: lockedGate.stageIdx,
+          locked: lockedGate.locked,
+          unlocked: !unlockedGate.locked,
+          hasGotoBtn,
+          hasPillBtn,
+          mentionsNeedBoss: modalTxt.includes("需先击败")
+        });
+      }
+      return out;
+    });
+    for (const row of gateMatrix) {
+      assert.equal(row.locked, true, `REALM_BOSS_GATE must lock ${row.realm} before stage ${row.reqStage} boss`);
+      assert.equal(row.unlocked, true, `REALM_BOSS_GATE must unlock ${row.realm} once stage ${row.reqStage} boss defeated`);
+      assert.equal(row.hasGotoBtn, true, `${row.realm} gate modal must expose #btn-trib-goto-boss`);
+      assert.equal(row.hasPillBtn, false, `${row.realm} gate modal must block tribulation start`);
+      assert.equal(row.mentionsNeedBoss, true, `${row.realm} gate modal must display 需先击败【X】`);
+    }
 
-  if (REPORT_PATH) {
-    fs.mkdirSync(path.dirname(path.resolve(REPORT_PATH)), { recursive: true });
-    fs.writeFileSync(REPORT_PATH, JSON.stringify({
-      passed: results.every(r => r.ok) && allErrors.length === 0,
-      total: results.length,
-      errors: allErrors,
-      suites: results,
-      viewport: "1440x900",
-      timestamp: new Date().toISOString()
-    }, null, 2), "utf-8");
-  }
+    // Verify clicking #btn-trib-goto-boss actually enters the target stage cleanly
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "qi";
+      s.game.xp = api.getState().realmSpec.xpCap;
+      s.game.defeatedStageBosses = { 0: true };
+      s.game.stageStars = { 0: 1 };
+      s.game.seenCutscenes.enter_sect = true;
+      api.openTribulationPrepModal();
+    });
+    await page.waitForSelector("#modal-backdrop.open #btn-trib-goto-boss");
+    await page.click("#btn-trib-goto-boss");
+    await page.waitForTimeout(200);
+    await dismissActiveCutscene(page);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.stageIdx), 1, "#btn-trib-goto-boss for qi must navigate to Stage 1");
+    await ctx.close();
+
+    // 2. Legacy eb0ea67 high-realm save migration + reload + quota fail + multi-tab conflict (5-scenario matrix)
+    const ctxMig = await newIsolatedContext(browser);
+    const tabA = await ctxMig.newPage();
+    attachErrorListeners(tabA, "R3-1-MigA");
+    await tabA.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tabA.evaluate((sk) => {
+      localStorage.clear();
+      // Legacy save at golden realm with stageStars but no defeatedStageBosses field
+      localStorage.setItem(sk, JSON.stringify({
+        game: { name: "旧档金丹", realm: "golden", xp: 100, stones: 400, stageStars: { 0: 3, 1: 2, 2: 1 } },
+        stageIdx: 2, stanceIdx: 0, towerMode: false, sanctumMode: true
+      }));
+    }, STORAGE_KEY);
+    await tabA.reload({ waitUntil: "domcontentloaded" });
+    await tabA.waitForSelector("#btn-continue-save");
+    await tabA.click("#btn-continue-save");
+    await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    const migState = await tabA.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      return {
+        realm: g.realm,
+        boss0: api.isStageBossDefeated(g, 0),
+        boss1: api.isStageBossDefeated(g, 1),
+        boss2: api.isStageBossDefeated(g, 2)
+      };
+    });
+    assert.equal(migState.realm, "golden", "Legacy high-realm save must not regress realm");
+    assert.equal(migState.boss0 && migState.boss1 && migState.boss2, true, "Legacy stageStars must preserve defeatedStageBosses with zero regression");
+
+    // Reload persistence
+    await tabA.reload({ waitUntil: "domcontentloaded" });
+    await tabA.waitForSelector("#btn-continue-save");
+    await tabA.click("#btn-continue-save");
+    await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    assert.equal(await tabA.evaluate(() => window.__CHENYUAN_V25__.getState().game.realm), "golden");
+
+    // QuotaExceededError check
+    const quotaFail = await tabA.evaluate(() => {
+      const orig = Storage.prototype.setItem;
+      Storage.prototype.setItem = function () { throw new DOMException("Quota full", "QuotaExceededError"); };
+      const ok = window.__CHENYUAN_V25__.saveGame();
+      Storage.prototype.setItem = orig;
+      return { ok, alertVisible: getComputedStyle(document.getElementById("hud-save-alert")).display !== "none" };
+    });
+    assert.equal(quotaFail.ok, false);
+    assert.equal(quotaFail.alertVisible, true);
+    await tabA.click('#hud-save-alert [data-action="retry-save-now"]');
+    await tabA.waitForTimeout(120);
+
+    // Multi-tab contention check
+    const tabB = await ctxMig.newPage();
+    attachErrorListeners(tabB, "R3-1-MigB");
+    await tabB.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tabB.waitForSelector("#btn-continue-save");
+    await tabB.click("#btn-continue-save");
+    await tabB.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await tabB.evaluate(() => {
+      window.__CHENYUAN_V25__.getState().game.stones = 888;
+      window.__CHENYUAN_V25__.saveGame();
+    });
+    await tabA.waitForSelector('#modal-backdrop.open [data-action="load-latest-save"]');
+    await tabA.click('[data-action="load-latest-save"]');
+    await tabA.waitForTimeout(160);
+    assert.equal(await tabA.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones), 888);
+    await ctxMig.close();
+  });
+
+  await runSuite("R3-2", "M3 S2 如实飞升终章与诚实评分 + S5 全通后终局目标指引", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "R3-2", true);
+    const evalRes = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      const g = s.game;
+      // 0-star ascended character with no bonded companions
+      g.realm = "ascended";
+      g.status = "ascended";
+      g.openingChoice = "loot";
+      g.stageStars = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+      g.defeatedStageBosses = {};
+      g.bondTiers = {};
+      g.aids = {};
+      g.choices = {};
+      g.karmaScore = 0;
+      g.towerBest = 0;
+      g.bestSpireFloor = 0;
+      g.achievements = [];
+      const zeroScore = api.computeCompetitionScore(g);
+      const zeroGrade = api.getScoreGrade(zeroScore, g);
+      const zeroEpi = api.getKarmaEndingEpilogue(g, "sword_sovereign");
+
+      // Fully cleared & bonded character satisfying ALL 18 CHAPTERS step checks
+      g.openingChoice = "help";
+      g.pet = { id: "fox", level: 3, skills: { tier3: null, tier5: null } };
+      g.immortalPills = 2;
+      g.choices = { lu_intro: "listen", pei_spar: "a", shen_past: "a", yan_gate: "a" };
+      g.ownedRelics = ["frost_sword"];
+      g.loadout = Object.assign({}, g.loadout, { relic: "frost_sword" });
+      g.laws = ["wanjian", "yinyang", "pill_fire", "void_haste"];
+      g.stageStars = { 0: 3, 1: 3, 2: 3, 3: 3, 4: 3 };
+      g.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
+      g.bondTiers = { shen: 2, lu: 2 };
+      g.aids = { shen: true, lu: true };
+      g.trialCompleted = true;
+      const fullEpi = api.getKarmaEndingEpilogue(g, "mortal_guardian");
+
+      // S5: mark all mainline steps claimed -> findNextMainlineStep returns { allDone: true, step: null } & tracker shows endgame goal, never stale s7_trial
+      g.claimedStepIds = api.CHAPTERS.flatMap(ch => ch.steps.map(st => st.id));
+      const nextStep = api.findNextMainlineStep(g);
+      api.updateHud();
+      const trackerText = (document.getElementById("qt-body-rows")?.innerText || document.getElementById("quest-tracker-hud")?.textContent || "").trim();
+      return {
+        zeroScore,
+        zeroGrade: zeroGrade && (zeroGrade.grade || zeroGrade.short || String(zeroGrade)),
+        zeroEpiStr: JSON.stringify(zeroEpi),
+        fullEpiStr: JSON.stringify(fullEpi),
+        nextStep: nextStep ? { allDone: Boolean(nextStep.allDone), step: nextStep.step, claimReady: Boolean(nextStep.claimReady) } : null,
+        trackerText
+      };
+    });
+    assert.ok(!String(evalRes.zeroGrade).startsWith("SS") && !String(evalRes.zeroGrade).startsWith("S+"),
+      `0-star ascended character must NOT receive SS/S+ grade, got ${evalRes.zeroGrade} (score=${evalRes.zeroScore})`);
+    assert.notEqual(evalRes.zeroEpiStr, evalRes.fullEpiStr, "Truthful epilogue must differentiate 0-star unbonded vs cleared & bonded run");
+    assert.ok(evalRes.fullEpiStr.includes("沈清禾") || evalRes.fullEpiStr.includes("陆玄松"), "Cleared epilogue must mention actual bonded companions (沈清禾/陆玄松)");
+    assert.equal(evalRes.nextStep?.allDone, true, `When all mainline steps are completed and claimed, findNextMainlineStep must return allDone=true, got: ${JSON.stringify(evalRes.nextStep)}`);
+    assert.equal(evalRes.nextStep?.step, null, `When all mainline steps are completed and claimed, findNextMainlineStep.step must be null, got: ${JSON.stringify(evalRes.nextStep)}`);
+    assert.match(evalRes.trackerText, /仙途圆满|劫火周目|锁妖塔/, `All-complete tracker must show endgame goal text, got: "${evalRes.trackerText}"`);
+    assert.ok(!evalRes.trackerText.includes("s7_trial") && !evalRes.trackerText.includes("剑斩道影"), `All-complete tracker must not show stale s7_trial, got: "${evalRes.trackerText}"`);
+    await ctx.close();
+  });
+
+  await runSuite("R3-3", "M3 S6 红尘问心不误满槽 + G3 单击45%上限、Boss压力带与三模式境界缩放", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "R3-3", true);
+    const res = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      // 1. S6 Karma choice without fillIntent must not fill bondSynergy, astralEnergy, or swordIntent to 100
+      s.arena.bondSynergy = 12;
+      s.arena.astralEnergy = 15;
+      s.arena.swordIntent = 10;
+      const kd = api.KARMA_DILEMMAS.find(d => d && d.rightOpt && !d.rightOpt.fillIntent) || api.KARMA_DILEMMAS[0];
+      api.resolveKarmaDilemmaChoice(kd.id, "right");
+      const bondAfter = s.arena.bondSynergy;
+      const astralAfter = s.arena.astralEnergy;
+      const intentAfter = s.arena.swordIntent;
+
+      // 2. G3 Single-hit cap <= 45% maxHp
+      s.game.realm = "foundation";
+      const st = api.getCombatStats(s.game);
+      s.game.hp = st.maxHp;
+      s.arena.player.invuln = 0;
+      s.arena.player.shieldHp = 0;
+      api.hurtPlayer(999999);
+      const cappedDmg = st.maxHp - s.game.hp;
+      const capLimit = Math.ceil(st.maxHp * api.SINGLE_HIT_CAP_RATIO) + 1;
+
+      // 3. Monotonic realm baseline & Boss Rush / Spire scaling across realms
+      const baseQi = api.getRealmCombatBaseline("qi");
+      const baseGold = api.getRealmCombatBaseline("golden");
+      const baseSpirit = api.getRealmCombatBaseline("spirit");
+
+      s.game.realm = "nascent";
+      s.arena.bossRush = {
+        active: true, bout: 1, maxBouts: 7, elapsed: 0,
+        partBreaks: 0, parries: 0, hitsTaken: 0, damageTaken: 0,
+        startBout: 1, practiceMode: false
+      };
+      s.arena.enemies = [];
+      api.spawnBossRushBout();
+      const rushNascentHp = s.arena.enemies[0]?.maxHp || 0;
+
+      s.game.realm = "spirit";
+      s.arena.bossRush = {
+        active: true, bout: 1, maxBouts: 7, elapsed: 0,
+        partBreaks: 0, parries: 0, hitsTaken: 0, damageTaken: 0,
+        startBout: 1, practiceMode: false
+      };
+      s.arena.enemies = [];
+      api.spawnBossRushBout();
+      const rushSpiritHp = s.arena.enemies[0]?.maxHp || 0;
+
+      return { bondAfter, astralAfter, intentAfter, cappedDmg, capLimit, baseQi, baseGold, baseSpirit, rushNascentHp, rushSpiritHp };
+    });
+    assert.ok(res.bondAfter < 100, `Karma choice without fillIntent must NOT fill bondSynergy to 100, got ${res.bondAfter}`);
+    assert.ok(res.astralAfter < 100, `Karma choice without fillIntent must NOT fill astralEnergy to 100, got ${res.astralAfter}`);
+    assert.ok(res.intentAfter < 100, `Karma choice without fillIntent must NOT fill swordIntent to 100, got ${res.intentAfter}`);
+    assert.ok(res.cappedDmg <= res.capLimit, `Single-hit damage (${res.cappedDmg}) exceeded 45% cap (${res.capLimit})`);
+    assert.ok(res.baseQi.atk < res.baseGold.atk && res.baseGold.atk < res.baseSpirit.atk, "Realm combat baseline ATK must scale monotonically");
+    assert.ok(res.rushSpiritHp >= res.rushNascentHp && res.rushNascentHp > 0, `Boss Rush HP must scale monotonically with realm (${res.rushNascentHp} -> ${res.rushSpiritHp})`);
+    await ctx.close();
+  });
+
+  // =========================================================================
+  // MILESTONE 4 REGRESSION SUITES (R4-1 .. R4-4): G1, G2, G4, G5, G6, G9, G11a
+  // =========================================================================
+  await runSuite("R4-1", "M4 G1 九州远征经济闭环(空库禁刷/600上限/洞府停表/实战走表/羁绊校验)与5场景存档", async () => {
+    // Scenario 1: Fresh start expedition mechanics
+    const { ctx, page } = await startCleanGamePage(browser, "R4-1", true);
+    const econCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      const g = s.game;
+      g.realm = "nascent";
+      g.bondTiers = { shen: 1 };
+      g.aids = {};
+      g.choices = {};
+      g.expeditions = { assignments: {}, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 };
+
+      // Unbonded hero rejected
+      const unbonded = api.assignExpeditionNode(g, "qinglan_vein", "yan");
+      // Bonded hero accepted
+      const bonded = api.assignExpeditionNode(g, "qinglan_vein", "shen");
+      // Duplicate hero assignment on valid second node rejected
+      const dup = api.assignExpeditionNode(g, "qingyun_peak", "shen");
+
+      // Empty bank double-claim yields 0 stones & 0 stars
+      const stonesBefore = g.stones;
+      const claimEmpty1 = api.claimExpeditionRewards();
+      const claimEmpty2 = api.claimExpeditionRewards();
+
+      // Bank cap enforcement: even if inflated above cap, claim caps at 600 stones / 5 stars
+      g.expeditions.bankedStones = 9999;
+      g.expeditions.bankedStars = 99;
+      const claimCapped = api.claimExpeditionRewards();
+      const claimAfterCapped = api.claimExpeditionRewards();
+      return {
+        unbondedOk: unbonded.ok,
+        unbondedReason: unbonded.reason,
+        bondedOk: bonded.ok,
+        dupOk: dup.ok,
+        dupReason: dup.reason,
+        claimEmpty1,
+        claimEmpty2,
+        stonesDeltaEmpty: (g.stones - (claimCapped?.gainedStones || 0)) - stonesBefore,
+        claimCapped,
+        claimAfterCapped,
+        stonesCap: api.EXPEDITION_BANKED_STONES_CAP,
+        starsCap: api.EXPEDITION_BANKED_STARS_CAP
+      };
+    });
+    assert.equal(econCheck.unbondedOk, false, "Unbonded hero must be rejected for expedition garrison");
+    assert.equal(econCheck.unbondedReason, "unbonded", `Unbonded hero rejection reason must be "unbonded", got "${econCheck.unbondedReason}"`);
+    assert.equal(econCheck.bondedOk, true, "Bonded hero shen must be assignable");
+    assert.equal(econCheck.dupOk, false, "Duplicate hero assignment across nodes must be rejected");
+    assert.equal(econCheck.dupReason, "already_assigned", `Duplicate hero rejection reason must be "already_assigned", got "${econCheck.dupReason}"`);
+    assert.equal(econCheck.claimEmpty1.gainedStones, 0);
+    assert.equal(econCheck.claimEmpty2.gainedStones, 0);
+    assert.ok(econCheck.claimCapped.gainedStones <= econCheck.stonesCap, `Claimed stones (${econCheck.claimCapped.gainedStones}) must respect cap ${econCheck.stonesCap}`);
+    assert.ok(econCheck.claimCapped.gainedStars <= econCheck.starsCap, `Claimed stars (${econCheck.claimCapped.gainedStars}) must respect cap ${econCheck.starsCap}`);
+    assert.equal(econCheck.claimAfterCapped.gainedStones, 0, "Second consecutive claim on empty bank must yield 0");
+
+    // Sanctum pause vs live combat tick
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.expeditions.tickTimer = 8.5;
+      api.enterSanctumHub();
+    });
+    await page.waitForTimeout(260);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.expeditions.tickTimer), 8.5, "Expedition must pause in Sanctum Hub");
+
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      api.initArenaStage(0, false);
+      s.arena.paused = false;
+      if (!s.arena.enemies.some(e => e.hp > 0 && !e.isDummy && !e.isTreasure)) api.spawnSingleEnemy("wolf", 920, 460, 1.0, false);
+    });
+    await page.waitForTimeout(300);
+    assert.ok(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.expeditions.tickTimer < 8.5), "Expedition must tick during active non-Sanctum combat");
+    await ctx.close();
+
+    // Scenarios 2-5: Legacy expedition migration, reload persistence, QuotaExceededError alert+retry, multi-tab contention
+    const ctxExp = await newIsolatedContext(browser);
+    const tabA = await ctxExp.newPage();
+    attachErrorListeners(tabA, "R4-1-SaveA");
+    await tabA.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tabA.evaluate((sk) => {
+      localStorage.clear();
+      localStorage.setItem(sk, JSON.stringify({
+        game: {
+          name: "远征旧档",
+          realm: "nascent",
+          stones: 300,
+          bondTiers: { shen: 1, pei: 0, lu: 0, yan: 0 },
+          expeditions: {
+            assignments: { qinglan_vein: "shen", qingyun_peak: "yan" },
+            bankedStones: 9999,
+            bankedStars: 99,
+            supportThunderCount: 0,
+            tickTimer: 6.0
+          }
+        },
+        stageIdx: 0, stanceIdx: 0, towerMode: false, sanctumMode: true
+      }));
+    }, STORAGE_KEY);
+    await tabA.reload({ waitUntil: "domcontentloaded" });
+    await tabA.waitForSelector("#btn-continue-save");
+    await tabA.click("#btn-continue-save");
+    await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    const migExp = await tabA.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      return {
+        qinglan: g.expeditions?.assignments?.qinglan_vein || null,
+        qingyun: g.expeditions?.assignments?.qingyun_peak || null,
+        bankedStones: g.expeditions?.bankedStones,
+        bankedStars: g.expeditions?.bankedStars,
+        stonesCap: api.EXPEDITION_BANKED_STONES_CAP,
+        starsCap: api.EXPEDITION_BANKED_STARS_CAP
+      };
+    });
+    assert.equal(migExp.qinglan, "shen", "Legacy save must preserve valid bonded expedition assignment");
+    assert.equal(migExp.qingyun, null, "Legacy save migration must prune unbonded expedition hero");
+    assert.ok(migExp.bankedStones <= migExp.stonesCap, `Migrated bankedStones (${migExp.bankedStones}) must clamp to <= ${migExp.stonesCap}`);
+    assert.ok(migExp.bankedStars <= migExp.starsCap, `Migrated bankedStars (${migExp.bankedStars}) must clamp to <= ${migExp.starsCap}`);
+
+    // Scenario 3: Reload persistence
+    await tabA.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.getState().game.expeditions.bankedStones = 145;
+      api.saveGame();
+    });
+    await tabA.reload({ waitUntil: "domcontentloaded" });
+    await tabA.waitForSelector("#btn-continue-save");
+    await tabA.click("#btn-continue-save");
+    await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    const afterReloadExp = await tabA.evaluate(() => {
+      const g = window.__CHENYUAN_V25__.getState().game;
+      return { qinglan: g.expeditions?.assignments?.qinglan_vein || null, bankedStones: g.expeditions?.bankedStones };
+    });
+    assert.equal(afterReloadExp.qinglan, "shen", "Expedition assignment must persist across reload");
+    assert.equal(afterReloadExp.bankedStones, 145, "Expedition bankedStones must persist across reload");
+
+    // Scenario 4: QuotaExceededError write-fail alert + preserve + retry recovery
+    const rawBeforeQuota = await tabA.evaluate((sk) => localStorage.getItem(sk), STORAGE_KEY);
+    const quotaRes = await tabA.evaluate((sk) => {
+      const orig = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) {
+        if (k === sk) throw new DOMException("Quota full", "QuotaExceededError");
+        return orig.call(this, k, v);
+      };
+      window.__CHENYUAN_V25__.getState().game.expeditions.bankedStones = 210;
+      const ok = window.__CHENYUAN_V25__.saveGame();
+      Storage.prototype.setItem = orig;
+      return {
+        ok,
+        rawAfterFail: localStorage.getItem(sk),
+        alertVisible: getComputedStyle(document.getElementById("hud-save-alert")).display !== "none"
+      };
+    }, STORAGE_KEY);
+    assert.equal(quotaRes.ok, false, "QuotaExceededError must return false from saveGame");
+    assert.equal(quotaRes.rawAfterFail, rawBeforeQuota, "Failed write must preserve prior expedition save intact");
+    assert.equal(quotaRes.alertVisible, true, "QuotaExceededError must surface #hud-save-alert");
+    await tabA.click('#hud-save-alert [data-action="retry-save-now"]');
+    await tabA.waitForTimeout(140);
+    assert.equal(await tabA.evaluate((sk) => JSON.parse(localStorage.getItem(sk) || "{}").game?.expeditions?.bankedStones, STORAGE_KEY), 210, "Retry save must persist updated expedition bankedStones");
+
+    // Scenario 5: Multi-tab contention & sync
+    const tabB = await ctxExp.newPage();
+    attachErrorListeners(tabB, "R4-1-SaveB");
+    await tabB.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tabB.waitForSelector("#btn-continue-save");
+    await tabB.click("#btn-continue-save");
+    await tabB.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await tabB.evaluate(() => {
+      window.__CHENYUAN_V25__.getState().game.expeditions.bankedStones = 333;
+      window.__CHENYUAN_V25__.saveGame();
+    });
+    await tabA.waitForSelector('#modal-backdrop.open [data-action="load-latest-save"]');
+    await tabA.click('[data-action="load-latest-save"]');
+    await tabA.waitForTimeout(160);
+    assert.equal(await tabA.evaluate(() => window.__CHENYUAN_V25__.getState().game.expeditions?.bankedStones), 333, "Loading latest save in multi-tab conflict must sync Tab B expedition state");
+    await ctxExp.close();
+  });
+
+  await runSuite("R4-2", "M4 G2 切玉赌注套利封口 + G4 剑冢/天阙跳关练手隔离(零奖励/零纪录)", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "R4-2", true);
+    // 1. G2: Collecting all 15 Dao Laws disables jade wager / prevents net stone profit
+    const jadeRes = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      const g = s.game;
+      g.realm = "nascent";
+      g.stones = 500;
+      g.laws = [
+        "wanjian", "yinyang", "pill_fire", "wealth_power", "thunder_body",
+        "crit_lotus", "nine_pill", "eternal_spring", "stagger_surge", "void_haste",
+        "relic_awake", "beast_soul", "age_might", "karma_resonance", "destiny_eye"
+      ];
+      return { allCollectedBefore: api.isAllDaoLawsCollected(g), stones: g.stones };
+    });
+    assert.equal(jadeRes.allCollectedBefore, true, "All 15 Dao Laws must satisfy isAllDaoLawsCollected");
+    await page.click("#nav-btn-alchemy");
+    await page.waitForTimeout(160);
+    const gambleDisabled = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const btn = document.querySelector('#panel-scroll-body [data-action="gamble-jade"]');
+      return {
+        allDone: api.isAllDaoLawsCollected(api.getState().game),
+        btnExists: Boolean(btn),
+        btnDisabled: Boolean(btn && btn.disabled)
+      };
+    });
+    assert.equal(gambleDisabled.allDone, true);
+    assert.equal(gambleDisabled.btnExists, true, "Alchemy drawer must render gamble-jade control");
+    assert.equal(gambleDisabled.btnDisabled, true, "Jade wager button must be disabled once all Dao Laws are collected");
+
+    // 2. G4: Boss Rush Bout 6 skip & Celestial Spire Floor 9 skip run in practice mode with 0 rewards/records
+    const practiceRes = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "nascent";
+      s.game.rushBestGrade = "";
+      s.game.bestSpireFloor = 0;
+      api.startBossRushGauntlet(6);
+      const rushPractice = api.isPracticeModeActive();
+      const rushIsPracticeFlag = Boolean(s.arena.bossRush && s.arena.bossRush.practiceMode);
+
+      api.startCelestialSpireRun(9);
+      const spirePractice = api.isPracticeModeActive();
+      const spireIsPracticeFlag = Boolean(s.arena.celestialSpire && s.arena.celestialSpire.practiceMode);
+      return { rushPractice, rushIsPracticeFlag, spirePractice, spireIsPracticeFlag };
+    });
+    assert.equal(practiceRes.rushPractice, true, "Boss Rush Bout 6 skip must activate practice mode");
+    assert.equal(practiceRes.rushIsPracticeFlag, true, "arena.bossRush.practiceMode must be true on skipped bout");
+    assert.equal(practiceRes.spirePractice, true, "Celestial Spire Floor 9 skip must activate practice mode");
+    assert.equal(practiceRes.spireIsPracticeFlag, true, "arena.celestialSpire.practiceMode must be true on skipped floor");
+    await ctx.close();
+  });
+
+  await runSuite("R4-3", "M4 G5 永久成长上限与旧档无损钳位 + G6 沙盒硬隔离 + G11a 剑冢诚实评级", async () => {
+    // 1. G5 Caps + G11a Boss Rush Grading
+    const { ctx, page } = await startCleanGamePage(browser, "R4-3", true);
+    const capsAndGrade = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "golden";
+      const caps = api.getPermGrowthCaps(s.game);
+      const bfQuota = api.getBloodFuryQuota(s.game);
+      s.game.spireCurios = { dragon_scale: 99 };
+      const clampedCurio = api.getCurioStacks(s.game, "dragon_scale");
+
+      // Baseline Boss Rush run (210s elapsed, 0 partBreaks, 0 parries, 3 hits) should score A, NOT automatic SS
+      const baseGrade = api.computeBossRushScoreAndGrade({ elapsed: 210, partBreaks: 0, parries: 0, hitsTaken: 3, damageTaken: 100 }, 1.0, 325, 0);
+      // Elite fast no-hit technical run should reach SS / S+
+      const eliteGrade = api.computeBossRushScoreAndGrade({ elapsed: 110, partBreaks: 6, parries: 6, hitsTaken: 0, damageTaken: 0 }, 1.2, 325, 0);
+      return { caps, bfQuota, clampedCurio, baseGrade, eliteGrade };
+    });
+    assert.equal(capsAndGrade.bfQuota.max, 2, "Blood fury quota per realm must be capped at 2");
+    assert.equal(capsAndGrade.clampedCurio, 3, "Spire curio stacks must be clamped to <= 3");
+    assert.equal(capsAndGrade.caps.spireCurioMaxStack, 3);
+    assert.equal(capsAndGrade.baseGrade.shortGrade, "A", `Baseline Boss Rush run should grade A (not automatic SS), got ${capsAndGrade.baseGrade.shortGrade}`);
+    assert.ok(["SS", "S+"].includes(capsAndGrade.eliteGrade.shortGrade), `Elite technical no-hit Boss Rush should achieve SS/S+, got ${capsAndGrade.eliteGrade.shortGrade}`);
+
+    // 2. G6 Sandbox hard isolation across reload
+    const beforeSandbox = await page.evaluate((sk) => {
+      const api = window.__CHENYUAN_V25__;
+      api.getState().game.stones = 321;
+      api.saveGame();
+      return { liveSave: localStorage.getItem(sk), metaRaw: localStorage.getItem("chenyuan_wendao_v11_meta") };
+    }, STORAGE_KEY);
+    await page.click("#btn-pavilion-menu");
+    await page.waitForTimeout(120);
+    await page.click("#btn-ascension-roadmap");
+    await page.waitForSelector('#modal-backdrop.open [data-action="toggle-arcana-all-roadmap"]');
+    await page.click('[data-action="toggle-arcana-all-roadmap"]');
+    await page.waitForSelector("#modal-backdrop.open #btn-confirm-enter-sandbox");
+    await page.click("#btn-confirm-enter-sandbox");
+    await page.waitForTimeout(180);
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.getState().game.stones = 999999;
+      api.saveGame();
+    });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#btn-continue-save");
+    await page.click("#btn-continue-save");
+    await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    const afterReload = await page.evaluate(() => ({
+      isSandbox: window.__CHENYUAN_V25__.isSandboxMode(),
+      stones: window.__CHENYUAN_V25__.getState().game.stones
+    }));
+    assert.equal(afterReload.isSandbox, false, "Reload must exit sandbox back to real save");
+    assert.equal(afterReload.stones, 321, "Sandbox mutations must NEVER leak into live save across reload");
+    await ctx.close();
+  });
+
+  await runSuite("R4-4", "M4 G9 显式消费(行囊24/24处置、炼丹补料明细、法宝妖核折扣开关、魂印择佩)", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "R4-4", true);
+    // 1. Bag 24/24 queues explicit overflow modal without auto-smelting
+    const overflowCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.stones = 200;
+      s.game.gearBag = [];
+      for (let i = 0; i < api.GEAR_BAG_LIMIT; i++) {
+        s.game.gearBag.push(api.rollGearItem(1, 0, "weapon"));
+      }
+      const stonesBefore = s.game.stones;
+      const extraItem = api.rollGearItem(2, 1, "weapon");
+      api.acquireGearItem(extraItem);
+      return {
+        stonesBefore,
+        stonesAfter: s.game.stones,
+        bagLen: s.game.gearBag.length,
+        pendingCount: api.getPendingOverflowCount()
+      };
+    });
+    assert.equal(overflowCheck.stonesAfter, overflowCheck.stonesBefore, "Acquiring gear with full 24/24 bag must NOT silently auto-smelt");
+    assert.equal(overflowCheck.bagLen, 24);
+    assert.ok(overflowCheck.pendingCount >= 1, "Full bag must queue overflow item for explicit user disposition");
+    await page.waitForSelector("#modal-backdrop.open #btn-overflow-smelt-new");
+    await page.click("#btn-overflow-smelt-new");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+
+    // 2. Alchemy missing-material stone cost breakdown & real UI confirm modal (#btn-confirm-alchemy-buy)
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "qi";
+      s.game.stones = 800;
+      s.game.inventory = { herb: 0, dew: 0, core: 3 };
+      api.updateHud();
+    });
+    const breakdown = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      return api.computeRecipeCostBreakdown(api.getState().game, api.RECIPES.foundation);
+    });
+    assert.ok(breakdown.missingItems.length > 0 && breakdown.matBuyCost > 0, "Missing alchemy materials must compute itemized matBuyCost");
+    await page.click("#nav-btn-alchemy");
+    await page.waitForSelector('#panel-scroll-body [data-quick-craft="foundation"]');
+    const stonesBeforeCraft = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones);
+    await page.click('#panel-scroll-body [data-quick-craft="foundation"]');
+    await page.waitForSelector("#modal-backdrop.open #btn-confirm-alchemy-buy");
+    const modalTextAlchemy = await page.textContent("#modal-content");
+    assert.ok(modalTextAlchemy.includes("购入缺料"), "Alchemy confirm modal must itemize 购入缺料 cost");
+    assert.equal(
+      await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones),
+      stonesBeforeCraft,
+      "Opening alchemy confirm modal must NOT deduct stones before user confirms"
+    );
+    await page.click('#modal-backdrop.open [data-modal-close="1"]');
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+
+    // 3. Relic temper core-discount checkbox toggle in UI & cost diff
+    await page.waitForSelector("#panel-scroll-body #chk-temper-use-core");
+    const temperBeforeToggle = await page.evaluate(() => window.__CHENYUAN_V25__.getTemperUseCoreDiscount());
+    await page.click("#panel-scroll-body #chk-temper-use-core");
+    await page.waitForTimeout(100);
+    const temperCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      const noCore = api.getRelicTemperCost(g, 2, false);
+      const withCore = api.getRelicTemperCost(g, 2, true);
+      return { toggled: api.getTemperUseCoreDiscount(), noCore, withCore };
+    });
+    assert.notEqual(temperCheck.toggled, temperBeforeToggle, "#chk-temper-use-core click must toggle temperUseCoreDiscount");
+    assert.equal(temperCheck.withCore.applyCore, true, "Enabling core discount with cores available must set applyCore=true");
+    assert.equal(temperCheck.noCore.applyCore, false, "Disabling core discount must set applyCore=false");
+    assert.ok(temperCheck.withCore.finalStones < temperCheck.noCore.finalStones, `Enabling core discount must lower relic temper stone cost (${temperCheck.withCore.finalStones} < ${temperCheck.noCore.finalStones})`);
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.getElementById("jade-panel")?.classList.contains("drawer-open"));
+
+    // 4. Soul unlock prompts before equipping (kill serpent boss -> frost_phoenix queued -> keep current keeps blood_warden)
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "golden";
+      s.game.equippedSoul = "blood_warden";
+      s.game.unlockedSouls = ["blood_warden"];
+      api.initArenaStage(0, false);
+      s.arena.enemies = [];
+      api.spawnSingleEnemy("serpent", 720, 450, 1.0, true, "寒潭玄蛇");
+      api.spawnSingleEnemy("wolf", 920, 460, 1.0, false);
+      const boss = s.arena.enemies.find(e => e.id === "serpent");
+      if (boss) api.handleEnemyDeath(boss);
+    });
+    await page.waitForSelector("#modal-backdrop.open #btn-soul-keep-current");
+    const soulBeforeClick = await page.evaluate(() => ({
+      equipped: window.__CHENYUAN_V25__.getState().game.equippedSoul,
+      hasEquipBtn: Boolean(document.getElementById("btn-soul-equip-new"))
+    }));
+    assert.equal(soulBeforeClick.equipped, "blood_warden", "Unlocking new soul must NOT auto-equip before player chooses");
+    assert.equal(soulBeforeClick.hasEquipBtn, true, "Soul unlock modal must expose #btn-soul-equip-new");
+    await page.click("#btn-soul-keep-current");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.equippedSoul), "blood_warden");
+    await ctx.close();
+  });
+
+  // =========================================================================
+  // MILESTONE 5 REGRESSION SUITES (R5-1 .. R5-3): S3, S4, S7, S8, S9, S10
+  // =========================================================================
+  await runSuite("R5-1", "M5 S3 六卷/故人导航术语统一 + S4 规范名与 s4_npc->s4_puppet 旧档5场景迁移", async () => {
+    // Scenario 1: Fresh start navigation terminology & canonical step IDs
+    const { ctx, page } = await startCleanGamePage(browser, "R5-1", true);
+    const navCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const storyBtn = document.getElementById("nav-btn-story");
+      const ch4 = api.CHAPTERS.find(c => c.index === 4);
+      return {
+        storyBtnText: storyBtn ? storyBtn.textContent.trim() : "",
+        hasS4Puppet: Boolean(ch4 && ch4.steps.some(st => st.id === "s4_puppet")),
+        legacyMap: api.LEGACY_STEP_ID_MAP && api.LEGACY_STEP_ID_MAP.s4_npc,
+        volCount: Object.keys(api.VOLUME_RECAP_META || {}).length
+      };
+    });
+    assert.ok(navCheck.storyBtnText.includes("故人"), `#nav-btn-story must be labeled 故人, got: ${navCheck.storyBtnText}`);
+    assert.equal(navCheck.hasS4Puppet, true, "Chapter 4 must use canonical s4_puppet step ID");
+    assert.equal(navCheck.legacyMap, "s4_puppet", "LEGACY_STEP_ID_MAP must map s4_npc -> s4_puppet");
+    assert.ok(navCheck.volCount >= 5, `Expected >= 5 volumes in VOLUME_RECAP_META, got ${navCheck.volCount}`);
+    await ctx.close();
+
+    // Scenario 2: Legacy save with s4_npc claimed migrates losslessly to s4_puppet
+    const ctxLeg = await newIsolatedContext(browser);
+    const pageLeg = await ctxLeg.newPage();
+    attachErrorListeners(pageLeg, "R5-1-LegacyA");
+    await pageLeg.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await pageLeg.evaluate((sk) => {
+      localStorage.clear();
+      localStorage.setItem(sk, JSON.stringify({
+        game: { name: "旧步剑修", realm: "golden", claimedStepIds: ["s4_npc"], stageStars: { 0: 1, 1: 1, 2: 1, 3: 1 } },
+        stageIdx: 3, stanceIdx: 0, towerMode: false, sanctumMode: true
+      }));
+    }, STORAGE_KEY);
+    await pageLeg.reload({ waitUntil: "domcontentloaded" });
+    await pageLeg.waitForSelector("#btn-continue-save");
+    await pageLeg.click("#btn-continue-save");
+    await pageLeg.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    const migratedClaimed = await pageLeg.evaluate(() => window.__CHENYUAN_V25__.getState().game.claimedStepIds || []);
+    assert.ok(migratedClaimed.includes("s4_puppet"), `Legacy s4_npc must migrate into claimedStepIds as s4_puppet, got: ${JSON.stringify(migratedClaimed)}`);
+    assert.equal(migratedClaimed.includes("s4_npc"), false, `Migrated claimedStepIds must not retain legacy s4_npc, got: ${JSON.stringify(migratedClaimed)}`);
+
+    // Scenario 3: Reload persistence of migrated s4_puppet
+    await pageLeg.evaluate(() => window.__CHENYUAN_V25__.saveGame());
+    await pageLeg.reload({ waitUntil: "domcontentloaded" });
+    await pageLeg.waitForSelector("#btn-continue-save");
+    await pageLeg.click("#btn-continue-save");
+    await pageLeg.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    const reloadedClaimed = await pageLeg.evaluate(() => window.__CHENYUAN_V25__.getState().game.claimedStepIds || []);
+    assert.ok(reloadedClaimed.includes("s4_puppet") && !reloadedClaimed.includes("s4_npc"), `Migrated s4_puppet must persist cleanly across reload, got: ${JSON.stringify(reloadedClaimed)}`);
+
+    // Scenario 4: QuotaExceededError write-fail alert + preserve + retry recovery
+    const rawBeforeQuota = await pageLeg.evaluate((sk) => localStorage.getItem(sk), STORAGE_KEY);
+    const quotaFail = await pageLeg.evaluate((sk) => {
+      const orig = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) {
+        if (k === sk) throw new DOMException("Quota full", "QuotaExceededError");
+        return orig.call(this, k, v);
+      };
+      const g = window.__CHENYUAN_V25__.getState().game;
+      if (!g.claimedStepIds.includes("s4_relic")) g.claimedStepIds.push("s4_relic");
+      const ok = window.__CHENYUAN_V25__.saveGame();
+      Storage.prototype.setItem = orig;
+      return {
+        ok,
+        rawAfterFail: localStorage.getItem(sk),
+        alertVisible: getComputedStyle(document.getElementById("hud-save-alert")).display !== "none"
+      };
+    }, STORAGE_KEY);
+    assert.equal(quotaFail.ok, false, "QuotaExceededError must fail saveGame cleanly");
+    assert.equal(quotaFail.rawAfterFail, rawBeforeQuota, "Failed write must preserve migrated save intact");
+    assert.equal(quotaFail.alertVisible, true, "QuotaExceededError must display #hud-save-alert");
+    await pageLeg.click('#hud-save-alert [data-action="retry-save-now"]');
+    await pageLeg.waitForTimeout(140);
+    const afterRetryClaimed = await pageLeg.evaluate((sk) => JSON.parse(localStorage.getItem(sk) || "{}").game?.claimedStepIds || [], STORAGE_KEY);
+    assert.ok(afterRetryClaimed.includes("s4_puppet") && afterRetryClaimed.includes("s4_relic"), "Retry save must persist both migrated s4_puppet and new s4_relic");
+
+    // Scenario 5: Multi-tab contention & latest sync
+    const pageLegB = await ctxLeg.newPage();
+    attachErrorListeners(pageLegB, "R5-1-LegacyB");
+    await pageLegB.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await pageLegB.waitForSelector("#btn-continue-save");
+    await pageLegB.click("#btn-continue-save");
+    await pageLegB.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await pageLegB.evaluate(() => {
+      const g = window.__CHENYUAN_V25__.getState().game;
+      if (!g.claimedStepIds.includes("s4_break")) g.claimedStepIds.push("s4_break");
+      window.__CHENYUAN_V25__.saveGame();
+    });
+    await pageLeg.waitForSelector('#modal-backdrop.open [data-action="load-latest-save"]');
+    await pageLeg.click('[data-action="load-latest-save"]');
+    await pageLeg.waitForTimeout(160);
+    const syncedClaimed = await pageLeg.evaluate(() => window.__CHENYUAN_V25__.getState().game.claimedStepIds || []);
+    assert.ok(syncedClaimed.includes("s4_puppet") && syncedClaimed.includes("s4_break"), `Multi-tab sync must preserve s4_puppet and pull s4_break, got: ${JSON.stringify(syncedClaimed)}`);
+    await ctxLeg.close();
+  });
+
+  await runSuite("R5-2", "M5 S7 卷终先落盘->过场->合卷回顾->开传送阵(沙盒旁路) + S8 五句开场卷轴与首领战前独白", async () => {
+    // 1. S8: Fresh start with { dismissOpening: false } plays 5-line opening_scroll; step-through & skip both work; continue does NOT replay
+    const { ctx, page } = await startCleanGamePage(browser, "R5-2-S8", false, { dismissOpening: false });
+    await page.waitForSelector("#story-dialogue-bar.open");
+    const scrollInfo = await page.evaluate(() => ({
+      linesCount: (window.__CHENYUAN_V25__.CHAPTER_CUTSCENES.opening_scroll || []).length,
+      hasBossPre0: Boolean(window.__CHENYUAN_V25__.CHAPTER_CUTSCENES.boss_pre_stage0),
+      allChaptersHaveDesc: window.__CHENYUAN_V25__.CHAPTERS.every(c => typeof c.desc === "string" && c.desc.length > 0)
+    }));
+    assert.equal(scrollInfo.linesCount, 5, "opening_scroll must have 5 narrative lines");
+    assert.equal(scrollInfo.hasBossPre0, true, "boss_pre_stage0 cutscene must exist");
+    assert.equal(scrollInfo.allChaptersHaveDesc, true, "Every chapter must define non-empty desc");
+
+    // Advance one line via #btn-dlg-next, then skip rest via #btn-dlg-skip
+    await page.click("#btn-dlg-next");
+    await page.waitForTimeout(80);
+    await page.click("#btn-dlg-skip");
+    await page.waitForFunction(() => !document.getElementById("story-dialogue-bar")?.classList.contains("open"));
+
+    // Reload & continue must NOT replay opening_scroll
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#btn-continue-save");
+    await page.click("#btn-continue-save");
+    await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await page.waitForTimeout(220);
+    assert.equal(await page.evaluate(() => document.getElementById("story-dialogue-bar")?.classList.contains("open")), false, "Continue save must NOT replay opening_scroll");
+
+    // 2. S7: Normal campaign stage clear persists immediately BEFORE recap modal, and spawns portal ONLY after #btn-volume-recap-confirm
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "qi";
+      s.game.defeatedStageBosses = {};
+      s.game.seenCutscenes.enter_sect = true;
+      api.initArenaStage(1, false);
+      s.arena.waveIdx = 5;
+      s.arena.props = [];
+      api.spawnCurrentWave();
+    });
+    const phaseAPersisted = await page.evaluate((sk) => {
+      const saved = JSON.parse(localStorage.getItem(sk) || "{}");
+      return Boolean(saved.game && saved.game.defeatedStageBosses && saved.game.defeatedStageBosses[1]);
+    }, STORAGE_KEY);
+    assert.equal(phaseAPersisted, true, "S7 Phase A must persist Boss kill BEFORE cutscene & recap confirm");
+    await dismissActiveCutscene(page);
+    await page.waitForSelector("#modal-backdrop.open #btn-volume-recap-confirm");
+    assert.equal(
+      await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.props.some(p => p.id === "portal_next")),
+      false,
+      "portal_next must NOT spawn before #btn-volume-recap-confirm"
+    );
+    await page.click("#btn-volume-recap-confirm");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    assert.equal(
+      await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.props.some(p => p.id === "portal_next")),
+      true,
+      "portal_next must spawn immediately after confirming #btn-volume-recap-confirm"
+    );
+
+    // Sandbox bypasses volume-end recap modal and spawns portal directly
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.enterSandboxMode();
+      const s = api.getState();
+      api.initArenaStage(1, false);
+      s.arena.waveIdx = 5;
+      s.arena.props = [];
+      api.spawnCurrentWave();
+    });
+    await page.waitForTimeout(140);
+    const sandboxBypass = await page.evaluate(() => ({
+      modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open")),
+      recapOpen: Boolean(document.querySelector("#modal-backdrop.open #btn-volume-recap-confirm")),
+      portalSpawned: window.__CHENYUAN_V25__.getState().arena.props.some(p => p.id === "portal_next")
+    }));
+    assert.equal(sandboxBypass.modalOpen, false, "Sandbox mode must not open modal on stage clear");
+    assert.equal(sandboxBypass.recapOpen, false, "Sandbox mode must bypass volume-end recap modal");
+    assert.equal(sandboxBypass.portalSpawned, true, "Sandbox mode should spawn stage-clear portal directly");
+    await ctx.close();
+  });
+
+  await runSuite("R5-3", "M5 S9 故人11段列传与动态过场分支 + S10 九段红尘问心去重与耗尽兜底", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "R5-3", true);
+    const res = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      const g = s.game;
+      g.realm = "spirit";
+      g.choices = {};
+      const storiesLen = api.STORIES.length;
+      const enterSecretDefault = api.resolveCutsceneLines("enter_secret", g);
+      g.choices.pei_meet = "a";
+      const enterSecretMet = api.resolveCutsceneLines("enter_secret", g);
+
+      const enterTerraceDefault = api.resolveCutsceneLines("enter_terrace", g);
+      g.choices.yan_gate = "a";
+      const enterTerraceAfterGate = api.resolveCutsceneLines("enter_terrace", g);
+
+      // S10: Exhaust all 9 karma dilemmas without repetition
+      g.completedKarmaIds = [];
+      const seenIds = [];
+      for (let i = 0; i < api.KARMA_DILEMMAS.length; i++) {
+        const next = api.getNextAvailableKarmaDilemma(g);
+        if (!next) break;
+        seenIds.push(next.id);
+        api.resolveKarmaDilemmaChoice(next.id, i % 2 === 0 ? "right" : "demon");
+      }
+      const progAfterAll = api.getKarmaDilemmaProgress(g);
+      const duplicateRet = api.resolveKarmaDilemmaChoice(seenIds[0], "right");
+      return {
+        storiesLen,
+        secretDiff: JSON.stringify(enterSecretDefault) !== JSON.stringify(enterSecretMet),
+        terraceDiff: JSON.stringify(enterTerraceDefault) !== JSON.stringify(enterTerraceAfterGate),
+        dilemmaTotal: api.KARMA_DILEMMAS.length,
+        uniqueResolved: new Set(seenIds).size,
+        allExhausted: progAfterAll.allExhausted,
+        duplicateRet
+      };
+    });
+    assert.equal(res.storiesLen, 11, `Expected 11 companion STORIES, got ${res.storiesLen}`);
+    assert.equal(res.secretDiff, true, "enter_secret cutscene must branch when pei_meet is chosen");
+    assert.equal(res.terraceDiff, true, "enter_terrace cutscene must branch when yan_gate is chosen");
+    assert.equal(res.dilemmaTotal, 9, `Expected 9 KARMA_DILEMMAS, got ${res.dilemmaTotal}`);
+    assert.equal(res.uniqueResolved, 9, `All 9 karma dilemmas must resolve uniquely without repeats, got ${res.uniqueResolved}`);
+    assert.equal(res.allExhausted, true, "After completing all 9 dilemmas, getKarmaDilemmaProgress.allExhausted must be true");
+    assert.equal(res.duplicateRet, false, "Re-resolving an already completed karma dilemma must return false");
+    await ctx.close();
+  });
+
+  // =========================================================================
+  // MILESTONE 6 REGRESSION SUITES (R6-1 .. R6-3): S11+G7, G8, G10, G11b, G12
+  // =========================================================================
+  await runSuite("R6-1", "M6 S11+G7 五境分阶解封矩阵、非阻塞 #new-unlock-card 与旧档防刷屏", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "R6-1", true);
+    const matrix = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const { game } = api.getState();
+      const checkRealm = (r) => {
+        game.realm = r;
+        return {
+          sanqing: api.isActionUnlockedByRealm(game, "sanqing"),
+          astral: api.isActionUnlockedByRealm(game, "astral"),
+          spire: api.isEcosystemSystemUnlocked(game, "celestial_spire"),
+          expedition: api.isEcosystemSystemUnlocked(game, "vein_expedition"),
+          pacts: api.isEcosystemSystemUnlocked(game, "heavenly_pacts")
+        };
+      };
+      return {
+        qi: checkRealm("qi"),
+        foundation: checkRealm("foundation"),
+        golden: checkRealm("golden"),
+        nascent: checkRealm("nascent"),
+        spirit: checkRealm("spirit"),
+        catalogLen: api.UNLOCK_TUTORIAL_CATALOG.length
+      };
+    });
+    assert.equal(matrix.golden.sanqing, false);
+    assert.equal(matrix.golden.astral, false);
+    assert.equal(matrix.golden.spire, false);
+    assert.equal(matrix.golden.expedition, false);
+    assert.equal(matrix.nascent.sanqing, true);
+    assert.equal(matrix.nascent.astral, true);
+    assert.equal(matrix.nascent.spire, true);
+    assert.equal(matrix.nascent.expedition, true);
+    assert.equal(matrix.nascent.pacts, false);
+    assert.equal(matrix.spirit.pacts, true);
+    assert.ok(matrix.catalogLen >= 10, `Expected >= 10 unlock tutorial cards, got ${matrix.catalogLen}`);
+
+    // Queue & display non-blocking #new-unlock-card -> dismiss persists into seenUnlockIds across reload
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      g.realm = "qi";
+      g.seenUnlockIds = [];
+      api.queueNewUnlockCardsForState(g);
+      api.flushNewUnlockCard();
+    });
+    await page.waitForSelector("#new-unlock-card #btn-unlock-dismiss");
+    const activeIdBeforeDismiss = await page.evaluate(() => window.__CHENYUAN_V25__.getActiveUnlockCardId());
+    assert.ok(activeIdBeforeDismiss, "Active unlock card ID must be set when #new-unlock-card is visible");
+    await page.click("#btn-unlock-dismiss");
+    await page.waitForTimeout(120);
+    const seenNow = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.seenUnlockIds || []);
+    assert.ok(seenNow.includes(activeIdBeforeDismiss), "Dismissing #new-unlock-card must persist card ID into seenUnlockIds");
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#btn-continue-save");
+    await page.click("#btn-continue-save");
+    await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    const seenAfterReload = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.seenUnlockIds || []);
+    assert.ok(seenAfterReload.includes(activeIdBeforeDismiss), "seenUnlockIds must persist across page reload");
+    await ctx.close();
+  });
+
+  await runSuite("R6-2", "M6 G8 寿元流逝、单阶效率衰减、延寿解厄与二次确认兵解转世守卫", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "R6-2", true);
+    const lifeCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      g.realm = "mortal"; // maxMonths = 744 (62y)
+      g.startAgeMonths = 216;
+      g.elapsedMonths = 0;
+      const normalInfo = api.getLifespanInfo(g);
+      const agedRes = api.advanceLifespanMonths(12, "test_step", { silentToast: true });
+
+      // 75% warning band
+      g.elapsedMonths = Math.round(744 * 0.78) - 216;
+      const warnInfo = api.getLifespanInfo(g);
+
+      // 92% critical decay band
+      g.elapsedMonths = Math.round(744 * 0.92) - 216;
+      const critInfo = api.getLifespanInfo(g);
+
+      // 100% exhausted band: XP still progresses (never soft-locks), efficiency decayed
+      g.elapsedMonths = 744 - 216;
+      const exhInfo = api.getLifespanInfo(g);
+      const xpBefore = g.xp;
+      api.gainRealmXp(100);
+      const xpGainExh = g.xp - xpBefore;
+
+      // Verify RECIPES carry months metadata
+      const allRecipesHaveMonths = Object.values(api.RECIPES).every(r => Number(r.months) > 0);
+      return { normalInfo, agedRes, warnInfo, critInfo, exhInfo, xpGainExh, allRecipesHaveMonths };
+    });
+    assert.equal(lifeCheck.agedRes.aged, 12);
+    assert.equal(lifeCheck.allRecipesHaveMonths, true, "All alchemy RECIPES must specify positive months cost");
+    assert.ok(lifeCheck.warnInfo.status !== "normal", `78% lifespan must enter warn state, got ${lifeCheck.warnInfo.status}`);
+    assert.ok(lifeCheck.critInfo.xpEfficiencyMult < lifeCheck.normalInfo.xpEfficiencyMult, "92% lifespan must decay XP efficiency");
+    assert.equal(lifeCheck.exhInfo.status, "exhausted");
+    assert.ok(lifeCheck.xpGainExh > 0 && lifeCheck.xpGainExh < 100, `100% exhausted lifespan must decay XP without soft-locking (gain=${lifeCheck.xpGainExh})`);
+
+    // Open 100% Lifespan Exhausted modal -> verify stay option & 2-step 兵解转世 flow
+    await page.evaluate(() => window.__CHENYUAN_V25__.openLifespanExhaustedModal(false));
+    await page.waitForSelector("#modal-backdrop.open #btn-lifespan-stay");
+    await page.waitForSelector("#modal-backdrop.open #btn-lifespan-bingjie");
+    await page.click("#btn-lifespan-bingjie");
+    await page.waitForSelector("#modal-backdrop.open #btn-confirm-bingjie-reincarnate");
+    await page.click("#btn-bingjie-back");
+    await page.waitForSelector("#modal-backdrop.open #btn-lifespan-stay");
+    await page.click("#btn-lifespan-stay");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.isLifespanExhaustedDismissed()), true, "Clicking 暂留延寿 must dismiss exhausted prompt cleanly");
+    await ctx.close();
+  });
+
+  await runSuite("R6-3", "M6 G10 分阶灵宠投喂与Lv3/Lv5技能择选 + G11b 名录统一 + G12 安全区打坐吸物 + 沙盒屏蔽", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "R6-3", true);
+    const petAndMagnet = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      const g = s.game;
+      g.realm = "qi";
+      g.pet = { id: "fox", level: 1, skills: {} };
+      const c1 = api.getPetNextFeedCost(1);
+      const c2 = api.getPetNextFeedCost(2);
+      const c3 = api.getPetNextFeedCost(3);
+      const c4 = api.getPetNextFeedCost(4);
+      const c5 = api.getPetNextFeedCost(5);
+      g.inventory = { herb: 1, core: 0, jade: 0 };
+      const canAffordShort = api.canAffordPetFeed(g);
+      g.inventory.herb = 3;
+      const canAffordOk = api.canAffordPetFeed(g);
+
+      // Lv.3 pending skill tier
+      g.pet.level = 3;
+      const pending3 = api.getPendingPetSkillTier(g);
+
+      // G12 Drop Magnet: safe zone meditation (1800px) vs active combat meditation (200px)
+      api.enterSanctumHub();
+      s.arena.player.meditating = true;
+      const safeMagnet = api.getDropMagnetParams();
+
+      api.initArenaStage(0, false);
+      s.arena.paused = false;
+      if (!s.arena.enemies.some(e => e.hp > 0 && !e.isDummy && !e.isTreasure)) api.spawnSingleEnemy("wolf", 900, 450, 1.0, false);
+      s.arena.player.meditating = true;
+      const combatMagnet = api.getDropMagnetParams();
+
+      // Sandbox suppresses aging & unlock cards
+      api.enterSandboxMode();
+      const ageInSandbox = api.advanceLifespanMonths(24, "sandbox_probe", { silentToast: true });
+      const cardsInSandbox = api.queueNewUnlockCardsForState(api.getState().game);
+      api.exitSandboxMode();
+
+      return {
+        c1: c1?.mats,
+        c2: c2?.mats,
+        c3: c3?.mats,
+        c4: c4?.mats,
+        c5,
+        canAffordShort,
+        canAffordOk,
+        pending3,
+        safeMagnet,
+        combatMagnet,
+        ageInSandbox,
+        cardsInSandbox,
+        relicsDefined: Object.keys(api.RELICS || {}).length
+      };
+    });
+    assert.deepEqual(petAndMagnet.c1, { herb: 3 });
+    assert.deepEqual(petAndMagnet.c2, { core: 2 });
+    assert.deepEqual(petAndMagnet.c3, { core: 4 });
+    assert.deepEqual(petAndMagnet.c4, { jade: 3 });
+    assert.equal(petAndMagnet.c5, null);
+    assert.equal(petAndMagnet.canAffordShort, false);
+    assert.equal(petAndMagnet.canAffordOk, true);
+    assert.equal(petAndMagnet.pending3, 3);
+    assert.equal(petAndMagnet.safeMagnet.safeZone, true);
+    assert.equal(petAndMagnet.safeMagnet.radius, 1800);
+    assert.equal(petAndMagnet.combatMagnet.safeZone, false);
+    assert.equal(petAndMagnet.combatMagnet.radius, 200);
+    assert.equal(petAndMagnet.ageInSandbox.skipped, true, "Sandbox mode must suppress lifespan aging");
+    assert.equal(petAndMagnet.cardsInSandbox, 0, "Sandbox mode must suppress new unlock cards");
+    assert.ok(petAndMagnet.relicsDefined >= 3);
+
+    // Open Lv.3 pet skill choice modal and explicitly select a skill
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      g.realm = "qi";
+      g.pet = { id: "fox", level: 3, skills: {} };
+      api.openPetSkillChoiceModal(3);
+    });
+    await page.waitForSelector("#modal-backdrop.open [data-pick-pet-skill]");
+    const chosenSkillId = await page.getAttribute("#modal-backdrop.open [data-pick-pet-skill]", "data-pick-pet-skill");
+    await page.click(`#modal-backdrop.open [data-pick-pet-skill="${chosenSkillId}"]`);
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    assert.equal(
+      await page.evaluate((sid) => window.__CHENYUAN_V25__.hasPetSkill(window.__CHENYUAN_V25__.getState().game, sid), chosenSkillId),
+      true,
+      `Picking Lv.3 pet skill ${chosenSkillId} must activate hasPetSkill`
+    );
+    await ctx.close();
+  });
 } finally {
   await browser.close();
   if (staticServer) staticServer.close();
+}
+
+// ==================== UNCONDITIONAL SUMMARY, JSON REPORT & EXIT CODE ====================
+const totalDurationMs = Date.now() - runStartedAt;
+const summary = {
+  total: results.length,
+  executed: results.filter(r => r.status !== "skipped").length,
+  passed: results.filter(r => r.status === "passed").length,
+  failed: results.filter(r => r.status === "failed").length,
+  error: results.filter(r => r.status === "error").length,
+  skipped: results.filter(r => r.status === "skipped").length,
+  runtimeErrors: allErrors.length,
+  durationMs: totalDurationMs
+};
+const allPassed = summary.failed === 0 && summary.error === 0 && summary.runtimeErrors === 0 && summary.executed > 0;
+
+if (REPORT_PATH) {
+  fs.mkdirSync(path.dirname(path.resolve(REPORT_PATH)), { recursive: true });
+  fs.writeFileSync(REPORT_PATH, JSON.stringify({
+    schemaVersion: 2,
+    passed: allPassed,
+    summary,
+    errors: allErrors,
+    suites: results,
+    viewport: "1440x900",
+    browser: browserVersion,
+    timestamp: new Date().toISOString()
+  }, null, 2), "utf-8");
+}
+
+console.log("\n==================== REGRESSION SUMMARY ====================");
+console.log(
+  `Total: ${summary.total} | Executed: ${summary.executed} | Passed: ${summary.passed} | Failed: ${summary.failed} | Error: ${summary.error} | Skipped: ${summary.skipped} | RuntimeErrors: ${summary.runtimeErrors} | Duration: ${summary.durationMs}ms`
+);
+const nonPassing = results.filter(r => r.status === "failed" || r.status === "error");
+if (nonPassing.length > 0) {
+  console.log("Failed/Errored Suites:");
+  for (const r of nonPassing) {
+    console.log(`  - [${r.status.toUpperCase()}] ${r.id} (${r.title}): ${r.error}`);
+  }
+}
+if (allErrors.length > 0) {
+  console.log("Runtime Console/Page Errors:");
+  for (const e of allErrors) {
+    console.log(`  - ${e}`);
+  }
+}
+if (allPassed) {
+  console.log(`\n✅ ALL ${summary.executed}/${summary.total} EXECUTED REGRESSION SUITES PASSED WITH 0 RUNTIME ERRORS!`);
+  process.exitCode = 0;
+} else {
+  console.error(`\n❌ REGRESSION RUN FAILED (${summary.failed} failed, ${summary.error} error, ${summary.runtimeErrors} runtime errors, ${summary.executed} executed).`);
+  process.exitCode = 1;
 }
