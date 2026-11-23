@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "total": 1,
+  "errors": [],
+  "suites": [
+    {
+      "id": "M2-4",
+      "title": "Combat Rebalance Soft-Cap, Hex-Buff Mitigation & Posture-Shatter Boon",
+      "ok": true,
+      "durationMs": 4023
+    }
+  ],
+  "viewport": "1440x900",
+  "timestamp": "2026-11-23T13:08:10.981Z"
+}
