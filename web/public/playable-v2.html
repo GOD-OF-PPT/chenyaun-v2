@@ -17334,7 +17334,7 @@ const ART = {
     };
   }
 
-  function computeBatchEnhancePreview(g, slot, steps = 1) {
+  function computeBatchEnhancePreview(g, slot, steps) {
     const eq = g && g.equippedGear ? g.equippedGear[slot] : null;
     if (!g || !eq) return { valid: false, slot, steps: 0, maxSteps: 0, totalCost: 0, canAfford: false, before: null, after: null, dAtk: 0, dHp: 0, dDr: 0 };
     const eqLvl = Math.max(0, Math.floor(num(eq.lvl, 0)));
@@ -17979,7 +17979,7 @@ const ART = {
     }
   }
 
-  function enqueuePendingReward({ kind, payload = {}, noticeClass = "N1", eventId = null, persist = true } = {}) {
+  function enqueuePendingReward({ kind, payload = {}, noticeClass = "N1", eventId = null, persist = true, deferUi = false } = {}) {
     if (!game || !PENDING_REWARD_KINDS.has(kind)) return null;
     if (isPracticeModeActive()) return null; // Practice mode NEVER writes formal game.pendingRewards
     ensurePendingRewardArrays(game);
@@ -18020,14 +18020,16 @@ const ART = {
       status: "pending"
     };
     game.pendingRewards.push(rec);
-    if (game.pendingRewards.length > PENDING_REWARD_SOFT_WARN) {
-      showToast(`⚠ 待处置奖励已达 ${game.pendingRewards.length} 项，请尽快点击顶部【待处置】处理！`, { tier: 1, key: "pending_soft_warn", throttleMs: 8000 });
+    if (!deferUi) {
+      if (game.pendingRewards.length > PENDING_REWARD_SOFT_WARN) {
+        showToast(`⚠ 待处置奖励已达 ${game.pendingRewards.length} 项，请尽快点击顶部【待处置】处理！`, { tier: 1, key: "pending_soft_warn", throttleMs: 8000 });
+      }
+      syncPendingRewardsBadge();
+      if (persist && !sandboxMode && !isPracticeModeActive()) {
+        saveGame();
+      }
+      requestCalmReevaluation();
     }
-    syncPendingRewardsBadge();
-    if (persist && !sandboxMode && !isPracticeModeActive()) {
-      saveGame();
-    }
-    requestCalmReevaluation();
     return rec;
   }
 
@@ -18798,7 +18800,7 @@ const ART = {
     }
     const lifeBadge = document.getElementById("hud-lifespan-badge");
     if (lifeBadge) lifeBadge.classList.toggle("lifespan-pulse", nextLf.status === "exhausted");
-    if (nextLf.status === "exhausted" && !lifespanExhaustedPromptDismissed) {
+    if (!(opts && opts.skipEnqueue) && nextLf.status === "exhausted" && !lifespanExhaustedPromptDismissed) {
       pendingLifespanExhaustedPrompt = true;
       enqueuePendingReward({ kind: "lifespan_exhausted", payload: {}, persist: true });
     }
@@ -19760,8 +19762,10 @@ const ART = {
     const maxMp = Math.round(r.maxMp * (1 + Math.min(0.65, Math.max(0, (g.statMultBonus || 1) - 1))));
     const stars = getEquippedRelicStars(g);
     const starScale = 1 + Math.max(0, stars - 1) * 0.18;
-    const mindBonus = g.loadout.mind === "sword_pierce" ? P.skills.sword_pierce.mindAtk : g.loadout.mind === "talisman_clear" ? P.skills.talisman_clear.mindAtk : 0;
-    const relicBonus = Math.round(((g.loadout.relic === "frost_sword" ? 9 : g.loadout.relic === "soul_lamp" ? 8 : 4) * (g.loadout.relic ? starScale : 0)));
+    const lo = (g && g.loadout && typeof g.loadout === "object") ? g.loadout : {};
+    const pet = (g && g.pet && typeof g.pet === "object") ? g.pet : {};
+    const mindBonus = lo.mind === "sword_pierce" ? P.skills.sword_pierce.mindAtk : lo.mind === "talisman_clear" ? P.skills.talisman_clear.mindAtk : 0;
+    const relicBonus = Math.round(((lo.relic === "frost_sword" ? 9 : lo.relic === "soul_lamp" ? 8 : 4) * (lo.relic ? starScale : 0)));
     const starB = getStarChartBonuses(g);
     const sanctumB = getSanctumBonuses(g);
     const years = Math.floor(((g.startAgeMonths || 216) + (g.elapsedMonths || 0)) / 12);
@@ -19805,17 +19809,17 @@ const ART = {
     const activeMult = Math.min(P.activeMultCap, revMult * postureAtkMult * rushAtkMult * astralMult * climateAtkMult);
 
     const dmgReduce = gt.dr
-      + (g.pet.id === "turtle" ? 10 : 0)
+      + (pet.id === "turtle" ? 10 : 0)
       + (hasPetSkill(g, "spirit_ward") ? 12 : 0)
-      + (g.loadout.mind === "sword_still" ? P.skills.sword_still.mindDr : 0)
-      + (g.loadout.mind === "talisman_clear" ? P.skills.talisman_clear.mindDr : 0)
-      + (g.loadout.relic === "jade_seal" ? Math.round(12 * starScale) : 0)
+      + (lo.mind === "sword_still" ? P.skills.sword_still.mindDr : 0)
+      + (lo.mind === "talisman_clear" ? P.skills.talisman_clear.mindDr : 0)
+      + (lo.relic === "jade_seal" ? Math.round(12 * starScale) : 0)
       + sanctumB.guardDr
       + (phoenixLowHp ? 18 : 0);
 
     const tier = getComboTier(arena.comboCount);
     const lowHpBoonCrit = (hasRunBoon("blood_intent") && g.hp <= maxHp * P.runBoons.blood_intent.hpThreshold) ? P.runBoons.blood_intent.crit : 0;
-    const crit = Math.min(P.critCap, 0.10 + gt.crit + (g.perk === "sword_bone" ? 0.08 : 0) + (g.pet.id === "fox" ? 0.10 : 0) + (hasPetSkill(g, "fury_fang") ? 0.05 : 0) + (hasLaw(g, "crit_lotus") ? P.laws.crit_lotus.crit : 0) + (currentOmen(g).id === "wolf_star" ? P.omens.wolf_star.crit : 0) + lowHpBoonCrit);
+    const crit = Math.min(P.critCap, 0.10 + gt.crit + (g.perk === "sword_bone" ? 0.08 : 0) + (pet.id === "fox" ? 0.10 : 0) + (hasPetSkill(g, "fury_fang") ? 0.05 : 0) + (hasLaw(g, "crit_lotus") ? P.laws.crit_lotus.crit : 0) + (currentOmen(g).id === "wolf_star" ? P.omens.wolf_star.crit : 0) + lowHpBoonCrit);
     const climSpdMult = (clim && clim.id === "sword_wind") ? P.climates.sword_wind.speedMult : 1.0;
     const climHaste = (clim && clim.id === "sword_wind") ? P.climates.sword_wind.haste : 0;
     const climCritMult = (clim && clim.id === "thunder_loom") ? P.climates.thunder_loom.critMult : 0;
@@ -29206,9 +29210,10 @@ const ART = {
       if (lf.status === "normal") {
         lifeBadge.style.display = "none";
         lifeBadge.textContent = "";
+        lifeBadge.className = "hud-lifespan-pill";
       } else {
         lifeBadge.style.display = "inline-flex";
-        lifeBadge.className = `hud-lifespan-pill ${lf.status}`;
+        lifeBadge.className = `hud-lifespan-pill ${lf.status}${lf.status === "exhausted" ? " lifespan-pulse" : ""}`;
         if (lf.status === "exhausted") {
           lifeBadge.textContent = "💀 寿尽 · 兵解/延寿";
           lifeBadge.setAttribute("data-tip", escTip(`大限已至 (${lf.curYears}/${lf.maxYears}载)`, `修炼效率降至 ${Math.round(lf.xpEfficiencyMult * 100)}%（不删档）；点击可服延寿青莲丹、暂留延寿或兵解转世`));
@@ -29810,7 +29815,7 @@ const ART = {
     pendingBatchCraft = null;
     pendingBatchEnhance = null;
     pendingSoulRefineId = null;
-    activeMatSourceJump = null;
+    if (activeMatSourceJump && activeMatSourceJump.inModal) activeMatSourceJump = null;
     const closingKind = activeModalKind;
     activeModalKind = "";
     if (activePendingRewardId) {
@@ -31111,7 +31116,7 @@ const ART = {
     return true;
   }
 
-  function executeAlchemyBatchCraft(recId, qty = 1) {
+  function executeAlchemyBatchCraft(recId, qty) {
     if (!game || !hasOwn(RECIPES, recId)) return { ok: false, reason: "invalid_recipe" };
     if (typeof qty !== "number" || !Number.isFinite(qty) || !Number.isInteger(qty) || qty < 1 || qty > 5) {
       return { ok: false, reason: "invalid_qty" };
@@ -31135,7 +31140,10 @@ const ART = {
       inventory: Object.assign({}, game.inventory),
       immortalPills: game.immortalPills,
       elapsedMonths: game.elapsedMonths,
+      hasPendingRewardsKey: Object.prototype.hasOwnProperty.call(game, "pendingRewards"),
       pendingRewards: Array.isArray(game.pendingRewards) ? JSON.parse(JSON.stringify(game.pendingRewards)) : [],
+      hasResolvedRewardIdsKey: Object.prototype.hasOwnProperty.call(game, "resolvedRewardIds"),
+      resolvedRewardIds: Array.isArray(game.resolvedRewardIds) ? game.resolvedRewardIds.slice() : [],
       pendingLifespanExhaustedPrompt,
       journalLen: Array.isArray(game.journal) ? game.journal.length : 0
     };
@@ -31153,8 +31161,17 @@ const ART = {
       game.inventory.healing_pill = (game.inventory.healing_pill || 0) + bd.bonusHealing;
     }
     game.immortalPills = (game.immortalPills || 0) + safeQty;
+    let nextLf = prevLf;
+    let queuedExhaustedReward = false;
     if (willAge) {
       game.elapsedMonths = Math.max(0, Math.floor(num(game.elapsedMonths, 0))) + ageDelta;
+      nextLf = getLifespanInfo(game);
+      if (nextLf.status === "exhausted" && !lifespanExhaustedPromptDismissed) {
+        pendingLifespanExhaustedPrompt = true;
+        const prevPrLen = Array.isArray(game.pendingRewards) ? game.pendingRewards.length : 0;
+        enqueuePendingReward({ kind: "lifespan_exhausted", payload: {}, persist: false, deferUi: true });
+        queuedExhaustedReward = Array.isArray(game.pendingRewards) && game.pendingRewards.length > prevPrLen;
+      }
     }
 
     if (!sandboxMode && !isPracticeModeActive()) {
@@ -31164,13 +31181,14 @@ const ART = {
         game.inventory = snap.inventory;
         game.immortalPills = snap.immortalPills;
         game.elapsedMonths = snap.elapsedMonths;
-        game.pendingRewards = snap.pendingRewards;
+        if (snap.hasPendingRewardsKey) game.pendingRewards = snap.pendingRewards;
+        else delete game.pendingRewards;
+        if (snap.hasResolvedRewardIdsKey) game.resolvedRewardIds = snap.resolvedRewardIds;
+        else delete game.resolvedRewardIds;
         pendingLifespanExhaustedPrompt = snap.pendingLifespanExhaustedPrompt;
         if (Array.isArray(game.journal) && game.journal.length > snap.journalLen) {
           game.journal.splice(0, game.journal.length - snap.journalLen);
         }
-        const lifeBadge = document.getElementById("hud-lifespan-badge");
-        if (lifeBadge) lifeBadge.classList.toggle("lifespan-pulse", getLifespanInfo(game).status === "exhausted");
         syncPendingRewardsBadge();
         updateHud();
         if (drawerOpen) renderDrawerContent();
@@ -31180,7 +31198,14 @@ const ART = {
     }
 
     if (willAge) {
-      applyLifespanPostAdvanceEffects(prevLf, getLifespanInfo(game));
+      applyLifespanPostAdvanceEffects(prevLf, nextLf, { skipEnqueue: true });
+      if (queuedExhaustedReward) {
+        if (game.pendingRewards.length > PENDING_REWARD_SOFT_WARN) {
+          showToast(`⚠ 待处置奖励已达 ${game.pendingRewards.length} 项，请尽快点击顶部【待处置】处理！`, { tier: 1, key: "pending_soft_warn", throttleMs: 8000 });
+        }
+        syncPendingRewardsBadge();
+        requestCalmReevaluation();
+      }
     }
 
     unlockAchievement("ach_pill");
@@ -31249,7 +31274,7 @@ const ART = {
     return true;
   }
 
-  function executeGearBatchEnhance(slot, steps = 1) {
+  function executeGearBatchEnhance(slot, steps) {
     if (!game || !game.equippedGear || !game.equippedGear[slot]) return { ok: false, reason: "missing_slot" };
     if (typeof steps !== "number" || !Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1 || steps > 5) {
       return { ok: false, reason: "invalid_steps" };
@@ -34434,10 +34459,14 @@ const ART = {
         const box = document.getElementById("modal-content");
         if (box) {
           box.scrollTop = prev.scrollTop || 0;
-          const orig = (prev.originSelector && box.querySelector(prev.originSelector)) || box.querySelector(`[data-mat-source="${prev.matId}"]`) || box;
-          if (orig && isElementFocusable(orig)) {
-            try { orig.focus({ preventScroll: true }); } catch (e) {}
+          let orig = prev.originSelector ? box.querySelector(prev.originSelector) : null;
+          if (!orig || !isElementFocusable(orig)) {
+            orig = prev.matId ? box.querySelector(`[data-mat-source="${prev.matId}"]`) : null;
           }
+          if (!orig || !isElementFocusable(orig)) {
+            orig = box;
+          }
+          try { orig.focus({ preventScroll: true }); } catch (e) {}
         }
       } else {
         renderDrawerContent();
