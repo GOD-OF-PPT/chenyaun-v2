@@ -100,7 +100,7 @@
 | M1 | 工具链与美术溯源 | T8, T9 | `codex/tooling-art-provenance` | none（不改 playable-v2.html，可与 M2 并行） | DONE (PR #12) |
 | M2 | 存档与输入安全 | T1–T7 | `codex/save-input-safety` | none | DONE (PR #13, `4b1fc00`) |
 | M3 | 主线进阶完整性与难度曲线 | S1, S2, S5, S6, G3 | `codex/mainline-progression` | M2 已合并 | DONE (`codex/mainline-progression`) |
-| M4 | 经济完整性与显式消费 | G1, G2, G4, G5, G6, G9, G11a | `codex/economy-integrity` | M3 已合并 | PLANNED |
+| M4 | 经济完整性与显式消费 | G1, G2, G4, G5, G6, G9, G11a | `codex/economy-integrity` | M3 已合并 | DONE (`codex/economy-integrity`) |
 | M5 | 叙事内容：前提、卷终、故人线 | S3, S4, S7, S8, S9, S10 | `codex/narrative-content` | M4 已合并 | PLANNED |
 | M6 | 系统节奏与深度 | S11+G7, G8, G10, G11b, G12 | `codex/systems-pacing` | M5 已合并 | PLANNED |
 | E2E | E2E 测试轨道 | E1 → 发布 `TEST_READY.md` | `codex/e2e-suite` | M1（package.json），否则自带运行器 | PAUSED (WIP on `codex/e2e-suite`; deferred to M7 per user directive) |
@@ -178,3 +178,7 @@
   2. `M1-3`（L398）渡劫瞬杀探针需改为 `hurtPlayer(99999, { uncapped: true })`（适配 G3 45% 单击上限）；
   3. `M1-3`（L372）炼气渡劫前置状态需补充 `s.game.stageStars[1] = 1`（或 `defeatedStageBosses[1] = true`）（适配 S1 守山石卫门控）；
   4. 新增 `R3-*` 回归套件（覆盖 S1 Boss 门控/旧档迁移 5 场景、S2 真实尾声/评分、S5 圆满追踪器、S6 因果槽、G3 每关击杀攻击次数区间与 45% 上限及三侧边模式单调缩放）。
+- 2026-11-23 — M4（`codex/economy-integrity`）完成全部 7 项功能改动（G1 远征去空仓自充/600石5星上限/非洞府实战累积/已结缘且单人单节点校验与 `normalizeLoadedGame` 顺序修复、G2 灵玉赌注全法则集齐禁用与 30 石保底兜底、G4 Boss Rush 第6/7阵与登仙台第9重跳关练习模式零奖励零纪录零掉落、G5 分境永久成长上限/嗜血煞丹每境限购2枚/太虚锻剑单次 `taixuForged`/登仙台奇物上限Lv.3及旧档无损钳制、G6 全神通演武与试剑台预设隔离沙盒化含二次确认与顶部常驻退出条且零写正式存档/元存档、G9 行囊24/24队列式处置弹窗/炼丹缺料明示与确认/淬炼妖核抵扣勾选开关/魂印解锁自主择佩、G11a Boss Rush 按耗时/碎核/识破/受击/复活重定 A 基准评级与非降级最高评级）与静态校验；以下 `scripts/verify-playable-v2.mjs` 回归适配与 `R4-*` 新增套件按用户指令延后至 M7 统一更新执行：
+  1. `R2-7d` Case 2（`G-T6a` L3406–3439）：洞府挂机下远征 `tickTimer` 按 G1 设计暂停（不再递减），需改为验证洞府内 `tickTimer === 8.5` 且 `saveRev` 不变，并将 `tickTimer < 8.5` 探针迁移至非洞府活敌战斗场景；
+  2. `M4-1`（L910–927）：问道阶梯点击 `[data-action="toggle-arcana-all-roadmap"]` 后需点击 `#btn-confirm-enter-sandbox` 确认进入演武沙盒（验证 `#hud-sandbox-badge` 可见且正式存档未改动），并通过 `#btn-exit-sandbox` 退出沙盒；
+  3. 新增 `R4-*` 回归套件（`R4-1` G1 远征与旧档5场景、`R4-2` G2 灵玉赌注、`R4-3` G4 练习模式零泄露、`R4-4` G5 永久成长上限与旧档5场景、`R4-5` G6 沙盒隔离与旧档迁移、`R4-6` G9 四项显式消费与焦点返回/XSS、`R4-7` G11a Boss Rush 评级校准）。
