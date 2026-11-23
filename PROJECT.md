@@ -18,7 +18,7 @@
 - 技术、存档、测试、美术：`.agents/teamwork/teamwork_preview_explorer_survey_3/handoff.md`
 
 ## Architecture
-- **单文件游戏**：所有玩法都是 `web/public/playable-v2.html` 中的内联 `<script>` 和 `<style>`。不引入外部 JS 或 CSS，双击打开和静态 HTTP 服务两种方式都必须能运行。
+- **静态游戏**：所有玩法仍是 `web/public/playable-v2.html` 中的内联 `<script>` 和 `<style>`。安全修复增加唯一的本地运行时依赖 `vendor/purify.min.js`（DOMPurify，随包分发，不使用 CDN）。保留 `vendor/` 相对位置，双击打开和静态 HTTP 服务两种方式均可运行。静态 ZIP 的 `index.html` 直接包含游戏，无自动跳转；第三方版本、许可证和校验值见 `vendor/dompurify-manifest.json`。
 - **关键数据表**（行号以 eb0ea67 为准）：
   - `REALMS` 4439
   - `CAMPAIGN_ACTS`/`STAGES` 4567
