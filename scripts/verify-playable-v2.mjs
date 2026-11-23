@@ -4900,6 +4900,14 @@ try {
     assert.equal(overflowCheck.stonesAfter, overflowCheck.stonesBefore, "Acquiring gear with full 24/24 bag must NOT silently auto-smelt");
     assert.equal(overflowCheck.bagLen, 24);
     assert.ok(overflowCheck.pendingCount >= 1, "Full bag must queue overflow item for explicit user disposition");
+    // Q1 F10: With live prologue wolves on field, overflow modal MUST defer (not interrupt combat) and surface #btn-pending-rewards
+    assert.equal(
+      await page.evaluate(() => document.getElementById("modal-backdrop")?.classList.contains("open")),
+      false,
+      "Full bag overflow during live combat must NOT immediately open blocking modal"
+    );
+    await page.waitForSelector("#btn-pending-rewards", { state: "visible" });
+    await page.click("#btn-pending-rewards");
     await page.waitForSelector("#modal-backdrop.open #btn-overflow-smelt-new");
     await page.click("#btn-overflow-smelt-new");
     await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
@@ -4966,6 +4974,17 @@ try {
       const boss = s.arena.enemies.find(e => e.id === "serpent");
       if (boss) api.handleEnemyDeath(boss);
     });
+    // Q1 F10: While wolf is still alive, soul unlock must defer (not auto-equip and not interrupt combat) and surface #btn-pending-rewards
+    const soulDeferred = await page.evaluate(() => ({
+      modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open")),
+      equipped: window.__CHENYUAN_V25__.getState().game.equippedSoul,
+      pendingSouls: window.__CHENYUAN_V25__.getPendingSoulUnlockCount()
+    }));
+    assert.equal(soulDeferred.modalOpen, false, "Soul unlock with live wolf remaining must NOT open modal mid-combat");
+    assert.equal(soulDeferred.equipped, "blood_warden", "Soul unlock must NOT auto-equip before player chooses");
+    assert.ok(soulDeferred.pendingSouls >= 1, "Soul unlock must be persisted in pendingRewards");
+    await page.waitForSelector("#btn-pending-rewards", { state: "visible" });
+    await page.click("#btn-pending-rewards");
     await page.waitForSelector("#modal-backdrop.open #btn-soul-keep-current");
     const soulBeforeClick = await page.evaluate(() => ({
       equipped: window.__CHENYUAN_V25__.getState().game.equippedSoul,
@@ -5245,13 +5264,22 @@ try {
     assert.equal(matrix.spirit.pacts, true);
     assert.ok(matrix.catalogLen >= 10, `Expected >= 10 unlock tutorial cards, got ${matrix.catalogLen}`);
 
-    // Queue & display non-blocking #new-unlock-card -> dismiss persists into seenUnlockIds across reload
-    await page.evaluate(() => {
+    // Queue & display non-blocking #new-unlock-card -> Q1 F10 defers during hot combat, displays on calm, dismiss persists into seenUnlockIds across reload
+    const unlockHotDeferred = await page.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const g = api.getState().game;
       g.realm = "qi";
       g.seenUnlockIds = [];
       api.queueNewUnlockCardsForState(g);
+      const flushedHot = api.flushNewUnlockCard();
+      return { flushedHot, calm: api.isCombatCalm(), pendingLen: api.getPendingUnlockCardQueue().length };
+    });
+    assert.equal(unlockHotDeferred.calm, false, "Prologue with live wolves must be combat-hot");
+    assert.equal(unlockHotDeferred.flushedHot, false, "flushNewUnlockCard must defer while combat-hot");
+    assert.ok(unlockHotDeferred.pendingLen >= 1, "Earned unlock cards must remain queued while combat-hot");
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.enterSanctumHub();
       api.flushNewUnlockCard();
     });
     await page.waitForSelector("#new-unlock-card #btn-unlock-dismiss");
@@ -5861,6 +5889,590 @@ try {
     assert.ok(copy.orbPillTip.includes("回春丹"), `#orb-pill tip must mention 回春丹 fallback: ${copy.orbPillTip}`);
     assert.ok(copy.celBtnTip.includes("\\键") && !copy.celBtnTip.includes("`键") && !copy.celBtnTip.includes("+42%"), `#btn-celestial-time tip drift: ${copy.celBtnTip}`);
     assert.equal(copy.celBtnBadge, "\\", `#btn-celestial-time key badge must be \\, got: ${copy.celBtnBadge}`);
+    await ctx.close();
+  });
+
+  // ==================== Q1 (F07–F13) COMBAT CALM, PERSISTED PENDING REWARDS, PAUSE OWNERSHIP & NOTICE BUS ====================
+  await runSuite("Q1-1", "Q1 F07+F10 混战背包满延迟、刷新/返标题持久化、清场宽限放行、写入失败回滚与沙盒隔离", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q1-1", true);
+
+    // 1. Bag 24/24 with live wolves + hostile projectile -> acquire 3 gear items -> no pause, no modal, 3 persisted pendingRewards, badge shows 3
+    const hotCheck = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.stones = 200;
+      s.game.gearBag = Array.from({ length: api.GEAR_BAG_LIMIT }, () => api.rollGearItem(1, 0, "weapon"));
+      s.arena.projectiles.push({ x: 600, y: 400, vx: 1, vy: 0, r: 8, dmg: 10, friendly: false, life: 5 });
+      for (let i = 0; i < 3; i++) {
+        api.acquireGearItem(api.rollGearItem(2, 1, "weapon"));
+      }
+      return {
+        paused: s.arena.paused,
+        modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open")),
+        pendingLen: api.getPendingRewards().length,
+        overflowCount: api.getPendingOverflowCount(),
+        badgeVisible: document.getElementById("btn-pending-rewards")?.style.display !== "none",
+        badgeText: document.getElementById("pending-rewards-count")?.textContent,
+        stones: s.game.stones,
+        calm: api.isCombatCalm()
+      };
+    });
+    assert.equal(hotCheck.paused, false, "Acquiring overflow gear during live combat must NOT pause arena");
+    assert.equal(hotCheck.modalOpen, false, "Acquiring overflow gear during live combat must NOT open modal");
+    assert.equal(hotCheck.pendingLen, 3, `Expected 3 persisted pendingRewards, got ${hotCheck.pendingLen}`);
+    assert.equal(hotCheck.overflowCount, 3);
+    assert.equal(hotCheck.badgeVisible, true, "#btn-pending-rewards must be visible when pendingRewards > 0");
+    assert.equal(hotCheck.badgeText, "3");
+    assert.equal(hotCheck.stones, 200, "Must NOT auto-smelt");
+    assert.equal(hotCheck.calm, false);
+
+    // 2. Survives page reload AND return-to-title -> continue
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#btn-continue-save");
+    await page.click("#btn-continue-save");
+    await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    const afterReloadCount = await page.evaluate(() => window.__CHENYUAN_V25__.getPendingRewards().length);
+    assert.equal(afterReloadCount, 3, "All 3 pendingRewards must survive page reload");
+
+    await page.click("#btn-open-settings");
+    await page.waitForSelector('#modal-backdrop.open [data-action="return-title-safe"]');
+    await page.click('[data-action="return-title-safe"]');
+    await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display !== "none");
+    await page.click("#btn-continue-save");
+    await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    const afterTitleReturn = await page.evaluate(() => window.__CHENYUAN_V25__.getPendingRewards().length);
+    assert.equal(afterTitleReturn, 3, "All 3 pendingRewards must survive return-title-safe without being wiped");
+
+    // 3. Sandbox isolation: entering sandbox, acquiring overflow, exiting sandbox must preserve formal 3 pendingRewards intact
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.enterSandboxMode();
+      const s = api.getState();
+      s.game.gearBag = Array.from({ length: api.GEAR_BAG_LIMIT }, () => api.rollGearItem(1, 0, "weapon"));
+      api.acquireGearItem(api.rollGearItem(3, 2, "weapon"));
+      api.exitSandboxMode();
+    });
+    const afterSandbox = await page.evaluate(() => ({
+      sandbox: window.__CHENYUAN_V25__.isSandboxMode(),
+      pendingLen: window.__CHENYUAN_V25__.getPendingRewards().length,
+      stones: window.__CHENYUAN_V25__.getState().game.stones
+    }));
+    assert.equal(afterSandbox.sandbox, false);
+    assert.equal(afterSandbox.pendingLen, 3, "Sandbox mode must NEVER corrupt or leak into formal game.pendingRewards");
+    assert.equal(afterSandbox.stones, 200);
+
+    // 4. Clearing enemies while hostile projectile still exists keeps calm=false; once projectile clears + 0.8s grace, modal opens!
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.arena.enemies = [];
+      s.arena.projectiles = [{ x: 650, y: 420, vx: 0, vy: 0, r: 8, dmg: 12, friendly: false, life: 4 }];
+      api.requestCalmReevaluation();
+    });
+    await page.waitForTimeout(300);
+    const blockedByHazard = await page.evaluate(() => ({
+      calm: window.__CHENYUAN_V25__.isCombatCalm(),
+      hasHazards: window.__CHENYUAN_V25__.hasHostileHazards(),
+      modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open"))
+    }));
+    assert.equal(blockedByHazard.hasHazards, true);
+    assert.equal(blockedByHazard.calm, false);
+    assert.equal(blockedByHazard.modalOpen, false, "Lingering hostile projectile must keep modal deferred");
+
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.arena.projectiles = [];
+      s.arena.calmT = 0;
+      api.requestCalmReevaluation();
+    });
+    await page.waitForSelector("#modal-backdrop.open #btn-overflow-smelt-new", { timeout: 3000 });
+
+    // 5. Write-failure rollback: mock localStorage.setItem throwing QuotaExceededError -> commit rolls back, keeps item retryable, shows #hud-save-alert
+    await page.evaluate(() => {
+      window.__origSetItemQ1 = Storage.prototype.setItem;
+      Storage.prototype.setItem = function () {
+        const err = new Error("QuotaExceeded");
+        err.name = "QuotaExceededError";
+        throw err;
+      };
+    });
+    await page.click("#btn-overflow-smelt-new");
+    await page.waitForTimeout(150);
+    const afterWriteFail = await page.evaluate(() => ({
+      stones: window.__CHENYUAN_V25__.getState().game.stones,
+      pendingLen: window.__CHENYUAN_V25__.getPendingRewards().length,
+      alertVisible: document.getElementById("hud-save-alert")?.style.display !== "none",
+      writeErr: Boolean(window.__CHENYUAN_V25__.getPersistenceState().storageWriteError)
+    }));
+    assert.equal(afterWriteFail.stones, 200, "Failed save commit must roll back stone reward");
+    assert.equal(afterWriteFail.pendingLen, 3, "Failed save commit must preserve all 3 pendingRewards for retry");
+    assert.equal(afterWriteFail.alertVisible, true, "#hud-save-alert must remain visible on write failure");
+    assert.equal(afterWriteFail.writeErr, true);
+
+    // Restore storage -> retry via #btn-pending-rewards succeeds!
+    await page.evaluate(() => {
+      if (window.__origSetItemQ1) Storage.prototype.setItem = window.__origSetItemQ1;
+    });
+    await page.click("#btn-pending-rewards");
+    await page.waitForSelector("#modal-backdrop.open #btn-overflow-smelt-new");
+    await page.click("#btn-overflow-smelt-new");
+    await page.waitForTimeout(150);
+    const afterRetry = await page.evaluate(() => ({
+      stones: window.__CHENYUAN_V25__.getState().game.stones,
+      pendingLen: window.__CHENYUAN_V25__.getPendingRewards().length
+    }));
+    assert.ok(afterRetry.stones > 200, "Retrying after storage recovery must grant smelt stones");
+    assert.equal(afterRetry.pendingLen, 2, "Retrying one item must decrement pendingRewards from 3 to 2");
+    await ctx.close();
+  });
+
+  await runSuite("Q1-2", "Q1 F09 实例化暂停所有权(pauseTokens)与 N0/N1 弹窗优先级防覆盖", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q1-2", true);
+
+    // 1. Nested overlays: drawer + modal + photo mode never prematurely unpause until ALL tokens release
+    const tokenRes = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      // Open drawer -> 1 token
+      document.getElementById("nav-btn-cultivate").click();
+      const t1 = { paused: s.arena.paused, count: api.getPauseTokens().length };
+      // Open modal over drawer -> 2 tokens
+      api.openObjectivesModal();
+      const t2 = { paused: s.arena.paused, count: api.getPauseTokens().length };
+      // Replace modal with another modal (world map) -> swap never dips to 0!
+      api.openWorldMapModal();
+      const tSwap = { paused: s.arena.paused, count: api.getPauseTokens().length };
+      // Close modal while acquiring custom pause token (simulating defeat/photo overlap) -> stays paused
+      const extraTok = api.acquirePauseToken("test_overlay", "nested");
+      api.closeModal();
+      const tAfterModalClose = { paused: s.arena.paused, count: api.getPauseTokens().length };
+      api.releasePauseToken(extraTok);
+      api.closeDrawer();
+      const tAllClear = { paused: s.arena.paused, count: api.getPauseTokens().length };
+      return { t1, t2, tSwap, tAfterModalClose, tAllClear };
+    });
+    assert.equal(tokenRes.t1.paused, true);
+    assert.ok(tokenRes.t1.count >= 1);
+    assert.equal(tokenRes.t2.paused, true);
+    assert.equal(tokenRes.tSwap.paused, true);
+    assert.ok(tokenRes.tSwap.count >= 1);
+    assert.equal(tokenRes.tAfterModalClose.paused, true, "Closing modal while another pause token is active must NOT unpause arena");
+    assert.equal(tokenRes.tAllClear.paused, false, "Releasing all pause tokens must cleanly unpause arena");
+    assert.equal(tokenRes.tAllClear.count, 0);
+
+    // 2. N0 preemption of N1 (lifespan_exhausted) reverts status to "pending" WITHOUT setting lifespanExhaustedPromptDismissed,
+    //    and lower-priority N1 cannot overwrite active N0 (defeat / save_conflict)!
+    const priRes = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      api.enterSanctumHub();
+      s.game.realm = "mortal";
+      s.game.startAgeMonths = 216;
+      s.game.elapsedMonths = 600; // exhausted
+      const rec = api.enqueuePendingReward({ kind: "lifespan_exhausted", payload: {}, persist: true });
+      api.openPendingRewardsManually();
+      const beforePreempt = {
+        modalKind: api.getActiveModalKind(),
+        status: api.getPendingRewards().find(r => r.eventId === rec.eventId)?.status
+      };
+      // Preempt with N0 defeat modal
+      api.openDefeatDecisionModal(false);
+      const afterPreempt = {
+        modalKind: api.getActiveModalKind(),
+        dismissed: api.isLifespanExhaustedDismissed(),
+        status: api.getPendingRewards().find(r => r.eventId === rec.eventId)?.status
+      };
+      // Attempt to overwrite N0 defeat with lower-priority N1 gear_overflow -> must be REJECTED!
+      const extraGear = api.rollGearItem(2, 1, "weapon");
+      const gearRec = api.enqueuePendingReward({ kind: "gear_overflow", payload: { item: extraGear }, persist: false });
+      const manualAttempt = api.openPendingRewardsManually();
+      const stillDefeatKind = api.getActiveModalKind();
+      const gearRecStatus = api.getPendingRewards().find(r => r.eventId === gearRec.eventId)?.status;
+      return { beforePreempt, afterPreempt, manualAttempt, stillDefeatKind, gearRecStatus };
+    });
+    assert.equal(priRes.beforePreempt.modalKind, "lifespan_exhausted");
+    assert.equal(priRes.beforePreempt.status, "active");
+    assert.equal(priRes.afterPreempt.modalKind, "defeat", "N0 defeat must preempt N1 lifespan_exhausted");
+    assert.equal(priRes.afterPreempt.dismissed, false, "Preempting lifespan_exhausted by N0 must NEVER mark it dismissed");
+    assert.equal(priRes.afterPreempt.status, "pending", "Preempted lifespan_exhausted must revert to status='pending'");
+    assert.equal(priRes.manualAttempt, false, "Manual pending rewards open must be blocked during active N0");
+    assert.equal(priRes.stillDefeatKind, "defeat", "N1 modal must NOT overwrite active N0 modal");
+    assert.equal(priRes.gearRecStatus, "pending");
+    await ctx.close();
+  });
+
+  await runSuite("Q1-3", "Q1 F08 洞府清理残留侧模式状态与五类敌方危险物静默判定", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q1-3", true);
+
+    const res = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      // Dirty all side-mode flags + bladeClash, then enterSanctumHub -> all must clear and calm must become true!
+      s.arena.cloudFlight = { active: true, progress: 30, deflectedCount: 0, barrelRolls: 0 };
+      s.arena.sectDefense = { active: true };
+      s.arena.celestialSpire = { active: true, floor: 1, roomType: "clash" };
+      s.arena.customSeedRun = { active: true };
+      s.arena.bladeClash = { foe: null, t: 0.2, dur: 1.5 };
+      const calmDirty = api.isCombatCalm();
+      api.enterSanctumHub();
+      const afterHub = {
+        cloudFlight: s.arena.cloudFlight,
+        sectDefense: s.arena.sectDefense,
+        celestialSpire: s.arena.celestialSpire,
+        customSeedRun: s.arena.customSeedRun,
+        bladeClash: s.arena.bladeClash,
+        calm: api.isCombatCalm()
+      };
+
+      // Verify each of the 5 hostile hazards individually sets hasHostileHazards()=true & isCombatCalm()=false
+      s.arena.projectiles = [{ x: 500, y: 400, vx: 1, vy: 0, friendly: false, life: 2 }];
+      const hProj = { haz: api.hasHostileHazards(), calm: api.isCombatCalm() };
+      s.arena.projectiles = [];
+
+      s.arena.shockRings = [{ x: 500, y: 400, r: 40, maxR: 200, hitPlayer: false }];
+      const hRing = { haz: api.hasHostileHazards(), calm: api.isCombatCalm() };
+      s.arena.shockRings = [];
+
+      s.arena.groundSweeps = [{ x: 500, y: 400, r: 30, maxR: 220, dmg: 18, hitPlayer: false, vaulted: false }];
+      const hSweep = { haz: api.hasHostileHazards(), calm: api.isCombatCalm() };
+      s.arena.groundSweeps = [];
+
+      s.arena.bossBeams = [{ x: 500, y: 400, t: 0.1, dur: 1.0, dmg: 20 }];
+      const hBeam = { haz: api.hasHostileHazards(), calm: api.isCombatCalm() };
+      s.arena.bossBeams = [];
+
+      s.arena.bladeClash = { t: 0.2, dur: 1.2 };
+      const hClash = { haz: api.hasHostileHazards(), calm: api.isCombatCalm() };
+      s.arena.bladeClash = null;
+
+      const calmClean = api.isCombatCalm();
+      return { calmDirty, afterHub, hProj, hRing, hSweep, hBeam, hClash, calmClean };
+    });
+
+    assert.equal(res.calmDirty, false);
+    assert.equal(res.afterHub.cloudFlight, null);
+    assert.equal(res.afterHub.sectDefense, null);
+    assert.equal(res.afterHub.celestialSpire, null);
+    assert.equal(res.afterHub.customSeedRun, null);
+    assert.equal(res.afterHub.bladeClash, null);
+    assert.equal(res.afterHub.calm, true, "enterSanctumHub must clear all stale mode flags so isCombatCalm() becomes true");
+
+    for (const [label, sample] of [
+      ["hostile projectile", res.hProj],
+      ["shockRing", res.hRing],
+      ["groundSweep", res.hSweep],
+      ["bossBeam", res.hBeam],
+      ["bladeClash", res.hClash]
+    ]) {
+      assert.equal(sample.haz, true, `${label} must set hasHostileHazards()=true`);
+      assert.equal(sample.calm, false, `${label} must keep isCombatCalm()=false`);
+    }
+    assert.equal(res.calmClean, true, "Clearing all hostile hazards must restore isCombatCalm()=true");
+    await ctx.close();
+  });
+
+  await runSuite("Q1-4", "Q1 F12 战前剧情(enter_sect / boss_pre_stage0)先播后刷怪与幂等防重刷", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q1-4", true);
+
+    // 1. enter_sect: enemies MUST be 0 while cutscene is open; skipping spawns wave ONCE
+    const enterSectDuring = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.openingChoice = "help";
+      s.game.realm = "qi";
+      if (s.game.seenCutscenes) delete s.game.seenCutscenes.enter_sect;
+      api.initArenaStage(1, false);
+      return {
+        dlgOpen: Boolean(document.getElementById("story-dialogue-bar")?.classList.contains("open")),
+        enemiesDuringCutscene: s.arena.enemies.length
+      };
+    });
+    assert.equal(enterSectDuring.dlgOpen, true, "First-time enter_sect must open dialogue bar");
+    assert.equal(enterSectDuring.enemiesDuringCutscene, 0, "A6: Enemies must NOT spawn until enter_sect cutscene finishes/skips");
+
+    // Rapid double-skip click must spawn wave exactly ONCE
+    await page.click("#btn-dlg-skip");
+    await page.waitForTimeout(180);
+    const enterSectAfter = await page.evaluate(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      return {
+        dlgOpen: Boolean(document.getElementById("story-dialogue-bar")?.classList.contains("open")),
+        enemiesAfterSkip: s.arena.enemies.length
+      };
+    });
+    assert.equal(enterSectAfter.dlgOpen, false);
+    assert.ok(enterSectAfter.enemiesAfterSkip >= 1 && enterSectAfter.enemiesAfterSkip <= 6, `Wave must spawn once after skip, got ${enterSectAfter.enemiesAfterSkip}`);
+
+    // 2. boss_pre_stage0: Boss MUST NOT spawn while boss_pre_stage0 cutscene is open; spawns ONCE after skip
+    const bossPreDuring = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.openingChoice = "help";
+      if (s.game.seenCutscenes) delete s.game.seenCutscenes.boss_pre_stage0;
+      api.initArenaStage(0, false);
+      s.arena.enemies = [];
+      s.arena.waveIdx = 4;
+      if (s.arena.dungeonMap) {
+        const bossNode = Object.values(s.arena.dungeonMap.nodes).find(n => n.type === "boss");
+        if (bossNode) s.arena.dungeonMap.currentNodeId = bossNode.id;
+      }
+      api.spawnCurrentWave();
+      return {
+        dlgOpen: Boolean(document.getElementById("story-dialogue-bar")?.classList.contains("open")),
+        enemiesDuringBossPre: s.arena.enemies.length
+      };
+    });
+    assert.equal(bossPreDuring.dlgOpen, true, "First-time boss_pre_stage0 must open dialogue bar");
+    assert.equal(bossPreDuring.enemiesDuringBossPre, 0, "A7: Boss must NOT spawn until boss_pre_stage0 cutscene finishes/skips");
+
+    await page.click("#btn-dlg-skip");
+    await page.waitForTimeout(180);
+    const bossPreAfter = await page.evaluate(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      return {
+        bossCount: s.arena.enemies.filter(e => e.isBoss).length,
+        totalEnemies: s.arena.enemies.length
+      };
+    });
+    assert.equal(bossPreAfter.bossCount, 1, `Boss must spawn exactly once after boss_pre_stage0 skip, got ${bossPreAfter.bossCount}`);
+
+    // 3. Stage epoch guard: switching to Sanctum while an unseen enter_secret cutscene is open must cancel stale wave spawn!
+    const staleGuard = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "foundation";
+      if (s.game.seenCutscenes) delete s.game.seenCutscenes.enter_secret;
+      api.initArenaStage(2, false);
+      const opened = Boolean(document.getElementById("story-dialogue-bar")?.classList.contains("open"));
+      api.enterSanctumHub();
+      return {
+        opened,
+        sanctum: s.arena.sanctumMode,
+        hostilesInSanctum: s.arena.enemies.filter(e => e && e.hp > 0 && !e.isDummy).length
+      };
+    });
+    assert.equal(staleGuard.opened, true);
+    assert.equal(staleGuard.sanctum, true);
+    assert.equal(staleGuard.hostilesInSanctum, 0, "Stage transition must cancel stale pre-battle cutscene spawn via stageEpoch");
+    await ctx.close();
+  });
+
+  await runSuite("Q1-5", "Q1 F13 对比卡战中隐藏、250ms防误点、熔炼二步确认与战中7/8/9双击确认", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q1-5", true);
+
+    // 1. Compare card hidden during combat-hot, revealed on calm with 250ms reveal click-guard, and smelt requires 2-step confirmation
+    const cmpHot = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.stones = 100;
+      const item = api.rollGearItem(2, 2, "weapon");
+      item.name = "玄品·测试赤霄剑";
+      item.sell = 55;
+      api.acquireGearItem(item);
+      const card = document.getElementById("gear-compare-card");
+      return {
+        combatHot: document.body.classList.contains("combat-hot"),
+        cardStyleDisplay: card ? getComputedStyle(card).display : "none"
+      };
+    });
+    assert.equal(cmpHot.combatHot, true);
+    assert.equal(cmpHot.cardStyleDisplay, "none", "#gear-compare-card must be hidden during combat-hot");
+
+    // Clear combat & trigger calm reveal (non-sanctum so 250ms click-guard activates!)
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.arena.enemies = [];
+      s.arena.projectiles = [];
+      api.requestCalmReevaluation({ immediate: true });
+    });
+    await page.waitForSelector('#gear-compare-card [data-action="compare-smelt-new"]', { state: "visible" });
+
+    // Immediate click within 250ms click-guard must NOT arm or destroy item
+    const immediateSmeltCheck = await page.evaluate(() => {
+      const btn = document.querySelector('#gear-compare-card [data-action="compare-smelt-new"]');
+      const guardBefore = window.__CHENYUAN_V25__.getCompareCardGuardState();
+      if (btn) btn.click();
+      const s = window.__CHENYUAN_V25__.getState();
+      return {
+        hadGuard: guardBefore.guardUntil > performance.now() - 50,
+        stones: s.game.stones,
+        bagHasItem: s.game.gearBag.some(i => i.name === "玄品·测试赤霄剑"),
+        confirmArmed: Boolean(window.__CHENYUAN_V25__.getCompareCardGuardState().confirm)
+      };
+    });
+    assert.equal(immediateSmeltCheck.stones, 100, "250ms click-guard must block premature click-through");
+    assert.equal(immediateSmeltCheck.bagHasItem, true);
+    assert.equal(immediateSmeltCheck.confirmArmed, false);
+
+    // Wait past 250ms -> 1st click arms 2-step confirmation (shows item name & stone yield, does NOT smelt yet!)
+    await page.waitForTimeout(300);
+    await page.click('#gear-compare-card [data-action="compare-smelt-new"]');
+    const afterFirstClick = await page.evaluate(() => {
+      const btn = document.querySelector('#gear-compare-card [data-action="compare-smelt-new"]');
+      const cardTxt = document.getElementById("gear-compare-card")?.textContent || "";
+      const s = window.__CHENYUAN_V25__.getState();
+      return {
+        btnClass: btn ? btn.className : "",
+        btnText: btn ? btn.textContent : "",
+        cardTxt,
+        stones: s.game.stones,
+        bagHasItem: s.game.gearBag.some(i => i.name === "玄品·测试赤霄剑")
+      };
+    });
+    assert.ok(afterFirstClick.btnClass.includes("btn-ghost") && afterFirstClick.btnClass.includes("confirming"), `Smelt button must use secondary confirming style, got: ${afterFirstClick.btnClass}`);
+    assert.ok(afterFirstClick.btnText.includes("确认熔炼") && afterFirstClick.btnText.includes("玄品·测试赤霄剑") && afterFirstClick.btnText.includes("55"), `Confirm label must show item name and stone yield: ${afterFirstClick.btnText}`);
+    assert.equal(afterFirstClick.stones, 100, "First click on smelt must NOT destroy item");
+    assert.equal(afterFirstClick.bagHasItem, true);
+
+    // 2nd click confirms and smelts!
+    await page.click('#gear-compare-card [data-action="compare-smelt-new"]');
+    const afterSecondClick = await page.evaluate(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      return {
+        stones: s.game.stones,
+        bagHasItem: s.game.gearBag.some(i => i.name === "玄品·测试赤霄剑")
+      };
+    });
+    assert.equal(afterSecondClick.stones, 155, "Second click must confirm smelt and grant +55 stones");
+    assert.equal(afterSecondClick.bagHasItem, false);
+
+    // 2. Digit7/8/9 require 2.5s double-tap arming during combat-hot, and open immediately when calm
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "spirit";
+      api.spawnSingleEnemy("wolf", 920, 460, 1.0, false);
+      api.focusBattlefield();
+      api.requestCalmReevaluation();
+    });
+    await page.keyboard.press("Digit7");
+    await page.waitForTimeout(80);
+    const digit7First = await page.evaluate(() => ({
+      modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open")),
+      toast: Array.from(document.querySelectorAll("#toast-container .toast-pill")).map(x => x.textContent).join(" ")
+    }));
+    assert.equal(digit7First.modalOpen, false, "First press of Digit7 during combat-hot must arm, not open modal");
+    assert.ok(digit7First.toast.includes("再按一次"), `Expected double-tap arm toast, got: ${digit7First.toast}`);
+    await page.keyboard.press("Digit7");
+    await page.waitForSelector("#modal-backdrop.open", { timeout: 2000 });
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+
+    // Clear enemies -> Digit7 opens immediately on single press when calm!
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.arena.enemies = [];
+      api.requestCalmReevaluation({ immediate: true });
+      api.focusBattlefield();
+    });
+    await page.keyboard.press("Digit7");
+    await page.waitForSelector("#modal-backdrop.open", { timeout: 2000 });
+    await ctx.close();
+  });
+
+  await runSuite("Q1-6", "Q1 F11 提示密度三档持久化、限流汇总、危招/存档警示保留与金灵A3持久化不静默自领", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q1-6", true);
+
+    // 1. Settings -> Accessibility -> switch combatNoticeLevel to "minimal" and verify persistence across reload
+    await page.click("#btn-open-settings");
+    await page.waitForSelector('#modal-backdrop.open [data-sys-tab="accessibility"]');
+    await page.click('[data-sys-tab="accessibility"]');
+    await page.waitForSelector("#btn-notice-level-minimal");
+    await page.click("#btn-notice-level-minimal");
+    await page.waitForTimeout(100);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().a11ySettings.combatNoticeLevel), "minimal");
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#btn-continue-save");
+    await page.click("#btn-continue-save");
+    await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    assert.equal(
+      await page.evaluate(() => window.__CHENYUAN_V25__.getState().a11ySettings.combatNoticeLevel),
+      "minimal",
+      "combatNoticeLevel='minimal' must persist across reload"
+    );
+
+    // 2. Minimal mode preserves critical N0 save alerts & Boss perilous banners, suppresses pickup floats, throttles C12, and summarizes combatInbox on calm
+    const noticeRes = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.arena.floats = [];
+      // Material pickup float suppressed in minimal, Boss perilous preserved!
+      api.addFloat("+灵草 ×2", 500, 400, "#4ad2b8", 13, false, { banner: false, kind: "pickup" });
+      api.addFloat("⚠ 妖王危招", 500, 400, "#ff5e57", 17, true, { banner: true, perilous: true });
+      const floatsSnap = s.arena.floats.map(f => ({ text: f.text, isPerilous: f.isPerilous }));
+
+      // N0 critical toast NEVER suppressed in minimal
+      const critShown = api.showToast("⚠ 测试关键存档告警", { critical: true, key: "q1_test_crit", throttleMs: 6000 });
+      // C12 key throttle: 1st shows, 2nd within 4s throttled
+      const c12First = api.showToast("💧 剑元不足测试", { tier: 1, key: "q1_c12_test", throttleMs: 4000 });
+      const c12Second = api.showToast("💧 剑元不足测试", { tier: 1, key: "q1_c12_test", throttleMs: 4000 });
+
+      // Tier 2 combat notice routed into combatInbox during combat-hot
+      const t2Shown = api.showToast("✦ 仙装战报测试", { tier: 2, category: "gear" });
+      const inboxHot = api.getCombatInbox();
+
+      // Switch to "full" mode: N1 choice modals MUST STILL defer during hot combat!
+      s.a11ySettings.combatNoticeLevel = "full";
+      s.game.gearBag = Array.from({ length: api.GEAR_BAG_LIMIT }, () => api.rollGearItem(1, 0, "weapon"));
+      api.acquireGearItem(api.rollGearItem(2, 1, "weapon"));
+      const modalOpenInFullHot = Boolean(document.getElementById("modal-backdrop")?.classList.contains("open"));
+
+      // 3. Golden Spirit A3: killing isTreasure while another modal/tribulation is active MUST NOT silently auto-grant a law; must persist iconic_draft in game.pendingRewards!
+      const lawsBefore = s.game.laws.slice();
+      s.arena.tribulation = { nextRealm: "qi", totalBolts: 3, boltsLeft: 1, cooldown: 1, parryCount: 0, strikes: [] };
+      const goldSpirit = {
+        uid: "test_treasure_1", id: "treasure_spirit", name: "聚宝金灵", art: "item_gold_spirit",
+        x: 700, y: 450, hp: 10, maxHp: 10, isTreasure: true, isBoss: false
+      };
+      s.arena.enemies.push(goldSpirit);
+      api.handleEnemyDeath(goldSpirit);
+      s.arena.tribulation = null;
+      const lawsAfter = s.game.laws.slice();
+      const iconicPending = api.getPendingRewards().filter(r => r.kind === "iconic_draft" && r.payload.source === "golden_spirit");
+
+      return {
+        floatsSnap,
+        critShown,
+        c12First,
+        c12Second,
+        t2Shown,
+        inboxHotUnread: inboxHot.unread,
+        modalOpenInFullHot,
+        lawsBeforeLen: lawsBefore.length,
+        lawsAfterLen: lawsAfter.length,
+        iconicPendingLen: iconicPending.length
+      };
+    });
+
+    assert.equal(noticeRes.floatsSnap.length, 1, "Minimal mode must suppress pickup float while keeping Boss perilous float");
+    assert.equal(noticeRes.floatsSnap[0].isPerilous, true);
+    assert.equal(noticeRes.critShown, true, "Critical N0 alert must NEVER be suppressed in minimal mode");
+    assert.equal(noticeRes.c12First, true);
+    assert.equal(noticeRes.c12Second, false, "Repeated C12 toast within 4s must be throttled");
+    assert.equal(noticeRes.t2Shown, false, "Tier 2 combat notice must route to combatInbox in minimal/lite");
+    assert.ok(noticeRes.inboxHotUnread >= 1);
+    assert.equal(noticeRes.modalOpenInFullHot, false, "'full' notice density must STILL enforce F08/F10 calm gating for N1 choice modals");
+    assert.equal(noticeRes.lawsAfterLen, noticeRes.lawsBeforeLen, "A3 Golden Spirit must NEVER silently auto-grant a Dao Law");
+    assert.equal(noticeRes.iconicPendingLen, 1, "A3 Golden Spirit must enqueue persisted iconic_draft in game.pendingRewards");
+
+    // 4. Clearing combat triggers combatInbox concise calm summary toast and resets unread counter
+    const calmSummary = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.arena.enemies = [];
+      s.arena.projectiles = [];
+      api.requestCalmReevaluation({ immediate: true });
+      return {
+        unreadAfter: api.getCombatInbox().unread,
+        toasts: Array.from(document.querySelectorAll("#toast-container .toast-pill")).map(x => x.textContent)
+      };
+    });
+    assert.equal(calmSummary.unreadAfter, 0, "Calm flush must consume unread combatInbox summary");
+    assert.ok(calmSummary.toasts.some(t => t.includes("本波战报")), `Expected concise calm summary toast, got: ${calmSummary.toasts.join(" | ")}`);
     await ctx.close();
   });
 } finally {

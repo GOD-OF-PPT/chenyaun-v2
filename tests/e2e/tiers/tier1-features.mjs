@@ -1377,22 +1377,22 @@ export const tests = [
       });
       await page.waitForTimeout(200);
 
-      const bagFullModalOpen = await isModalOpen(page);
+      const bagFullModalOpenHot = await isModalOpen(page);
       const stonesAfterDrop = (await getHudState(page)).stones;
+      const pendingBadgeVisible = await page.isVisible("#btn-pending-rewards");
       assert.ok(
-        bagFullModalOpen && stonesAfterDrop === 300,
-        `Bag full must prompt player instead of silently auto-smelting (modalOpen=${bagFullModalOpen}, stones=${stonesAfterDrop})`
+        !bagFullModalOpenHot && stonesAfterDrop === 300 && pendingBadgeVisible,
+        `Bag full during live combat must defer without auto-smelting and show #btn-pending-rewards (modalOpenHot=${bagFullModalOpenHot}, stones=${stonesAfterDrop}, badge=${pendingBadgeVisible})`
       );
+      await page.click("#btn-pending-rewards");
+      await page.waitForSelector("#modal-backdrop.open #btn-overflow-smelt-new", { timeout: 3000 });
       const smeltBtn = await page.$("#modal-backdrop.open #btn-overflow-smelt-new");
-      if (smeltBtn) {
-        await smeltBtn.click();
-        await page.waitForFunction(
-          () => !document.getElementById("modal-backdrop")?.classList.contains("open"),
-          { timeout: 3000 }
-        );
-      } else {
-        await closeModalEsc(page);
-      }
+      assert.ok(smeltBtn, "Clicking #btn-pending-rewards must open explicit overflow choice modal with #btn-overflow-smelt-new");
+      await smeltBtn.click();
+      await page.waitForFunction(
+        () => !document.getElementById("modal-backdrop")?.classList.contains("open"),
+        { timeout: 3000 }
+      );
 
       // 2. Alchemy missing material breakdown
       await openNavTab(page, "alchemy");

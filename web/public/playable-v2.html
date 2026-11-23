@@ -2718,8 +2718,81 @@
     color: var(--text-main);
   }
   body:has(#modal-backdrop.open) #gear-compare-card,
-  body:has(#jade-panel.drawer-open) #gear-compare-card {
+  body:has(#jade-panel.drawer-open) #gear-compare-card,
+  body.combat-hot #gear-compare-card {
     display: none !important;
+  }
+  .btn-smelt-danger {
+    border-color: rgba(255, 118, 110, 0.58) !important;
+    color: #ffb8b2 !important;
+  }
+  .btn-smelt-danger.confirming {
+    background: linear-gradient(135deg, rgba(168, 34, 44, 0.94), rgba(212, 76, 60, 0.94)) !important;
+    border-color: #ffd0a6 !important;
+    color: #fff6e8 !important;
+    box-shadow: 0 0 12px rgba(255, 96, 86, 0.45);
+  }
+  .gear-smelt-confirm-note {
+    font-size: 10.5px;
+    line-height: 1.4;
+    color: #ffd6cc;
+    background: rgba(120, 24, 32, 0.38);
+    border: 1px solid rgba(255, 118, 110, 0.55);
+    border-radius: 7px;
+    padding: 5px 8px;
+  }
+  .pending-reward-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 214, 112, 0.78);
+    background: linear-gradient(135deg, rgba(64, 34, 14, 0.92), rgba(112, 46, 18, 0.92));
+    color: #fff3c8;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(255, 200, 88, 0.28);
+    animation: pendingRewardPulse 1.8s ease-in-out infinite;
+  }
+  .pending-reward-pill:hover {
+    border-color: #ffe89e;
+    filter: brightness(1.1);
+  }
+  .pending-reward-pill b {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: rgba(255, 224, 128, 0.24);
+    color: #ffe89e;
+    font-size: 11px;
+  }
+  @keyframes pendingRewardPulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(255, 200, 88, 0.22); }
+    50% { box-shadow: 0 0 16px rgba(255, 214, 112, 0.56); }
+  }
+  html.reduced-motion .pending-reward-pill,
+  html.reduced-motion .lifespan-pulse {
+    animation: none !important;
+  }
+  .lifespan-pulse {
+    border-color: rgba(255, 96, 96, 0.92) !important;
+    box-shadow: 0 0 12px rgba(255, 86, 86, 0.52);
+    animation: pendingRewardPulse 1.2s ease-in-out infinite;
+  }
+  .combat-notice-seg {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .combat-notice-seg button {
+    padding: 4px 10px;
+    font-size: 11px;
   }
   #new-unlock-card {
     position: fixed;
@@ -2765,7 +2838,8 @@
   body:has(#modal-backdrop.open) #new-unlock-card,
   body:has(#jade-panel.drawer-open) #new-unlock-card,
   body:has(#story-dialogue-bar.open) #new-unlock-card,
-  body.photo-mode-active #new-unlock-card {
+  body.photo-mode-active #new-unlock-card,
+  body.combat-hot #new-unlock-card {
     display: none !important;
   }
   .gear-cmp-grid {
@@ -3481,6 +3555,7 @@
     </div>
 
     <div class="hud-right">
+      <button type="button" id="btn-pending-rewards" class="pending-reward-pill" style="display:none;" data-action="open-pending-rewards" aria-label="待处置奖励" data-tip="待处置奖励|战斗静默后将依次呈现，也可点击主动提前处置（不越过败北/存档冲突保护）"><span>待处置</span><b id="pending-rewards-count">0</b></button>
       <button id="btn-omen-banner" class="icon-btn active" data-tip="天时星象 (炼气期解封)|点击耗20灵石改换星象加成">
         <span id="omen-label-txt">灵潮</span>
       </button>
@@ -6146,14 +6221,22 @@ const ART = {
     regionCardTimer = setTimeout(() => card.classList.remove("show"), 2300);
   }
 
+  let lastKillCamStampAt = 0;
   function triggerKillCamStamp(label = "一剑诛邪") {
+    const now = performance.now();
+    if (now - lastKillCamStampAt < 3000) return;
+    lastKillCamStampAt = now;
+    const level = (a11ySettings && a11ySettings.combatNoticeLevel) || "lite";
+    if (!a11ySettings.reducedMotion) {
+      arena.camZoom = 1.11;
+      arena.hitStop = 0.085;
+    }
+    Sound.bianzhong(523.25, 0.12);
+    if (level === "minimal") return;
     const el = document.getElementById("execution-stamp-overlay");
     if (!el) return;
     el.textContent = label;
     el.classList.add("slam");
-    arena.camZoom = 1.11;
-    arena.hitStop = 0.085;
-    Sound.bianzhong(523.25, 0.12);
     if (execStampTimer) clearTimeout(execStampTimer);
     execStampTimer = setTimeout(() => el.classList.remove("slam"), 1250);
   }
@@ -6465,7 +6548,6 @@ const ART = {
     if (!game || !game.equippedGear || !game.equippedGear[slot]) return;
     const eq = game.equippedGear[slot];
     const slotNames = { weapon: "本命佩剑", armor: "护身仙衣", ring: "乾坤灵佩" };
-    arena.paused = true;
     openModal(`
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
         <div>
@@ -6776,8 +6858,13 @@ const ART = {
     cutscene.active = true;
     cutscene.lines = lines;
     cutscene.idx = 0;
-    cutscene.onFinish = onFinish;
-    arena.paused = true;
+    let finishFired = false;
+    cutscene.onFinish = typeof onFinish === "function" ? () => {
+      if (finishFired) return;
+      finishFired = true;
+      onFinish();
+    } : null;
+    if (!cutscenePauseToken) cutscenePauseToken = acquirePauseToken("cutscene", "dialogue");
     renderCutsceneStep();
   }
 
@@ -6914,7 +7001,9 @@ const ART = {
       const chBox = document.getElementById("dlg-choices-box");
       if (chBox) { chBox.innerHTML = ""; chBox.style.display = "none"; }
       const bd = document.getElementById("modal-backdrop");
-      arena.paused = drawerOpen || !!(bd && bd.classList.contains("open"));
+      const prevCutTok = cutscenePauseToken;
+      cutscenePauseToken = null;
+      releasePauseToken(prevCutTok);
       const cb = cutscene.onFinish;
       const savedTrigger = cutscene.triggerEl;
       cutscene.onFinish = null;
@@ -6924,7 +7013,7 @@ const ART = {
       const modalNowOpen = !!(bd && bd.classList.contains("open"));
       if (!cutscene.active && !modalNowOpen && !drawerOpen) {
         restoreTriggerFocus(savedTrigger);
-        setTimeout(flushDeferredChoiceModals, 0);
+        setTimeout(() => requestCalmReevaluation(), 0);
       }
       return;
     }
@@ -7191,7 +7280,10 @@ const ART = {
     ghostRecorder: { recording: false, playing: false, elapsed: 0, playTime: 0, frames: [] },
     frameTimes: [],
     floats: [],
-    tribulation: null
+    tribulation: null,
+    calmT: 0,
+    calmFlushed: false,
+    pickupAgg: {}
   };
 
   // ==================== V17 BOSS WEAKPOINT CORES, TRIAL AFFIXES & DUAL-POSTURE SPECS ====================
@@ -7232,7 +7324,8 @@ const ART = {
     hitStopScale: 1.0,    // 0.0 (0%) ~ 1.5 (150%)
     colorblindGlyphs: true,
     autoComboAssist: false,
-    reducedMotion: false
+    reducedMotion: false,
+    combatNoticeLevel: "lite" // "full" | "lite" | "minimal"
   };
   function applyReducedMotionClass() {
     if (document && document.documentElement) {
@@ -7254,6 +7347,9 @@ const ART = {
       if (hasOwn(p, "autoComboAssist") && typeof p.autoComboAssist === "boolean") {
         a11ySettings.autoComboAssist = p.autoComboAssist;
       }
+      if (hasOwn(p, "combatNoticeLevel") && ["full", "lite", "minimal"].includes(p.combatNoticeLevel)) {
+        a11ySettings.combatNoticeLevel = p.combatNoticeLevel;
+      }
       if (hasOwn(p, "reducedMotion") && typeof p.reducedMotion === "boolean") {
         a11ySettings.reducedMotion = p.reducedMotion;
       } else if (fallbackToMedia) {
@@ -7269,6 +7365,9 @@ const ART = {
       a11ySettings.reducedMotion = true;
       a11ySettings.shakeScale = 0;
       a11ySettings.hitStopScale = 0;
+    }
+    if (!["full", "lite", "minimal"].includes(a11ySettings.combatNoticeLevel)) {
+      a11ySettings.combatNoticeLevel = "lite";
     }
     applyReducedMotionClass();
   }
@@ -7951,7 +8050,6 @@ const ART = {
     }
 
     closeDrawer();
-    arena.paused = true;
     const ks = getKarmaState(game);
     const dotPct = Math.round(((ks.score + 100) / 200) * 100);
 
@@ -8062,7 +8160,7 @@ const ART = {
     if (next) {
       closeDrawer();
       closeModal();
-      arena.paused = true;
+      if (!photoPauseToken) photoPauseToken = acquirePauseToken("photo", "photo_mode");
       photoMode.uiHidden = false;
       document.body.classList.add("photo-mode-active");
       document.body.classList.remove("photo-ui-hidden");
@@ -8073,7 +8171,10 @@ const ART = {
       photoMode.previewImpact = false;
       document.body.classList.remove("photo-mode-active", "photo-ui-hidden");
       if (panel) panel.classList.remove("open");
-      arena.paused = drawerOpen || cutscene.active || document.getElementById("modal-backdrop").classList.contains("open");
+      const prevPhotoTok = photoPauseToken;
+      photoPauseToken = null;
+      releasePauseToken(prevPhotoTok);
+      setTimeout(() => requestCalmReevaluation(), 0);
     }
     syncPhotoStudioUi();
   }
@@ -8742,7 +8843,6 @@ const ART = {
     if (!guardEcosystemAccess("star_chart")) return;
     notifyUnlockCardTried("star_chart");
     closeDrawer();
-    arena.paused = true;
     if (!Array.isArray(game.litStars)) game.litStars = [];
     const freePts = getAvailableStarPoints(game);
     const sb = getStarChartBonuses(game);
@@ -9241,7 +9341,6 @@ const ART = {
     if (!game) return;
     if (!guardEcosystemAccess("sword_tomb_rush")) return;
     closeDrawer();
-    arena.paused = true;
     const affMult = 1 + arena.rushAffixes.reduce((s, id) => {
       const sp = RUSH_AFFIX_SPECS.find(x => x.id === id);
       return s + (sp ? sp.mult : 0);
@@ -10739,7 +10838,6 @@ const ART = {
     if (!guardEcosystemAccess("celestial_spire")) return;
     notifyUnlockCardTried("spire");
     closeDrawer();
-    arena.paused = true;
     const curEntries = Object.entries(game.spireCurios || {}).filter(([, lv]) => lv > 0);
     const bestFl = Math.max(metaState.bestSpireFloor || 0, (game.bestSpireFloor || 0));
 
@@ -10935,7 +11033,6 @@ const ART = {
     if (sp.floor >= 9) {
       sp.active = false;
       arena.celestialSpire = null;
-      arena.paused = true;
       updateHud();
       openModal(`
         <div class="drawer-mural-banner" style="height:94px;">
@@ -10976,7 +11073,6 @@ const ART = {
       completeSpirePracticeFloor();
       return;
     }
-    arena.paused = true;
     const maxLv = PERM_GROWTH_CAPS.spireCurioMaxStack;
     const uncapped = SPIRE_CURIOS.filter(c => getCurioStacks(game, c.id) < maxLv);
     const pool = uncapped.slice().sort(() => Math.random() - 0.5).slice(0, 3);
@@ -11342,7 +11438,7 @@ const ART = {
     spawnDistortionRing(p.x, p.y, 285, color);
     registerStyleAction("astral", 210);
     pushTelemetryInput(`🔱法天·${isDemonic ? "修罗真身" : "金阙真身"}!`, false);
-    showBossCutIn(artKey, `法天象地 · 【${title}】降世`, isDemonic ? "十丈四臂修罗魔神 · 裂穹魔剑噬血狂斩，正面对撞巨神触发【双巨神跨屏角力】！" : "十丈金阙剑仙元神 · 全程霸体免控与星河剑指，正面对撞巨神触发【双巨神跨屏角力】！");
+    showBossCutIn(artKey, `法天象地 · 【${title}】降世`, isDemonic ? "十丈四臂修罗魔神 · 裂穹魔剑噬血狂斩，正面对撞巨神触发【双巨神跨屏角力】！" : "十丈金阙剑仙元神 · 全程霸体免控与星河剑指，正面对撞巨神触发【双巨神跨屏角力】！", { isPlayerUlt: true, cutInKey: isDemonic ? "ult_astral_demon" : "ult_astral_immortal" });
 
     // If a Colossal Titan or Boss is nearby on cast, check immediate shockwave or clash!
     const nearTitan = arena.enemies.find(e => e.hp > 0 && (e.isTitan || e.isBoss) && Math.hypot(e.x - p.x, e.y - p.y) < 380);
@@ -11803,7 +11899,6 @@ const ART = {
     if (!guardEcosystemAccess("seed_workshop")) return;
     notifyUnlockCardTried("workshop");
     closeDrawer();
-    arena.paused = true;
     const seedStr = encodeWorkshopSeed(workshopState);
 
     openModal(`
@@ -12477,7 +12572,6 @@ const ART = {
     if (!game) return;
     if (!guardEcosystemAccess("bagua_alchemy")) return;
     closeDrawer();
-    arena.paused = true;
     craftMinigame.open = true;
     craftMinigame.mode = mode === "forge" ? "forge" : "alchemy";
     craftMinigame.strikes = 0;
@@ -12949,7 +13043,6 @@ const ART = {
     if (!game) return;
     closeDrawer();
     ensureFourComicFrames();
-    arena.paused = true;
     openModal(`
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
         <div>
@@ -13177,7 +13270,6 @@ const ART = {
     if (!guardActionRealm("sequencer")) return;
     notifyUnlockCardTried("sequencer");
     closeDrawer();
-    arena.paused = true;
     const seq = ensureCustomComboSeq(game);
     const stepTitles = ["第壹段 · 起手破风", "第贰段 · 衔接承转", "第叁段 · 聚势控场", "第肆段 · 乾坤终结"];
     openModal(`
@@ -13335,7 +13427,7 @@ const ART = {
     triggerRadialChromaticBurst(1.15, "#80ffea", p.x, p.y - 20);
     registerStyleAction("sanqing", 155);
     pushTelemetryInput("☯一气化三清·双法身降临!", false);
-    showBossCutIn("clone_yuqing_cyan", "无上神通 ·【一气化三清】", "玉清青莲(80ms)与上清紫电(160ms)双法身同步复刻万般剑诀；再按 4 键瞬发【移形换位·三清归元斩】！");
+    showBossCutIn("clone_yuqing_cyan", "无上神通 ·【一气化三清】", "玉清青莲(80ms)与上清紫电(160ms)双法身同步复刻万般剑诀；再按 4 键瞬发【移形换位·三清归元斩】！", { isPlayerUlt: true, cutInKey: "ult_sanqing" });
     addFloat("☯ 一气化三清 · 玉清/上清法身同击 (12s)！", p.x, p.y - 72, "#80ffea", 20, true);
     syncV24GenesisDock();
     updateHud();
@@ -13409,7 +13501,7 @@ const ART = {
     Sound.fanfare();
     Sound.bianzhong(523.25, 0.14);
     spawnDistortionRing(arena.player.x, arena.player.y, 320, "#ffe28a");
-    showBossCutIn("scroll_shanhe_sheji", "创世至宝 ·【山河社稷图】展开", "群妖已摄入太古青绿画中界（移速-42%·破防+30%）！挥剑烙印【临兵斗者皆阵列在前】九字破画！");
+    showBossCutIn("scroll_shanhe_sheji", "创世至宝 ·【山河社稷图】展开", "群妖已摄入太古青绿画中界（移速-42%·破防+30%）！挥剑烙印【临兵斗者皆阵列在前】九字破画！", { isPlayerUlt: true, cutInKey: "ult_shanhe" });
     addFloat("🏞 山河社稷图 ·【青绿山水画中界】展开 (10s)！", arena.player.x, arena.player.y - 78, "#ffe28a", 21, true);
     syncV24GenesisDock();
     updateHud();
@@ -13612,7 +13704,7 @@ const ART = {
     GamepadSystem.rumble(0.88, 0.78, 260);
     registerStyleAction("warship", 215);
     pushTelemetryInput("⛵凌霄仙舟·天基齐射!", false);
-    showBossCutIn("warship_lingxiao_ark", "宗门母舰 ·【听雨凌霄仙舟】降临", "镇妖金链锁敌 · 十二门徒御剑空降剑雨 + 太初灵晶主炮灭世轰击！");
+    showBossCutIn("warship_lingxiao_ark", "宗门母舰 ·【听雨凌霄仙舟】降临", "镇妖金链锁敌 · 十二门徒御剑空降剑雨 + 太初灵晶主炮灭世轰击！", { isPlayerUlt: true, cutInKey: "ult_warship" });
     addFloat("⛵ 听雨凌霄仙舟掠空 ·【镇妖锁链 + 天基主炮】锁定！！", tx, ty - 84, "#80ffea", 21, true);
     syncV24GenesisDock();
     return true;
@@ -13623,7 +13715,6 @@ const ART = {
     if (!guardEcosystemAccess("vein_expedition")) return;
     notifyUnlockCardTried("expedition");
     closeDrawer();
-    arena.paused = true;
     const ex = ensureExpeditionState(game);
     const activeCnt = Object.values(ex.assignments || {}).filter(Boolean).length;
     const vaultEmpty = ex.bankedStones <= 0 && ex.bankedStars <= 0;
@@ -14220,7 +14311,6 @@ const ART = {
     };
     const isPractice = Boolean(isPracticeModeActive() || br.practiceMode || (br.startBout && br.startBout > 1));
     arena.bossRush = null;
-    arena.paused = true;
 
     if (isPractice) {
       updateHud();
@@ -14424,7 +14514,7 @@ const ART = {
     const reqRealmId = REALM_ORDER[reqRank] || "qi";
     const reqName = (REALMS[reqRealmId] && REALMS[reqRealmId].name) || "高阶";
     const actName = ACTION_DISPLAY_NAME[act] || act;
-    showToast(`🔒 【${actName}】将于【${reqName}期】解封（或在右上【仙阁】开启演武沙盒）`);
+    showToast(`🔒 【${actName}】将于【${reqName}期】解封（或在右上【仙阁】开启演武沙盒）`, { tier: 1, key: `c12_realm_${act}`, throttleMs: 4000 });
     return false;
   }
 
@@ -14434,9 +14524,9 @@ const ART = {
     const cost = Math.max(4, Math.round(baseCost * discount));
     const curMp = Math.floor(game.mp || 0);
     if (curMp < cost) {
-      showToast(`💧 剑元不足！施展【${label}】需 ${cost} 点剑元（当前 ${curMp} · 普攻/识破/回灵丹恢复）`);
+      showToast(`💧 剑元不足！施展【${label}】需 ${cost} 点剑元（当前 ${curMp} · 普攻/识破/回灵丹恢复）`, { tier: 1, key: "c12_mp", throttleMs: 4000 });
       if (arena && arena.player) {
-        addFloat(`剑元不足(${curMp}/${cost})`, arena.player.x, arena.player.y - 46, "#80c8ff", 14);
+        addFloat(`剑元不足(${curMp}/${cost})`, arena.player.x, arena.player.y - 46, "#80c8ff", 14, false, { banner: false });
       }
       return false;
     }
@@ -15415,6 +15505,9 @@ const ART = {
       primordialCrafts: { goldenAcolyte: false, voidSwordRift: false, pillBatches: 0, forgedBlades: 0 },
       permGrowth: { alchemyHp: 0, alchemyAtk: 0, bloodFuryBought: {} },
       spireCurios: {},
+      pendingRewards: [],
+      resolvedRewardIds: [],
+      seenCutIns: {},
       journal: [effCalamity > 0 ? `第 ${(metaState.ascensions || 0) + 1} 世重入红尘，主动点燃【${calSpec.name}】劫火试炼！` : "十八岁山雨倾盆，仗剑踏入青岚破庙。"]
     };
     const st = getCombatStats(g);
@@ -15657,6 +15750,67 @@ const ART = {
     g.karmaMarketBought = safeAssignPlain({}, raw.karmaMarketBought);
     if (!Array.isArray(g.journal)) g.journal = base.journal.slice();
     else g.journal = g.journal.filter(entry => typeof entry === "string");
+    // F07: Validate persisted pendingRewards & bounded resolvedRewardIds (legacy saves default cleanly to [])
+    const rawResolved = Array.isArray(raw.resolvedRewardIds) ? raw.resolvedRewardIds : [];
+    const resolvedSet = new Set();
+    const cleanResolved = [];
+    for (const rid of rawResolved) {
+      if (typeof rid === "string" && rid.length > 0 && rid.length <= 96 && !resolvedSet.has(rid)) {
+        resolvedSet.add(rid);
+        cleanResolved.push(rid);
+      }
+    }
+    g.resolvedRewardIds = cleanResolved.slice(-128);
+    const resolvedFinalSet = new Set(g.resolvedRewardIds);
+    const rawPending = Array.isArray(raw.pendingRewards) ? raw.pendingRewards : [];
+    const seenPendingIds = new Set();
+    const cleanPending = [];
+    for (const entry of rawPending) {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+      const eid = typeof entry.eventId === "string" && entry.eventId.trim() ? entry.eventId.trim().slice(0, 96) : "";
+      const kind = typeof entry.kind === "string" ? entry.kind : "";
+      if (!eid || resolvedFinalSet.has(eid) || seenPendingIds.has(eid)) continue;
+      if (!["gear_overflow", "soul_unlock", "destiny_fruit", "iconic_draft", "lifespan_exhausted"].includes(kind)) continue;
+      const rawPay = (entry.payload && typeof entry.payload === "object" && !Array.isArray(entry.payload)) ? entry.payload : {};
+      let cleanPayload = null;
+      if (kind === "gear_overflow") {
+        const normItem = normalizeGearItem(rawPay.item);
+        if (!normItem) continue;
+        cleanPayload = { item: normItem };
+      } else if (kind === "soul_unlock") {
+        const sid = typeof rawPay.soulId === "string" ? rawPay.soulId : "";
+        if (!hasOwn(SOUL_SPIRITS, sid)) continue;
+        cleanPayload = { soulId: sid };
+      } else if (kind === "destiny_fruit") {
+        cleanPayload = { isHeaven: !!rawPay.isHeaven };
+      } else if (kind === "iconic_draft") {
+        cleanPayload = {
+          titleText: safeText(rawPay.titleText, "大道顿悟 · 获赐神通").slice(0, 64) || "大道顿悟 · 获赐神通",
+          source: safeText(rawPay.source, "default").slice(0, 32) || "default"
+        };
+      } else if (kind === "lifespan_exhausted") {
+        if (getLifespanInfo(g).status !== "exhausted") continue;
+        cleanPayload = {};
+      }
+      seenPendingIds.add(eid);
+      cleanPending.push({
+        eventId: eid,
+        kind,
+        noticeClass: ["N0", "N1", "N2", "N3"].includes(entry.noticeClass) ? entry.noticeClass : "N1",
+        sourceMode: safeText(entry.sourceMode, "campaign").slice(0, 32) || "campaign",
+        stageEpoch: Math.max(0, Math.floor(num(entry.stageEpoch, 0))),
+        createdAt: Math.max(0, Math.floor(num(entry.createdAt, Date.now()))),
+        payload: cleanPayload,
+        status: "pending" // Always reset "active" -> "pending" on load so it cleanly re-presents once calm
+      });
+    }
+    g.pendingRewards = cleanPending;
+    g.seenCutIns = {};
+    if (raw.seenCutIns && typeof raw.seenCutIns === "object" && !Array.isArray(raw.seenCutIns)) {
+      Object.keys(raw.seenCutIns).forEach(ck => {
+        if (typeof ck === "string" && ck.length <= 48 && raw.seenCutIns[ck]) g.seenCutIns[ck] = true;
+      });
+    }
     const st = getCombatStats(g);
     g.hp = num(g.hp, st.maxHp);
     if (g.hp <= 0) g.hp = st.maxHp;
@@ -15740,11 +15894,14 @@ const ART = {
       game = game ? JSON.parse(JSON.stringify(game)) : createFreshGame("顾长青", "sword_bone");
       sandboxMode = true;
       game.unlockAllArcana = true;
+      game.pendingRewards = [];
+      activePendingRewardId = null;
       pendingUnlockCardQueue.length = 0;
       activeUnlockCardId = null;
       pendingLifespanExhaustedPrompt = false;
       activeLifespanModalOpen = false;
       renderActiveUnlockCard();
+      syncPendingRewardsBadge();
     }
     closeModal();
     if (opts && opts.preset) {
@@ -15769,6 +15926,7 @@ const ART = {
     arena.waveTransitioning = false;
     clearTransientChoiceQueues();
     resetStageTransitionState();
+    releasePauseToken(defeatPauseToken); defeatPauseToken = null;
     closeModal();
     closeDrawer();
     arena.bossRush = null;
@@ -15776,6 +15934,7 @@ const ART = {
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.customSeedRun = null;
+    arena.bladeClash = null;
 
     if (preSandboxSnapshot && preSandboxSnapshot.meta) {
       Object.keys(metaState).forEach(k => { if (!(k in preSandboxSnapshot.meta)) delete metaState[k]; });
@@ -16135,7 +16294,7 @@ const ART = {
           <span class="tag-chip" style="border-color:#ff7870;color:#ffb4ae;">显式覆盖</span>
         </button>
       </div>
-    `, true);
+    `, true, { kind: "save_corrupt" });
   }
 
   function openCorruptedMetaResetConfirmModal() {
@@ -16165,7 +16324,7 @@ const ART = {
           <span class="tag-chip" style="border-color:#ff7870;color:#ffb4ae;">确认重置</span>
         </button>
       </div>
-    `, true);
+    `, true, { kind: "save_corrupt" });
   }
 
   function openSaveConflictModal(info = saveConflictState) {
@@ -16200,7 +16359,7 @@ const ART = {
           <span class="tag-chip" style="border-color:#ff7870;color:#ffb4ae;">显式覆盖</span>
         </button>
       </div>
-    `, false);
+    `, false, { kind: "save_conflict" });
   }
 
   function buildConflictInfoFromResult(res) {
@@ -16254,7 +16413,7 @@ const ART = {
             saveAlertDismissed = false;
             renderWelcomeSaveStatusBanner();
             renderHudSaveAlert();
-            showToast("⚠ 本地存档已被异常修改，已暂停自动覆盖并保留原数据！");
+            showToast("⚠ 本地存档已被异常修改，已暂停自动覆盖并保留原数据！", { critical: true, key: "save_corrupt_err", throttleMs: 6000 });
             return false;
           }
           if (curRes.tabId && curRes.tabId !== TAB_ID && curRes.rev > loadedSaveRev) {
@@ -16315,7 +16474,7 @@ const ART = {
       };
       saveAlertDismissed = false;
       renderHudSaveAlert();
-      showToast(`⚠ 本地存档写入失败：${storageWriteError.message}`);
+      showToast(`⚠ 本地存档写入失败：${storageWriteError.message}`, { critical: true, key: "save_write_err", throttleMs: 6000 });
       return false;
     }
   }
@@ -16527,40 +16686,171 @@ const ART = {
     return GRADE_TABLE[tier];
   }
 
+  // ==================== Q1 (F07–F13): PAUSE TOKENS, MODAL PRIORITY, NOTICE BUS & PERSISTED PENDING REWARDS ====================
+  const COMBAT_CALM_GRACE_SEC = 0.8;
+  const RESOLVED_REWARD_ID_LIMIT = 128;
+  const PENDING_REWARD_SOFT_WARN = 64;
+  const COMBAT_INBOX_MAX = 60;
+  const PENDING_REWARD_KINDS = new Set(["gear_overflow", "soul_unlock", "destiny_fruit", "iconic_draft", "lifespan_exhausted"]);
+  const MODAL_PRIORITY = {
+    save_conflict: 100,
+    save_corrupt: 100,
+    defeat: 100,
+    volume_recap: 70,
+    ending: 70,
+    gear_overflow: 40,
+    soul_unlock: 40,
+    destiny_fruit: 40,
+    iconic_draft: 40,
+    lifespan_exhausted: 40,
+    default: 20
+  };
+
+  const pauseTokens = new Map();
+  let pauseTokenSeq = 0;
+  let modalPauseToken = null;
+  let drawerPauseToken = null;
+  let cutscenePauseToken = null;
+  let photoPauseToken = null;
+  let defeatPauseToken = null;
+  let activeModalKind = "";
+  let deferredVolumeRecapModal = null;
+  let lastVolumeRecapArgs = null;
+
+  function syncArenaPaused() {
+    arena.paused = pauseTokens.size > 0;
+  }
+  function acquirePauseToken(owner, kind = "ui") {
+    const id = `${owner}:${++pauseTokenSeq}`;
+    pauseTokens.set(id, { owner, kind, createdAt: Date.now() });
+    syncArenaPaused();
+    return id;
+  }
+  function releasePauseToken(tokenId) {
+    if (tokenId && pauseTokens.delete(tokenId)) {
+      syncArenaPaused();
+      return true;
+    }
+    return false;
+  }
+  function getPauseTokensSnapshot() {
+    return Array.from(pauseTokens.entries()).map(([id, meta]) => Object.assign({ id }, meta));
+  }
+
+  const combatInbox = [];
+  let combatInboxUnread = 0;
+  const toastLastShownByKey = Object.create(null);
+  const combatHotkeyArmMap = Object.create(null);
+  let compareCardShownAt = 0;
+  let compareCardClickGuardUntil = 0;
+  let compareCardWasHiddenByCombat = false;
+  let compareSmeltConfirm = null; // { key, expiresAt, timer }
+
+  function pushCombatInbox(msg, category = "info", count = 1) {
+    const cleanMsg = safeText(msg, "").trim();
+    if (!cleanMsg) return;
+    combatInbox.push({ msg: cleanMsg, category: category || "info", count: Math.max(1, Math.floor(num(count, 1))), ts: Date.now() });
+    if (combatInbox.length > COMBAT_INBOX_MAX) {
+      combatInbox.splice(0, combatInbox.length - COMBAT_INBOX_MAX);
+    }
+    combatInboxUnread = Math.min(COMBAT_INBOX_MAX, combatInboxUnread + 1);
+  }
+
+  function flushCombatInboxSummary() {
+    if (combatInboxUnread <= 0) return false;
+    const recent = combatInbox.slice(-combatInboxUnread);
+    combatInboxUnread = 0;
+    const counts = { gear: 0, mat: 0, ach: 0, soul: 0, other: 0 };
+    for (const item of recent) {
+      const cat = hasOwn(counts, item.category) ? item.category : "other";
+      counts[cat] += Math.max(1, Math.floor(num(item.count, 1)));
+    }
+    const parts = [];
+    if (counts.gear > 0) parts.push(`仙装×${counts.gear}`);
+    if (counts.mat > 0) parts.push(`灵材×${counts.mat}`);
+    if (counts.ach > 0) parts.push(`成就×${counts.ach}`);
+    if (counts.soul > 0) parts.push(`魂印×${counts.soul}`);
+    if (counts.other > 0) parts.push(`传闻×${counts.other}`);
+    if (!parts.length) return false;
+    showToast(`📜 本波战报：${parts.join(" · ")}`, { tier: 1, key: "combat_inbox_summary", throttleMs: 400 });
+    return true;
+  }
+
   function unlockAchievement(id) {
     if (!game || sandboxMode || isPracticeModeActive() || game.achievements.includes(id)) return;
     const spec = ACHIEVEMENTS.find(a => a.id === id);
     if (!spec) return;
     game.achievements.push(id);
-    Sound.fanfare();
-    showToast(`★ 达成成就【${spec.name}】（可赴卷轴领灵石礼！）`);
+    const level = (a11ySettings && a11ySettings.combatNoticeLevel) || "lite";
+    if (isCombatCalm() || level === "full") Sound.fanfare();
+    showToast(`★ 达成成就【${spec.name}】（可赴卷轴领灵石礼！）`, { tier: 2, category: "ach", key: `ach_${id}`, throttleMs: 4000 });
   }
 
-  function showToast(msg) {
+  function showToast(msg, opts = {}) {
+    const now = performance.now();
+    const o = (opts && typeof opts === "object") ? opts : {};
+    const critical = !!o.critical;
+    const tier = Math.max(0, Math.floor(num(o.tier, critical ? 0 : 1)));
+    const key = typeof o.key === "string" && o.key ? o.key : null;
+    const throttleMs = Math.max(0, Math.floor(num(o.throttleMs, critical ? 6000 : 4000)));
+    const ttl = Math.max(800, Math.floor(num(o.ttl, 1950)));
+    const level = (a11ySettings && a11ySettings.combatNoticeLevel) || "lite";
+
+    if (key && throttleMs > 0 && toastLastShownByKey[key] && (now - toastLastShownByKey[key]) < throttleMs) {
+      return false;
+    }
+    if (!critical && typeof isCombatCalm === "function" && game && !isCombatCalm()) {
+      if (tier >= 3 && level !== "full") return false;
+      if (tier >= 2 && level !== "full") {
+        pushCombatInbox(msg, o.category || "info", o.count || 1);
+        return false;
+      }
+    }
+    if (key) toastLastShownByKey[key] = now;
     const box = document.getElementById("toast-container");
-    if (!box) return;
+    if (!box) return false;
     while (box.children.length >= 2) box.removeChild(box.firstChild);
     const el = document.createElement("div");
     el.className = "toast-pill";
     el.textContent = msg;
     box.appendChild(el);
-    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 1950);
+    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, ttl);
+    return true;
   }
 
   let cutinTimer = null;
-  function showBossCutIn(artKey, bossName, mechText) {
+  function showBossCutIn(artKey, bossName, mechText, opts = {}) {
+    const o = (opts && typeof opts === "object") ? opts : {};
+    const level = (a11ySettings && a11ySettings.combatNoticeLevel) || "lite";
+    if (o.isPlayerUlt) {
+      if (level === "minimal") return false;
+      if (level === "lite" && o.cutInKey && game) {
+        if (!game.seenCutIns || typeof game.seenCutIns !== "object") game.seenCutIns = {};
+        if (game.seenCutIns[o.cutInKey]) return false;
+        game.seenCutIns[o.cutInKey] = true;
+      }
+    }
     const el = document.getElementById("boss-cutin-banner");
-    if (!el) return;
+    if (!el) return false;
     document.getElementById("boss-cutin-img").src = ART[artKey] || ART.enemy_serpent;
     document.getElementById("boss-cutin-name").textContent = bossName;
     document.getElementById("boss-cutin-mech").textContent = mechText;
     el.classList.add("show");
     if (cutinTimer) clearTimeout(cutinTimer);
     cutinTimer = setTimeout(() => { el.classList.remove("show"); }, 2500);
+    return true;
   }
 
-  function addFloat(text, x, y, color = "#f8e3ac", size = 17, isCrit = false) {
-    const isBannerFloat = size >= 15 && text.length >= 5 && !/^[+-]?\d|^暴\s*-?\d/.test(text);
+  function addFloat(text, x, y, color = "#f8e3ac", size = 17, isCrit = false, opts = {}) {
+    const o = (opts && typeof opts === "object") ? opts : {};
+    const level = (a11ySettings && a11ySettings.combatNoticeLevel) || "lite";
+    const isPerilous = !!o.perilous;
+    if (!isPerilous && o.kind === "pickup" && level === "minimal") {
+      return;
+    }
+    const isBannerFloat = typeof o.banner === "boolean"
+      ? o.banner
+      : (size >= 15 && text.length >= 5 && !/^[+-]?\d|^暴\s*-?\d/.test(text));
     const ttl = isBannerFloat ? 1.42 : isCrit ? 1.05 : 0.84;
     let fx = isBannerFloat ? (arena.player ? arena.player.x : x) : x;
     let fy = isBannerFloat ? ((arena.player ? arena.player.y : y) - 76) : y;
@@ -16597,6 +16887,7 @@ const ART = {
     }
     arena.floats.push({
       isBannerFloat,
+      isPerilous,
       text, x: fx, y: fy,
       vx: isBannerFloat ? 0 : ((fx - x) * 0.015),
       vy: isBannerFloat ? -0.58 : (isCrit ? -1.42 : -1.05),
@@ -16665,7 +16956,7 @@ const ART = {
         const gate = getBreakthroughBossGate(game);
         showToast(gate && gate.locked
           ? `⚡ 修为圆满！需先击败【${gate.bossName}】方可引动天劫`
-          : `⚡ 修为圆满！可点击下方【渡劫】冲关破境`);
+          : `⚡ 修为圆满！可点击下方【渡劫】冲关破境`, { tier: 2, category: "other", key: `xp_full_${game.realm}`, throttleMs: 6000 });
       }
     } else {
       game.stones += Math.max(4, Math.round(finalAmt * 0.35));
@@ -16693,10 +16984,12 @@ const ART = {
   }
 
   const GEAR_BAG_LIMIT = 24;
-  const pendingGearOverflowQueue = [];
+  const pendingGearOverflowQueue = []; // legacy compat mirror (formal source of truth is game.pendingRewards)
   let activeGearOverflowItem = null;
-  const pendingSoulUnlockQueue = [];
+  const pendingSoulUnlockQueue = [];   // legacy compat mirror (formal source of truth is game.pendingRewards)
   let activeSoulUnlockId = null;
+  let activePendingRewardId = null;
+  let pendingRewardSeq = 0;
   let pendingAlchemyCraft = null;
   let pendingSoulRefineId = null;
   let pendingVolumeRecapOnDismiss = null;
@@ -16707,25 +17000,206 @@ const ART = {
   let pendingLifespanExhaustedPrompt = false;
   let activeLifespanModalOpen = false;
 
+  function ensurePendingRewardArrays(g = game) {
+    if (!g) return { pendingRewards: [], resolvedRewardIds: [] };
+    if (!Array.isArray(g.pendingRewards)) g.pendingRewards = [];
+    if (!Array.isArray(g.resolvedRewardIds)) g.resolvedRewardIds = [];
+    return g;
+  }
+
+  function getCurrentRewardSourceMode() {
+    if (sandboxMode) return "sandbox";
+    if (isPracticeModeActive()) return "practice";
+    if (arena.sanctumMode) return "sanctum";
+    if (arena.towerMode) return "tower";
+    if (arena.bossRush && arena.bossRush.active) return "boss_rush";
+    if (arena.celestialSpire && arena.celestialSpire.active) return "spire";
+    if (arena.cloudFlight && arena.cloudFlight.active) return "cloud_flight";
+    if (arena.sectDefense && arena.sectDefense.active) return "sect_defense";
+    if (arena.customSeedRun && arena.customSeedRun.active) return "custom_seed";
+    return "campaign";
+  }
+
+  function getPendingRewardsByKind(kind = null) {
+    if (!game || !Array.isArray(game.pendingRewards)) return [];
+    return kind ? game.pendingRewards.filter(r => r && r.kind === kind) : game.pendingRewards.slice();
+  }
+
+  function syncPendingRewardsBadge() {
+    const btn = document.getElementById("btn-pending-rewards");
+    const cntEl = document.getElementById("pending-rewards-count");
+    if (!btn || !cntEl) return;
+    const ws = document.getElementById("welcome-screen");
+    const onWelcome = Boolean(ws && ws.style.display !== "none");
+    const total = (game && !onWelcome && Array.isArray(game.pendingRewards)) ? game.pendingRewards.length : 0;
+    if (total > 0) {
+      btn.style.display = "inline-flex";
+      cntEl.textContent = String(total);
+      btn.setAttribute("aria-label", `待处置奖励 ${total} 项`);
+    } else {
+      btn.style.display = "none";
+      cntEl.textContent = "0";
+      btn.setAttribute("aria-label", "待处置奖励");
+    }
+  }
+
+  function enqueuePendingReward({ kind, payload = {}, noticeClass = "N1", eventId = null, persist = true } = {}) {
+    if (!game || !PENDING_REWARD_KINDS.has(kind)) return null;
+    if (isPracticeModeActive()) return null; // Practice mode NEVER writes formal game.pendingRewards
+    ensurePendingRewardArrays(game);
+    const id = (typeof eventId === "string" && eventId.trim())
+      ? eventId.trim().slice(0, 96)
+      : `pr_${kind}_${Date.now().toString(36)}_${(++pendingRewardSeq).toString(36)}`;
+    if (game.resolvedRewardIds.includes(id)) return null;
+    const existingById = game.pendingRewards.find(r => r && r.eventId === id);
+    if (existingById) return existingById;
+    if (kind === "soul_unlock" && payload && payload.soulId) {
+      const dupSoul = game.pendingRewards.find(r => r && r.kind === "soul_unlock" && r.payload && r.payload.soulId === payload.soulId);
+      if (dupSoul) return dupSoul;
+    }
+    if (kind === "lifespan_exhausted") {
+      const dupLife = game.pendingRewards.find(r => r && r.kind === "lifespan_exhausted");
+      if (dupLife) return dupLife;
+    }
+    const cleanPayload = kind === "gear_overflow"
+      ? { item: normalizeGearItem(payload.item) }
+      : kind === "soul_unlock"
+        ? { soulId: payload.soulId }
+        : kind === "destiny_fruit"
+          ? { isHeaven: !!payload.isHeaven }
+          : kind === "iconic_draft"
+            ? { titleText: safeText(payload.titleText, "大道顿悟 · 获赐神通").slice(0, 64), source: safeText(payload.source, "default").slice(0, 32) }
+            : {};
+    if (kind === "gear_overflow" && !cleanPayload.item) return null;
+    if (kind === "soul_unlock" && (!cleanPayload.soulId || !hasOwn(SOUL_SPIRITS, cleanPayload.soulId))) return null;
+
+    const rec = {
+      eventId: id,
+      kind,
+      noticeClass: ["N0", "N1", "N2", "N3"].includes(noticeClass) ? noticeClass : "N1",
+      sourceMode: getCurrentRewardSourceMode(),
+      stageEpoch: Math.max(0, Math.floor(num(arena.stageEpoch, 0))),
+      createdAt: Date.now(),
+      payload: cleanPayload,
+      status: "pending"
+    };
+    game.pendingRewards.push(rec);
+    if (game.pendingRewards.length > PENDING_REWARD_SOFT_WARN) {
+      showToast(`⚠ 待处置奖励已达 ${game.pendingRewards.length} 项，请尽快点击顶部【待处置】处理！`, { tier: 1, key: "pending_soft_warn", throttleMs: 8000 });
+    }
+    syncPendingRewardsBadge();
+    if (persist && !sandboxMode && !isPracticeModeActive()) {
+      saveGame();
+    }
+    requestCalmReevaluation();
+    return rec;
+  }
+
+  function revertActivePendingRewardToPending() {
+    if (!game || !Array.isArray(game.pendingRewards)) {
+      activePendingRewardId = null;
+      return;
+    }
+    if (activePendingRewardId) {
+      const rec = game.pendingRewards.find(r => r && r.eventId === activePendingRewardId);
+      if (rec) rec.status = "pending";
+      activePendingRewardId = null;
+    }
+    for (const r of game.pendingRewards) {
+      if (r && r.status === "active") r.status = "pending";
+    }
+    syncPendingRewardsBadge();
+  }
+
+  function commitPendingReward(eventId, mutateFn) {
+    if (!game || !eventId) return { ok: false, reason: "missing" };
+    ensurePendingRewardArrays(game);
+    if (game.resolvedRewardIds.includes(eventId)) return { ok: false, reason: "already_resolved" };
+    const idx = game.pendingRewards.findIndex(r => r && r.eventId === eventId);
+    if (idx < 0) return { ok: false, reason: "not_found" };
+
+    const rollbackSnap = JSON.parse(JSON.stringify(game));
+    const rec = game.pendingRewards[idx];
+    let mutateRes = true;
+    try {
+      mutateRes = typeof mutateFn === "function" ? mutateFn(rec) : true;
+    } catch (e) {
+      game = rollbackSnap;
+      syncPendingRewardsBadge();
+      return { ok: false, reason: "exception" };
+    }
+    if (mutateRes === false) {
+      game = rollbackSnap;
+      syncPendingRewardsBadge();
+      return { ok: false, reason: "aborted" };
+    }
+
+    const rmIdx = game.pendingRewards.findIndex(r => r && r.eventId === eventId);
+    if (rmIdx >= 0) game.pendingRewards.splice(rmIdx, 1);
+    game.resolvedRewardIds.push(eventId);
+    if (game.resolvedRewardIds.length > RESOLVED_REWARD_ID_LIMIT) {
+      game.resolvedRewardIds.splice(0, game.resolvedRewardIds.length - RESOLVED_REWARD_ID_LIMIT);
+    }
+    if (activePendingRewardId === eventId) activePendingRewardId = null;
+
+    if (!sandboxMode && !isPracticeModeActive()) {
+      const saved = saveGame();
+      if (!saved) {
+        game = rollbackSnap;
+        const retryRec = Array.isArray(game.pendingRewards) ? game.pendingRewards.find(r => r && r.eventId === eventId) : null;
+        if (retryRec) retryRec.status = "pending";
+        activePendingRewardId = null;
+        activeGearOverflowItem = null;
+        activeSoulUnlockId = null;
+        activeLifespanModalOpen = false;
+        renderHudSaveAlert();
+        syncPendingRewardsBadge();
+        updateHud();
+        if (!saveConflictState) {
+          showToast("⚠ 存档写入失败或只读保护，该项待处置奖励已回滚并保留，请清理空间或解除只读后重试！", { critical: true, key: "reward_commit_fail", throttleMs: 3000 });
+        }
+        return { ok: false, reason: "save_failed" };
+      }
+    }
+    syncPendingRewardsBadge();
+    return { ok: true, result: mutateRes };
+  }
+
+  function clearCompareSmeltConfirm() {
+    if (compareSmeltConfirm && compareSmeltConfirm.timer) {
+      clearTimeout(compareSmeltConfirm.timer);
+    }
+    compareSmeltConfirm = null;
+  }
+
   function clearTransientChoiceQueues() {
+    // F07: Clear ONLY transient UI pointers & transient inbox; NEVER wipe formal game.pendingRewards!
     pendingGearOverflowQueue.length = 0;
     activeGearOverflowItem = null;
     pendingSoulUnlockQueue.length = 0;
     activeSoulUnlockId = null;
+    activePendingRewardId = null;
     pendingSandboxEntry = null;
     pendingAlchemyCraft = null;
     pendingSoulRefineId = null;
     pendingVolumeRecapOnDismiss = null;
+    deferredVolumeRecapModal = null;
+    lastVolumeRecapArgs = null;
     pendingUnlockCardQueue.length = 0;
     activeUnlockCardId = null;
     lifespanExhaustedPromptDismissed = false;
     pendingLifespanExhaustedPrompt = false;
     activeLifespanModalOpen = false;
+    combatInbox.length = 0;
+    combatInboxUnread = 0;
+    clearCompareSmeltConfirm();
     arena.stageClearPending = false;
+    arena.pickupAgg = {};
     pendingCompareGear = null;
     temperUseCoreDiscount = false;
     renderGearCompareCard();
     renderActiveUnlockCard();
+    syncPendingRewardsBadge();
   }
 
   function resetStageTransitionState() {
@@ -16745,25 +17219,29 @@ const ART = {
       chBox.innerHTML = "";
       chBox.style.display = "none";
     }
-    if (wasCutscene) {
-      const bd = document.getElementById("modal-backdrop");
-      arena.paused = Boolean(drawerOpen || (bd && bd.classList.contains("open")));
+    if (wasCutscene || cutscenePauseToken) {
+      const prevCutTok = cutscenePauseToken;
+      cutscenePauseToken = null;
+      releasePauseToken(prevCutTok);
       if (typeof renderOnboardingCoach === "function") renderOnboardingCoach();
     }
     arena.stageClearHandledEpoch = -1;
     arena.stageClearPending = false;
     pendingVolumeRecapOnDismiss = null;
+    deferredVolumeRecapModal = null;
+    lastVolumeRecapArgs = null;
   }
 
-  function openGearBagFullModal(newItem) {
+  function openGearBagFullModal(newItem, recEventId = null) {
     if (!game || !newItem) {
       activeGearOverflowItem = null;
       return;
     }
+    activeGearOverflowItem = { item: newItem, eventId: recEventId || activePendingRewardId || null };
     const nwRar = rarityNum(newItem.rarity);
     const nwLvl = Math.max(0, Math.floor(num(newItem.lvl, 0)));
     const smeltVal = Math.max(1, Math.floor(num(newItem.sell, 15)));
-    const remQueue = pendingGearOverflowQueue.length;
+    const remQueue = Math.max(0, getPendingRewardsByKind("gear_overflow").length - 1);
     openModal(`
       <div class="drawer-mural-banner" style="height:82px;">
         <img src="${ART.banner_archive}" alt="行囊已满" />
@@ -16838,7 +17316,7 @@ const ART = {
     const ws = document.getElementById("welcome-screen");
     const onWelcome = Boolean(ws && ws.style.display !== "none");
     const card = activeUnlockCardId ? UNLOCK_TUTORIAL_CATALOG.find(c => c.id === activeUnlockCardId) : null;
-    if (!game || sandboxMode || onWelcome || !card) {
+    if (!game || sandboxMode || onWelcome || !card || !isCombatCalm()) {
       el.style.display = "none";
       el.innerHTML = "";
       return;
@@ -16875,7 +17353,7 @@ const ART = {
         added += 1;
       }
     }
-    if (added > 0) setTimeout(flushDeferredChoiceModals, 0);
+    if (added > 0) setTimeout(() => requestCalmReevaluation(), 0);
     return added;
   }
 
@@ -16887,9 +17365,13 @@ const ART = {
     }
     const ws = document.getElementById("welcome-screen");
     if (ws && ws.style.display !== "none") return false;
-    if (cutscene.active || pendingVolumeRecapOnDismiss || arena.stageClearPending || arena.tribulation || arena.defeatPending) return false;
+    if (!isCombatCalm()) {
+      renderActiveUnlockCard();
+      return false;
+    }
+    if (cutscene.active || pendingVolumeRecapOnDismiss || deferredVolumeRecapModal || arena.stageClearPending || arena.tribulation || arena.defeatPending) return false;
     const bd = document.getElementById("modal-backdrop");
-    if ((bd && bd.classList.contains("open")) || drawerOpen) return false;
+    if ((bd && bd.classList.contains("open")) || drawerOpen || photoMode.active) return false;
     if (activeUnlockCardId) {
       renderActiveUnlockCard();
       return true;
@@ -16959,30 +17441,109 @@ const ART = {
     return true;
   }
 
-  function flushDeferredChoiceModals() {
-    if (!game) return;
+  function openNextPendingRewardRecord() {
+    if (!game || !Array.isArray(game.pendingRewards) || game.pendingRewards.length === 0) return false;
+    const kindOrder = ["gear_overflow", "soul_unlock", "destiny_fruit", "iconic_draft", "lifespan_exhausted"];
+    let nextRec = null;
+    for (const k of kindOrder) {
+      nextRec = game.pendingRewards.find(r => r && r.kind === k && r.status !== "active");
+      if (nextRec) break;
+    }
+    if (!nextRec) return false;
+
+    if (nextRec.kind === "lifespan_exhausted") {
+      if (lifespanExhaustedPromptDismissed || sandboxMode || isPracticeModeActive() || getLifespanInfo(game).status !== "exhausted") {
+        const rm = game.pendingRewards.indexOf(nextRec);
+        if (rm >= 0) game.pendingRewards.splice(rm, 1);
+        syncPendingRewardsBadge();
+        return openNextPendingRewardRecord();
+      }
+    }
+
+    nextRec.status = "active";
+    activePendingRewardId = nextRec.eventId;
+    syncPendingRewardsBadge();
+
+    if (nextRec.kind === "gear_overflow") {
+      openGearBagFullModal(nextRec.payload.item, nextRec.eventId);
+      return true;
+    }
+    if (nextRec.kind === "soul_unlock") {
+      activeSoulUnlockId = nextRec.payload.soulId;
+      openSoulSealUnlockChoiceModal(nextRec.payload.soulId, nextRec.eventId);
+      return true;
+    }
+    if (nextRec.kind === "destiny_fruit") {
+      openDestinyFruitModal(!!nextRec.payload.isHeaven, false, nextRec.eventId);
+      return true;
+    }
+    if (nextRec.kind === "iconic_draft") {
+      openIconicUpgradeDraft(nextRec.payload.titleText || "大道顿悟 · 获赐神通", false, {
+        source: nextRec.payload.source || "default",
+        eventId: nextRec.eventId
+      });
+      return true;
+    }
+    if (nextRec.kind === "lifespan_exhausted") {
+      openLifespanExhaustedModal(false, nextRec.eventId);
+      return true;
+    }
+    nextRec.status = "pending";
+    activePendingRewardId = null;
+    return false;
+  }
+
+  function flushCombatCalmQueue({ forceManual = false } = {}) {
+    if (!game) return false;
     const ws = document.getElementById("welcome-screen");
-    if (ws && ws.style.display !== "none") return;
-    if (cutscene.active || pendingVolumeRecapOnDismiss || arena.stageClearPending || arena.tribulation || arena.defeatPending) return;
-    if (activeGearOverflowItem || activeSoulUnlockId || activeLifespanModalOpen) return;
+    if (ws && ws.style.display !== "none") return false;
+    if (saveConflictState || storageReadError || arena.defeatPending || cutscene.active || arena.tribulation) return false;
+    if (pendingVolumeRecapOnDismiss || deferredVolumeRecapModal || arena.stageClearPending) return false;
     const bd = document.getElementById("modal-backdrop");
-    if (bd && bd.classList.contains("open")) return;
-    if (pendingGearOverflowQueue.length > 0) {
-      activeGearOverflowItem = pendingGearOverflowQueue.shift();
-      openGearBagFullModal(activeGearOverflowItem.item);
-      return;
+    if ((bd && bd.classList.contains("open")) || photoMode.active) return false;
+    if (!forceManual && (drawerOpen || storageWriteError || saveReadOnlyMode)) return false;
+    if (!forceManual && (!isCombatCalm() || (arena.calmT || 0) < COMBAT_CALM_GRACE_SEC)) return false;
+
+    if (!forceManual) {
+      flushCombatInboxSummary();
+      renderGearCompareCard();
     }
-    if (pendingSoulUnlockQueue.length > 0) {
-      activeSoulUnlockId = pendingSoulUnlockQueue.shift();
-      openSoulSealUnlockChoiceModal(activeSoulUnlockId);
-      return;
+    if (activePendingRewardId || activeGearOverflowItem || activeSoulUnlockId || activeLifespanModalOpen) {
+      return false;
     }
-    if (pendingLifespanExhaustedPrompt && !lifespanExhaustedPromptDismissed && !sandboxMode && !isPracticeModeActive() && getLifespanInfo(game).status === "exhausted") {
-      pendingLifespanExhaustedPrompt = false;
-      openLifespanExhaustedModal(false);
-      return;
+    if (openNextPendingRewardRecord()) {
+      arena.calmFlushed = true;
+      return true;
     }
-    flushNewUnlockCard();
+    if (!forceManual) {
+      flushNewUnlockCard();
+      arena.calmFlushed = true;
+    }
+    return false;
+  }
+
+  function flushDeferredChoiceModals(opts = {}) {
+    return flushCombatCalmQueue({ forceManual: !!(opts && opts.force) });
+  }
+
+  function openPendingRewardsManually() {
+    if (!game) return false;
+    if (arena.defeatPending || saveConflictState || storageReadError) {
+      showToast("⚠ 当前存在更高优先级的败北/存档保护弹窗，请先处理后再处置待领奖励！", { critical: true, key: "manual_pending_blocked_n0", throttleMs: 2500 });
+      return false;
+    }
+    if (cutscene.active || arena.tribulation || pendingVolumeRecapOnDismiss || deferredVolumeRecapModal || arena.stageClearPending) {
+      showToast("当前剧情/天劫进行中，结束后即可处置待领奖励。", { tier: 1, key: "manual_pending_blocked_story", throttleMs: 2000 });
+      return false;
+    }
+    const bd = document.getElementById("modal-backdrop");
+    if (bd && bd.classList.contains("open")) return false;
+    if (drawerOpen) closeDrawer();
+    if (!Array.isArray(game.pendingRewards) || game.pendingRewards.length === 0) {
+      syncPendingRewardsBadge();
+      return false;
+    }
+    return flushCombatCalmQueue({ forceManual: true });
   }
 
   function equipGearWithOptionalTransfer(item, transferQuench = false) {
@@ -17002,12 +17563,14 @@ const ART = {
       if (game.gearBag.length < GEAR_BAG_LIMIT) {
         game.gearBag.unshift(prev);
       } else {
-        pendingGearOverflowQueue.push({ item: prev, opts: { silentToast: true } });
-        flushDeferredChoiceModals();
+        enqueuePendingReward({ kind: "gear_overflow", payload: { item: prev }, persist: false });
       }
     }
     game.equippedGear[item.slot] = item;
-    if (pendingCompareGear === item) pendingCompareGear = null;
+    if (pendingCompareGear === item) {
+      pendingCompareGear = null;
+      clearCompareSmeltConfirm();
+    }
     syncFlyingSwords();
     renderGearCompareCard();
     saveGame();
@@ -17017,6 +17580,7 @@ const ART = {
 
   function dismissGearCompareCard() {
     pendingCompareGear = null;
+    clearCompareSmeltConfirm();
     renderGearCompareCard();
   }
 
@@ -17027,6 +17591,14 @@ const ART = {
     if (!game || !pendingCompareGear || onWelcome || !game.gearBag.includes(pendingCompareGear)) {
       el.style.display = "none";
       el.innerHTML = "";
+      clearCompareSmeltConfirm();
+      return;
+    }
+    const calmNow = isCombatCalm();
+    if (!calmNow || (document.body && document.body.classList.contains("combat-hot"))) {
+      compareCardWasHiddenByCombat = true;
+      el.style.display = "none";
+      clearCompareSmeltConfirm();
       return;
     }
     const nw = pendingCompareGear;
@@ -17034,8 +17606,10 @@ const ART = {
     if (!cur) {
       el.style.display = "none";
       el.innerHTML = "";
+      clearCompareSmeltConfirm();
       return;
     }
+    const wasHidden = el.style.display === "none" || !el.innerHTML;
     const slotLabels = { weapon: "佩剑", armor: "仙衣", ring: "灵佩" };
     const curLvl = Math.max(0, Math.floor(num(cur.lvl, 0)));
     const nwLvl = Math.max(0, Math.floor(num(nw.lvl, 0)));
@@ -17052,6 +17626,15 @@ const ART = {
       dDr !== 0  ? `<span class="${dDr > 0 ? "gear-delta-pos" : "gear-delta-neg"}">防${dDr > 0 ? "+" : ""}${dDr}</span>` : "",
       dCrit !== 0 ? `<span class="${dCrit > 0 ? "gear-delta-pos" : "gear-delta-neg"}">暴${dCrit > 0 ? "+" : ""}${dCrit}%</span>` : ""
     ].filter(Boolean).join("") || `<span style="color:var(--text-sub);">基础属性相当</span>`;
+
+    const smeltVal = Math.max(1, Math.floor(num(nw.sell, 15)));
+    const itemConfirmKey = nw.uid || nw.name;
+    const isConfirmingSmelt = Boolean(compareSmeltConfirm && compareSmeltConfirm.key === itemConfirmKey && performance.now() < compareSmeltConfirm.expiresAt);
+    if (wasHidden) {
+      compareCardShownAt = performance.now();
+      compareCardClickGuardUntil = (!arena.sanctumMode || compareCardWasHiddenByCombat) ? (compareCardShownAt + 250) : 0;
+      compareCardWasHiddenByCombat = false;
+    }
 
     el.style.display = "flex";
     el.innerHTML = `
@@ -17074,10 +17657,11 @@ const ART = {
       <div class="gear-delta-row">
         <span style="color:var(--text-sub);">${curLvl > 0 ? `继承+${previewLvl}差值：` : "换装差值："}</span>${deltas}
       </div>
+      ${isConfirmingSmelt ? `<div class="gear-smelt-confirm-note">⚠ 即将永久熔炼【${escapeHtml(nw.name)}】（${escapeHtml(formatGearStats(nw))}）→ 获 <b>+${smeltVal} 灵石</b>，再次点击按钮确认</div>` : ""}
       <div class="gear-cmp-actions">
         ${curLvl > 0 ? `<button type="button" class="btn-jade" style="padding:4px 9px;font-size:11px;" data-action="compare-equip-transfer">换装并继承+${curLvl}</button>` : ""}
         <button type="button" class="${curLvl > 0 ? "btn-ghost" : "btn-jade"}" style="padding:4px 9px;font-size:11px;" data-action="compare-equip-direct">${curLvl > 0 ? "直接换装" : "一键换装"}</button>
-        <button type="button" class="btn-gold" style="padding:4px 9px;font-size:11px;" data-action="compare-smelt-new">熔炼+${Math.max(0, Math.floor(num(nw.sell, 15)))}石</button>
+        <button type="button" class="btn-ghost btn-smelt-danger ${isConfirmingSmelt ? "confirming" : ""}" style="padding:4px 9px;font-size:11px;" data-action="compare-smelt-new">${isConfirmingSmelt ? `确认熔炼【${escapeHtml(nw.name)}】(+${smeltVal}石)?` : `熔炼+${smeltVal}石`}</button>
       </div>
     `;
   }
@@ -17089,27 +17673,29 @@ const ART = {
     if (!cur) {
       game.equippedGear[item.slot] = item;
       syncFlyingSwords();
-      addFloat(`佩装【${item.name}】↑`, arena.player.x, arena.player.y - 62, RARITIES[item.rarity].color, 18, true);
-      showToast(`★ 穿戴仙装【${item.name}】（${formatGearStats(item)}）`);
+      addFloat(`✦ ${item.name}↑`, arena.player.x, arena.player.y - 54, RARITIES[item.rarity].color, 14, true, { banner: false, kind: "gear" });
+      showToast(`★ 穿戴仙装【${item.name}】（${formatGearStats(item)}）`, { tier: 2, category: "gear" });
     } else if (game.gearBag.length < GEAR_BAG_LIMIT) {
-      // Never silently overwrite an occupied or enhanced slot! Store safely & show non-blocking compare card.
+      // Never silently overwrite an occupied or enhanced slot! Store safely & show non-blocking compare card when calm.
       game.gearBag.unshift(item);
       pendingCompareGear = item;
+      clearCompareSmeltConfirm();
       renderGearCompareCard();
-      addFloat(`✦ 拾获【${item.name}】· 可对比换装`, arena.player.x, arena.player.y - 54, RARITIES[item.rarity].color, 16, true);
+      addFloat(`✦ ${item.name}`, arena.player.x, arena.player.y - 48, RARITIES[item.rarity].color, 14, false, { banner: false, kind: "gear" });
       if (!opts.silentToast) {
-        showToast(`✦ 拾获【${item.name}】已收入行囊，可在右下对比卡一键换装或无损继承淬火！`);
+        showToast(`✦ 拾获【${item.name}】已收入行囊（静默后可对比换装）`, { tier: 2, category: "gear" });
       }
     } else {
-      // G9-1: Full bag (24/24) — NEVER auto-smelt! Queue explicit player disposal choice modal.
-      pendingGearOverflowQueue.push({ item, opts });
+      // F07/F10/G9-1: Full bag (24/24) — NEVER auto-smelt! Persist in game.pendingRewards and defer modal until calm.
+      enqueuePendingReward({ kind: "gear_overflow", payload: { item }, persist: false });
       if (!opts.silentToast) {
-        showToast(`行囊已满 (${GEAR_BAG_LIMIT}/${GEAR_BAG_LIMIT})，请处置新获仙装【${item.name}】！`);
+        showToast(`行囊已满 (${GEAR_BAG_LIMIT}/${GEAR_BAG_LIMIT})，【${item.name}】已记入待处置！`, { tier: 2, category: "gear" });
       }
-      flushDeferredChoiceModals();
     }
     saveGame();
     updateHud();
+    syncPendingRewardsBadge();
+    requestCalmReevaluation();
   }
 
   function softCapPct(rawPct, knee = 1.80, cap = 3.20) {
@@ -17263,22 +17849,25 @@ const ART = {
     const nextLf = getLifespanInfo(game);
     if (!(opts && opts.silentToast)) {
       if (prevLf.status === "normal" && nextLf.status === "warning") {
-        showToast(`⚠ 寿元已过 75%（${nextLf.curYears}/${nextLf.maxYears}载），宜炼制【延寿青莲丹】或破境延寿！`);
+        showToast(`⚠ 寿元已过 75%（${nextLf.curYears}/${nextLf.maxYears}载），宜炼制【延寿青莲丹】或破境延寿！`, { tier: 2, category: "other", key: "lifespan_warn_75", throttleMs: 6000 });
       } else if (prevLf.ratio < 0.90 && nextLf.ratio >= 0.90 && nextLf.status === "critical") {
-        showToast(`⏳ 大限临近（${nextLf.curYears}/${nextLf.maxYears}载），修炼效率降至 ${Math.round(nextLf.xpEfficiencyMult * 100)}%！`);
+        showToast(`⏳ 大限临近（${nextLf.curYears}/${nextLf.maxYears}载），修炼效率降至 ${Math.round(nextLf.xpEfficiencyMult * 100)}%！`, { tier: 2, category: "other", key: "lifespan_warn_90", throttleMs: 6000 });
       } else if (prevLf.ratio < 0.95 && nextLf.ratio >= 0.95 && nextLf.status === "critical") {
-        showToast(`⏳ 寿元垂危（${nextLf.curYears}/${nextLf.maxYears}载），修炼效率降至 ${Math.round(nextLf.xpEfficiencyMult * 100)}%！速服延寿丹或破境！`);
+        showToast(`⏳ 寿元垂危（${nextLf.curYears}/${nextLf.maxYears}载），修炼效率降至 ${Math.round(nextLf.xpEfficiencyMult * 100)}%！速服延寿丹或破境！`, { tier: 2, category: "other", key: "lifespan_warn_95", throttleMs: 6000 });
       }
     }
+    const lifeBadge = document.getElementById("hud-lifespan-badge");
+    if (lifeBadge) lifeBadge.classList.toggle("lifespan-pulse", nextLf.status === "exhausted");
     if (nextLf.status === "exhausted" && !lifespanExhaustedPromptDismissed) {
       pendingLifespanExhaustedPrompt = true;
-      setTimeout(flushDeferredChoiceModals, 0);
+      enqueuePendingReward({ kind: "lifespan_exhausted", payload: {}, persist: true });
     }
     return { aged: delta, skipped: false, reason, prev: prevLf, info: nextLf };
   }
 
-  function openLifespanExhaustedModal(confirmStep = false) {
+  function openLifespanExhaustedModal(confirmStep = false, recEventId = null) {
     if (!game) return;
+    if (recEventId) activePendingRewardId = recEventId;
     const lf = getLifespanInfo(game);
     const longPills = Math.max(0, Math.floor(num(game.inventory && game.inventory.longevity_pill, 0)));
     activeLifespanModalOpen = true;
@@ -17545,7 +18134,6 @@ const ART = {
   function openSanctumUpgradeModal() {
     if (!game) return;
     closeDrawer();
-    arena.paused = true;
     const lvMap = ensureSanctumLevels(game);
     const pros = getSanctumProsperity(game);
     const matKeys = ["herb", "dew", "core", "jade", "lotus", "soul", "dao"];
@@ -17637,7 +18225,6 @@ const ART = {
   function openCompanionInteractModal(npcId) {
     if (!game || !NPC_META[npcId]) return;
     closeDrawer();
-    arena.paused = true;
     const npc = NPC_META[npcId];
     const kp = COMPANION_KEEPSAKES[npcId];
     const dlg = COMPANION_HUB_DIALOGUES[npcId];
@@ -18041,7 +18628,6 @@ const ART = {
   function openAscensionRoadmapModal() {
     if (!game) return;
     closeDrawer();
-    arena.paused = true;
     const curRank = rankOf(game.realm);
     const fullOpen = Boolean(sandboxMode || game.unlockAllArcana);
     const totalSys = SYSTEM_ECOSYSTEM_LADDER.reduce((s, t) => s + t.systems.length, 0);
@@ -18107,7 +18693,6 @@ const ART = {
   function openHallOfLivesModal() {
     ensureMetaState();
     if (game) closeDrawer();
-    arena.paused = true;
     const codexPct = getCodexCompletionPct();
     const lives = metaState.hallOfLives || [];
     const activeAuraId = (game && game.cosmetics && game.cosmetics.swordAura) || "azure_jade";
@@ -18477,7 +19062,6 @@ const ART = {
     if (!game) return;
     if (forceTab) currentGoalTab = forceTab;
     closeDrawer();
-    arena.paused = true;
     const pct = computeOverallCompletionPct(game);
     const totalStars = getTotalStageStars(game);
     const activeInfo = findNextMainlineStep(game);
@@ -18857,10 +19441,10 @@ const ART = {
     game.tutorialStep = Math.min(4, cur + 1);
     Sound.qiOrb(4 + cur);
     if (game.tutorialStep >= 4) {
-      showToast("🎉 入道教学圆满！已掌握挥剑、爆印识破、洞府整备与渡劫，正式踏上六卷仙途！");
+      showToast("🎉 入道教学圆满！已掌握挥剑、爆印识破、洞府整备与渡劫，正式踏上六卷仙途！", { tier: 2, category: "other" });
     } else {
       const nextStep = ONBOARDING_STEPS[game.tutorialStep];
-      if (nextStep) showToast(`✦ 入道进阶 (${game.tutorialStep + 1}/4 · ${nextStep.title})`);
+      if (nextStep) showToast(`✦ 入道进阶 (${game.tutorialStep + 1}/4 · ${nextStep.title})`, { tier: 3, key: `onboard_step_${game.tutorialStep}`, throttleMs: 2500 });
     }
     renderOnboardingCoach();
     saveGame();
@@ -18919,6 +19503,153 @@ const ART = {
       arena.enemies.some(e => e && e.hp > 0 && !e.isDummy && !e.isTreasure);
     if (hasLiveHostiles) return false;
     return true;
+  }
+
+  function hasHostileHazards() {
+    if (!arena) return false;
+    if (Array.isArray(arena.projectiles) && arena.projectiles.some(pr => pr && !pr.friendly && (pr.life === undefined || pr.life > 0))) return true;
+    if (Array.isArray(arena.shockRings) && arena.shockRings.some(sr => sr && !sr.hitPlayer && (sr.r || 0) < (sr.maxR || 0))) return true;
+    if (Array.isArray(arena.groundSweeps) && arena.groundSweeps.some(gs => gs && !gs.hitPlayer && !gs.vaulted && (gs.r || 0) < (gs.maxR || 0) && num(gs.dmg, 0) > 0)) return true;
+    if (Array.isArray(arena.bossBeams) && arena.bossBeams.some(bm => bm && num(bm.t, 0) < num(bm.dur, 0))) return true;
+    if (arena.bladeClash) return true;
+    return false;
+  }
+
+  function isCombatCalm() {
+    if (!game || !arena) return false;
+    const ws = document.getElementById("welcome-screen");
+    if (ws && ws.style.display !== "none") return false;
+    if (arena.tribulation || arena.defeatPending || cutscene.active) return false;
+    if (arena.stageClearPending || pendingVolumeRecapOnDismiss || deferredVolumeRecapModal || arena.waveTransitioning) return false;
+    if (arena.cloudFlight && arena.cloudFlight.active) return false;
+    if (arena.sectDefense && arena.sectDefense.active) return false;
+    const hasAnyAliveEnemy = Array.isArray(arena.enemies) && arena.enemies.some(e => e && e.hp > 0);
+    if (arena.bossRush && arena.bossRush.active && hasAnyAliveEnemy) return false;
+    if (arena.celestialSpire && arena.celestialSpire.active && hasAnyAliveEnemy) return false;
+    if (arena.customSeedRun && arena.customSeedRun.active && hasAnyAliveEnemy) return false;
+    const hasLiveHostiles = Array.isArray(arena.enemies) &&
+      arena.enemies.some(e => e && e.hp > 0 && !e.isDummy && !e.isTreasure);
+    if (hasLiveHostiles || hasHostileHazards()) return false;
+    return true;
+  }
+
+  function queueMaterialPickupFloat(matKey, matName, gainAmt, color) {
+    if (!arena) return;
+    if (!arena.pickupAgg || typeof arena.pickupAgg !== "object") arena.pickupAgg = {};
+    if (!isCombatCalm()) {
+      pushCombatInbox(`+${matName} ×${gainAmt}`, "mat", gainAmt);
+    }
+    const existing = arena.pickupAgg[matKey];
+    if (existing) {
+      existing.count += gainAmt;
+      existing.timer = 1.5;
+    } else {
+      arena.pickupAgg[matKey] = { name: matName, count: gainAmt, color: color || "#ffe28a", timer: 1.5 };
+    }
+  }
+
+  function stepPickupAggregator(dt, forceFlush = false) {
+    if (!arena || !arena.pickupAgg) return;
+    const keys = Object.keys(arena.pickupAgg);
+    if (!keys.length) return;
+    const px = arena.player ? arena.player.x : 720;
+    const py = arena.player ? arena.player.y : 450;
+    for (const k of keys) {
+      const agg = arena.pickupAgg[k];
+      if (!agg) { delete arena.pickupAgg[k]; continue; }
+      agg.timer -= dt;
+      if (forceFlush || agg.timer <= 0) {
+        delete arena.pickupAgg[k];
+        addFloat(`+${agg.name}${agg.count > 1 ? " ×" + agg.count : ""}`, px, py - 34, agg.color, 13, false, { banner: false, kind: "pickup" });
+      }
+    }
+  }
+
+  function hasPendingCalmWork() {
+    if (!game) return false;
+    if (combatInboxUnread > 0) return true;
+    if (Array.isArray(game.pendingRewards) && game.pendingRewards.some(r => r && r.status !== "active")) return true;
+    if (pendingCompareGear && game.gearBag && game.gearBag.includes(pendingCompareGear)) {
+      const cmpEl = document.getElementById("gear-compare-card");
+      if (cmpEl && cmpEl.style.display === "none") return true;
+    }
+    if (!sandboxMode && (activeUnlockCardId || pendingUnlockCardQueue.length > 0)) {
+      const ulEl = document.getElementById("new-unlock-card");
+      if (ulEl && ulEl.style.display === "none") return true;
+    }
+    return false;
+  }
+
+  function isCalmUiBlocked() {
+    const ws = document.getElementById("welcome-screen");
+    if (ws && ws.style.display !== "none") return true;
+    const bd = document.getElementById("modal-backdrop");
+    return Boolean(
+      (bd && bd.classList.contains("open")) ||
+      drawerOpen ||
+      cutscene.active ||
+      photoMode.active ||
+      saveConflictState ||
+      storageReadError ||
+      storageWriteError ||
+      saveReadOnlyMode ||
+      arena.defeatPending ||
+      arena.stageClearPending ||
+      pendingVolumeRecapOnDismiss ||
+      deferredVolumeRecapModal
+    );
+  }
+
+  function requestCalmReevaluation({ immediate = false } = {}) {
+    syncPendingRewardsBadge();
+    if (!game) {
+      if (document && document.body) document.body.classList.remove("combat-hot");
+      return false;
+    }
+    const calm = isCombatCalm();
+    if (document && document.body) {
+      document.body.classList.toggle("combat-hot", !calm);
+    }
+    if (!calm) {
+      arena.calmT = 0;
+      arena.calmFlushed = false;
+      renderGearCompareCard();
+      renderActiveUnlockCard();
+      return false;
+    }
+    if (immediate) {
+      arena.calmT = Math.max(arena.calmT || 0, COMBAT_CALM_GRACE_SEC);
+    }
+    arena.calmFlushed = false;
+    if (!isCalmUiBlocked() && (arena.calmT || 0) >= COMBAT_CALM_GRACE_SEC) {
+      stepPickupAggregator(0, true);
+      return flushCombatCalmQueue();
+    }
+    return false;
+  }
+
+  function stepCombatCalmScheduler(dt) {
+    if (!game) {
+      if (document && document.body) document.body.classList.remove("combat-hot");
+      return;
+    }
+    stepPickupAggregator(dt, false);
+    const calm = isCombatCalm();
+    if (document && document.body) {
+      document.body.classList.toggle("combat-hot", !calm);
+    }
+    if (!calm) {
+      arena.calmT = 0;
+      arena.calmFlushed = false;
+      return;
+    }
+    if (!isCalmUiBlocked()) {
+      arena.calmT = Math.min(10, (arena.calmT || 0) + dt);
+      if (arena.calmT >= COMBAT_CALM_GRACE_SEC && (!arena.calmFlushed || hasPendingCalmWork())) {
+        stepPickupAggregator(0, true);
+        flushCombatCalmQueue();
+      }
+    }
   }
 
   function getDropMagnetParams() {
@@ -19033,12 +19764,20 @@ const ART = {
     const h = canvas.height || window.innerHeight;
 
     resetStageTransitionState();
+    releasePauseToken(defeatPauseToken); defeatPauseToken = null;
     arena.stageEpoch += 1;
     arena.waveTransitioning = false;
     arena.sanctumMode = true;
     arena.towerMode = false;
     arena.bossRush = null;
     arena.dungeonMap = null;
+    arena.cloudFlight = null;
+    arena.sectDefense = null;
+    arena.celestialSpire = null;
+    arena.customSeedRun = null;
+    arena.bladeClash = null;
+    arena.calmT = COMBAT_CALM_GRACE_SEC;
+    arena.calmFlushed = false;
     arena.runBoons = [];
     arena.boonRerollsLeft = 1;
     arena.slashEchoCounter = 0;
@@ -19199,6 +19938,7 @@ const ART = {
     if (!skipSave) saveGame();
     focusBattlefield();
     updateHud();
+    requestCalmReevaluation({ immediate: true });
   }
 
   function initArenaStage(stageIdx, towerMode = false) {
@@ -19207,6 +19947,7 @@ const ART = {
     const h = canvas.height || window.innerHeight;
 
     resetStageTransitionState();
+    releasePauseToken(defeatPauseToken); defeatPauseToken = null;
     arena.stageEpoch += 1;
     arena.waveTransitioning = false;
     arena.sanctumMode = false;
@@ -19215,6 +19956,9 @@ const ART = {
     arena.cloudFlight = null;
     arena.celestialSpire = null;
     arena.customSeedRun = null;
+    arena.bladeClash = null;
+    arena.calmT = 0;
+    arena.calmFlushed = false;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
     arena.nearbyProp = null;
@@ -19304,15 +20048,24 @@ const ART = {
       spawnEnemyPack(["wolf", "wolf", "wolf"], w * 0.52, h * 0.55, 85, 1.0);
       focusBattlefield();
     } else {
-      spawnCurrentWave();
-      focusBattlefield();
-      // Trigger atmospheric story dialogue on first arrival in Sect / Secret / Sword Mound / Terrace!
-      if (!towerMode && arena.stageIdx === 1) playCutscene("enter_sect");
-      else if (!towerMode && arena.stageIdx === 2) playCutscene("enter_secret");
-      else if (!towerMode && arena.stageIdx === 3) playCutscene("enter_sword_mound");
-      else if (!towerMode && arena.stageIdx === 4) playCutscene("enter_terrace");
+      // F12 A6: Play first-time stage-entry cutscene BEFORE spawning wave, guarded by stageEpoch + one-shot flag!
+      const enterKey = !towerMode ? ({ 1: "enter_sect", 2: "enter_secret", 3: "enter_sword_mound", 4: "enter_terrace" }[arena.stageIdx] || null) : null;
+      const spawnEpoch = arena.stageEpoch;
+      let waveStarted = false;
+      const startWaveOnce = () => {
+        if (waveStarted || !game || arena.stageEpoch !== spawnEpoch || arena.sanctumMode) return;
+        waveStarted = true;
+        spawnCurrentWave();
+        focusBattlefield();
+      };
+      if (enterKey && CHAPTER_CUTSCENES[enterKey] && !(game.seenCutscenes && game.seenCutscenes[enterKey])) {
+        playCutscene(enterKey, startWaveOnce);
+      } else {
+        startWaveOnce();
+      }
     }
     updateHud();
+    requestCalmReevaluation();
   }
 
   function getBossMechLabel(id) {
@@ -19396,7 +20149,6 @@ const ART = {
     arena.pendingBoonNodeId = sourceNodeId || (arena.dungeonMap ? arena.dungeonMap.currentNodeId : null);
     const shuffled = pool.slice().sort(() => Math.random() - 0.5);
     activeRunBoonChoices = shuffled.slice(0, Math.min(3, shuffled.length));
-    arena.paused = true;
     openModal(`
       <div class="drawer-mural-banner" style="height:92px;">
         <img src="${ART.banner_relic}" alt="秘境道韵三选一" />
@@ -19680,6 +20432,7 @@ const ART = {
     const nextObjective = computeVolumeEndNextObjective(stageIdx, game);
 
     pendingVolumeRecapOnDismiss = typeof onDismiss === "function" ? onDismiss : null;
+    lastVolumeRecapArgs = { stageIdx, payload, onDismiss: pendingVolumeRecapOnDismiss, stageEpoch: arena.stageEpoch };
     openModal(`
       <div class="drawer-mural-banner" style="height:106px;">
         <img src="${ART[act.arenaArt] || ART.arena_wilderness}" alt="${escapeHtml(meta.title)}" />
@@ -19978,9 +20731,6 @@ const ART = {
     if (roomType === "boss") {
       arena.props = arena.props.filter(p => p.kind === "elem_stele");
       const bId = stg.boss;
-      spawnStageInteractiveHazards();
-      spawnSingleEnemy(bId, w * 0.64, h * 0.53, stageScale, true, stg.bossTitle || `镇守妖王 · ${ENEMIES[bId].name}`);
-      Sound.drum(0.24);
       const bMono = getBossKarmaMonologue(bId);
       const cutSub = bMono ? `${bMono} ｜ ${getBossMechLabel(bId)}` : getBossMechLabel(bId);
       const launchBossBanner = () => {
@@ -19989,14 +20739,26 @@ const ART = {
           addFloat(bMono, w * 0.64, h * 0.43, getKarmaState(game).color, 15, true);
         }
       };
+      // F12 A7: Play unseen boss_pre_stage* cutscene BEFORE spawning the Boss, guarded by stageEpoch + one-shot flag!
+      const bossEpoch = arena.stageEpoch;
+      let bossSpawned = false;
+      const spawnBossOnce = () => {
+        if (bossSpawned || !game || arena.stageEpoch !== bossEpoch || arena.sanctumMode) return;
+        bossSpawned = true;
+        spawnStageInteractiveHazards();
+        spawnSingleEnemy(bId, w * 0.64, h * 0.53, stageScale, true, stg.bossTitle || `镇守妖王 · ${ENEMIES[bId].name}`);
+        Sound.drum(0.24);
+        launchBossBanner();
+        updateHud();
+      };
       const preKey = `boss_pre_stage${arena.stageIdx}`;
       if (isNormalCampaignStage() && CHAPTER_CUTSCENES[preKey] && !(game.seenCutscenes && game.seenCutscenes[preKey])) {
         playCutscene(preKey, () => {
           saveGame();
-          launchBossBanner();
+          spawnBossOnce();
         });
       } else {
-        launchBossBanner();
+        spawnBossOnce();
       }
       updateHud();
       return;
@@ -21229,7 +21991,7 @@ const ART = {
     const hasGourdSip = (game.gourd.charges || 0) > 0;
     const hasReservePill = (game.inventory.healing_pill || 0) > 0;
     if (!hasGourdSip && !hasReservePill) {
-      showToast("本命仙葫灵酿已尽 · 识破剑反可回酿，或按 H 回洞府满酿！");
+      showToast("本命仙葫灵酿已尽 · 识破剑反可回酿，或按 H 回洞府满酿！", { tier: 1, key: "c12_gourd_empty", throttleMs: 4000 });
       return;
     }
     const p = arena.player;
@@ -21461,7 +22223,6 @@ const ART = {
     const bossGate = getBreakthroughBossGate(game);
     if (bossGate && bossGate.locked) {
       arena.player.meditating = false;
-      arena.paused = true;
       const xpNote = (r.xpCap > 0 && game.xp < r.xpCap)
         ? `当前修为 ${Math.floor(num(game.xp, 0))}/${r.xpCap}（击败首领并攒满修为后方可启劫）`
         : `当前修为已圆满，击败首领后立即可引动天劫`;
@@ -21513,7 +22274,6 @@ const ART = {
     ].filter(Boolean).join(" · ") || "暂无故人护阵";
 
     arena.player.meditating = false;
-    arena.paused = true;
 
     const pathBody = pillSpec ? `
       <div class="trib-prep-grid">
@@ -21619,7 +22379,6 @@ const ART = {
     }
 
     closeModal();
-    arena.paused = false;
     arena.defeatRevivesUsed = 0;
     arena.player.meditating = false;
 
@@ -21733,16 +22492,35 @@ const ART = {
     addFloat(`${tb.hardcore ? "⚡ 逆天傲骨 · " : isHeaven ? "★ 天道一品 · " : ""}破境【${REALMS[game.realm].name}】· 寿元 ${lfNew.maxYears} 载！`, arena.player.x, arena.player.y - 64, "#fff4c2", 22, true);
     arena.enemies.slice().forEach(e => damageEnemy(e, Math.round(st.atk * 2.6), true, 48, 0, 9, true));
     queueNewUnlockCardsForState(game);
+    // F07/F10 A5: Atomically persist destiny_fruit + chained iconic_draft into game.pendingRewards BEFORE saving, then let calm scheduler present them!
+    const hasUnownedFruit = Object.values(DESTINY_FRUITS).some(f => !hasDestinyFruit(game, f.id));
+    if (hasUnownedFruit) {
+      enqueuePendingReward({ kind: "destiny_fruit", payload: { isHeaven }, persist: false });
+    }
+    enqueuePendingReward({
+      kind: "iconic_draft",
+      payload: { titleText: `${REALMS[game.realm].name}功成 · 参悟大道神通`, source: "tribulation" },
+      persist: false
+    });
     saveGame(); updateHud(true);
     activeFruitRerolls = 1;
-    openDestinyFruitModal(isHeaven, false);
+    requestCalmReevaluation();
   }
 
-  function openDestinyFruitModal(isHeaven, isReroll = false) {
+  function openDestinyFruitModal(isHeaven, isReroll = false, recEventId = null) {
     if (!game) return;
+    if (recEventId) activePendingRewardId = recEventId;
     if (!isReroll) { activeFruitRerolls = 1; activeFruitMeta = { isHeaven, lastIds: [] }; }
     const allUnowned = Object.values(DESTINY_FRUITS).filter(f => !hasDestinyFruit(game, f.id));
     if (!allUnowned.length) {
+      if (activePendingRewardId) {
+        const fruitEvId = activePendingRewardId;
+        commitPendingReward(fruitEvId, () => true);
+        if (getPendingRewardsByKind("iconic_draft").length > 0) {
+          requestCalmReevaluation({ immediate: isCombatCalm() });
+          return;
+        }
+      }
       openIconicUpgradeDraft(`${REALMS[game.realm].name}功成 · 参悟大道神通`);
       return;
     }
@@ -21757,7 +22535,6 @@ const ART = {
       ? `<div class="pity-bar-card" style="border-color:rgba(128,236,255,0.55);color:#c8f7ff;"><span>☁ 金丹高潮过渡关已启：择完道果后可由【舆图 / 仙阁·问道阶梯】起飞征战【九霄云海空战】，首破立得【破云证道印】(+12攻 · 为元婴期远征/登仙台提供+15%收益)！</span></div>`
       : "";
 
-    arena.paused = true;
     openModal(`
       <div class="drawer-mural-banner" style="height:104px;">
         <img src="${ART.banner_tribulation}" alt="逆天改命" />
@@ -21785,13 +22562,12 @@ const ART = {
         <span>天机推演：可自选定格本世流派核心道果</span>
         ${activeFruitRerolls > 0 && allUnowned.length > 3 ? `<button type="button" class="btn-jade" data-action="reroll-destiny-fruit">天机重演（免费剩余 ${activeFruitRerolls} 次）</button>` : `<span style="color:var(--gold);">本次天机已定</span>`}
       </div>
-    `, false);
+    `, false, { kind: "destiny_fruit" });
   }
 
   function openWorldMapModal() {
     if (!game) return;
     closeDrawer();
-    arena.paused = true;
     const cloudOk = isEcosystemSystemUnlocked(game, "cloud_sea_trial");
     const spireOk = isEcosystemSystemUnlocked(game, "celestial_spire");
     const defOk = isEcosystemSystemUnlocked(game, "sect_defense");
@@ -21862,7 +22638,6 @@ const ART = {
       : SECRET_ENCOUNTERS[Math.floor(Math.random() * SECRET_ENCOUNTERS.length)];
     const ks = getKarmaState(game);
     const karmaExtra = (KARMA_ENCOUNTER_EXTRAS[evSpec.id] && ks.mode !== "neutral") ? KARMA_ENCOUNTER_EXTRAS[evSpec.id][ks.mode] : null;
-    arena.paused = true;
     openModal(`
       <div class="drawer-mural-banner" style="height:96px;">
         <img src="${ART[evSpec.banner]}" alt="${evSpec.title}" />
@@ -21905,9 +22680,9 @@ const ART = {
 
   function openIconicUpgradeDraft(titleText, isReroll = false, opts = {}) {
     if (!game) return;
+    if (opts && opts.eventId) activePendingRewardId = opts.eventId;
     const draftSource = (opts && opts.source) || (isReroll && activeDraftMeta && activeDraftMeta.source) || "default";
     if (!isReroll) { activeDraftRerolls = 1 + getSanctumBonuses(game).bonusLawRerolls; activeDraftMeta = { titleText, lastIds: [], source: draftSource }; }
-    arena.paused = true;
     const petCandidates = [];
     if (!game.pet.id) {
       shuffleFisherYates(Object.values(SPIRIT_PETS)).slice(0, 2).forEach(sp => {
@@ -21945,8 +22720,18 @@ const ART = {
     activeDraftMeta = { titleText, lastIds: picks.map(c => c.id), source: draftSource };
 
     if (picks.length === 0) {
-      arena.paused = drawerOpen;
       const fallbackStones = (activeDraftMeta && activeDraftMeta.source === "jade_wager") ? 30 : 120;
+      if (activePendingRewardId) {
+        const res = commitPendingReward(activePendingRewardId, () => {
+          game.stones += fallbackStones;
+          return true;
+        });
+        if (res.ok) {
+          showToast(`诸法皆通 · 获赐 ${fallbackStones} 灵石！`);
+          updateHud();
+        }
+        return;
+      }
       game.stones += fallbackStones;
       showToast(`诸法皆通 · 获赐 ${fallbackStones} 灵石！`);
       saveGame();
@@ -21980,7 +22765,7 @@ const ART = {
         <span>${synLaws.length > 0 ? "★ 天机共鸣：已优先呈现可成羁绊之大道法则" : "择一法则塑成剑阵流派，后续升级将保底推送羁绊配对"}</span>
         ${activeDraftRerolls > 0 && totalAvail > 3 ? `<button type="button" class="btn-jade" data-action="reroll-law-draft">天机重演（免费剩余 ${activeDraftRerolls} 次）</button>` : `<span style="color:var(--gold);">本次天机已定</span>`}
       </div>
-    `, false);
+    `, false, { kind: "iconic_draft" });
   }
 
   // ==================== 9. DAMAGE, LOOT BEAMS, BRANCHING ROOMS & 60FPS STEP ====================
@@ -22417,11 +23202,8 @@ const ART = {
         const sKey = e.isInnerDemon ? "taixu_demon" : unlockMap[e.id];
         if (sKey && Array.isArray(game.unlockedSouls) && !game.unlockedSouls.includes(sKey)) {
           game.unlockedSouls.push(sKey);
-          showToast(`👹 炼化妖王本源！已解锁镇妖魂印【${SOUL_SPIRITS[sKey].name}】！`);
-          if (!pendingSoulUnlockQueue.includes(sKey) && activeSoulUnlockId !== sKey) {
-            pendingSoulUnlockQueue.push(sKey);
-          }
-          flushDeferredChoiceModals();
+          showToast(`👹 炼化妖王本源！已解锁镇妖魂印【${SOUL_SPIRITS[sKey].name}】！`, { tier: 2, category: "soul", key: `soul_unlock_${sKey}` });
+          enqueuePendingReward({ kind: "soul_unlock", payload: { soulId: sKey }, persist: false });
         }
       }
     }
@@ -22459,22 +23241,15 @@ const ART = {
       Sound.fanfare();
       for (let k = 0; k < 5; k++) spawnDrop("stone", e.x + (Math.random() - 0.5) * 32, e.y + (Math.random() - 0.5) * 32, 25);
       spawnGearDrop(e.x, e.y, 2);
-      addFloat("斩获聚宝金灵！爆出玄品仙装！", e.x, e.y - 32, "#ffe26a", 21, true);
-      if (arena.tribulation || cutscene.active || document.getElementById("modal-backdrop").classList.contains("open")) {
-        const unowned = Object.values(DAO_LAWS).filter(l => !game.laws.includes(l.id));
-        if (unowned.length > 0) {
-          const gift = unowned[Math.floor(Math.random() * unowned.length)];
-          game.laws.push(gift.id);
-          if (game.laws.length >= 5) unlockAchievement("ach_laws5");
-          syncFlyingSwords();
-          showToast(`聚宝奇缘 · 直接顿悟【${gift.name}】！`);
-        } else {
-          game.stones += 120;
-        }
-        saveGame(); updateHud();
-      } else {
-        openIconicUpgradeDraft("聚宝奇缘 · 获赐神通");
-      }
+      addFloat("✦ 聚宝金灵 · 神通抉择入待处置", e.x, e.y - 32, "#ffe26a", 16, true, { banner: false });
+      // F07/F10 A3: NEVER silently auto-grant a law! Always persist iconic_draft into game.pendingRewards and let calm scheduler present it.
+      enqueuePendingReward({
+        kind: "iconic_draft",
+        payload: { titleText: "聚宝奇缘 · 获赐神通", source: "golden_spirit" },
+        persist: true
+      });
+      showToast("✦ 斩获聚宝金灵！神通三选一已记入【待处置】，静默后可自主择取！", { tier: 2, category: "other" });
+      updateHud();
       return;
     }
 
@@ -23657,7 +24432,7 @@ const ART = {
             e.flankTargetX = behind.x;
             e.flankTargetY = behind.y;
             e.flankTelegraph = 0.68;
-            addFloat("⚠ 影袭绕背 · 空格一闪反杀！", e.x, e.y - e.r - 26, "#ff8787", 14, true);
+            addFloat("⚠ 影袭绕背 · 空格一闪反杀！", e.x, e.y - e.r - 26, "#ff8787", 14, true, { banner: true, perilous: true });
           }
         }
       }
@@ -23672,7 +24447,7 @@ const ART = {
             color: arena.stageIdx === 2 ? "#70ffe6" : "#ff6b6b", hitCd: 0
           });
           arena.shockRings.push({ x: e.x, y: e.y + 14, r: 24, maxR: 290, spd: 185, hitPlayer: false, color: "#ffb142" });
-          addFloat("⚠ 旋空妖光 · 空格一闪穿波！", e.x, e.y - e.r - 24, "#ffe28a", 15, true);
+          addFloat("⚠ 旋空妖光 · 空格一闪穿波！", e.x, e.y - e.r - 24, "#ffe28a", 15, true, { banner: true, perilous: true });
         }
       }
       if (e.state === "stun") {
@@ -23701,14 +24476,14 @@ const ART = {
           if ((e.id === "puppet" || e.variantTrait === "mirror_pulse") && !e.perilous && !e.lowSweepWindup && !e.grabWindup && !e.partSevered) e.mirrorTimer = e.timer;
           if (e.grabWindup) {
             Sound.perilousGong();
-            addFloat("🤜【擒】暗金夺命投 · 出重击/易剑/C魂印正面拼刀反制！", e.x, e.y - e.r - 40, "#ffae33", 16.5, true);
+            addFloat("🤜【擒】暗金夺命投 · 出重击/易剑/C魂印正面拼刀反制！", e.x, e.y - e.r - 40, "#ffae33", 16.5, true, { banner: true, perilous: true });
           } else if (e.lowSweepWindup) {
             Sound.perilousGong();
-            addFloat("🌊【下段危】地脉裂波 · 按 Z 踏剑跃破！", e.x, e.y - e.r - 38, "#38f9d7", 16.5, true);
+            addFloat("🌊【下段危】地脉裂波 · 按 Z 踏剑跃破！", e.x, e.y - e.r - 38, "#38f9d7", 16.5, true, { banner: true, perilous: true });
           } else if (e.perilous) {
             Sound.perilousGong();
             const sig = BOSS_SIGNATURE_MOVES[e.id];
-            if (e.isBoss && sig) addFloat(sig.perilousName, e.x, e.y - e.r - 36, "#ff5e57", 17, true);
+            if (e.isBoss && sig) addFloat(sig.perilousName, e.x, e.y - e.r - 36, "#ff5e57", 17, true, { banner: true, perilous: true });
           }
         }
       } else if (e.state === "windup") {
@@ -23926,7 +24701,7 @@ const ART = {
           const matSpec = ITEMS[d.kind];
           const matColors = { herb: "#4ad2b8", dew: "#80ecff", core: "#ffe28a", jade: "#70ffe6", lotus: "#ffb3e6", soul: "#c792ff", dao: "#ffd86b" };
           Sound.pluck(d.kind === "dao" || d.kind === "soul" ? 783.99 : 659.25, 0.12, 0.045, "triangle");
-          addFloat(`+${matSpec ? matSpec.name : d.kind}${gainAmt > 1 ? " ×" + gainAmt : ""}`, p.x, p.y - 36, matColors[d.kind] || "#ffe28a", 15);
+          queueMaterialPickupFloat(d.kind, matSpec ? matSpec.name : d.kind, gainAmt, matColors[d.kind] || "#ffe28a");
         } else if (d.kind === "sacred_core") {
           const atkRes = grantPermanentStatBonus(game, { atk: 14, source: "general" });
           game.stones += 85;
@@ -23934,14 +24709,14 @@ const ART = {
           arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + 35);
           Sound.fanfare();
           addFloat(atkRes.grantedAtk > 0
-            ? `★ 拾取【天工神髓】永久剑攻+${atkRes.grantedAtk} · 灵石+85！`
-            : `★ 拾取【天工神髓】灵石+85 · 妖核+1（剑攻已达本境上限）！`, p.x, p.y - 54, "#ffd86b", 19, true);
+            ? `★ 天工神髓 剑攻+${atkRes.grantedAtk}`
+            : `★ 天工神髓 灵石+85`, p.x, p.y - 54, "#ffd86b", 15, true, { banner: false, kind: "pickup" });
         } else if (d.kind === "essence") {
           arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + d.val);
           game.mp = Math.min(st.maxMp, (game.mp || 0) + 18);
           game.hp = Math.min(st.maxHp, game.hp + Math.round(st.maxHp * 0.10));
           Sound.qiOrb(5);
-          addFloat(`+灵气精魄 · 剑意+${d.val}%`, p.x, p.y - 42, "#70ffe6", 16, true);
+          addFloat(`+灵气精魄 剑意+${d.val}%`, p.x, p.y - 42, "#70ffe6", 13, false, { banner: false, kind: "pickup" });
         }
         arena.drops.splice(i, 1);
         updateHud();
@@ -24263,7 +25038,7 @@ const ART = {
 
   function openDefeatDecisionModal(isTribulation = false) {
     if (!game) return;
-    arena.paused = true;
+    if (!defeatPauseToken) defeatPauseToken = acquirePauseToken("defeat", isTribulation ? "tribulation_defeat" : "combat_defeat");
     arena.defeatPending = { isTribulation: !!isTribulation };
     renderPropInteractHud();
     const pills = Math.max(0, Math.floor(num(game.inventory.healing_pill, 0)));
@@ -24305,7 +25080,7 @@ const ART = {
             <span class="tag-chip done">安全撤离</span>
           </button>
         </div>
-      `, false);
+      `, false, { kind: "defeat" });
       return;
     }
 
@@ -24346,7 +25121,7 @@ const ART = {
           <span class="tag-chip done">保物撤退</span>
         </button>
       </div>
-    `, false);
+    `, false, { kind: "defeat" });
   }
 
   function resolveDefeatChoice(act) {
@@ -24364,8 +25139,8 @@ const ART = {
       game.hp = Math.round(st.maxHp * (act === "revive-trib-pill" ? 0.50 : 0.55));
       p.invuln = act === "revive-trib-pill" ? 1.6 : 2.0;
       arena.defeatPending = null;
+      releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       closeModal();
-      arena.paused = false;
       Sound.fanfare();
       addRipple(p.x, p.y + 18, 155, "#ffe28a");
       arena.enemies.forEach(e => {
@@ -24391,8 +25166,8 @@ const ART = {
       game.hp = Math.round(st.maxHp * 0.45);
       p.invuln = 1.8;
       arena.defeatPending = null;
+      releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       closeModal();
-      arena.paused = false;
       Sound.fanfare();
       addRipple(p.x, p.y + 18, 150, "#70ffe6");
       arena.enemies.forEach(e => {
@@ -24419,8 +25194,8 @@ const ART = {
       const failAge = advanceLifespanMonths(18, "tribulation_fail");
       const ageTxt = failAge && failAge.aged > 0 ? `（耗寿 ${failAge.aged} 月）` : "";
       if (Array.isArray(game.journal)) game.journal.unshift(`冲击【${REALMS[r.next || "ascended"].name}】渡劫受挫${ageTxt}，保留七成五修为退返听雨洞府重整道基。`);
+      releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       closeModal();
-      arena.paused = false;
       enterSanctumHub();
       showToast(`⚡ 渡劫受挫${ageTxt} · 已保留 75% 修为安全返洞府，建议炼制破境丹或强化神兵后再冲关！`);
       return;
@@ -24434,10 +25209,11 @@ const ART = {
       arena.sectDefense = null;
       arena.cloudFlight = null;
       arena.customSeedRun = null;
+      arena.bladeClash = null;
       game.retreats = (game.retreats || 0) + 1;
       if (Array.isArray(game.journal)) game.journal.unshift(`秘境历练力竭御剑遁走（第 ${game.retreats} 次），携战利品安返听雨洞府。`);
+      releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       closeModal();
-      arena.paused = false;
       enterSanctumHub();
       showToast("🕊 已御剑遁回【听雨洞府】· 战利品尽数保全，整备炼丹后再行出征！");
     }
@@ -27423,6 +28199,7 @@ const ART = {
     renderQuestTrackerHud();
     renderOnboardingCoach();
     updateNavNotificationBadges();
+    syncPendingRewardsBadge();
   }
 
   function syncProgressiveSkillVisibility(animateNew = false) {
@@ -27679,33 +28456,51 @@ const ART = {
 
   function openModal(html, closeable = true, opts = {}) {
     const modalKind = (opts && opts.kind) || "";
-    if (pendingVolumeRecapOnDismiss && modalKind !== "volume_recap") {
-      const orphanRecapCb = pendingVolumeRecapOnDismiss;
-      pendingVolumeRecapOnDismiss = null;
-      orphanRecapCb();
-    }
-    if (activeGearOverflowItem && modalKind !== "gear_overflow") {
-      pendingGearOverflowQueue.unshift(activeGearOverflowItem);
-      activeGearOverflowItem = null;
-    }
-    if (activeSoulUnlockId && modalKind !== "soul_unlock") {
-      if (!pendingSoulUnlockQueue.includes(activeSoulUnlockId)) {
-        pendingSoulUnlockQueue.unshift(activeSoulUnlockId);
+    const nextPri = hasOwn(MODAL_PRIORITY, modalKind) ? MODAL_PRIORITY[modalKind] : MODAL_PRIORITY.default;
+    const bd = document.getElementById("modal-backdrop");
+    const box = document.getElementById("modal-content");
+    if (!bd || !box) return false;
+    const curOpen = Boolean(bd.classList.contains("open"));
+    const curPri = curOpen ? (hasOwn(MODAL_PRIORITY, activeModalKind) ? MODAL_PRIORITY[activeModalKind] : MODAL_PRIORITY.default) : 0;
+
+    // F09 Priority Guard: Lower-priority modals MUST NEVER overwrite active N0 overlays (save_conflict / save_corrupt / defeat).
+    if (curOpen && curPri >= 100 && nextPri < curPri && !(opts && opts.forcePreempt)) {
+      if (["gear_overflow", "soul_unlock", "destiny_fruit", "iconic_draft", "lifespan_exhausted"].includes(modalKind)) {
+        revertActivePendingRewardToPending();
+        activeGearOverflowItem = null;
+        activeSoulUnlockId = null;
+        activeLifespanModalOpen = false;
       }
-      activeSoulUnlockId = null;
+      return false;
     }
-    if (activeLifespanModalOpen && modalKind !== "lifespan_exhausted") {
-      activeLifespanModalOpen = false;
-      lifespanExhaustedPromptDismissed = true;
-      pendingLifespanExhaustedPrompt = false;
+
+    if (pendingVolumeRecapOnDismiss && modalKind !== "volume_recap") {
+      if (nextPri >= 100 && lastVolumeRecapArgs) {
+        // F12 A8: N0 preemption preserves volume recap for clean resume instead of firing orphanRecapCb prematurely!
+        deferredVolumeRecapModal = lastVolumeRecapArgs;
+        pendingVolumeRecapOnDismiss = null;
+      } else {
+        const orphanRecapCb = pendingVolumeRecapOnDismiss;
+        pendingVolumeRecapOnDismiss = null;
+        lastVolumeRecapArgs = null;
+        orphanRecapCb();
+      }
     }
+
+    // F07/F09 Preemption: Re-queue active N1 pending reward back to "pending" (NEVER silently dismiss lifespan_exhausted!).
+    if (curOpen && activeModalKind && modalKind !== activeModalKind) {
+      if (["gear_overflow", "soul_unlock", "destiny_fruit", "iconic_draft", "lifespan_exhausted"].includes(activeModalKind)) {
+        revertActivePendingRewardToPending();
+        activeGearOverflowItem = null;
+        activeSoulUnlockId = null;
+        activeLifespanModalOpen = false;
+      }
+    }
+
     clearTransientInputs();
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
-    const bd = document.getElementById("modal-backdrop");
-    const box = document.getElementById("modal-content");
-    if (!bd || !box) return;
-    if (!bd.classList.contains("open")) {
+    if (!curOpen) {
       const dlgBar = document.getElementById("story-dialogue-bar");
       const explicitTrig = opts && opts.triggerEl;
       const ae = document.activeElement;
@@ -27717,12 +28512,19 @@ const ART = {
         lastModalTriggerEl = null;
       }
     }
+    // Acquire new modal pause token BEFORE releasing previous token so pauseTokens.size NEVER dips to 0 mid-swap!
+    const nextTok = acquirePauseToken("modal", modalKind || "modal");
+    const prevTok = modalPauseToken;
+    modalPauseToken = nextTok;
+    if (prevTok) releasePauseToken(prevTok);
+
     modalCloseable = closeable;
-    arena.paused = true;
+    activeModalKind = modalKind;
     box.innerHTML = html;
     bd.classList.add("open");
     renderPropInteractHud();
     focusDialogSafely(box);
+    return true;
   }
   function closeModal() {
     clearTransientInputs();
@@ -27731,25 +28533,36 @@ const ART = {
     pendingSandboxEntry = null;
     pendingAlchemyCraft = null;
     pendingSoulRefineId = null;
-    if (activeLifespanModalOpen) {
-      activeLifespanModalOpen = false;
+    const closingKind = activeModalKind;
+    activeModalKind = "";
+    if (activePendingRewardId) {
+      // If an N1 modal is closed without committing (e.g., Esc on closeable modal), keep it safely pending (except explicit lifespan dismiss via Esc/X)
+      if (closingKind === "lifespan_exhausted" && activeLifespanModalOpen) {
+        lifespanExhaustedPromptDismissed = true;
+        pendingLifespanExhaustedPrompt = false;
+        commitPendingReward(activePendingRewardId, () => true);
+      } else {
+        revertActivePendingRewardToPending();
+      }
+    } else if (activeLifespanModalOpen) {
       lifespanExhaustedPromptDismissed = true;
       pendingLifespanExhaustedPrompt = false;
     }
-    if (activeGearOverflowItem) {
-      pendingGearOverflowQueue.unshift(activeGearOverflowItem);
-      activeGearOverflowItem = null;
-    }
+    activeLifespanModalOpen = false;
+    activeGearOverflowItem = null;
     activeSoulUnlockId = null;
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
     const bd = document.getElementById("modal-backdrop");
     const wasOpen = !!(bd && bd.classList.contains("open"));
     if (bd) bd.classList.remove("open");
-    arena.paused = drawerOpen || cutscene.active;
+    const prevTok = modalPauseToken;
+    modalPauseToken = null;
+    releasePauseToken(prevTok);
     renderPropInteractHud();
     const recapCb = pendingVolumeRecapOnDismiss;
     pendingVolumeRecapOnDismiss = null;
+    if (closingKind === "volume_recap") lastVolumeRecapArgs = null;
     const target = lastModalTriggerEl;
     lastModalTriggerEl = null;
     if (wasOpen && cutscene.active) {
@@ -27765,7 +28578,16 @@ const ART = {
       restoreTriggerFocus(target);
     }
     if (recapCb) recapCb();
-    setTimeout(flushDeferredChoiceModals, 0);
+    // Resume volume recap if it was preempted by an N0 modal that has now cleanly cleared!
+    if (deferredVolumeRecapModal && !saveConflictState && !storageReadError && !arena.defeatPending) {
+      const savedRecap = deferredVolumeRecapModal;
+      deferredVolumeRecapModal = null;
+      if (game && arena.stageEpoch === savedRecap.stageEpoch) {
+        setTimeout(() => openVolumeEndRecapModal(savedRecap.stageIdx, savedRecap.payload, savedRecap.onDismiss), 0);
+        return;
+      }
+    }
+    setTimeout(() => requestCalmReevaluation(), 0);
   }
 
   function toggleDrawer(tab) {
@@ -27782,7 +28604,7 @@ const ART = {
     }
     currentTab = tab;
     drawerOpen = true;
-    arena.paused = true;
+    if (!drawerPauseToken) drawerPauseToken = acquirePauseToken("drawer", tab || "drawer");
     if (panel) panel.classList.add("drawer-open");
     document.querySelectorAll(".nav-tab-btn").forEach(b => b.classList.toggle("active", b.getAttribute("data-tab") === tab));
     renderDrawerContent();
@@ -27795,8 +28617,10 @@ const ART = {
     const wasOpen = drawerOpen;
     furnaceGame.active = false;
     drawerOpen = false;
+    const prevDrawerTok = drawerPauseToken;
+    drawerPauseToken = null;
+    releasePauseToken(prevDrawerTok);
     const modalOpen = !!(document.getElementById("modal-backdrop") && document.getElementById("modal-backdrop").classList.contains("open"));
-    arena.paused = cutscene.active || modalOpen;
     const panel = document.getElementById("jade-panel");
     if (panel) panel.classList.remove("drawer-open");
     document.querySelectorAll(".nav-tab-btn").forEach(b => b.classList.remove("active"));
@@ -27805,7 +28629,7 @@ const ART = {
       const target = lastDrawerTriggerEl;
       lastDrawerTriggerEl = null;
       restoreTriggerFocus(target);
-      if (!cutscene.active) setTimeout(flushDeferredChoiceModals, 0);
+      if (!cutscene.active) setTimeout(() => requestCalmReevaluation(), 0);
     }
   }
 
@@ -28798,11 +29622,13 @@ const ART = {
     `, true);
   }
 
-  function openSoulSealUnlockChoiceModal(newSoulId) {
+  function openSoulSealUnlockChoiceModal(newSoulId, recEventId = null) {
     if (!game || !hasOwn(SOUL_SPIRITS, newSoulId)) {
       activeSoulUnlockId = null;
       return;
     }
+    activeSoulUnlockId = newSoulId;
+    if (recEventId) activePendingRewardId = recEventId;
     const nw = SOUL_SPIRITS[newSoulId];
     const curId = hasOwn(SOUL_SPIRITS, game.equippedSoul) ? game.equippedSoul : "blood_warden";
     const cur = SOUL_SPIRITS[curId];
@@ -28998,7 +29824,7 @@ const ART = {
             </button>
           `).join("")}
         </div>
-      `, false);
+      `, false, { kind: "ending" });
       return;
     }
 
@@ -29056,7 +29882,7 @@ const ART = {
           <button type="button" class="btn-ghost" data-modal-close="1">继续演武</button>
         </div>
       </div>
-    `, true);
+    `, true, { kind: "ending" });
   }
 
   // Complete Game System Center: Compendium + Claimable Achievements + Controls/Save + Presets!
@@ -29179,6 +30005,17 @@ const ART = {
               <div style="font-size:10px;color:var(--text-sub);">遵循系统 prefers-reduced-motion 或手动开启：关闭震屏与顿帧并大幅缩短界面过渡动效</div>
             </div>
             <button type="button" id="btn-a11y-reduced-motion" class="btn-ghost ${a11ySettings.reducedMotion ? "active-pill" : ""}" style="padding:5px 14px;font-size:11.5px;" data-action="toggle-a11y-reduced-motion">${a11ySettings.reducedMotion ? "已开启 ✓" : "已关闭"}</button>
+          </div>
+          <div class="a11y-row">
+            <div>
+              <strong style="font-size:12px;color:#e6f4f1;">战斗提示密度 (Combat Notice Level)</strong>
+              <div style="font-size:10px;color:var(--text-sub);">完整（战中保留战报提示，仍遵守安全弹窗门控）/ 精简（默认，次要战报清场汇总）/ 极简（隐藏处决文字与素材飘字，始终保留危招与存档警示）</div>
+            </div>
+            <div class="combat-notice-seg" role="group" aria-label="战斗提示密度">
+              <button type="button" id="btn-notice-level-full" class="${a11ySettings.combatNoticeLevel === "full" ? "btn-jade" : "btn-ghost"}" data-set-notice-level="full">完整</button>
+              <button type="button" id="btn-notice-level-lite" class="${a11ySettings.combatNoticeLevel === "lite" ? "btn-jade" : "btn-ghost"}" data-set-notice-level="lite">精简</button>
+              <button type="button" id="btn-notice-level-minimal" class="${a11ySettings.combatNoticeLevel === "minimal" ? "btn-jade" : "btn-ghost"}" data-set-notice-level="minimal">极简</button>
+            </div>
           </div>
         </div>
         <div style="margin-top:6px;border-top:1px solid rgba(216,179,106,0.22);padding-top:6px;">
@@ -29667,10 +30504,11 @@ const ART = {
       triggerWarshipOrbitalStrike();
     } else if (ev.code === "Digit7" && game) {
       if (document.getElementById("modal-backdrop").classList.contains("open")) closeModal();
-      else openComboSequencerModal();
+      else if (!isActionUnlockedByRealm(game, "sequencer")) guardActionRealm("sequencer");
+      else if (confirmCombatHotkeyArm("Digit7", "连招编排")) openComboSequencerModal();
     } else if (ev.code === "Digit8" && game) {
       if (document.getElementById("modal-backdrop").classList.contains("open")) closeModal();
-      else openExpeditionSandboxModal();
+      else if (confirmCombatHotkeyArm("Digit8", "宗门远征")) openExpeditionSandboxModal();
     } else if (ev.code === "KeyN") {
       if (document.getElementById("modal-backdrop").classList.contains("open")) closeModal();
       else openStarChartModal();
@@ -29679,12 +30517,23 @@ const ART = {
       else openWorldMapModal();
     } else if (ev.code === "Digit9") {
       if (document.getElementById("modal-backdrop").classList.contains("open")) closeModal();
-      else openDungeonMapModal();
+      else if (confirmCombatHotkeyArm("Digit9", "星图路线")) openDungeonMapModal();
     } else if (ev.code === "KeyT") {
       if (document.getElementById("modal-backdrop").classList.contains("open")) closeModal();
       else openObjectivesModal();
     }
   });
+  function confirmCombatHotkeyArm(code, label) {
+    if (isCombatCalm()) return true;
+    const now = performance.now();
+    if (combatHotkeyArmMap[code] && now <= combatHotkeyArmMap[code]) {
+      delete combatHotkeyArmMap[code];
+      return true;
+    }
+    combatHotkeyArmMap[code] = now + 2500;
+    showToast(`战斗中 · 再按一次打开【${label}】`, { tier: 1, key: `arm_${code}`, throttleMs: 1200 });
+    return false;
+  }
   window.addEventListener("keyup", (ev) => { keysDown[ev.code] = false; });
 
   window.addEventListener("contextmenu", (ev) => {
@@ -29882,15 +30731,31 @@ const ART = {
       openLifespanExhaustedModal(true);
       return;
     }
+    if (m4QuickAct === "open-pending-rewards" || t.id === "btn-pending-rewards") {
+      openPendingRewardsManually();
+      return;
+    }
     if (m4QuickAct === "lifespan-stay") {
+      const evId = activePendingRewardId;
       activeLifespanModalOpen = false;
       lifespanExhaustedPromptDismissed = true;
       pendingLifespanExhaustedPrompt = false;
+      if (evId) {
+        const res = commitPendingReward(evId, () => true);
+        if (!res.ok && res.reason === "save_failed") {
+          if (!saveConflictState) closeModal();
+          return;
+        }
+      }
       closeModal();
       showToast("已暂留此世，进度完好保留；可炼制【延寿青莲丹】或破境延寿！");
       return;
     }
     if (m4QuickAct === "lifespan-use-pill") {
+      const evId = activePendingRewardId;
+      if (evId) {
+        commitPendingReward(evId, () => true);
+      }
       consumeInventoryItem("longevity_pill");
       return;
     }
@@ -29929,12 +30794,24 @@ const ART = {
     if (m4QuickAct === "overflow-smelt-new") {
       if (!game || !activeGearOverflowItem) { closeModal(); return; }
       const item = activeGearOverflowItem.item;
+      const evId = activeGearOverflowItem.eventId || activePendingRewardId;
       const smeltVal = Math.max(1, Math.floor(num(item && item.sell, 15)));
-      game.stones = (game.stones || 0) + smeltVal;
+      if (evId) {
+        const res = commitPendingReward(evId, () => {
+          game.stones = (game.stones || 0) + smeltVal;
+          return true;
+        });
+        if (!res.ok) {
+          if (!saveConflictState) closeModal();
+          return;
+        }
+      } else {
+        game.stones = (game.stones || 0) + smeltVal;
+        saveGame();
+      }
       activeGearOverflowItem = null;
       Sound.qiOrb(3);
       showToast(`🔥 已熔炼新物【${item.name}】· 获灵石 +${smeltVal}！`);
-      saveGame();
       updateHud();
       if (drawerOpen) renderDrawerContent();
       closeModal();
@@ -29943,9 +30820,18 @@ const ART = {
     if (m4QuickAct === "overflow-discard-new") {
       if (!game || !activeGearOverflowItem) { closeModal(); return; }
       const item = activeGearOverflowItem.item;
+      const evId = activeGearOverflowItem.eventId || activePendingRewardId;
+      if (evId) {
+        const res = commitPendingReward(evId, () => true);
+        if (!res.ok) {
+          if (!saveConflictState) closeModal();
+          return;
+        }
+      } else {
+        saveGame();
+      }
       activeGearOverflowItem = null;
       showToast(`已放弃新物【${item.name}】，行囊维持不变。`);
-      saveGame();
       updateHud();
       if (drawerOpen) renderDrawerContent();
       closeModal();
@@ -29958,14 +30844,29 @@ const ART = {
       const newItem = activeGearOverflowItem.item;
       const oldItem = game.gearBag[idx];
       const oldSell = Math.max(1, Math.floor(num(oldItem && oldItem.sell, 15)));
-      game.gearBag[idx] = newItem;
-      game.stones = (game.stones || 0) + oldSell;
+      const evId = activeGearOverflowItem.eventId || activePendingRewardId;
+      if (evId) {
+        const res = commitPendingReward(evId, () => {
+          if (idx < 0 || idx >= game.gearBag.length) return false;
+          game.gearBag[idx] = newItem;
+          game.stones = (game.stones || 0) + oldSell;
+          return true;
+        });
+        if (!res.ok) {
+          if (!saveConflictState) closeModal();
+          return;
+        }
+      } else {
+        game.gearBag[idx] = newItem;
+        game.stones = (game.stones || 0) + oldSell;
+        saveGame();
+      }
       activeGearOverflowItem = null;
       pendingCompareGear = newItem;
+      clearCompareSmeltConfirm();
       renderGearCompareCard();
       Sound.fanfare();
       showToast(`✦ 已将【${newItem.name}】替换入袋，熔炼旧物【${oldItem.name}】获 +${oldSell} 灵石！`);
-      saveGame();
       updateHud();
       if (drawerOpen) renderDrawerContent();
       closeModal();
@@ -30002,19 +30903,34 @@ const ART = {
       const choice = t.getAttribute("data-soul-choice");
       const sid = t.getAttribute("data-soul-id") || activeSoulUnlockId;
       const sp = (sid && hasOwn(SOUL_SPIRITS, sid)) ? SOUL_SPIRITS[sid] : null;
-      activeSoulUnlockId = null;
+      const evId = activePendingRewardId;
       if (game && sp) {
+        const applySoul = () => {
+          if (choice === "equip") game.equippedSoul = sid;
+          return true;
+        };
+        if (evId) {
+          const res = commitPendingReward(evId, applySoul);
+          if (!res.ok) {
+            if (!saveConflictState) closeModal();
+            return;
+          }
+        } else {
+          applySoul();
+          saveGame();
+        }
+        activeSoulUnlockId = null;
         if (choice === "equip") {
-          game.equippedSoul = sid;
           Sound.soulManifestRoar();
           showToast(`👹 已装备新镇妖魂印【${sp.name}】（按 C / RB 施放）！`);
         } else {
           const curSp = hasOwn(SOUL_SPIRITS, game.equippedSoul) ? SOUL_SPIRITS[game.equippedSoul] : SOUL_SPIRITS.blood_warden;
           showToast(`已保留当前魂印【${curSp.name}】，新魂印【${sp.name}】可随时于修行抽屉切换。`);
         }
-        saveGame();
         updateHud();
         if (drawerOpen) renderDrawerContent();
+      } else {
+        activeSoulUnlockId = null;
       }
       closeModal();
       return;
@@ -30154,7 +31070,9 @@ const ART = {
       queueNewUnlockCardsForState(game);
       updateHud();
       renderHudSaveAlert();
+      syncPendingRewardsBadge();
       focusBattlefield();
+      requestCalmReevaluation();
       return;
     }
 
@@ -30379,7 +31297,7 @@ const ART = {
       return;
     }
     if (m1Act === "return-title-safe") {
-      clearTransientChoiceQueues();
+      // F07: Flush formal game (including game.pendingRewards) BEFORE clearing transient UI pointers!
       const wasSandbox = sandboxMode;
       if (wasSandbox) {
         if (preSandboxSnapshot && preSandboxSnapshot.meta) {
@@ -30390,18 +31308,23 @@ const ART = {
         sandboxMode = false;
         preSandboxSnapshot = null;
       } else if (game && !saveReadOnlyMode && !saveConflictState) {
+        revertActivePendingRewardToPending();
         saveGame();
       }
+      clearTransientChoiceQueues();
       game = null;
       lastSavedPayloadChecksum = null;
       arena.stageEpoch += 1;
       resetStageTransitionState();
+      releasePauseToken(defeatPauseToken); defeatPauseToken = null;
+      releasePauseToken(photoPauseToken); photoPauseToken = null;
       arena.nearbyProp = null;
       arena.defeatPending = null;
       const sbBadge = document.getElementById("hud-sandbox-badge");
       if (sbBadge) sbBadge.style.display = "none";
       closeModal();
       closeDrawer();
+      syncPendingRewardsBadge();
       document.getElementById("welcome-screen").style.display = "flex";
       renderWelcomeScreen();
       showToast(wasSandbox ? "已退出演武沙盒并返回标题主菜单（正式存档未受影响）！" : "已保全当前进度并返回标题主菜单！");
@@ -30556,6 +31479,11 @@ const ART = {
       openRunBoonDraftModal(arena.pendingBoonNodeId || null, true);
       return;
     }
+    if (["compare-equip-transfer", "compare-equip-direct", "compare-smelt-new", "compare-keep-bag"].includes(m1Act)) {
+      if (compareCardClickGuardUntil && performance.now() < compareCardClickGuardUntil) {
+        return; // F13: 250ms reveal click-guard blocks accidental combat click-through!
+      }
+    }
     if (m1Act === "compare-equip-transfer" && pendingCompareGear && game) {
       const targetItem = pendingCompareGear;
       const res = equipGearWithOptionalTransfer(targetItem, true);
@@ -30575,16 +31503,31 @@ const ART = {
     }
     if (m1Act === "compare-smelt-new" && pendingCompareGear && game) {
       const targetItem = pendingCompareGear;
+      const itemKey = targetItem.uid || targetItem.name;
+      const gain = Math.max(1, Math.floor(num(targetItem.sell, 15)));
+      const now = performance.now();
+      if (!compareSmeltConfirm || compareSmeltConfirm.key !== itemKey || now >= compareSmeltConfirm.expiresAt) {
+        // F13 Step 1: Arm 2-step confirmation (4s auto-reset) showing exact item name, stats & stone yield.
+        clearCompareSmeltConfirm();
+        const timer = setTimeout(() => {
+          compareSmeltConfirm = null;
+          renderGearCompareCard();
+        }, 4000);
+        compareSmeltConfirm = { key: itemKey, expiresAt: now + 4000, timer };
+        renderGearCompareCard();
+        showToast(`⚠ 请再次点击确认熔炼【${targetItem.name}】(+${gain} 灵石)`, { tier: 1, key: "smelt_confirm_arm", throttleMs: 800 });
+        return;
+      }
+      clearCompareSmeltConfirm();
       const bIdx = game.gearBag.indexOf(targetItem);
       if (bIdx >= 0) game.gearBag.splice(bIdx, 1);
-      const gain = targetItem.sell || 15;
       game.stones += gain;
       pendingCompareGear = null;
       renderGearCompareCard();
       Sound.qiOrb(3);
       saveGame();
       updateHud();
-      showToast(`已就地熔炼【${targetItem.name}】· 获灵石 +${gain}！`);
+      showToast(`已确认熔炼【${targetItem.name}】· 获灵石 +${gain}！`);
       return;
     }
     if (m1Act === "compare-keep-bag") {
@@ -31002,6 +31945,15 @@ const ART = {
       saveA11ySettings(); openSettingsModal();
       return;
     }
+    if (t.hasAttribute("data-set-notice-level")) {
+      const nl = t.getAttribute("data-set-notice-level");
+      if (["full", "lite", "minimal"].includes(nl)) {
+        a11ySettings.combatNoticeLevel = nl;
+        saveA11ySettings();
+        openSettingsModal();
+      }
+      return;
+    }
     if (t.id === "btn-star-chart" || t.getAttribute("data-action") === "open-star-chart") { openStarChartModal(); return; }
     if (t.getAttribute("data-action") === "buy-star-point") {
       if (game.stones < 60) { showToast("凝炼星魂需 60 灵石"); return; }
@@ -31416,23 +32368,39 @@ const ART = {
     if (t.hasAttribute("data-draft-type")) {
       const dt = t.getAttribute("data-draft-type");
       const did = t.getAttribute("data-draft-id");
-      if (dt === "pet") {
-        if (hasOwn(SPIRIT_PETS, did)) {
-          game.pet.id = did;
-          game.pet.level = Math.max(1, game.pet.level || 1);
-          if (!game.pet.skills || typeof game.pet.skills !== "object") game.pet.skills = { tier3: null, tier5: null };
-          queueNewUnlockCardsForState(game);
+      const evId = activePendingRewardId;
+      let newSynName = null;
+      const applyDraft = () => {
+        if (dt === "pet") {
+          if (hasOwn(SPIRIT_PETS, did)) {
+            game.pet.id = did;
+            game.pet.level = Math.max(1, game.pet.level || 1);
+            if (!game.pet.skills || typeof game.pet.skills !== "object") game.pet.skills = { tier3: null, tier5: null };
+            queueNewUnlockCardsForState(game);
+          }
+        } else if (DAO_LAWS[did] && !game.laws.includes(did)) {
+          const beforeSyn = SYNERGIES.filter(s => s.active(game)).map(s => s.id);
+          game.laws.push(did);
+          if (!sandboxMode && !metaState.seenLaws.includes(did)) metaState.seenLaws.push(did);
+          if (game.laws.length >= 5) unlockAchievement("ach_laws5");
+          const newSyn = SYNERGIES.find(s => !beforeSyn.includes(s.id) && s.active(game));
+          if (newSyn) newSynName = newSyn.name;
         }
-      } else if (DAO_LAWS[did] && !game.laws.includes(did)) {
-        const beforeSyn = SYNERGIES.filter(s => s.active(game)).map(s => s.id);
-        game.laws.push(did);
-        if (!sandboxMode && !metaState.seenLaws.includes(did)) metaState.seenLaws.push(did);
-        if (game.laws.length >= 5) unlockAchievement("ach_laws5");
-        const newSyn = SYNERGIES.find(s => !beforeSyn.includes(s.id) && s.active(game));
-        if (newSyn) showToast(`★ 大道共鸣！激活神话羁绊【${newSyn.name}】！`);
+        return true;
+      };
+      if (evId) {
+        const res = commitPendingReward(evId, applyDraft);
+        if (!res.ok) {
+          if (!saveConflictState) closeModal();
+          return;
+        }
+      } else {
+        applyDraft();
+        saveGame();
       }
+      if (newSynName) showToast(`★ 大道共鸣！激活神话羁绊【${newSynName}】！`);
       syncFlyingSwords(); Sound.fanfare();
-      closeModal(); saveGame(); updateHud();
+      closeModal(); updateHud();
       return;
     }
 
@@ -31620,23 +32588,45 @@ const ART = {
     if (t.hasAttribute("data-destiny-fruit")) {
       const fid = t.getAttribute("data-destiny-fruit");
       const df = hasOwn(DESTINY_FRUITS, fid) ? DESTINY_FRUITS[fid] : null;
-      if (df && !hasDestinyFruit(game, fid)) {
-        game.destinyFruits.push(fid);
-        if (fid === "glutton_pill") {
-          game.inventory.healing_pill = (game.inventory.healing_pill || 0) + 2;
-        } else if (fid === "hongmeng_luck") {
-          acquireGearItem(rollGearItem(Math.max(2, arena.stageIdx + 1), 3));
-        } else if (fid === "eternal_pine") {
-          game.stones += 120;
+      const evId = activePendingRewardId;
+      let luckGear = null;
+      const applyFruit = () => {
+        if (df && !hasDestinyFruit(game, fid)) {
+          game.destinyFruits.push(fid);
+          if (fid === "glutton_pill") {
+            game.inventory.healing_pill = (game.inventory.healing_pill || 0) + 2;
+          } else if (fid === "hongmeng_luck") {
+            luckGear = rollGearItem(Math.max(2, arena.stageIdx + 1), 3);
+          } else if (fid === "eternal_pine") {
+            game.stones += 120;
+          }
         }
+        return true;
+      };
+      if (evId) {
+        const res = commitPendingReward(evId, applyFruit);
+        if (!res.ok) {
+          if (!saveConflictState) closeModal();
+          return;
+        }
+      } else {
+        applyFruit();
+        saveGame();
+      }
+      if (luckGear) acquireGearItem(luckGear);
+      if (df) {
         syncFlyingSwords();
         Sound.fanfare();
         showToast(`★ 逆天改命！觉醒先天道果【${df.name}】！`);
       }
+      const hasChainedDraft = getPendingRewardsByKind("iconic_draft").length > 0;
       closeModal();
-      saveGame();
       updateHud();
-      openIconicUpgradeDraft(`${REALMS[game.realm].name}功成 · 参悟大道神通`);
+      if (!hasChainedDraft) {
+        openIconicUpgradeDraft(`${REALMS[game.realm].name}功成 · 参悟大道神通`);
+      } else {
+        requestCalmReevaluation({ immediate: isCombatCalm() });
+      }
       return;
     }
     if (t.hasAttribute("data-enc-id")) {
@@ -31935,6 +32925,7 @@ const ART = {
     const dt = Math.min(0.05, (now - lastTs) / 1000);
     lastTs = now;
     stepArena(dt);
+    stepCombatCalmScheduler(dt);
     renderArenaCanvas();
     if (drawerOpen && currentTab === "cultivate") renderWardrobePreviewCanvas();
     if (craftMinigame.open) renderCraftMinigameCanvas(dt);
@@ -32214,8 +33205,8 @@ const ART = {
     enterSandboxMode,
     exitSandboxMode,
     getTemperUseCoreDiscount: () => temperUseCoreDiscount,
-    getPendingOverflowCount: () => (activeGearOverflowItem ? 1 : 0) + pendingGearOverflowQueue.length,
-    getPendingSoulUnlockCount: () => (activeSoulUnlockId ? 1 : 0) + pendingSoulUnlockQueue.length,
+    getPendingOverflowCount: () => getPendingRewardsByKind("gear_overflow").length,
+    getPendingSoulUnlockCount: () => getPendingRewardsByKind("soul_unlock").length,
     LEGACY_STEP_ID_MAP,
     VOLUME_RECAP_META,
     isNormalCampaignStage,
@@ -32273,7 +33264,31 @@ const ART = {
     SKILLS,
     LAW_SHORT_BADGE,
     CELESTIAL_OMENS,
-    CELESTIAL_TIME_PHASES
+    CELESTIAL_TIME_PHASES,
+    // Q1 (F07–F13) inspection & verification hooks
+    COMBAT_CALM_GRACE_SEC,
+    isCombatCalm,
+    hasHostileHazards,
+    getPendingRewards: () => getPendingRewardsByKind(),
+    getPauseTokens: getPauseTokensSnapshot,
+    getCombatInbox: () => ({ items: combatInbox.slice(), unread: combatInboxUnread }),
+    requestCalmReevaluation,
+    openPendingRewardsManually,
+    stepCombatCalmScheduler,
+    enqueuePendingReward,
+    commitPendingReward,
+    acquirePauseToken,
+    releasePauseToken,
+    showToast,
+    addFloat,
+    triggerKillCamStamp,
+    completeLiveTribulation,
+    getActiveModalKind: () => activeModalKind,
+    getCompareCardGuardState: () => ({
+      shownAt: compareCardShownAt,
+      guardUntil: compareCardClickGuardUntil,
+      confirm: compareSmeltConfirm ? { key: compareSmeltConfirm.key, expiresAt: compareSmeltConfirm.expiresAt } : null
+    })
   };
   window.__CHENYUAN_V24__ = {
     getState: () => ({
