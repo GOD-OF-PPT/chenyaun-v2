@@ -39,7 +39,7 @@ export const REALM_XP_CAPS = {
   golden: 3300,
   nascent: 7400,
   spirit: 14500,
-  ascended: 14500
+  ascended: 0
 };
 
 export function computeSaveChecksum(str) {

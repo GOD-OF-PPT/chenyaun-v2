@@ -26,7 +26,7 @@ const META_KEY = "chenyuan_wendao_v11_meta";
 
 // ==================== CLI ARGUMENTS ====================
 const args = process.argv.slice(2);
-if (args.includes("--help") || args.includes("-h")) {
+function printHelp() {
   console.log(`Usage: node scripts/verify-playable-v2.mjs [options]
 Options:
   --filter <substr>      Run only suites whose "<id>. <title>" matches <substr> (case-insensitive)
@@ -36,19 +36,73 @@ Options:
   --fail-fast            Stop running remaining suites after the first failure (default: false)
   --timeout <ms>         Per-suite timeout in milliseconds (default: 45000)
   --help, -h             Show this help message`);
-  process.exit(0);
 }
 
-function getArg(flag) {
-  const idx = args.indexOf(flag);
-  return idx >= 0 && idx + 1 < args.length ? args[idx + 1] : null;
+function parseCliArgs(argv) {
+  const opts = {
+    filter: "",
+    screenshots: null,
+    report: null,
+    url: null,
+    failFast: false,
+    timeoutRaw: null,
+    help: false
+  };
+  const valueFlags = new Set(["--filter", "--screenshots", "--report", "--url", "--timeout"]);
+  for (let i = 0; i < argv.length; i++) {
+    const token = argv[i];
+    if (token === "--help" || token === "-h") {
+      opts.help = true;
+      continue;
+    }
+    if (token === "--fail-fast") {
+      opts.failFast = true;
+      continue;
+    }
+    let flag = token;
+    let inlineVal = null;
+    const eqIdx = token.indexOf("=");
+    if (eqIdx > 0) {
+      flag = token.slice(0, eqIdx);
+      inlineVal = token.slice(eqIdx + 1);
+    }
+    if (valueFlags.has(flag)) {
+      let val = inlineVal;
+      if (val === null) {
+        if (i + 1 >= argv.length || argv[i + 1].startsWith("--")) {
+          console.error(`Missing value for ${flag}`);
+          process.exit(2);
+        }
+        val = argv[++i];
+      } else if (val === "") {
+        console.error(`Empty value for ${flag}`);
+        process.exit(2);
+      }
+      if (flag === "--filter") opts.filter = val;
+      else if (flag === "--screenshots") opts.screenshots = val;
+      else if (flag === "--report") opts.report = val;
+      else if (flag === "--url") opts.url = val;
+      else if (flag === "--timeout") opts.timeoutRaw = val;
+      continue;
+    }
+    console.error(`Unknown argument: ${token}`);
+    printHelp();
+    process.exit(2);
+  }
+  return opts;
 }
-const FILTER = getArg("--filter") || "";
-const SHOTS_DIR = getArg("--screenshots");
-const REPORT_PATH = getArg("--report");
-const EXPLICIT_URL = getArg("--url");
-const FAIL_FAST = args.includes("--fail-fast");
-const TIMEOUT_RAW = getArg("--timeout");
+
+const CLI = parseCliArgs(args);
+if (CLI.help) {
+  printHelp();
+  process.exit(0);
+}
+const FILTER = CLI.filter;
+const SHOTS_DIR = CLI.screenshots;
+const REPORT_PATH = CLI.report;
+const EXPLICIT_URL = CLI.url;
+const FAIL_FAST = CLI.failFast;
+const TIMEOUT_RAW = CLI.timeoutRaw;
 const SUITE_TIMEOUT_MS = TIMEOUT_RAW !== null ? Number(TIMEOUT_RAW) : 45000;
 if (!Number.isFinite(SUITE_TIMEOUT_MS) || SUITE_TIMEOUT_MS <= 0) {
   console.error(`Invalid --timeout value: ${TIMEOUT_RAW}`);
@@ -212,7 +266,14 @@ async function runSuite(id, title, fn) {
   }
 
   const started = Date.now();
-  const tracker = { id, contexts: new Set(), pages: new Set(), runtimeErrors: [] };
+  const tracker = {
+    id,
+    contexts: new Set(),
+    pages: new Set(),
+    runtimeErrors: [],
+    runtimeErrorShots: [],
+    aborted: false
+  };
   currentSuiteTracker = tracker;
   process.stdout.write(`▶ ${fullName} ... `);
   let timer = null;
@@ -231,7 +292,9 @@ async function runSuite(id, title, fn) {
 
     const durationMs = Date.now() - started;
     if (tracker.runtimeErrors.length > 0) {
-      const screenshots = await captureFailureScreenshots(id, tracker);
+      const screenshots = tracker.runtimeErrorShots.length > 0
+        ? tracker.runtimeErrorShots.slice()
+        : await captureFailureScreenshots(id, tracker);
       const errMsg = `Runtime console/page errors (${tracker.runtimeErrors.length}): ${tracker.runtimeErrors.join(" | ")}`;
       results.push({
         id,
@@ -266,7 +329,8 @@ async function runSuite(id, title, fn) {
     const status = isAssertion ? "failed" : "error";
     const errorKind = isAssertion ? "assertion" : (err && err.name === "TimeoutError" ? "timeout" : "error");
     const errMsg = err && err.message ? err.message : String(err);
-    const screenshots = await captureFailureScreenshots(id, tracker);
+    const liveShots = await captureFailureScreenshots(id, tracker);
+    const screenshots = liveShots.length > 0 ? liveShots : tracker.runtimeErrorShots.slice();
     results.push({
       id,
       title,
@@ -282,6 +346,7 @@ async function runSuite(id, title, fn) {
     if (FAIL_FAST) failFastTriggered = true;
   } finally {
     if (timer) clearTimeout(timer);
+    tracker.aborted = true;
     currentSuiteTracker = null;
     for (const ctx of Array.from(tracker.contexts)) {
       try {
@@ -296,7 +361,7 @@ async function runSuite(id, title, fn) {
 async function newIsolatedContext(browser, extraOpts = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...extraOpts });
   const tracker = currentSuiteTracker;
-  if (tracker) {
+  if (tracker && !tracker.aborted) {
     tracker.contexts.add(ctx);
     const origNewPage = ctx.newPage.bind(ctx);
     ctx.newPage = async (...pageArgs) => {
@@ -307,6 +372,10 @@ async function newIsolatedContext(browser, extraOpts = {}) {
     };
     const origClose = ctx.close.bind(ctx);
     ctx.close = async (...closeArgs) => {
+      if (SHOTS_DIR && tracker.runtimeErrors.length > 0 && tracker.runtimeErrorShots.length === 0) {
+        const shots = await captureFailureScreenshots(tracker.id, tracker);
+        tracker.runtimeErrorShots.push(...shots);
+      }
       tracker.contexts.delete(ctx);
       return origClose(...closeArgs);
     };
@@ -836,6 +905,12 @@ try {
       for (const e of s.arena.enemies.slice()) api.handleEnemyDeath(e);
     });
     await page.waitForTimeout(700);
+    for (let k = 0; k < 3; k++) {
+      const keepSoulBtn = await page.$("#modal-backdrop.open #btn-soul-keep-current");
+      if (!keepSoulBtn) break;
+      await keepSoulBtn.click();
+      await page.waitForTimeout(120);
+    }
     await dismissActiveCutscene(page);
     await page.waitForSelector("#modal-backdrop.open #btn-volume-recap-confirm");
     const portalBeforeRecap2 = await page.evaluate(() =>
@@ -874,6 +949,12 @@ try {
       for (const e of s.arena.enemies.slice()) api.handleEnemyDeath(e);
     });
     await page.waitForTimeout(700);
+    for (let k = 0; k < 3; k++) {
+      const keepSoulBtn = await page.$("#modal-backdrop.open #btn-soul-keep-current");
+      if (!keepSoulBtn) break;
+      await keepSoulBtn.click();
+      await page.waitForTimeout(120);
+    }
     await dismissActiveCutscene(page);
     await page.waitForSelector("#modal-backdrop.open #btn-volume-recap-confirm");
     const portalBeforeRecap3 = await page.evaluate(() =>
@@ -1182,42 +1263,75 @@ try {
     await maybeShot(page, "m4_01_ascension_roadmap_locked.png");
 
     // 3. Toggle 【全神通演武】 inside Roadmap -> requires explicit confirmation modal (#btn-confirm-enter-sandbox) & isolates live save
-    const rawSaveBeforeSandbox = await page.evaluate((sk) => localStorage.getItem(sk), STORAGE_KEY);
+    const beforeSandboxSnap = await page.evaluate((sk) => {
+      const raw = localStorage.getItem(sk);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return {
+        raw,
+        checksum: parsed?.checksum || null,
+        stones: parsed?.game?.stones,
+        realm: parsed?.game?.realm,
+        unlockAllArcana: Boolean(parsed?.game?.unlockAllArcana)
+      };
+    }, STORAGE_KEY);
+    assert.equal(beforeSandboxSnap.unlockAllArcana, false, "Live save before sandbox must have unlockAllArcana=false");
     await page.click('[data-action="toggle-arcana-all-roadmap"]');
     await page.waitForSelector("#modal-backdrop.open #btn-confirm-enter-sandbox");
     await page.click("#btn-confirm-enter-sandbox");
-    await page.waitForTimeout(200);
-    const sandboxEntered = await page.evaluate((sk) => ({
-      isSandbox: window.__CHENYUAN_V25__.isSandboxMode(),
-      badgeVisible: getComputedStyle(document.getElementById("hud-sandbox-badge")).display !== "none",
-      liveSaveNow: localStorage.getItem(sk)
-    }), STORAGE_KEY);
+    // enterSandboxMode({ source: "roadmap" }) flushes pre-sandbox live save once and immediately reopens Ascension Roadmap
+    await page.waitForSelector("#modal-backdrop.open .roadmap-sys-btn");
+    const sandboxEntered = await page.evaluate((sk) => {
+      const raw = localStorage.getItem(sk);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return {
+        isSandbox: window.__CHENYUAN_V25__.isSandboxMode(),
+        badgeVisible: getComputedStyle(document.getElementById("hud-sandbox-badge")).display !== "none",
+        rawSaveInsideSandbox: raw,
+        persistedChecksum: parsed?.checksum || null,
+        persistedStones: parsed?.game?.stones,
+        persistedRealm: parsed?.game?.realm,
+        persistedUnlockAllArcana: Boolean(parsed?.game?.unlockAllArcana)
+      };
+    }, STORAGE_KEY);
     assert.equal(sandboxEntered.isSandbox, true, "Confirming sandbox modal must enter isolated sandbox mode");
     assert.equal(sandboxEntered.badgeVisible, true, "#hud-sandbox-badge must be visible in sandbox mode");
-    assert.equal(sandboxEntered.liveSaveNow, rawSaveBeforeSandbox, "Entering sandbox must NOT mutate live localStorage save");
+    assert.equal(sandboxEntered.persistedUnlockAllArcana, false, "Entering sandbox must NOT persist unlockAllArcana=true to live save");
+    assert.equal(sandboxEntered.persistedRealm, beforeSandboxSnap.realm, "Entering sandbox must preserve live save realm");
+    assert.equal(sandboxEntered.persistedStones, beforeSandboxSnap.stones, "Entering sandbox must preserve live save stones");
+    if (beforeSandboxSnap.checksum) {
+      assert.equal(sandboxEntered.persistedChecksum, beforeSandboxSnap.checksum, "Entering sandbox must preserve live save canonical game checksum");
+    }
 
-    // Reopen Ascension Roadmap in sandbox -> all 14 systems immediately unlocked
-    await page.click("#btn-pavilion-menu");
-    await page.waitForTimeout(120);
-    await page.click("#btn-ascension-roadmap");
-    await page.waitForTimeout(180);
+    // Ascension Roadmap is reopened automatically in sandbox -> all 14 systems immediately unlocked
     assert.equal(await page.locator(".roadmap-sys-btn.locked").count(), 0, "Sandbox mode must unlock all 14 systems immediately");
     await maybeShot(page, "m4_02_ascension_roadmap_sandbox.png");
 
-    // Verify sandbox mode lets Mortal player open Seed Workshop, then exit sandbox via #btn-exit-sandbox
+    // Verify sandbox mode lets Mortal player open Seed Workshop, mutate in-sandbox state without touching live save, then exit via #btn-exit-sandbox
     await page.click('[data-roadmap-sys="seed_workshop"]');
     await page.waitForTimeout(180);
     assert.ok((await page.textContent("#modal-content")).includes("太虚造化工坊"));
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.getState().game.stones = 999999;
+      api.getState().game.unlockAllArcana = true;
+      api.saveGame();
+    });
     await page.keyboard.press("Escape");
     await page.waitForTimeout(140);
     await page.click("#btn-exit-sandbox");
     await page.waitForTimeout(180);
     const afterExitSandbox = await page.evaluate((sk) => ({
       isSandbox: window.__CHENYUAN_V25__.isSandboxMode(),
-      liveSaveNow: localStorage.getItem(sk)
+      liveSaveNow: localStorage.getItem(sk),
+      stonesNow: window.__CHENYUAN_V25__.getState().game.stones
     }), STORAGE_KEY);
     assert.equal(afterExitSandbox.isSandbox, false, "#btn-exit-sandbox must cleanly exit sandbox mode");
-    assert.equal(afterExitSandbox.liveSaveNow, rawSaveBeforeSandbox, "Exiting sandbox must leave live save untouched");
+    assert.equal(
+      afterExitSandbox.liveSaveNow,
+      sandboxEntered.rawSaveInsideSandbox,
+      "In-sandbox mutations and exiting sandbox must leave live localStorage byte-for-byte identical"
+    );
+    assert.notEqual(afterExitSandbox.stonesNow, 999999, "In-sandbox stone mutation must not leak after exiting sandbox");
 
     // 4. Step through realms (qi -> foundation -> golden -> nascent -> spirit) matching M6 SYSTEM_ECOSYSTEM_LADDER
     const ladderCheck = await page.evaluate(() => {
@@ -1805,10 +1919,21 @@ try {
     assert.deepEqual(dropCheck.droppedMats, ["core", "dao", "dew", "herb", "jade", "lotus", "soul"], "All 7 crafting materials must drop across Ch1-Ch5 bosses");
 
     // 6. Explore drawer has 0 legacy [data-source] buttons
+    await page.waitForTimeout(200);
+    for (let k = 0; k < 6; k++) {
+      const btn = await page.$("#modal-backdrop.open #btn-soul-keep-current, #modal-backdrop.open #btn-volume-recap-confirm, #modal-backdrop.open [data-modal-close='1']");
+      if (!btn) break;
+      await btn.click();
+      await page.waitForTimeout(100);
+    }
+    await dismissActiveCutscene(page, 300);
     await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
       s.game.openingChoice = "help";
-      window.__CHENYUAN_V25__.updateHud();
+      api.closeModal();
+      api.syncProgressiveSkillVisibility();
+      api.updateHud();
     });
     await page.click('#nav-btn-explore');
     await page.waitForTimeout(160);
@@ -4101,18 +4226,24 @@ try {
       assert.equal(corruptOverwriteCheck.rawAfter, corruptRawBeforeOverwrite, "Failed corrupt overwrite must preserve original raw payload");
       assert.equal(corruptOverwriteCheck.hasWriteErr, true, "Failed corrupt overwrite must set storageWriteError");
       assert.equal(corruptOverwriteCheck.toastTxt.includes("已确认覆盖旧损坏存档"), false, `Failed corrupt overwrite must not emit false success toast, got: ${corruptOverwriteCheck.toastTxt}`);
+      await ctx.close();
 
       // N1-continue + N2 (bonusSwords: 1.5, stones: 42.7) + N3 (karmaEventsDone: 1.5) + N5 (own __proto__ in customComboSeq/primordialCrafts/pity)
-      await page.evaluate((sk) => {
+      // Use a fresh context still on welcome screen (game === null) so pagehide cannot flush a v11 save over LEGACY_V10_KEY on reload.
+      const ctxN235 = await newIsolatedContext(browser);
+      const pageN235 = await ctxN235.newPage();
+      attachErrorListeners(pageN235, "R2-7-N1-N5");
+      await pageN235.goto(targetUrl, { waitUntil: "domcontentloaded" });
+      await pageN235.evaluate((sk) => {
         localStorage.clear();
         const rawLegacy = '{"game":{"realm":"qi","name":{"toString":1,"valueOf":2},"stones":42.7,"bonusSwords":1.5,"karmaEventsDone":1.5,"equippedGear":{"weapon":{"slot":"weapon","name":{"toString":1,"valueOf":2},"atk":10}},"customComboSeq":{"__proto__":{"polluted":1},"enabled":true,"slots":["sword_crescent","spear_flurry","chakram_vortex","greatsword_cleave"],"morphCount":0},"primordialCrafts":{"__proto__":{"polluted":1},"goldenAcolyte":false,"voidSwordRift":false,"pillBatches":0,"forgedBlades":0},"pity":{"__proto__":{"polluted":1},"epic":0,"mythic":0,"critAcc":0,"vampHits":0,"thunderHits":0,"gearDrops":0}},"stageIdx":0,"stanceIdx":0,"towerMode":false,"sanctumMode":false}';
         localStorage.setItem(sk, rawLegacy);
       }, LEGACY_V10_KEY);
-      await page.reload({ waitUntil: "domcontentloaded" });
-      await page.waitForSelector("#btn-continue-save");
-      await page.click("#btn-continue-save");
-      await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
-      const n235State = await page.evaluate(() => {
+      await pageN235.reload({ waitUntil: "domcontentloaded" });
+      await pageN235.waitForSelector("#btn-continue-save");
+      await pageN235.click("#btn-continue-save");
+      await pageN235.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      const n235State = await pageN235.evaluate(() => {
         const g = window.__CHENYUAN_V25__.getState().game;
         return {
           hudName: (document.getElementById("hud-name")?.textContent || "").trim(),
@@ -4137,16 +4268,16 @@ try {
       assert.equal(n235State.pityOwnProto, false, "N5: pity must not retain own __proto__ key");
 
       // N3 UI check: open Karma Dilemma modal cleanly even if karmaEventsDone is mutated to 1.5 in memory
-      await page.evaluate(() => { window.__CHENYUAN_V25__.getState().game.karmaEventsDone = 1.5; });
-      await page.click("#nav-btn-story");
-      await page.waitForSelector('#jade-panel.drawer-open [data-action="open-karma-dilemma"]');
-      await page.click('#jade-panel [data-action="open-karma-dilemma"]');
-      await page.waitForSelector("#modal-backdrop.open [data-karma-dilemma]");
-      await page.keyboard.press("Escape");
-      await page.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+      await pageN235.evaluate(() => { window.__CHENYUAN_V25__.getState().game.karmaEventsDone = 1.5; });
+      await pageN235.click("#nav-btn-story");
+      await pageN235.waitForSelector('#jade-panel.drawer-open [data-action="open-karma-dilemma"]');
+      await pageN235.click('#jade-panel [data-action="open-karma-dilemma"]');
+      await pageN235.waitForSelector("#modal-backdrop.open [data-karma-dilemma]");
+      await pageN235.keyboard.press("Escape");
+      await pageN235.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
 
       // N1-cross-tab: valid v2 envelope with poisoned game.name={"toString":1,"valueOf":2} must open conflict modal cleanly
-      const crossTabRes = await page.evaluate((sk) => {
+      const crossTabRes = await pageN235.evaluate((sk) => {
         const payloadObj = {
           game: { realm: "mortal", name: { toString: 1, valueOf: 2 }, stones: 99 },
           stageIdx: 0, stanceIdx: 0, towerMode: false, sanctumMode: false
@@ -4164,7 +4295,7 @@ try {
       }, STORAGE_KEY);
       assert.equal(crossTabRes.modalOpen, true, "N1: cross-tab conflict with poisoned game.name must open conflict modal cleanly");
       assert.ok(crossTabRes.modalTxt.includes("顾长青"), "N1: conflict modal must fall back poisoned externalName to 顾长青");
-      await ctx.close();
+      await ctxN235.close();
     }
   });
 
@@ -4315,39 +4446,49 @@ try {
       g.choices = {};
       g.karmaScore = 0;
       g.towerBest = 0;
-      g.spireBestFloor = 0;
+      g.bestSpireFloor = 0;
       g.achievements = [];
       const zeroScore = api.computeCompetitionScore(g);
       const zeroGrade = api.getScoreGrade(zeroScore, g);
       const zeroEpi = api.getKarmaEndingEpilogue(g, "sword_sovereign");
 
-      // Fully cleared & bonded character
+      // Fully cleared & bonded character satisfying ALL 18 CHAPTERS step checks
+      g.openingChoice = "help";
+      g.pet = { id: "fox", level: 3, skills: { tier3: null, tier5: null } };
+      g.immortalPills = 2;
+      g.choices = { lu_intro: "listen", pei_spar: "a", shen_past: "a", yan_gate: "a" };
+      g.ownedRelics = ["frost_sword"];
+      g.loadout = Object.assign({}, g.loadout, { relic: "frost_sword" });
+      g.laws = ["wanjian", "yinyang", "pill_fire", "void_haste"];
       g.stageStars = { 0: 3, 1: 3, 2: 3, 3: 3, 4: 3 };
       g.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
       g.bondTiers = { shen: 2, lu: 2 };
+      g.aids = { shen: true, lu: true };
       g.trialCompleted = true;
       const fullEpi = api.getKarmaEndingEpilogue(g, "mortal_guardian");
 
-      // S5: mark all mainline steps claimed -> findNextMainlineStep should return null & tracker shows endgame goal (劫火周目 / 锁妖塔), never stale s7_trial
+      // S5: mark all mainline steps claimed -> findNextMainlineStep returns { allDone: true, step: null } & tracker shows endgame goal, never stale s7_trial
       g.claimedStepIds = api.CHAPTERS.flatMap(ch => ch.steps.map(st => st.id));
       const nextStep = api.findNextMainlineStep(g);
       api.updateHud();
-      const trackerText = document.getElementById("quest-tracker-bar")?.textContent || "";
+      const trackerText = (document.getElementById("qt-body-rows")?.innerText || document.getElementById("quest-tracker-hud")?.textContent || "").trim();
       return {
         zeroScore,
         zeroGrade: zeroGrade && (zeroGrade.grade || zeroGrade.short || String(zeroGrade)),
         zeroEpiStr: JSON.stringify(zeroEpi),
         fullEpiStr: JSON.stringify(fullEpi),
-        nextStep,
+        nextStep: nextStep ? { allDone: Boolean(nextStep.allDone), step: nextStep.step, claimReady: Boolean(nextStep.claimReady) } : null,
         trackerText
       };
     });
     assert.ok(!String(evalRes.zeroGrade).startsWith("SS") && !String(evalRes.zeroGrade).startsWith("S+"),
       `0-star ascended character must NOT receive SS/S+ grade, got ${evalRes.zeroGrade} (score=${evalRes.zeroScore})`);
     assert.notEqual(evalRes.zeroEpiStr, evalRes.fullEpiStr, "Truthful epilogue must differentiate 0-star unbonded vs cleared & bonded run");
-    assert.ok(evalRes.fullEpiStr.includes("沈清歌") || evalRes.fullEpiStr.includes("陆青崖"), "Cleared epilogue must mention actual bonded companions");
-    assert.equal(evalRes.nextStep, null, "When all mainline steps are completed and claimed, findNextMainlineStep must return null");
-    assert.ok(!evalRes.trackerText.includes("s7_trial"), "All-complete tracker must not show stale s7_trial");
+    assert.ok(evalRes.fullEpiStr.includes("沈清禾") || evalRes.fullEpiStr.includes("陆玄松"), "Cleared epilogue must mention actual bonded companions (沈清禾/陆玄松)");
+    assert.equal(evalRes.nextStep?.allDone, true, `When all mainline steps are completed and claimed, findNextMainlineStep must return allDone=true, got: ${JSON.stringify(evalRes.nextStep)}`);
+    assert.equal(evalRes.nextStep?.step, null, `When all mainline steps are completed and claimed, findNextMainlineStep.step must be null, got: ${JSON.stringify(evalRes.nextStep)}`);
+    assert.match(evalRes.trackerText, /仙途圆满|劫火周目|锁妖塔/, `All-complete tracker must show endgame goal text, got: "${evalRes.trackerText}"`);
+    assert.ok(!evalRes.trackerText.includes("s7_trial") && !evalRes.trackerText.includes("剑斩道影"), `All-complete tracker must not show stale s7_trial, got: "${evalRes.trackerText}"`);
     await ctx.close();
   });
 
@@ -4356,13 +4497,15 @@ try {
     const res = await page.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const s = api.getState();
-      // 1. S6 Karma choice without fillIntent must not fill bondCharge or astralCharge to 100
-      s.arena.bondCharge = 12;
-      s.arena.astralCharge = 15;
+      // 1. S6 Karma choice without fillIntent must not fill bondSynergy, astralEnergy, or swordIntent to 100
+      s.arena.bondSynergy = 12;
+      s.arena.astralEnergy = 15;
+      s.arena.swordIntent = 10;
       const kd = api.KARMA_DILEMMAS.find(d => d && d.rightOpt && !d.rightOpt.fillIntent) || api.KARMA_DILEMMAS[0];
       api.resolveKarmaDilemmaChoice(kd.id, "right");
-      const bondAfter = s.arena.bondCharge;
-      const astralAfter = s.arena.astralCharge;
+      const bondAfter = s.arena.bondSynergy;
+      const astralAfter = s.arena.astralEnergy;
+      const intentAfter = s.arena.swordIntent;
 
       // 2. G3 Single-hit cap <= 45% maxHp
       s.game.realm = "foundation";
@@ -4380,21 +4523,30 @@ try {
       const baseSpirit = api.getRealmCombatBaseline("spirit");
 
       s.game.realm = "nascent";
-      s.arena.bossRush = { active: true, bout: 1, maxBouts: 7, timer: 0, noHit: true };
+      s.arena.bossRush = {
+        active: true, bout: 1, maxBouts: 7, elapsed: 0,
+        partBreaks: 0, parries: 0, hitsTaken: 0, damageTaken: 0,
+        startBout: 1, practiceMode: false
+      };
       s.arena.enemies = [];
       api.spawnBossRushBout();
       const rushNascentHp = s.arena.enemies[0]?.maxHp || 0;
 
       s.game.realm = "spirit";
-      s.arena.bossRush = { active: true, bout: 1, maxBouts: 7, timer: 0, noHit: true };
+      s.arena.bossRush = {
+        active: true, bout: 1, maxBouts: 7, elapsed: 0,
+        partBreaks: 0, parries: 0, hitsTaken: 0, damageTaken: 0,
+        startBout: 1, practiceMode: false
+      };
       s.arena.enemies = [];
       api.spawnBossRushBout();
       const rushSpiritHp = s.arena.enemies[0]?.maxHp || 0;
 
-      return { bondAfter, astralAfter, cappedDmg, capLimit, baseQi, baseGold, baseSpirit, rushNascentHp, rushSpiritHp };
+      return { bondAfter, astralAfter, intentAfter, cappedDmg, capLimit, baseQi, baseGold, baseSpirit, rushNascentHp, rushSpiritHp };
     });
-    assert.ok(res.bondAfter < 100, `Karma choice without fillIntent must NOT fill bondCharge to 100, got ${res.bondAfter}`);
-    assert.ok(res.astralAfter < 100, `Karma choice without fillIntent must NOT fill astralCharge to 100, got ${res.astralAfter}`);
+    assert.ok(res.bondAfter < 100, `Karma choice without fillIntent must NOT fill bondSynergy to 100, got ${res.bondAfter}`);
+    assert.ok(res.astralAfter < 100, `Karma choice without fillIntent must NOT fill astralEnergy to 100, got ${res.astralAfter}`);
+    assert.ok(res.intentAfter < 100, `Karma choice without fillIntent must NOT fill swordIntent to 100, got ${res.intentAfter}`);
     assert.ok(res.cappedDmg <= res.capLimit, `Single-hit damage (${res.cappedDmg}) exceeded 45% cap (${res.capLimit})`);
     assert.ok(res.baseQi.atk < res.baseGold.atk && res.baseGold.atk < res.baseSpirit.atk, "Realm combat baseline ATK must scale monotonically");
     assert.ok(res.rushSpiritHp >= res.rushNascentHp && res.rushNascentHp > 0, `Boss Rush HP must scale monotonically with realm (${res.rushNascentHp} -> ${res.rushSpiritHp})`);
@@ -4405,6 +4557,7 @@ try {
   // MILESTONE 4 REGRESSION SUITES (R4-1 .. R4-4): G1, G2, G4, G5, G6, G9, G11a
   // =========================================================================
   await runSuite("R4-1", "M4 G1 九州远征经济闭环(空库禁刷/600上限/洞府停表/实战走表/羁绊校验)与5场景存档", async () => {
+    // Scenario 1: Fresh start expedition mechanics
     const { ctx, page } = await startCleanGamePage(browser, "R4-1", true);
     const econCheck = await page.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
@@ -4420,8 +4573,8 @@ try {
       const unbonded = api.assignExpeditionNode(g, "qinglan_vein", "yan");
       // Bonded hero accepted
       const bonded = api.assignExpeditionNode(g, "qinglan_vein", "shen");
-      // Duplicate hero assignment on second node rejected
-      const dup = api.assignExpeditionNode(g, "kunlun_vein", "shen");
+      // Duplicate hero assignment on valid second node rejected
+      const dup = api.assignExpeditionNode(g, "qingyun_peak", "shen");
 
       // Empty bank double-claim yields 0 stones & 0 stars
       const stonesBefore = g.stones;
@@ -4435,8 +4588,10 @@ try {
       const claimAfterCapped = api.claimExpeditionRewards();
       return {
         unbondedOk: unbonded.ok,
+        unbondedReason: unbonded.reason,
         bondedOk: bonded.ok,
         dupOk: dup.ok,
+        dupReason: dup.reason,
         claimEmpty1,
         claimEmpty2,
         stonesDeltaEmpty: (g.stones - (claimCapped?.gainedStones || 0)) - stonesBefore,
@@ -4447,8 +4602,10 @@ try {
       };
     });
     assert.equal(econCheck.unbondedOk, false, "Unbonded hero must be rejected for expedition garrison");
+    assert.equal(econCheck.unbondedReason, "unbonded", `Unbonded hero rejection reason must be "unbonded", got "${econCheck.unbondedReason}"`);
     assert.equal(econCheck.bondedOk, true, "Bonded hero shen must be assignable");
     assert.equal(econCheck.dupOk, false, "Duplicate hero assignment across nodes must be rejected");
+    assert.equal(econCheck.dupReason, "already_assigned", `Duplicate hero rejection reason must be "already_assigned", got "${econCheck.dupReason}"`);
     assert.equal(econCheck.claimEmpty1.gainedStones, 0);
     assert.equal(econCheck.claimEmpty2.gainedStones, 0);
     assert.ok(econCheck.claimCapped.gainedStones <= econCheck.stonesCap, `Claimed stones (${econCheck.claimCapped.gainedStones}) must respect cap ${econCheck.stonesCap}`);
@@ -4475,6 +4632,109 @@ try {
     await page.waitForTimeout(300);
     assert.ok(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.expeditions.tickTimer < 8.5), "Expedition must tick during active non-Sanctum combat");
     await ctx.close();
+
+    // Scenarios 2-5: Legacy expedition migration, reload persistence, QuotaExceededError alert+retry, multi-tab contention
+    const ctxExp = await newIsolatedContext(browser);
+    const tabA = await ctxExp.newPage();
+    attachErrorListeners(tabA, "R4-1-SaveA");
+    await tabA.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tabA.evaluate((sk) => {
+      localStorage.clear();
+      localStorage.setItem(sk, JSON.stringify({
+        game: {
+          name: "远征旧档",
+          realm: "nascent",
+          stones: 300,
+          bondTiers: { shen: 1, pei: 0, lu: 0, yan: 0 },
+          expeditions: {
+            assignments: { qinglan_vein: "shen", qingyun_peak: "yan" },
+            bankedStones: 9999,
+            bankedStars: 99,
+            supportThunderCount: 0,
+            tickTimer: 6.0
+          }
+        },
+        stageIdx: 0, stanceIdx: 0, towerMode: false, sanctumMode: true
+      }));
+    }, STORAGE_KEY);
+    await tabA.reload({ waitUntil: "domcontentloaded" });
+    await tabA.waitForSelector("#btn-continue-save");
+    await tabA.click("#btn-continue-save");
+    await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    const migExp = await tabA.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      return {
+        qinglan: g.expeditions?.assignments?.qinglan_vein || null,
+        qingyun: g.expeditions?.assignments?.qingyun_peak || null,
+        bankedStones: g.expeditions?.bankedStones,
+        bankedStars: g.expeditions?.bankedStars,
+        stonesCap: api.EXPEDITION_BANKED_STONES_CAP,
+        starsCap: api.EXPEDITION_BANKED_STARS_CAP
+      };
+    });
+    assert.equal(migExp.qinglan, "shen", "Legacy save must preserve valid bonded expedition assignment");
+    assert.equal(migExp.qingyun, null, "Legacy save migration must prune unbonded expedition hero");
+    assert.ok(migExp.bankedStones <= migExp.stonesCap, `Migrated bankedStones (${migExp.bankedStones}) must clamp to <= ${migExp.stonesCap}`);
+    assert.ok(migExp.bankedStars <= migExp.starsCap, `Migrated bankedStars (${migExp.bankedStars}) must clamp to <= ${migExp.starsCap}`);
+
+    // Scenario 3: Reload persistence
+    await tabA.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.getState().game.expeditions.bankedStones = 145;
+      api.saveGame();
+    });
+    await tabA.reload({ waitUntil: "domcontentloaded" });
+    await tabA.waitForSelector("#btn-continue-save");
+    await tabA.click("#btn-continue-save");
+    await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    const afterReloadExp = await tabA.evaluate(() => {
+      const g = window.__CHENYUAN_V25__.getState().game;
+      return { qinglan: g.expeditions?.assignments?.qinglan_vein || null, bankedStones: g.expeditions?.bankedStones };
+    });
+    assert.equal(afterReloadExp.qinglan, "shen", "Expedition assignment must persist across reload");
+    assert.equal(afterReloadExp.bankedStones, 145, "Expedition bankedStones must persist across reload");
+
+    // Scenario 4: QuotaExceededError write-fail alert + preserve + retry recovery
+    const rawBeforeQuota = await tabA.evaluate((sk) => localStorage.getItem(sk), STORAGE_KEY);
+    const quotaRes = await tabA.evaluate((sk) => {
+      const orig = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) {
+        if (k === sk) throw new DOMException("Quota full", "QuotaExceededError");
+        return orig.call(this, k, v);
+      };
+      window.__CHENYUAN_V25__.getState().game.expeditions.bankedStones = 210;
+      const ok = window.__CHENYUAN_V25__.saveGame();
+      Storage.prototype.setItem = orig;
+      return {
+        ok,
+        rawAfterFail: localStorage.getItem(sk),
+        alertVisible: getComputedStyle(document.getElementById("hud-save-alert")).display !== "none"
+      };
+    }, STORAGE_KEY);
+    assert.equal(quotaRes.ok, false, "QuotaExceededError must return false from saveGame");
+    assert.equal(quotaRes.rawAfterFail, rawBeforeQuota, "Failed write must preserve prior expedition save intact");
+    assert.equal(quotaRes.alertVisible, true, "QuotaExceededError must surface #hud-save-alert");
+    await tabA.click('#hud-save-alert [data-action="retry-save-now"]');
+    await tabA.waitForTimeout(140);
+    assert.equal(await tabA.evaluate((sk) => JSON.parse(localStorage.getItem(sk) || "{}").game?.expeditions?.bankedStones, STORAGE_KEY), 210, "Retry save must persist updated expedition bankedStones");
+
+    // Scenario 5: Multi-tab contention & sync
+    const tabB = await ctxExp.newPage();
+    attachErrorListeners(tabB, "R4-1-SaveB");
+    await tabB.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tabB.waitForSelector("#btn-continue-save");
+    await tabB.click("#btn-continue-save");
+    await tabB.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await tabB.evaluate(() => {
+      window.__CHENYUAN_V25__.getState().game.expeditions.bankedStones = 333;
+      window.__CHENYUAN_V25__.saveGame();
+    });
+    await tabA.waitForSelector('#modal-backdrop.open [data-action="load-latest-save"]');
+    await tabA.click('[data-action="load-latest-save"]');
+    await tabA.waitForTimeout(160);
+    assert.equal(await tabA.evaluate(() => window.__CHENYUAN_V25__.getState().game.expeditions?.bankedStones), 333, "Loading latest save in multi-tab conflict must sync Tab B expedition state");
+    await ctxExp.close();
   });
 
   await runSuite("R4-2", "M4 G2 切玉赌注套利封口 + G4 剑冢/天阙跳关练手隔离(零奖励/零纪录)", async () => {
@@ -4515,7 +4775,7 @@ try {
       const s = api.getState();
       s.game.realm = "nascent";
       s.game.rushBestGrade = "";
-      s.game.spireBestFloor = 0;
+      s.game.bestSpireFloor = 0;
       api.startBossRushGauntlet(6);
       const rushPractice = api.isPracticeModeActive();
       const rushIsPracticeFlag = Boolean(s.arena.bossRush && s.arena.bossRush.practiceMode);
@@ -4659,7 +4919,9 @@ try {
       return { toggled: api.getTemperUseCoreDiscount(), noCore, withCore };
     });
     assert.notEqual(temperCheck.toggled, temperBeforeToggle, "#chk-temper-use-core click must toggle temperUseCoreDiscount");
-    assert.ok(temperCheck.withCore.stones < temperCheck.noCore.stones, "Enabling core discount must lower relic temper stone cost");
+    assert.equal(temperCheck.withCore.applyCore, true, "Enabling core discount with cores available must set applyCore=true");
+    assert.equal(temperCheck.noCore.applyCore, false, "Disabling core discount must set applyCore=false");
+    assert.ok(temperCheck.withCore.finalStones < temperCheck.noCore.finalStones, `Enabling core discount must lower relic temper stone cost (${temperCheck.withCore.finalStones} < ${temperCheck.noCore.finalStones})`);
     await page.keyboard.press("Escape");
     await page.waitForFunction(() => !document.getElementById("jade-panel")?.classList.contains("drawer-open"));
 
@@ -4694,6 +4956,7 @@ try {
   // MILESTONE 5 REGRESSION SUITES (R5-1 .. R5-3): S3, S4, S7, S8, S9, S10
   // =========================================================================
   await runSuite("R5-1", "M5 S3 六卷/故人导航术语统一 + S4 规范名与 s4_npc->s4_puppet 旧档5场景迁移", async () => {
+    // Scenario 1: Fresh start navigation terminology & canonical step IDs
     const { ctx, page } = await startCleanGamePage(browser, "R5-1", true);
     const navCheck = await page.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
@@ -4712,10 +4975,10 @@ try {
     assert.ok(navCheck.volCount >= 5, `Expected >= 5 volumes in VOLUME_RECAP_META, got ${navCheck.volCount}`);
     await ctx.close();
 
-    // Legacy save with s4_npc claimed migrates losslessly to s4_puppet across reload
+    // Scenario 2: Legacy save with s4_npc claimed migrates losslessly to s4_puppet
     const ctxLeg = await newIsolatedContext(browser);
     const pageLeg = await ctxLeg.newPage();
-    attachErrorListeners(pageLeg, "R5-1-Legacy");
+    attachErrorListeners(pageLeg, "R5-1-LegacyA");
     await pageLeg.goto(targetUrl, { waitUntil: "domcontentloaded" });
     await pageLeg.evaluate((sk) => {
       localStorage.clear();
@@ -4730,6 +4993,60 @@ try {
     await pageLeg.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
     const migratedClaimed = await pageLeg.evaluate(() => window.__CHENYUAN_V25__.getState().game.claimedStepIds || []);
     assert.ok(migratedClaimed.includes("s4_puppet"), `Legacy s4_npc must migrate into claimedStepIds as s4_puppet, got: ${JSON.stringify(migratedClaimed)}`);
+    assert.equal(migratedClaimed.includes("s4_npc"), false, `Migrated claimedStepIds must not retain legacy s4_npc, got: ${JSON.stringify(migratedClaimed)}`);
+
+    // Scenario 3: Reload persistence of migrated s4_puppet
+    await pageLeg.evaluate(() => window.__CHENYUAN_V25__.saveGame());
+    await pageLeg.reload({ waitUntil: "domcontentloaded" });
+    await pageLeg.waitForSelector("#btn-continue-save");
+    await pageLeg.click("#btn-continue-save");
+    await pageLeg.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    const reloadedClaimed = await pageLeg.evaluate(() => window.__CHENYUAN_V25__.getState().game.claimedStepIds || []);
+    assert.ok(reloadedClaimed.includes("s4_puppet") && !reloadedClaimed.includes("s4_npc"), `Migrated s4_puppet must persist cleanly across reload, got: ${JSON.stringify(reloadedClaimed)}`);
+
+    // Scenario 4: QuotaExceededError write-fail alert + preserve + retry recovery
+    const rawBeforeQuota = await pageLeg.evaluate((sk) => localStorage.getItem(sk), STORAGE_KEY);
+    const quotaFail = await pageLeg.evaluate((sk) => {
+      const orig = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) {
+        if (k === sk) throw new DOMException("Quota full", "QuotaExceededError");
+        return orig.call(this, k, v);
+      };
+      const g = window.__CHENYUAN_V25__.getState().game;
+      if (!g.claimedStepIds.includes("s4_relic")) g.claimedStepIds.push("s4_relic");
+      const ok = window.__CHENYUAN_V25__.saveGame();
+      Storage.prototype.setItem = orig;
+      return {
+        ok,
+        rawAfterFail: localStorage.getItem(sk),
+        alertVisible: getComputedStyle(document.getElementById("hud-save-alert")).display !== "none"
+      };
+    }, STORAGE_KEY);
+    assert.equal(quotaFail.ok, false, "QuotaExceededError must fail saveGame cleanly");
+    assert.equal(quotaFail.rawAfterFail, rawBeforeQuota, "Failed write must preserve migrated save intact");
+    assert.equal(quotaFail.alertVisible, true, "QuotaExceededError must display #hud-save-alert");
+    await pageLeg.click('#hud-save-alert [data-action="retry-save-now"]');
+    await pageLeg.waitForTimeout(140);
+    const afterRetryClaimed = await pageLeg.evaluate((sk) => JSON.parse(localStorage.getItem(sk) || "{}").game?.claimedStepIds || [], STORAGE_KEY);
+    assert.ok(afterRetryClaimed.includes("s4_puppet") && afterRetryClaimed.includes("s4_relic"), "Retry save must persist both migrated s4_puppet and new s4_relic");
+
+    // Scenario 5: Multi-tab contention & latest sync
+    const pageLegB = await ctxLeg.newPage();
+    attachErrorListeners(pageLegB, "R5-1-LegacyB");
+    await pageLegB.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await pageLegB.waitForSelector("#btn-continue-save");
+    await pageLegB.click("#btn-continue-save");
+    await pageLegB.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await pageLegB.evaluate(() => {
+      const g = window.__CHENYUAN_V25__.getState().game;
+      if (!g.claimedStepIds.includes("s4_break")) g.claimedStepIds.push("s4_break");
+      window.__CHENYUAN_V25__.saveGame();
+    });
+    await pageLeg.waitForSelector('#modal-backdrop.open [data-action="load-latest-save"]');
+    await pageLeg.click('[data-action="load-latest-save"]');
+    await pageLeg.waitForTimeout(160);
+    const syncedClaimed = await pageLeg.evaluate(() => window.__CHENYUAN_V25__.getState().game.claimedStepIds || []);
+    assert.ok(syncedClaimed.includes("s4_puppet") && syncedClaimed.includes("s4_break"), `Multi-tab sync must preserve s4_puppet and pull s4_break, got: ${JSON.stringify(syncedClaimed)}`);
     await ctxLeg.close();
   });
 
@@ -4804,9 +5121,11 @@ try {
     });
     await page.waitForTimeout(140);
     const sandboxBypass = await page.evaluate(() => ({
-      recapOpen: Boolean(document.getElementById("btn-volume-recap-confirm")),
+      modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open")),
+      recapOpen: Boolean(document.querySelector("#modal-backdrop.open #btn-volume-recap-confirm")),
       portalSpawned: window.__CHENYUAN_V25__.getState().arena.props.some(p => p.id === "portal_next")
     }));
+    assert.equal(sandboxBypass.modalOpen, false, "Sandbox mode must not open modal on stage clear");
     assert.equal(sandboxBypass.recapOpen, false, "Sandbox mode must bypass volume-end recap modal");
     assert.equal(sandboxBypass.portalSpawned, true, "Sandbox mode should spawn stage-clear portal directly");
     await ctx.close();

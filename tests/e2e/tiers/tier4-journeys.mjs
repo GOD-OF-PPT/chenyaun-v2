@@ -3,6 +3,7 @@ import {
   STORAGE_KEY,
   META_KEY,
   isModalOpen,
+  isDrawerOpen,
   getModalText,
   closeModalEsc,
   openNavTab,
@@ -188,6 +189,13 @@ export const tests = [
         await page.waitForTimeout(150);
         const after = (await getHudState(page)).stones;
         assert.ok(after <= before, `Jade gamble must not profit with all laws owned (G2): ${before} -> ${after}`);
+      }
+      if (await isDrawerOpen(page)) {
+        await page.keyboard.press("Escape");
+        await page.waitForFunction(
+          () => !document.getElementById("jade-panel")?.classList.contains("drawer-open"),
+          { timeout: 3000 }
+        );
       }
 
       // 4. Verify spirit->ascended is boss-gated until stage 4 boss is defeated (S1)

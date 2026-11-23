@@ -17,7 +17,7 @@ Opaque-box, requirement-driven E2E Acceptance Test Suite for **《尘缘问道 �
 
 ## Runtime Environment
 - **Static HTTP Server**: Built-in Node `http` server bound to `127.0.0.1` on an ephemeral port (`0`), serving `web/public/` with entry `/playable-v2.html`.
-- **Browser**: Desktop Chromium/Chrome via `playwright-core@1.65.1` (uses `process.env.CHROMIUM_PATH` when set—failing fast with exit code `2` if nonexistent—otherwise falls back to `/usr/bin/chromium`, `/usr/bin/chromium-browser`, `/usr/bin/google-chrome`). On this devbox, `/usr/bin/google-chrome` (Chrome 158, Chromium-based) is used.
+- **Browser**: Desktop Chromium/Chrome via `playwright-core@1.65.1` (uses `process.env.CHROMIUM_PATH` when set—failing fast with exit code `2` if nonexistent—otherwise falls back to `/usr/bin/chromium`, `/usr/bin/chromium-browser`, `/usr/bin/google-chrome`, e.g., `/usr/bin/google-chrome` on Linux hosts).
 - **Viewport**: `1440×900` desktop viewport.
 - **Isolation**: Every test case runs in a fresh `browser.newContext({ viewport: { width: 1440, height: 900 } })` with clean `localStorage` and attached `console` (`error`) + `pageerror` listeners (0 errors required).
 - **Dependency Resolution**: `loadChromium()` resolves `playwright-core` from `node_modules` (installed via `npm ci`), `web/node_modules`, or `NODE_PATH`.

@@ -445,12 +445,48 @@ export const tests = [
       await page.selectOption('select[data-exp-node="qinglan_vein"]', "shen");
       await page.waitForTimeout(150);
 
-      // Claim once (clears bank), then immediately claim again with 0 banked stones
+      // Idle in safe hub: expedition bank must NOT accrue AFK stones and claim button stays disabled when bank is empty
+      await page.waitForTimeout(350);
+      const emptyBankState = await page.evaluate(() => {
+        const v25 = window.__CHENYUAN_V25__;
+        const btn = document.getElementById("btn-claim-expedition");
+        const directEmptyClaim = v25.claimExpeditionRewards();
+        return {
+          bankedStones: v25.getState().game.expeditions?.bankedStones || 0,
+          btnDisabled: Boolean(btn && btn.disabled),
+          directGainedStones: directEmptyClaim?.gainedStones || 0
+        };
+      });
+      assert.equal(emptyBankState.bankedStones, 0, "Expedition bank must NOT accrue AFK stones while idle in safe hub");
+      assert.equal(emptyBankState.btnDisabled, true, "#btn-claim-expedition must be disabled when expedition bank is empty");
+      assert.equal(emptyBankState.directGainedStones, 0, "Claiming an empty expedition bank must yield 0 stones");
+
+      // Seed real banked stones -> first UI claim pays out cleanly, then button disables and immediate second claim yields 0
+      const stonesBeforeClaim = (await getHudState(page)).stones;
+      await page.evaluate(() => {
+        const v25 = window.__CHENYUAN_V25__;
+        v25.getState().game.expeditions.bankedStones = 25;
+        v25.openExpeditionSandboxModal();
+      });
+      await page.waitForSelector("#modal-backdrop.open #btn-claim-expedition:not([disabled])");
       await page.click("#btn-claim-expedition");
       await page.waitForTimeout(150);
       const afterFirstClaim = (await getHudState(page)).stones;
-      await page.click("#btn-claim-expedition");
-      await page.waitForTimeout(150);
+      assert.equal(
+        afterFirstClaim,
+        stonesBeforeClaim + 25,
+        `First claim with 25 banked stones must grant 25 stones (${stonesBeforeClaim} -> ${afterFirstClaim})`
+      );
+      const secondClaimState = await page.evaluate(() => {
+        const btn = document.getElementById("btn-claim-expedition");
+        const secondRes = window.__CHENYUAN_V25__.claimExpeditionRewards();
+        return {
+          btnDisabled: Boolean(btn && btn.disabled),
+          secondGained: secondRes?.gainedStones || 0
+        };
+      });
+      assert.equal(secondClaimState.btnDisabled, true, "#btn-claim-expedition must become disabled immediately after emptying bank");
+      assert.equal(secondClaimState.secondGained, 0, "Second immediate claim with 0 banked stones must yield 0");
       const afterSecondClaim = (await getHudState(page)).stones;
       assert.equal(
         afterSecondClaim,
@@ -520,11 +556,25 @@ export const tests = [
       await page.waitForTimeout(180);
 
       const drawerAfter = await getDrawerText(page);
+      const petAfter = await page.evaluate(() => {
+        const { game } = window.__CHENYUAN_V25__.getState();
+        return {
+          level: game.pet?.level,
+          herb: game.inventory?.herb
+        };
+      });
+      assert.match(
+        drawerAfter,
+        /Lv\.2\/5/,
+        `Cultivate drawer must continue showing pet at Lv.2/5 when higher-tier mats are missing, got: "${drawerAfter.slice(0, 160)}"`
+      );
       assert.doesNotMatch(
         drawerAfter,
-        /Lv\.3|3\s*级/,
-        "Lv.2 pet must NOT level up to Lv.3 using only herbs when higher-tier material (core/jade) is 0"
+        /Lv\.3\/5/,
+        "Lv.2 pet must NOT level up to Lv.3/5 using only herbs when higher-tier material (core/jade) is 0"
       );
+      assert.equal(petAfter.level, 2, "Pet level must remain 2 when higher-tier material (core/jade) is 0");
+      assert.equal(petAfter.herb, 10, "Herbs must be preserved (10 -> 10) when tiered pet feed is rejected");
     }
   }
 ];

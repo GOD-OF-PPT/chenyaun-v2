@@ -580,21 +580,26 @@ export const tests = [
         `Pei Zhao must use a single canonical title (not both 同辈剑首 and 首座弟子); modal="${peiModalText.slice(0, 80)}" dlg="${stage2Dlg.slice(0, 80)}"`
       );
 
-      // Trigger stage 3 (enter_sword_mound) cutscene and check Yan Chen location consistency
+      // Trigger stage 3 (enter_sword_mound) cutscene and check Yan Chen canonical role consistency
       await page.evaluate(() => {
         const { game } = window.__CHENYUAN_V25__.getState();
         game.seenCutscenes = {};
         window.__CHENYUAN_V25__.initArenaStage(3, false);
       });
       await page.waitForTimeout(250);
-      const stage3Dlg = await page.evaluate(() =>
-        (document.querySelector("#story-dialogue-bar")?.innerText || "").trim()
+      const stage3Info = await page.evaluate(() => ({
+        dlg: (document.querySelector("#story-dialogue-bar")?.innerText || "").trim(),
+        roleSeal: (document.querySelector("#dlg-role-seal")?.textContent || "").trim()
+      }));
+      assert.ok(stage3Info.dlg.length > 0, "Stage 3 (enter_sword_mound) cutscene dialogue bar must be non-empty");
+      assert.ok(
+        yanModalText.includes("照影古境") && stage3Info.roleSeal.includes("照影古境 · 守碑老人"),
+        `Yan Chen's canonical role must be consistent across companion modal and stage 3 cutscene (roleSeal="${stage3Info.roleSeal}")`
       );
-      assert.ok(stage3Dlg.length > 0, "Stage 3 (enter_sword_mound) cutscene dialogue bar must be non-empty");
       assert.equal(
-        yanModalText.includes("照影古境") && stage3Dlg.includes("古修剑冢"),
+        stage3Info.roleSeal.includes("古修剑冢") || stage3Info.roleSeal.includes("太虚影卫") || yanModalText.includes("太虚影卫"),
         false,
-        `Yan Chen's location must be consistent across companion modal and cutscenes (照影古境 vs 古修剑冢)`
+        `Yan Chen must NOT retain inconsistent legacy role labels (古修剑冢 · 守碑老人 / 太虚影卫), got roleSeal="${stage3Info.roleSeal}"`
       );
     }
   },
@@ -608,7 +613,7 @@ export const tests = [
       const page = await env.openPage("t1-13");
       await env.startFreshGame(page);
 
-      // Precondition: all mainline steps completed & claimed, ascended
+      // Precondition: all 18 mainline CHAPTERS steps satisfied & claimed, ascended
       await page.evaluate((stepIds) => {
         const { game } = window.__CHENYUAN_V25__.getState();
         game.openingChoice = "help";
@@ -616,15 +621,18 @@ export const tests = [
         game.status = "ascended";
         game.ending = "sword_immortal";
         game.trialCompleted = true;
-        game.craftedCount = 2;
-        game.pet = { id: "fox", level: 3 };
+        game.immortalPills = 2;
+        game.pet = { id: "fox", level: 3, skills: { tier3: null, tier5: null } };
         game.school = "sword";
         game.aids = { shen: true, pei: true, lu: true, yan: true };
         game.bondTiers = { shen: 3, pei: 3, lu: 3, yan: 3 };
-        game.choices = { lu_meet: "a", pei_meet: "a", yan_gate: "a", shen_past: "a" };
+        game.choices = { lu_intro: "listen", pei_spar: "a", yan_gate: "a", shen_past: "a" };
         game.ownedRelics = ["frost_sword"];
+        game.loadout = Object.assign({}, game.loadout, { relic: "frost_sword" });
+        game.laws = ["wanjian", "yinyang", "pill_fire", "void_haste"];
         game.learned = ["slash_basic", "sword_rain"];
         game.stageStars = { 0: 3, 1: 3, 2: 3, 3: 3, 4: 3 };
+        game.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
         game.claimedStepIds = [...stepIds];
         window.__CHENYUAN_V25__.updateHud();
       }, ALL_CHAPTER_STEP_IDS);
@@ -934,12 +942,44 @@ export const tests = [
       });
       assert.equal(peiAssignable, false, "Unbonded companion 'pei' must NOT be assignable to an expedition node");
 
-      // Claim twice in a row -> second claim must yield 0 stones
+      // Empty bank must disable #btn-claim-expedition and return 0 stones on direct claim
+      const emptyState = await page.evaluate(() => {
+        const btn = document.getElementById("btn-claim-expedition");
+        const directRes = window.__CHENYUAN_V25__.claimExpeditionRewards();
+        return {
+          btnDisabled: Boolean(btn && btn.disabled),
+          directGained: directRes?.gainedStones || 0
+        };
+      });
+      assert.equal(emptyState.btnDisabled, true, "#btn-claim-expedition must be disabled when expedition bank is empty");
+      assert.equal(emptyState.directGained, 0, "Empty expedition bank claim must yield 0 stones");
+
+      // Seed real banked stones -> first UI claim grants stones, button disables, and second claim yields 0 stones
+      const stonesBeforeClaim = (await getHudState(page)).stones;
+      await page.evaluate(() => {
+        const v25 = window.__CHENYUAN_V25__;
+        v25.getState().game.expeditions.bankedStones = 30;
+        v25.openExpeditionSandboxModal();
+      });
+      await page.waitForSelector("#modal-backdrop.open #btn-claim-expedition:not([disabled])");
       await page.click("#btn-claim-expedition");
       await page.waitForTimeout(150);
       const stonesAfterFirst = (await getHudState(page)).stones;
-      await page.click("#btn-claim-expedition");
-      await page.waitForTimeout(150);
+      assert.equal(
+        stonesAfterFirst,
+        stonesBeforeClaim + 30,
+        `First expedition claim with 30 banked stones must grant 30 stones (${stonesBeforeClaim} -> ${stonesAfterFirst})`
+      );
+      const afterFirstState = await page.evaluate(() => {
+        const btn = document.getElementById("btn-claim-expedition");
+        const secondRes = window.__CHENYUAN_V25__.claimExpeditionRewards();
+        return {
+          btnDisabled: Boolean(btn && btn.disabled),
+          secondGained: secondRes?.gainedStones || 0
+        };
+      });
+      assert.equal(afterFirstState.btnDisabled, true, "#btn-claim-expedition must become disabled after bank is emptied");
+      assert.equal(afterFirstState.secondGained, 0, "Second immediate expedition claim must yield 0 stones");
       const stonesAfterSecond = (await getHudState(page)).stones;
 
       assert.equal(
@@ -995,11 +1035,15 @@ export const tests = [
       const page = await env.openPage("t1-22");
       await env.startFreshGame(page);
 
-      // Precondition: nascent realm with real scaled stage 4 boss wave spawned
+      // Precondition: nascent realm with real scaled stage 4 boss wave spawned (mark stage 4 cutscenes seen so arena is not paused)
       const setup = await page.evaluate(() => {
         const v25 = window.__CHENYUAN_V25__;
         const { game } = v25.getState();
         game.realm = "nascent";
+        game.seenCutscenes = Object.assign({}, game.seenCutscenes, {
+          enter_terrace: true,
+          boss_pre_stage4: true
+        });
         game.equippedGear = {
           weapon: v25.rollGearItem(3, 2, "weapon"),
           armor: v25.rollGearItem(3, 2, "armor"),
@@ -1013,6 +1057,7 @@ export const tests = [
         arena.waveIdx = 4;
         arena.enemies = [];
         v25.spawnCurrentWave();
+        arena.paused = false;
         const boss = arena.enemies.find((e) => e.isBoss) || arena.enemies[arena.enemies.length - 1];
         const bossMaxHp = boss ? boss.maxHp : 0;
         const bossHeavy = boss ? Math.max(boss.atk || 0, boss.heavy || 0) : 0;
@@ -1044,6 +1089,7 @@ export const tests = [
       // Trigger one real boss heavy projectile directly onto the player so damage passes through hurtPlayer()
       await page.evaluate((heavyDmg) => {
         const { arena } = window.__CHENYUAN_V25__.getState();
+        arena.paused = false;
         const p = arena.player;
         p.invuln = 0;
         p.shieldHp = 0;
@@ -1295,12 +1341,15 @@ export const tests = [
       await page.evaluate(() => {
         const v25 = window.__CHENYUAN_V25__;
         const { game } = v25.getState();
+        game.openingChoice = "help";
         game.realm = "qi";
         game.stones = 300;
         game.inventory.herb = 0;
+        game.inventory.dew = 0;
         game.inventory.core = 2;
         if (!game.equippedGear.weapon) game.equippedGear.weapon = v25.rollGearItem(0, 1, "weapon");
         game.gearBag = Array.from({ length: 24 }, () => v25.rollGearItem(0, 1, "weapon"));
+        v25.syncProgressiveSkillVisibility();
         v25.updateHud();
         v25.acquireGearItem(v25.rollGearItem(0, 1, "weapon"));
       });
@@ -1312,7 +1361,16 @@ export const tests = [
         bagFullModalOpen && stonesAfterDrop === 300,
         `Bag full must prompt player instead of silently auto-smelting (modalOpen=${bagFullModalOpen}, stones=${stonesAfterDrop})`
       );
-      await closeModalEsc(page);
+      const smeltBtn = await page.$("#modal-backdrop.open #btn-overflow-smelt-new");
+      if (smeltBtn) {
+        await smeltBtn.click();
+        await page.waitForFunction(
+          () => !document.getElementById("modal-backdrop")?.classList.contains("open"),
+          { timeout: 3000 }
+        );
+      } else {
+        await closeModalEsc(page);
+      }
 
       // 2. Alchemy missing material breakdown
       await openNavTab(page, "alchemy");

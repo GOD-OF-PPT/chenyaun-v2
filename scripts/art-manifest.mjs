@@ -158,38 +158,270 @@ function parseArtBlock(lines, htmlLabel) {
   };
 }
 
-function stripLineCommentForScan(line) {
-  let inSingle = false;
-  let inDouble = false;
-  let inTemplate = false;
+const REGEX_PREFIX_KEYWORDS = new Set([
+  "return",
+  "case",
+  "throw",
+  "in",
+  "of",
+  "typeof",
+  "void",
+  "delete",
+  "new",
+  "else",
+  "do",
+  "yield",
+  "await",
+]);
+
+function lexJsForArtScan(scriptSource) {
+  const codeOnlyChars = [];
+  const codeWithStringsChars = [];
+  const templateBraceStack = [];
+  let mode = "code";
   let escaped = false;
-  for (let i = 0; i < line.length - 1; i++) {
-    const ch = line[i];
-    if (escaped) {
+  let regexInCharClass = false;
+  let canStartRegex = true;
+  let prevNonWsChar = "";
+
+  const pushBoth = (ch) => {
+    codeOnlyChars.push(ch);
+    codeWithStringsChars.push(ch);
+  };
+  const pushMaskBoth = (ch) => {
+    const out = ch === "\n" ? "\n" : " ";
+    codeOnlyChars.push(out);
+    codeWithStringsChars.push(out);
+  };
+  const pushMaskCodeOnly = (ch) => {
+    codeOnlyChars.push(ch === "\n" ? "\n" : " ");
+    codeWithStringsChars.push(ch);
+  };
+
+  for (let i = 0; i < scriptSource.length; i++) {
+    const ch = scriptSource[i];
+    const next = i + 1 < scriptSource.length ? scriptSource[i + 1] : "";
+
+    if (mode === "lineComment") {
+      if (ch === "\n") {
+        pushBoth("\n");
+        mode = "code";
+      } else {
+        pushMaskBoth(ch);
+      }
+      continue;
+    }
+
+    if (mode === "blockComment") {
+      if (ch === "*" && next === "/") {
+        pushMaskBoth("*");
+        pushMaskBoth("/");
+        i += 1;
+        mode = "code";
+      } else {
+        pushMaskBoth(ch);
+      }
+      continue;
+    }
+
+    if (mode === "single" || mode === "double") {
+      if (escaped) {
+        pushMaskCodeOnly(ch);
+        escaped = false;
+      } else if (ch === "\\") {
+        pushMaskCodeOnly(ch);
+        escaped = true;
+      } else if ((mode === "single" && ch === "'") || (mode === "double" && ch === '"')) {
+        pushBoth(ch);
+        mode = "code";
+        canStartRegex = false;
+        prevNonWsChar = ch;
+      } else {
+        pushMaskCodeOnly(ch);
+      }
+      continue;
+    }
+
+    if (mode === "template") {
+      if (escaped) {
+        pushMaskCodeOnly(ch);
+        escaped = false;
+      } else if (ch === "\\") {
+        pushMaskCodeOnly(ch);
+        escaped = true;
+      } else if (ch === "`") {
+        pushBoth("`");
+        mode = "code";
+        canStartRegex = false;
+        prevNonWsChar = "`";
+      } else if (ch === "$" && next === "{") {
+        codeOnlyChars.push(" ", " ");
+        codeWithStringsChars.push("$", "{");
+        i += 1;
+        templateBraceStack.push(0);
+        mode = "code";
+        canStartRegex = true;
+        prevNonWsChar = "{";
+      } else {
+        pushMaskCodeOnly(ch);
+      }
+      continue;
+    }
+
+    if (mode === "regex") {
+      if (escaped) {
+        pushMaskCodeOnly(ch);
+        escaped = false;
+      } else if (ch === "\\") {
+        pushMaskCodeOnly(ch);
+        escaped = true;
+      } else if (ch === "[") {
+        pushMaskCodeOnly(ch);
+        regexInCharClass = true;
+      } else if (ch === "]" && regexInCharClass) {
+        pushMaskCodeOnly(ch);
+        regexInCharClass = false;
+      } else if (ch === "/" && !regexInCharClass) {
+        pushBoth("/");
+        while (i + 1 < scriptSource.length && /[A-Za-z]/.test(scriptSource[i + 1])) {
+          i += 1;
+          pushMaskCodeOnly(scriptSource[i]);
+        }
+        mode = "code";
+        canStartRegex = false;
+        prevNonWsChar = "/";
+      } else if (ch === "\n") {
+        pushBoth("\n");
+        mode = "code";
+      } else {
+        pushMaskCodeOnly(ch);
+      }
+      continue;
+    }
+
+    // mode === "code"
+    if (ch === "/" && next === "/") {
+      pushMaskBoth("/");
+      pushMaskBoth("/");
+      i += 1;
+      mode = "lineComment";
+      continue;
+    }
+    if (ch === "/" && next === "*") {
+      pushMaskBoth("/");
+      pushMaskBoth("*");
+      i += 1;
+      mode = "blockComment";
+      continue;
+    }
+    if (ch === "/" && canStartRegex) {
+      pushBoth("/");
+      mode = "regex";
+      escaped = false;
+      regexInCharClass = false;
+      continue;
+    }
+    if (ch === "'") {
+      pushBoth("'");
+      mode = "single";
       escaped = false;
       continue;
     }
-    if (ch === "\\" && (inSingle || inDouble || inTemplate)) {
-      escaped = true;
+    if (ch === '"') {
+      pushBoth('"');
+      mode = "double";
+      escaped = false;
       continue;
     }
-    if (!inDouble && !inTemplate && ch === "'") {
-      inSingle = !inSingle;
+    if (ch === "`") {
+      pushBoth("`");
+      mode = "template";
+      escaped = false;
       continue;
     }
-    if (!inSingle && !inTemplate && ch === '"') {
-      inDouble = !inDouble;
+    if (ch === "{") {
+      if (templateBraceStack.length > 0) {
+        templateBraceStack[templateBraceStack.length - 1] += 1;
+      }
+      pushBoth("{");
+      canStartRegex = true;
+      prevNonWsChar = "{";
       continue;
     }
-    if (!inSingle && !inDouble && ch === "`") {
-      inTemplate = !inTemplate;
+    if (ch === "}") {
+      if (templateBraceStack.length > 0) {
+        if (templateBraceStack[templateBraceStack.length - 1] === 0) {
+          templateBraceStack.pop();
+          codeOnlyChars.push(" ");
+          codeWithStringsChars.push("}");
+          mode = "template";
+          escaped = false;
+          continue;
+        }
+        templateBraceStack[templateBraceStack.length - 1] -= 1;
+      }
+      pushBoth("}");
+      canStartRegex = true;
+      prevNonWsChar = "}";
       continue;
     }
-    if (!inSingle && !inDouble && !inTemplate && ch === "/" && line[i + 1] === "/") {
-      return line.slice(0, i);
+    if (/[A-Za-z_$]/.test(ch)) {
+      let end = i + 1;
+      while (end < scriptSource.length && /[A-Za-z0-9_$]/.test(scriptSource[end])) {
+        end += 1;
+      }
+      const ident = scriptSource.slice(i, end);
+      for (let k = i; k < end; k++) {
+        pushBoth(scriptSource[k]);
+      }
+      canStartRegex = prevNonWsChar !== "." && REGEX_PREFIX_KEYWORDS.has(ident);
+      prevNonWsChar = ident[ident.length - 1];
+      i = end - 1;
+      continue;
+    }
+    if (/[0-9]/.test(ch)) {
+      let end = i + 1;
+      while (end < scriptSource.length && /[0-9A-Za-z_.]/.test(scriptSource[end])) {
+        end += 1;
+      }
+      for (let k = i; k < end; k++) {
+        pushBoth(scriptSource[k]);
+      }
+      canStartRegex = false;
+      prevNonWsChar = scriptSource[end - 1];
+      i = end - 1;
+      continue;
+    }
+    if ((ch === "+" && next === "+") || (ch === "-" && next === "-")) {
+      pushBoth(ch);
+      pushBoth(next);
+      i += 1;
+      canStartRegex = false;
+      prevNonWsChar = next;
+      continue;
+    }
+    if (ch === ")" || ch === "]") {
+      pushBoth(ch);
+      canStartRegex = false;
+      prevNonWsChar = ch;
+      continue;
+    }
+    if ("([,;:?=!&|^~+-*/%<>".includes(ch)) {
+      pushBoth(ch);
+      canStartRegex = true;
+      prevNonWsChar = ch;
+      continue;
+    }
+    pushBoth(ch);
+    if (!/\s/.test(ch)) {
+      prevNonWsChar = ch;
     }
   }
-  return line;
+
+  return {
+    codeOnlyLines: codeOnlyChars.join("").split("\n"),
+    codeWithStringsLines: codeWithStringsChars.join("").split("\n"),
+  };
 }
 
 function scanOutsideArtBlock(lines, artStartLine, artEndLine, inlineAssets) {
@@ -206,43 +438,66 @@ function scanOutsideArtBlock(lines, artStartLine, artEndLine, inlineAssets) {
   const otherInlineAssets = [];
   const missingReferences = [];
 
-  const dotAccessRe = /\b(ART|IMG_CACHE)\.([A-Za-z0-9_]+)\b/g;
+  const dotAccessRe = /(?<![.$\w])(ART|IMG_CACHE)\.([A-Za-z0-9_]+)\b/g;
+  const bracketAccessRe =
+    /(?<![.$\w])(ART|IMG_CACHE)\s*\[\s*(?:"([^"\\]+)"|'([^'\\]+)'|`([^`$\\]+)`)\s*\]/g;
   const quotedLiteralRe = /(?:"([A-Za-z0-9_-]+)"|'([A-Za-z0-9_-]+)'|`([A-Za-z0-9_-]+)`)/g;
   const dataImageRe =
     /"data:image\/([a-zA-Z0-9+.-]+)(;base64)?,([^"]+)"|'data:image\/([a-zA-Z0-9+.-]+)(;base64)?,([^']+)'/g;
+  const scriptOpenRe = /<script\b[^>]*>/i;
+  const scriptCloseRe = /<\/script>/i;
 
-  let inScript = false;
-  let inBlockComment = false;
-  let currentSymbol = "HTML/head";
+  // Locate inline <script ...>...</script> line spans and lex their executable JS once.
+  const scriptLexByLine = new Map();
+  let curScriptStart = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (curScriptStart === -1) {
+      const openMatch = line.match(scriptOpenRe);
+      if (openMatch && !/\bsrc\s*=/i.test(openMatch[0])) {
+        if (scriptCloseRe.test(line)) {
+          const inner = line.replace(scriptOpenRe, "").replace(scriptCloseRe, "");
+          const lexed = lexJsForArtScan(inner);
+          scriptLexByLine.set(i, {
+            codeOnly: lexed.codeOnlyLines[0] || "",
+            codeWithStrings: lexed.codeWithStringsLines[0] || "",
+            isStart: true,
+            isEnd: true,
+          });
+        } else {
+          curScriptStart = i;
+        }
+      }
+    } else if (scriptCloseRe.test(line)) {
+      const blockLines = [];
+      for (let j = curScriptStart + 1; j < i; j++) {
+        const ln = j + 1;
+        blockLines.push(ln >= artStartLine && ln <= artEndLine ? "" : lines[j]);
+      }
+      const lexed = lexJsForArtScan(blockLines.join("\n"));
+      for (let j = curScriptStart + 1; j < i; j++) {
+        const offset = j - (curScriptStart + 1);
+        scriptLexByLine.set(j, {
+          codeOnly: lexed.codeOnlyLines[offset] || "",
+          codeWithStrings: lexed.codeWithStringsLines[offset] || "",
+          isStart: j === curScriptStart + 1,
+          isEnd: j === i - 1,
+        });
+      }
+      curScriptStart = -1;
+    }
+  }
+
+  let braceDepth = 0;
+  let currentSymbol = "script:top-level";
+  let symbolStartDepth = null;
+  let symbolOpenedBlock = false;
 
   for (let i = 0; i < lines.length; i++) {
     const lineNum = i + 1;
     const line = lines[i];
 
-    if (line.includes("<script>")) {
-      inScript = true;
-      currentSymbol = "script:top-level";
-    } else if (line.includes("</script>")) {
-      inScript = false;
-      currentSymbol = "HTML";
-    }
-
     if (lineNum >= artStartLine && lineNum <= artEndLine) continue;
-
-    if (inScript) {
-      const fnMatch = line.match(/^(?:  )?(?:async\s+)?function\s+([A-Za-z0-9_$]+)\s*\(/);
-      const declMatch = line.match(/^(?:  )?(const|let|var)\s+([A-Za-z0-9_$]+)\s*=/);
-      if (fnMatch) {
-        currentSymbol = `function ${fnMatch[1]}`;
-      } else if (declMatch) {
-        currentSymbol = `${declMatch[1]} ${declMatch[2]}`;
-      }
-    }
-
-    if (preloadLine === null && line.includes("Object.entries(ART)")) {
-      preloadLine = lineNum;
-      preloadSymbol = currentSymbol.replace(/^function\s+/, "") || "preloadSprites";
-    }
 
     if (line.includes("data:image/")) {
       dataImageRe.lastIndex = 0;
@@ -283,52 +538,119 @@ function scanOutsideArtBlock(lines, artStartLine, artEndLine, inlineAssets) {
       }
     }
 
-    if (inScript) {
-      let codeLine = line;
-      if (inBlockComment) {
-        const endIdx = codeLine.indexOf("*/");
-        if (endIdx === -1) continue;
-        codeLine = codeLine.slice(endIdx + 2);
-        inBlockComment = false;
-      }
-      const trimmed = codeLine.trimStart();
-      if (trimmed.startsWith("//")) continue;
-      if (trimmed.startsWith("/*")) {
-        const endIdx = codeLine.indexOf("*/", codeLine.indexOf("/*") + 2);
-        if (endIdx === -1) {
-          inBlockComment = true;
-          continue;
-        }
-        codeLine = codeLine.slice(0, codeLine.indexOf("/*")) + codeLine.slice(endIdx + 2);
-      }
-      codeLine = stripLineCommentForScan(codeLine);
+    const lexedLine = scriptLexByLine.get(i);
+    if (!lexedLine) continue;
 
-      dotAccessRe.lastIndex = 0;
-      let m;
-      while ((m = dotAccessRe.exec(codeLine)) !== null) {
-        const container = m[1];
-        const key = m[2];
-        if (keySet.has(key)) {
-          usageLinesByKey.get(key).add(lineNum);
-          usageSymbolsByKey.get(key).add(currentSymbol);
-        } else if (!IGNORED_OBJECT_PROPS.has(key)) {
-          missingReferences.push({
-            container,
-            key,
-            line: lineNum,
-            symbol: currentSymbol,
-          });
-        }
-      }
+    if (lexedLine.isStart) {
+      braceDepth = 0;
+      currentSymbol = "script:top-level";
+      symbolStartDepth = null;
+      symbolOpenedBlock = false;
+    }
 
-      quotedLiteralRe.lastIndex = 0;
-      while ((m = quotedLiteralRe.exec(codeLine)) !== null) {
-        const token = m[1] || m[2] || m[3];
-        if (token && keySet.has(token)) {
-          usageLinesByKey.get(token).add(lineNum);
-          usageSymbolsByKey.get(token).add(currentSymbol);
-        }
+    const codeOnly = lexedLine.codeOnly;
+    const codeWithStrings = lexedLine.codeWithStrings;
+
+    const insideTrackedBlock =
+      symbolStartDepth !== null && symbolOpenedBlock && braceDepth > symbolStartDepth;
+    if (!insideTrackedBlock) {
+      const fnMatch = codeOnly.match(/^(?:  )?(?:async\s+)?function\s+([A-Za-z0-9_$]+)\s*\(/);
+      const declMatch = codeOnly.match(/^(?:  )?(const|let|var)\s+([A-Za-z0-9_$]+)\s*=/);
+      const listenerMatch = codeOnly.match(
+        /^(?:  )?(?:window|document|[A-Za-z0-9_$]+(?:\.[A-Za-z0-9_$]+)*)\.addEventListener\s*\(/
+      );
+      if (fnMatch) {
+        currentSymbol = `function ${fnMatch[1]}`;
+        symbolStartDepth = braceDepth;
+        symbolOpenedBlock = false;
+      } else if (declMatch) {
+        currentSymbol = `${declMatch[1]} ${declMatch[2]}`;
+        symbolStartDepth = braceDepth;
+        symbolOpenedBlock = false;
+      } else if (listenerMatch) {
+        const evMatch = codeWithStrings.match(/\.addEventListener\s*\(\s*["']([A-Za-z0-9_:-]+)["']/);
+        currentSymbol = evMatch ? `addEventListener("${evMatch[1]}")` : "script:top-level";
+        symbolStartDepth = braceDepth;
+        symbolOpenedBlock = false;
       }
+    }
+
+    if (preloadLine === null && codeOnly.includes("Object.entries(ART)")) {
+      preloadLine = lineNum;
+      preloadSymbol = currentSymbol.replace(/^function\s+/, "") || "preloadSprites";
+    }
+
+    dotAccessRe.lastIndex = 0;
+    let m;
+    while ((m = dotAccessRe.exec(codeOnly)) !== null) {
+      const container = m[1];
+      const key = m[2];
+      if (keySet.has(key)) {
+        usageLinesByKey.get(key).add(lineNum);
+        usageSymbolsByKey.get(key).add(currentSymbol);
+      } else if (!IGNORED_OBJECT_PROPS.has(key)) {
+        missingReferences.push({
+          container,
+          key,
+          line: lineNum,
+          symbol: currentSymbol,
+          access: "dot",
+        });
+      }
+    }
+
+    bracketAccessRe.lastIndex = 0;
+    while ((m = bracketAccessRe.exec(codeWithStrings)) !== null) {
+      const container = m[1];
+      const key = m[2] || m[3] || m[4];
+      // Verify the container identifier is executable code (not inside a string/template literal).
+      if (codeOnly.slice(m.index, m.index + container.length) !== container) continue;
+      if (keySet.has(key)) {
+        usageLinesByKey.get(key).add(lineNum);
+        usageSymbolsByKey.get(key).add(currentSymbol);
+      } else if (!IGNORED_OBJECT_PROPS.has(key)) {
+        missingReferences.push({
+          container,
+          key,
+          line: lineNum,
+          symbol: currentSymbol,
+          access: "bracket",
+        });
+      }
+    }
+
+    quotedLiteralRe.lastIndex = 0;
+    while ((m = quotedLiteralRe.exec(codeWithStrings)) !== null) {
+      const token = m[1] || m[2] || m[3];
+      if (token && keySet.has(token)) {
+        usageLinesByKey.get(token).add(lineNum);
+        usageSymbolsByKey.get(token).add(currentSymbol);
+      }
+    }
+
+    // Update nesting depth across {, [, ( on executable code and reset symbol when a tracked block closes.
+    for (let k = 0; k < codeOnly.length; k++) {
+      const ch = codeOnly[k];
+      if (ch === "{" || ch === "[" || ch === "(") {
+        braceDepth += 1;
+        if (symbolStartDepth !== null && braceDepth > symbolStartDepth) {
+          symbolOpenedBlock = true;
+        }
+      } else if (ch === "}" || ch === "]" || ch === ")") {
+        braceDepth = Math.max(0, braceDepth - 1);
+      }
+    }
+    if (symbolStartDepth !== null && symbolOpenedBlock && braceDepth <= symbolStartDepth) {
+      currentSymbol = "script:top-level";
+      symbolStartDepth = null;
+      symbolOpenedBlock = false;
+    } else if (
+      symbolStartDepth !== null &&
+      !symbolOpenedBlock &&
+      /;\s*$/.test(codeOnly)
+    ) {
+      currentSymbol = "script:top-level";
+      symbolStartDepth = null;
     }
   }
 
@@ -424,7 +746,10 @@ function buildManifestData(htmlPath = DEFAULT_HTML_PATH) {
   );
   if (missingReferences.length > 0) {
     const details = missingReferences
-      .map((r) => `  - ${r.container}.${r.key} at ${htmlLabel}:${r.line} (in ${r.symbol})`)
+      .map((r) => {
+        const refExpr = r.access === "bracket" ? `${r.container}["${r.key}"]` : `${r.container}.${r.key}`;
+        return `  - ${refExpr} at ${htmlLabel}:${r.line} (in ${r.symbol})`;
+      })
       .join("\n");
     throw new Error(
       `Found ${missingReferences.length} undefined ART/IMG_CACHE key reference(s) in ${htmlLabel}:\n${details}`
