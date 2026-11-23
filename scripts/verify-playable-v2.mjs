@@ -5412,6 +5412,423 @@ try {
     );
     await ctx.close();
   });
+
+  // =========================================================================
+  // MILESTONE Q0 REGRESSION SUITES (Q0-1 .. Q0-2): F05 Focus/Enter/HUD-Text & F06 Copy Parity
+  // =========================================================================
+  await runSuite("Q0-1", "F05 剧情结束回战场焦点、Enter道具交互不误开设置、HUD焦点返回、弹窗压过剧情及#hud-hp-txt同步", async () => {
+    // 1. Fresh game -> dismiss opening_scroll via mouse click -> focus lands on #visual-stage (NOT #btn-open-settings)
+    const ctx = await newIsolatedContext(browser);
+    const page = await ctx.newPage();
+    attachErrorListeners(page, "Q0-1");
+    await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => localStorage.clear());
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.click("#btn-start-new");
+    await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await page.waitForSelector("#story-dialogue-bar.open #btn-dlg-skip");
+    await page.click("#btn-dlg-skip");
+    await page.waitForFunction(() => !document.getElementById("story-dialogue-bar")?.classList.contains("open"));
+    const focusAfterMouseSkip = await page.evaluate(() => ({
+      activeId: document.activeElement?.id || "",
+      activeTag: document.activeElement?.tagName || "",
+      tabindex: document.getElementById("visual-stage")?.getAttribute("tabindex")
+    }));
+    assert.equal(focusAfterMouseSkip.tabindex, "-1", "#visual-stage must have tabindex=-1");
+    assert.equal(focusAfterMouseSkip.activeId, "visual-stage", `Mouse skip of opening_scroll must focus #visual-stage, got: ${focusAfterMouseSkip.activeId}`);
+
+    // 2. Dismiss cutscene via keyboard Space -> focus also lands on #visual-stage
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      if (g && g.seenCutscenes) delete g.seenCutscenes.opening_scroll;
+      api.playCutscene("opening_scroll");
+    });
+    await page.waitForSelector("#story-dialogue-bar.open");
+    for (let i = 0; i < 12; i++) {
+      const open = await page.evaluate(() => document.getElementById("story-dialogue-bar")?.classList.contains("open"));
+      if (!open) break;
+      await page.keyboard.press("Space");
+      await page.waitForTimeout(40);
+    }
+    const focusAfterKbSpace = await page.evaluate(() => document.activeElement?.id || "");
+    assert.equal(focusAfterKbSpace, "visual-stage", `Keyboard Space finish of cutscene must focus #visual-stage, got: ${focusAfterKbSpace}`);
+
+    // 3. Enter near interactive prop interacts with prop instead of opening Settings
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const st = api.getState();
+      st.arena.enemies = [];
+      st.arena.paused = false;
+      const prop = { id: "q0_test_merchant", kind: "merchant_npc", x: st.arena.player.x, y: st.arena.player.y, r: 44, name: "云游仙商", badge: "点击或按 Enter 交易" };
+      st.arena.props.push(prop);
+    });
+    await page.waitForFunction(() => {
+      const st = window.__CHENYUAN_V25__.getState();
+      return !!(st.arena.nearbyProp && st.arena.nearbyProp.id === "q0_test_merchant");
+    }, { timeout: 3000 });
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(120);
+    const afterEnterProp = await page.evaluate(() => ({
+      drawerOpen: document.getElementById("jade-panel")?.classList.contains("drawer-open"),
+      modalOpen: document.getElementById("modal-backdrop")?.classList.contains("open")
+    }));
+    assert.equal(afterEnterProp.drawerOpen, true, "Pressing Enter near merchant_npc prop while #visual-stage focused must interact with prop (open bag drawer)");
+    assert.equal(afterEnterProp.modalOpen, false, "Pressing Enter near prop must NOT open Settings modal");
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.getElementById("jade-panel")?.classList.contains("drawer-open"));
+
+    // 4. Focusing a HUD <button> (#btn-open-settings) or [role="button"] (#btn-open-goals-hdr) preserves Enter activation & focus return
+    await page.focus("#btn-open-settings");
+    await page.keyboard.press("Enter");
+    await page.waitForSelector("#modal-backdrop.open");
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    const restoredSettingsFocus = await page.evaluate(() => document.activeElement?.id || "");
+    assert.equal(restoredSettingsFocus, "btn-open-settings", `Escape from Settings opened via #btn-open-settings must restore focus to #btn-open-settings, got: ${restoredSettingsFocus}`);
+
+    await page.focus("#btn-open-goals-hdr");
+    await page.keyboard.press("Enter");
+    await page.waitForSelector("#modal-backdrop.open");
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    const restoredRoleBtnFocus = await page.evaluate(() => document.activeElement?.id || "");
+    assert.equal(restoredRoleBtnFocus, "btn-open-goals-hdr", `Escape from Goals opened via [role="button"] #btn-open-goals-hdr must restore focus to #btn-open-goals-hdr, got: ${restoredRoleBtnFocus}`);
+
+    // Remove test prop so canvas click hits empty battlefield and returns focus cleanly to #visual-stage
+    await page.evaluate(() => {
+      const st = window.__CHENYUAN_V25__.getState();
+      st.arena.props = st.arena.props.filter(p => p && p.id !== "q0_test_merchant");
+      st.arena.nearbyProp = null;
+    });
+    await page.mouse.click(240, 460);
+    await page.waitForTimeout(60);
+    const focusAfterCanvasClick = await page.evaluate(() => document.activeElement?.id || "");
+    assert.equal(focusAfterCanvasClick, "visual-stage", `Clicking #fx-canvas must focus #visual-stage, got: ${focusAfterCanvasClick}`);
+
+    // 5. Modal-over-Cutscene: Tab traps inside #modal-content and Escape closes modal FIRST without dismissing cutscene
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      if (g && g.seenCutscenes) delete g.seenCutscenes.opening_scroll;
+      api.playCutscene("opening_scroll");
+    });
+    await page.waitForSelector("#story-dialogue-bar.open");
+    await page.click("#btn-open-settings");
+    await page.waitForSelector("#modal-backdrop.open");
+    for (let i = 0; i < 6; i++) {
+      await page.keyboard.press("Tab");
+      const insideModal = await page.evaluate(() => document.getElementById("modal-content")?.contains(document.activeElement));
+      assert.equal(insideModal, true, `Modal-over-Cutscene Tab #${i + 1} must stay inside #modal-content`);
+    }
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(80);
+    const afterFirstEsc = await page.evaluate(() => ({
+      modalOpen: document.getElementById("modal-backdrop")?.classList.contains("open"),
+      cutsceneOpen: document.getElementById("story-dialogue-bar")?.classList.contains("open")
+    }));
+    assert.equal(afterFirstEsc.modalOpen, false, "First Escape on Modal-over-Cutscene must close modal");
+    assert.equal(afterFirstEsc.cutsceneOpen, true, "First Escape on Modal-over-Cutscene must keep cutscene open");
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.getElementById("story-dialogue-bar")?.classList.contains("open"));
+
+    // 6. #hud-hp-txt, #hud-mp-txt, #hud-xp-txt stay synchronized with live stats
+    const hudSync = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const st = api.getState();
+      st.game.realm = "foundation";
+      const stats = api.getCombatStats(st.game);
+      st.game.hp = stats.maxHp;
+      st.game.mp = Math.round(stats.maxMp * 0.5);
+      st.game.xp = 321;
+      st.arena.player.invuln = 0;
+      st.arena.player.shieldHp = 0;
+      api.hurtPlayer(35);
+      api.updateHud();
+      return {
+        expectedHp: `${Math.max(0, Math.round(st.game.hp))}/${Math.max(1, Math.round(stats.maxHp))}`,
+        actualHp: (document.getElementById("hud-hp-txt")?.textContent || "").trim(),
+        expectedMp: `${Math.max(0, Math.round(st.game.mp))}/${Math.max(1, Math.round(stats.maxMp))}`,
+        actualMp: (document.getElementById("hud-mp-txt")?.textContent || "").trim(),
+        actualXp: (document.getElementById("hud-xp-txt")?.textContent || "").trim(),
+        expectedXp: `321/${api.getState().realmSpec.xpCap}`
+      };
+    });
+    assert.notEqual(hudSync.actualHp, "65/65", "#hud-hp-txt must not remain stuck at initial 65/65");
+    assert.equal(hudSync.actualHp, hudSync.expectedHp, `#hud-hp-txt mismatch: expected ${hudSync.expectedHp}, got ${hudSync.actualHp}`);
+    assert.equal(hudSync.actualMp, hudSync.expectedMp, `#hud-mp-txt mismatch: expected ${hudSync.expectedMp}, got ${hudSync.actualMp}`);
+    assert.equal(hudSync.actualXp, hudSync.expectedXp, `#hud-xp-txt mismatch: expected ${hudSync.expectedXp}, got ${hudSync.actualXp}`);
+    await ctx.close();
+  });
+
+  await runSuite("Q0-2", "F06 共享 COMBAT_RULE_PARAMS 与技能/法则/天象/天时/气候/道韵/键位文案-实效一致性验证", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q0-2", true);
+    const audit = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const v23 = window.__CHENYUAN_V23__;
+      const P = api.getCombatRuleParams();
+      const s = api.getState();
+      const g = s.game;
+      const a = s.arena;
+
+      // Reset to clean deterministic baseline for live stat delta verification
+      g.realm = "foundation";
+      g.perk = "mortal_heart";
+      g.pet = { id: null, level: 1, skills: {} };
+      g.equippedGear = { weapon: null, armor: null, ring: null };
+      g.loadout = { mind: "sword_mind", builder: "sword_build", finisher: "sword_release", relic: null };
+      g.laws = [];
+      g.destinyFruits = [];
+      g.choices = {};
+      g.litStars = [];
+      g.spireCurios = {};
+      g.sanctum = { buildings: {} };
+      g.karmaScore = 0;
+      g.karmaDrBonus = 0;
+      g.statMultBonus = 1;
+      g.atkFlatBonus = 0;
+      g.omenIndex = 0; // tide
+      g.stones = 0;
+      g.startAgeMonths = 216; // 18 yrs
+      g.elapsedMonths = 0;
+      a.comboCount = 0;
+      a.styleScore = 0;
+      a.weaponPosture = "qinglian";
+      a.reversedDomainTimer = 0;
+      a.domain = null;
+      a.bossRush = null;
+      a.astralForm = null;
+      a.dungeonMap = null;
+      a.runBoons = [];
+      a.player.boonOverloadTimer = 0;
+      a.player.gourdHasteTimer = 0;
+      a.player.gourdCritTimer = 0;
+      a.player.petBuffTimer = 0;
+      v23.setCelestialTimePhase(0, true); // dawn
+      const baseDawn = api.getCombatStats(g);
+      g.hp = baseDawn.maxHp;
+
+      // 1. Mind skills delta (equip condition)
+      g.loadout.mind = "sword_pierce";
+      const withPierce = api.getCombatStats(g);
+      g.loadout.mind = "sword_still";
+      const withStill = api.getCombatStats(g);
+      g.loadout.mind = "talisman_clear";
+      const withClear = api.getCombatStats(g);
+      g.loadout.mind = "sword_mind";
+
+      // 2. Laws: wealth_power (500 stones -> +20%, 5000 stones -> cap +36%), crit_lotus (+18%/+18%), age_might, karma_resonance
+      g.laws = ["wealth_power"];
+      g.stones = 500;
+      const wp500 = api.getCombatStats(g);
+      const wp500Text = api.getLawLiveContributionText(g, "wealth_power");
+      g.stones = 5000;
+      const wp5000 = api.getCombatStats(g);
+      const wp5000Text = api.getLawLiveContributionText(g, "wealth_power");
+      g.stones = 0;
+
+      g.laws = ["crit_lotus"];
+      const withCritLotus = api.getCombatStats(g);
+
+      g.laws = ["age_might"];
+      g.elapsedMonths = 360; // +30 yrs -> 3*6% = 18%
+      const am30 = api.getCombatStats(g);
+      g.elapsedMonths = 1200; // +100 yrs -> cap 30%
+      const amCap = api.getCombatStats(g);
+      g.elapsedMonths = 0;
+
+      g.laws = ["karma_resonance"];
+      g.choices = { c1: "a", c2: "b", c3: "c" }; // 3*5% = 15%
+      const kr3 = api.getCombatStats(g);
+      g.choices = { c1: "a", c2: "b", c3: "c", c4: "d", c5: "e", c6: "f", c7: "g" }; // cap 28%
+      const krCap = api.getCombatStats(g);
+      g.choices = {};
+      g.laws = [];
+
+      // 3. Omen wolf_star (+12% crit)
+      g.omenIndex = api.CELESTIAL_OMENS.findIndex(o => o.id === "wolf_star");
+      const withWolfStar = api.getCombatStats(g);
+      g.omenIndex = 0;
+
+      // 4. Celestial phases: dawn (+4 DR), noon (+10% passive), blood_dusk (+12% neutral / +22% demonic, +16% critMult)
+      v23.setCelestialTimePhase(1, true); // noon
+      const atNoon = api.getCombatStats(g);
+      v23.setCelestialTimePhase(2, true); // blood_dusk (neutral)
+      const atBloodNeutral = api.getCombatStats(g);
+      g.karmaScore = -60; // demonic (+18% karma + 22% blood_dusk = +40%)
+      const atBloodDemonic = api.getCombatStats(g);
+      v23.setCelestialTimePhase(1, true); // noon demonic (+18% karma + 10% noon = +28%)
+      const atNoonDemonic = api.getCombatStats(g);
+      g.karmaScore = 0;
+      v23.setCelestialTimePhase(0, true); // back to dawn
+
+      // 5. Dungeon climates: sword_wind (+12% haste), thunder_loom (+14% critMult), blood_haze (1.15x activeMult)
+      a.dungeonMap = { activeClimate: "sword_wind", currentNodeId: "n0", nodes: { n0: { id: "n0", climate: "sword_wind" } } };
+      const climWind = api.getCombatStats(g);
+      a.dungeonMap.activeClimate = "thunder_loom";
+      const climThunder = api.getCombatStats(g);
+      a.dungeonMap.activeClimate = "blood_haze";
+      const climBlood = api.getCombatStats(g);
+      a.dungeonMap = null;
+
+      // 6. Run boons: blood_intent (+20% crit at <=55% HP), gourd_overload (+28% passive, +22% haste), gold_alchemist (+3%/100 cap +28%)
+      a.runBoons = ["blood_intent"];
+      g.hp = Math.floor(baseDawn.maxHp * 0.4);
+      const boonBloodIntent = api.getCombatStats(g);
+      g.hp = baseDawn.maxHp;
+      a.runBoons = ["gourd_overload"];
+      a.player.boonOverloadTimer = 7;
+      a.player.gourdHasteTimer = 7;
+      const boonGourd = api.getCombatStats(g);
+      a.player.boonOverloadTimer = 0;
+      a.player.gourdHasteTimer = 0;
+      a.runBoons = ["gold_alchemist"];
+      g.stones = 500;
+      const boonGold500 = api.getCombatStats(g);
+      g.stones = 5000;
+      const boonGoldCap = api.getCombatStats(g);
+      a.runBoons = [];
+      g.stones = 500;
+      g.laws = ["wealth_power"];
+      api.updateHud();
+
+      // Open cultivate drawer to verify live law contribution UI rendering
+      document.getElementById("nav-btn-cultivate").click();
+      const lawCardText = (document.querySelector('#cultivate-laws-card [data-law-inspect="wealth_power"]')?.textContent || "").trim();
+      api.closeDrawer();
+
+      return {
+        P,
+        deltas: {
+          pierceBaseAtk: withPierce.statBreakdown.baseAtk - baseDawn.statBreakdown.baseAtk,
+          stillDr: withStill.dmgReduce - baseDawn.dmgReduce,
+          clearDr: withClear.dmgReduce - baseDawn.dmgReduce,
+          clearBaseAtk: withClear.statBreakdown.baseAtk - baseDawn.statBreakdown.baseAtk,
+          wp500Pct: Number((wp500.statBreakdown.rawPassivePct - baseDawn.statBreakdown.rawPassivePct).toFixed(3)),
+          wp5000Pct: Number((wp5000.statBreakdown.rawPassivePct - baseDawn.statBreakdown.rawPassivePct).toFixed(3)),
+          critLotusCrit: Number((withCritLotus.crit - baseDawn.crit).toFixed(3)),
+          critLotusMult: Number((withCritLotus.critMult - baseDawn.critMult).toFixed(3)),
+          am30Pct: Number((am30.statBreakdown.rawPassivePct - baseDawn.statBreakdown.rawPassivePct).toFixed(3)),
+          amCapPct: Number((amCap.statBreakdown.rawPassivePct - baseDawn.statBreakdown.rawPassivePct).toFixed(3)),
+          kr3Pct: Number((kr3.statBreakdown.rawPassivePct - baseDawn.statBreakdown.rawPassivePct).toFixed(3)),
+          krCapPct: Number((krCap.statBreakdown.rawPassivePct - baseDawn.statBreakdown.rawPassivePct).toFixed(3)),
+          wolfStarCrit: Number((withWolfStar.crit - baseDawn.crit).toFixed(3)),
+          dawnDrVsNoon: baseDawn.dmgReduce - atNoon.dmgReduce,
+          noonPassive: Number((atNoon.statBreakdown.rawPassivePct - baseDawn.statBreakdown.rawPassivePct).toFixed(3)),
+          bloodNeutralPassive: Number((atBloodNeutral.statBreakdown.rawPassivePct - baseDawn.statBreakdown.rawPassivePct).toFixed(3)),
+          bloodDemonicDeltaVsNoon: Number((atBloodDemonic.statBreakdown.rawPassivePct - atNoonDemonic.statBreakdown.rawPassivePct).toFixed(3)),
+          bloodCritMult: Number((atBloodNeutral.critMult - baseDawn.critMult).toFixed(3)),
+          climWindHaste: Number((climWind.atkHaste - baseDawn.atkHaste).toFixed(3)),
+          climThunderCritMult: Number((climThunder.critMult - baseDawn.critMult).toFixed(3)),
+          climBloodActiveMult: climBlood.statBreakdown.activeMult,
+          boonBloodCrit: Number((boonBloodIntent.crit - baseDawn.crit).toFixed(3)),
+          boonGourdPassive: Number((boonGourd.statBreakdown.rawPassivePct - baseDawn.statBreakdown.rawPassivePct).toFixed(3)),
+          boonGourdHaste: Number((boonGourd.atkHaste - baseDawn.atkHaste).toFixed(3)),
+          boonGold500Pct: Number((boonGold500.statBreakdown.rawPassivePct - baseDawn.statBreakdown.rawPassivePct).toFixed(3)),
+          boonGoldCapPct: Number((boonGoldCap.statBreakdown.rawPassivePct - baseDawn.statBreakdown.rawPassivePct).toFixed(3))
+        },
+        copy: {
+          wp500Text,
+          wp5000Text,
+          lawCardText,
+          wealthLaw: api.DAO_LAWS.wealth_power.desc,
+          staggerLaw: api.DAO_LAWS.stagger_surge.desc,
+          critLotusLaw: api.DAO_LAWS.crit_lotus.desc,
+          critLotusBadge: api.LAW_SHORT_BADGE.crit_lotus,
+          ageMightLaw: api.DAO_LAWS.age_might.desc,
+          karmaResLaw: api.DAO_LAWS.karma_resonance.desc,
+          swordPierce: api.SKILLS.sword_pierce.desc,
+          swordStill: api.SKILLS.sword_still.desc,
+          talismanClear: api.SKILLS.talisman_clear.desc,
+          wolfOmen: api.CELESTIAL_OMENS.find(o => o.id === "wolf_star"),
+          celPhases: api.CELESTIAL_TIME_PHASES,
+          climates: api.DUNGEON_CLIMATES,
+          boons: Object.fromEntries(api.RUN_BOONS.map(b => [b.id, b.desc])),
+          kbMeditate: api.DEFAULT_KEYBINDS.meditate.label,
+          kbPill: api.DEFAULT_KEYBINDS.pill.label,
+          orbStanceTip: document.getElementById("orb-stance")?.getAttribute("data-tip") || "",
+          orbPillTip: document.getElementById("orb-pill")?.getAttribute("data-tip") || "",
+          celBtnTip: document.getElementById("btn-celestial-time")?.getAttribute("data-tip") || "",
+          celBtnBadge: (document.querySelector("#btn-celestial-time .v22-key-badge")?.textContent || "").trim()
+        }
+      };
+    });
+
+    const { P, deltas, copy } = audit;
+    assert.ok(P && P.laws && P.skills && P.celestialPhases && P.climates && P.runBoons, "COMBAT_RULE_PARAMS must be exposed via getCombatRuleParams()");
+
+    // Verify live stat deltas strictly match COMBAT_RULE_PARAMS
+    assert.equal(deltas.pierceBaseAtk, P.skills.sword_pierce.mindAtk);
+    assert.equal(deltas.stillDr, P.skills.sword_still.mindDr);
+    assert.equal(deltas.clearDr, P.skills.talisman_clear.mindDr);
+    assert.equal(deltas.clearBaseAtk, P.skills.talisman_clear.mindAtk);
+    assert.equal(deltas.wp500Pct, 0.20);
+    assert.equal(deltas.wp5000Pct, P.laws.wealth_power.maxPct);
+    assert.equal(deltas.critLotusCrit, P.laws.crit_lotus.crit);
+    assert.equal(deltas.critLotusMult, P.laws.crit_lotus.critMult);
+    assert.equal(deltas.am30Pct, 0.18);
+    assert.equal(deltas.amCapPct, P.laws.age_might.maxPct);
+    assert.equal(deltas.kr3Pct, 0.15);
+    assert.equal(deltas.krCapPct, P.laws.karma_resonance.maxPct);
+    assert.equal(deltas.wolfStarCrit, P.omens.wolf_star.crit);
+    assert.equal(deltas.dawnDrVsNoon, P.celestialPhases.dawn.dr);
+    assert.equal(deltas.noonPassive, P.celestialPhases.noon.passiveAtkPct);
+    assert.equal(deltas.bloodNeutralPassive, P.celestialPhases.blood_dusk.otherPassiveAtkPct);
+    assert.equal(deltas.bloodDemonicDeltaVsNoon, Number((P.celestialPhases.blood_dusk.demonicPassiveAtkPct - P.celestialPhases.noon.passiveAtkPct).toFixed(3)));
+    assert.equal(deltas.bloodCritMult, P.celestialPhases.blood_dusk.critMult);
+    assert.equal(deltas.climWindHaste, P.climates.sword_wind.haste);
+    assert.equal(deltas.climThunderCritMult, P.climates.thunder_loom.critMult);
+    assert.equal(deltas.climBloodActiveMult, P.climates.blood_haze.playerActiveMult);
+    assert.equal(deltas.boonBloodCrit, P.runBoons.blood_intent.crit);
+    assert.equal(deltas.boonGourdPassive, P.runBoons.gourd_overload.passiveAtkPct);
+    assert.equal(deltas.boonGourdHaste, P.runBoons.gourd_overload.haste);
+    assert.equal(deltas.boonGold500Pct, 0.15);
+    assert.equal(deltas.boonGoldCapPct, P.runBoons.gold_alchemist.maxPct);
+
+    // Verify all aligned copy strings match live formulas (and stale drifted numbers are gone)
+    assert.ok(copy.wealthLaw.includes("+4%") && copy.wealthLaw.includes("+36%") && copy.wealthLaw.includes("常驻") && !copy.wealthLaw.includes("+6%") && !copy.wealthLaw.includes("+85%") && !copy.wealthLaw.includes("战利品"), `wealth_power copy drift: ${copy.wealthLaw}`);
+    assert.ok(copy.wp500Text.includes("+20%") && copy.wp500Text.includes("+36%"), `wealth_power live text at 500 stones: ${copy.wp500Text}`);
+    assert.ok(copy.wp5000Text.includes("+36%"), `wealth_power live text at cap: ${copy.wp5000Text}`);
+    assert.ok(copy.lawCardText.includes("聚宝乾坤") && copy.lawCardText.includes("+20%") && copy.lawCardText.includes("+36%"), `Cultivate law inspection UI must show live contribution: ${copy.lawCardText}`);
+
+    assert.ok(copy.staggerLaw.includes("1.45×") && copy.staggerLaw.includes("1.65×") && copy.staggerLaw.includes("+65%") && copy.staggerLaw.includes("15") && copy.staggerLaw.includes("1.5") && !copy.staggerLaw.includes("+75%"), `stagger_surge copy drift: ${copy.staggerLaw}`);
+    assert.ok(copy.critLotusLaw.includes("+18%") && copy.critLotusLaw.includes("78%") && copy.critLotusLaw.includes("2.35×") && !copy.critLotusLaw.includes("+25%") && !copy.critLotusLaw.includes("+22%"), `crit_lotus copy drift: ${copy.critLotusLaw}`);
+    assert.equal(copy.critLotusBadge, "暴击 +18%");
+    assert.ok(copy.ageMightLaw.includes("+6%") && copy.ageMightLaw.includes("+30%") && !copy.ageMightLaw.includes("+40%"), `age_might copy drift: ${copy.ageMightLaw}`);
+    assert.ok(copy.karmaResLaw.includes("+5%") && copy.karmaResLaw.includes("+28%") && !copy.karmaResLaw.includes("+6%"), `karma_resonance copy drift: ${copy.karmaResLaw}`);
+
+    assert.ok(copy.swordPierce.includes("+10") && copy.swordPierce.includes("心法槽") && !copy.swordPierce.includes("+14") && !copy.swordPierce.includes("永久"), `sword_pierce copy drift: ${copy.swordPierce}`);
+    assert.ok(copy.swordStill.includes("+8") && copy.swordStill.includes("心法槽") && !copy.swordStill.includes("+6"), `sword_still copy drift: ${copy.swordStill}`);
+    assert.ok(copy.talismanClear.includes("+12") && copy.talismanClear.includes("+5") && copy.talismanClear.includes("心法槽") && !copy.talismanClear.includes("+10") && !copy.talismanClear.includes("+6"), `talisman_clear copy drift: ${copy.talismanClear}`);
+
+    assert.ok(copy.wolfOmen.desc.includes("+12%") && copy.wolfOmen.short.includes("+12%") && !copy.wolfOmen.desc.includes("+18%"), `wolf_star copy drift: ${JSON.stringify(copy.wolfOmen)}`);
+    const phDawn = copy.celPhases.find(p => p.id === "dawn");
+    const phNoon = copy.celPhases.find(p => p.id === "noon");
+    const phBlood = copy.celPhases.find(p => p.id === "blood_dusk");
+    assert.ok(phDawn.desc.includes("+4") && !phDawn.desc.includes("+10"), `dawn copy drift: ${phDawn.desc}`);
+    assert.ok(phNoon.desc.includes("+10%") && phNoon.desc.includes("+25%") && !phNoon.desc.includes("+16%") && !phNoon.desc.includes("+35%"), `noon copy drift: ${phNoon.desc}`);
+    assert.ok(phBlood.desc.includes("+22%") && phBlood.desc.includes("+12%") && phBlood.desc.includes("+16%") && phBlood.desc.includes("2%") && !phBlood.desc.includes("+42%") && !phBlood.desc.includes("+28%"), `blood_dusk copy drift: ${phBlood.desc}`);
+
+    assert.ok(copy.climates.sword_wind.desc.includes("+12%") && !copy.climates.sword_wind.desc.includes("+15%"), `sword_wind copy drift: ${copy.climates.sword_wind.desc}`);
+    assert.ok(copy.climates.thunder_loom.desc.includes("+14%") && !copy.climates.thunder_loom.desc.includes("+18%"), `thunder_loom copy drift: ${copy.climates.thunder_loom.desc}`);
+    assert.ok(copy.climates.blood_haze.desc.includes("+15%") && copy.climates.blood_haze.desc.includes("+18%"), `blood_haze copy drift: ${copy.climates.blood_haze.desc}`);
+
+    assert.ok(copy.boons.blood_intent.includes("+20%") && copy.boons.blood_intent.includes("1.65×") && !copy.boons.blood_intent.includes("+25%"), `blood_intent copy drift: ${copy.boons.blood_intent}`);
+    assert.ok(copy.boons.posture_shatter.includes("1.45×") && copy.boons.posture_shatter.includes("+45%") && !copy.boons.posture_shatter.includes("+55%"), `posture_shatter copy drift: ${copy.boons.posture_shatter}`);
+    assert.ok(copy.boons.gourd_overload.includes("+28%") && copy.boons.gourd_overload.includes("+22%") && !copy.boons.gourd_overload.includes("+38%") && !copy.boons.gourd_overload.includes("+30%"), `gourd_overload copy drift: ${copy.boons.gourd_overload}`);
+    assert.ok(copy.boons.vampiric_qi.includes("6%") && copy.boons.vampiric_qi.includes("8%"), `vampiric_qi copy drift: ${copy.boons.vampiric_qi}`);
+    assert.ok(copy.boons.aerial_reign.includes("1.45×") && copy.boons.aerial_reign.includes("+45%") && !copy.boons.aerial_reign.includes("+65%"), `aerial_reign copy drift: ${copy.boons.aerial_reign}`);
+    assert.ok(copy.boons.gold_alchemist.includes("+3%") && copy.boons.gold_alchemist.includes("+28%") && !copy.boons.gold_alchemist.includes("+36%"), `gold_alchemist copy drift: ${copy.boons.gold_alchemist}`);
+
+    // Keybind & HUD tooltip checks
+    assert.ok(copy.kbMeditate.includes("吐纳") && copy.kbMeditate.includes("渡劫"), `meditate keybind label drift: ${copy.kbMeditate}`);
+    assert.ok(copy.kbPill.includes("仙葫") && copy.kbPill.includes("回春丹"), `pill keybind label drift: ${copy.kbPill}`);
+    assert.ok(copy.orbStanceTip.includes("Y / 手柄B"), `#orb-stance tip drift: ${copy.orbStanceTip}`);
+    assert.ok(copy.orbPillTip.includes("回春丹"), `#orb-pill tip must mention 回春丹 fallback: ${copy.orbPillTip}`);
+    assert.ok(copy.celBtnTip.includes("\\键") && !copy.celBtnTip.includes("`键") && !copy.celBtnTip.includes("+42%"), `#btn-celestial-time tip drift: ${copy.celBtnTip}`);
+    assert.equal(copy.celBtnBadge, "\\", `#btn-celestial-time key badge must be \\, got: ${copy.celBtnBadge}`);
+    await ctx.close();
+  });
 } finally {
   await browser.close();
   if (staticServer) staticServer.close();
