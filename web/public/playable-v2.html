@@ -8660,6 +8660,10 @@ const ART = {
     arena.stageEpoch += 1;
     arena.sanctumMode = false;
     arena.towerMode = false;
+    arena.celestialSpire = null;
+    arena.sectDefense = null;
+    arena.cloudFlight = null;
+    arena.customSeedRun = null;
     arena.waveTransitioning = false;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
@@ -9707,6 +9711,7 @@ const ART = {
     arena.bossRush = null;
     arena.sectDefense = null;
     arena.celestialSpire = null;
+    arena.customSeedRun = null;
     arena.waveTransitioning = false;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
@@ -10084,7 +10089,7 @@ const ART = {
 
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
         <span style="font-size:11.5px;color:#b8dcd5;">连续闯荡随机生成的九重天宫秘境（妖王房/灵脉房/混沌赌局/天工秘宝），每重天三选一叠加 <b style="color:#ffe28a;">16 种跨系统天道法则奇物</b>！</span>
-        <span class="tag-chip mythic">登仙榜最高：第 ${bestFl}/9 重天 · 已叠奇物 ${curEntries.reduce((s, [, v]) => s + v, 0)} 层</span>
+        <span class="tag-chip mythic">登仙榜最高：第 ${bestFl}/9 重天 · 已叠奇物 ${curEntries.reduce((s, [cid]) => s + getCurioStacks(game, cid), 0)} 层</span>
       </div>
 
       <div class="spire-room-grid">
@@ -10134,6 +10139,7 @@ const ART = {
     arena.bossRush = null;
     arena.sectDefense = null;
     arena.cloudFlight = null;
+    arena.customSeedRun = null;
     arena.waveTransitioning = false;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
@@ -10296,7 +10302,7 @@ const ART = {
   function openSpireCurioDraftModal() {
     const sp = arena.celestialSpire;
     if (!game || !sp) return;
-    if (sp.practiceMode || (sp.startFloor && sp.startFloor > 1)) {
+    if (isPracticeModeActive() || sp.practiceMode || (sp.startFloor && sp.startFloor > 1)) {
       completeSpirePracticeFloor();
       return;
     }
@@ -10347,7 +10353,7 @@ const ART = {
   function selectSpireCurioAndAdvance(curioId, gainLv = 1) {
     if (!game) return;
     const spCheck = arena.celestialSpire;
-    if (spCheck && spCheck.active && (spCheck.practiceMode || (spCheck.startFloor && spCheck.startFloor > 1))) {
+    if (isPracticeModeActive() || (spCheck && (spCheck.practiceMode || (spCheck.startFloor && spCheck.startFloor > 1)))) {
       closeModal();
       completeSpirePracticeFloor();
       return;
@@ -11273,6 +11279,7 @@ const ART = {
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.celestialSpire = null;
+    arena.waveTransitioning = false;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
     arena.nearbyProp = null;
@@ -13045,7 +13052,7 @@ const ART = {
   }
 
   function exportFullCloudSaveCode() {
-    if (!game) return "";
+    if (!game || sandboxMode) return "";
     const payload = {
       v: 24,
       game,
@@ -13167,6 +13174,10 @@ const ART = {
   }
 
   function openCloudImportConfirmModal(parsedRes) {
+    if (sandboxMode) {
+      showToast("🧪 演武沙盒模式已禁用云码导出与导入（请先退出沙盒）");
+      return;
+    }
     if (!parsedRes || !parsedRes.ok || !parsedRes.preview) return;
     pendingCloudImport = parsedRes;
     const imp = parsedRes.preview.imported;
@@ -13525,7 +13536,7 @@ const ART = {
       elapsed: 210, partBreaks: 2, parries: 2, hitsTaken: 5,
       damageTaken: Math.round(stNow.maxHp || 325), startBout: 1, practiceMode: false
     };
-    const isPractice = Boolean(br.practiceMode || (br.startBout && br.startBout > 1));
+    const isPractice = Boolean(isPracticeModeActive() || br.practiceMode || (br.startBout && br.startBout > 1));
     arena.bossRush = null;
     arena.paused = true;
 
@@ -13926,7 +13937,9 @@ const ART = {
         name: "上古秘窟 · 太初满灵泉", badge: isPracticeModeActive() ? "点击/Enter 全满气血/仙葫/剑意（练习模式）" : "点击/Enter 全满气血/仙葫/剑意 · 永久剑攻+8！",
         x: pr.x, y: pr.y, r: 46, progress: 0
       });
-      showToast("☯ 八卦封壁击破！上古仙人藏宝秘窟洞开，爆出仙装与【太初满灵泉】！");
+      showToast(isPracticeModeActive()
+        ? "☯ 八卦封壁击破！上古秘窟【太初满灵泉】现世（练习模式不掉落仙装与灵石）！"
+        : "☯ 八卦封壁击破！上古仙人藏宝秘窟洞开，爆出仙装与【太初满灵泉】！");
       addFloat("☯ 八卦破壁 · 上古藏宝秘窟洞开！！", pr.x, pr.y - 52, "#ffe89e", 20, true);
     } else if (pr.kind === "frost_crystal") {
       Sound.bianzhong(783.99, 0.10);
@@ -14938,6 +14951,8 @@ const ART = {
   function exitSandboxMode() {
     if (!sandboxMode) return false;
     sandboxMode = false;
+    arena.stageEpoch += 1;
+    arena.waveTransitioning = false;
     clearTransientChoiceQueues();
     closeModal();
     closeDrawer();
@@ -14959,7 +14974,7 @@ const ART = {
     let restoredTower = false;
     let restoredSanctum = false;
     const res = inspectSavedBundle();
-    if (res.ok && res.bundle && res.bundle.game && !saveReadOnlyMode) {
+    if (res.ok && res.bundle && res.bundle.game && !saveReadOnlyMode && !saveConflictState && !storageWriteError) {
       const s = res.bundle;
       game = normalizeLoadedGame(s.game);
       loadedSaveRev = res.rev;
@@ -15940,7 +15955,7 @@ const ART = {
           }).join("")}
         </div>
       </div>
-    `, false);
+    `, false, { kind: "gear_overflow" });
   }
 
   function flushDeferredChoiceModals() {
@@ -17761,6 +17776,7 @@ const ART = {
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.celestialSpire = null;
+    arena.customSeedRun = null;
     arena.props.push({
       id: "hub_sect_defense", kind: "sect_defense_trigger", art: "prop_guardian_sword_pylon",
       name: `护山大阵 · Lv.${lvMap.guard_array}`, badge: `常驻减伤+${(lvMap.guard_array - 1) * 4} · 点击开启守卫战`,
@@ -17797,6 +17813,7 @@ const ART = {
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.celestialSpire = null;
+    arena.customSeedRun = null;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
     arena.nearbyProp = null;
@@ -18530,7 +18547,7 @@ const ART = {
 
   function spawnSingleEnemy(id, x, y, mult = 1.0, isBoss = false, customName = null) {
     const spec = ENEMIES[id] || ENEMIES.wolf;
-    if (!sandboxMode && !metaState.seenEnemies.includes(id)) {
+    if (!sandboxMode && !isPracticeModeActive() && !metaState.seenEnemies.includes(id)) {
       metaState.seenEnemies.push(id);
       saveMeta();
     }
@@ -19208,7 +19225,7 @@ const ART = {
       if (marks > 0) {
         totalExplosions += marks;
         arena.stageTechDone = true;
-        if (marks >= 2 && game && game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
+        if (!isPracticeModeActive() && marks >= 2 && game && game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
         e.swordMarks = keepOneMark ? 1 : 0;
         addDecal(e.x, e.y + 18, Math.random() * 3, 52, marks >= 3 ? "spider_crack" : "scorch");
         if (isWanJianBuild(game) || getCurioStacks(game, "curio_mark_nova") > 0) {
@@ -19388,7 +19405,7 @@ const ART = {
       GamepadSystem.rumble(0.75, 0.82, 190);
       pushTelemetryInput("☯太虚凝时!", false);
       arena.stageTechDone = true;
-      if (game && game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
+      if (!isPracticeModeActive() && game && game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
       arena.witchTime = 1.55 + (hasKeepsake(game, "yan") ? 0.45 : 0);
       arena.camZoom = 1.06;
       Sound.bianzhong(659.25, 0.10);
@@ -19642,7 +19659,7 @@ const ART = {
     } else {
       game.inventory.healing_pill -= 1;
     }
-    if (hasDestinyFruit(game, "glutton_pill")) {
+    if (!isPracticeModeActive() && hasDestinyFruit(game, "glutton_pill")) {
       grantPermanentStatBonus(game, { atk: 6, hp: 18, source: "alchemy" });
     }
     const daoHealAmp = st.daoBonuses ? st.daoBonuses.healMult : 1.0;
@@ -19726,7 +19743,7 @@ const ART = {
         }
       });
     }
-    saveGame();
+    if (!isPracticeModeActive()) saveGame();
     updateHud();
   }
 
@@ -20453,7 +20470,7 @@ const ART = {
       const isAerialExec = (pEx.z || 0) > 12 || pEx.plunging;
       const isHeavyExec = !isAerialExec && arena.weaponPosture === "xuanzhong";
       arena.stageTechDone = true;
-      if (game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
+      if (!isPracticeModeActive() && game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
       game.mp = Math.min(st.maxMp, (game.mp || 0) + 22);
       Sound.triggerDucking(340, 0.22, 1250);
       GamepadSystem.rumble(1.0, 0.95, 290);
@@ -20890,9 +20907,9 @@ const ART = {
         Sound.fanfare();
         const sEpoch = arena.stageEpoch;
         setTimeout(() => {
-          if (!game || arena.stageEpoch !== sEpoch || !arena.celestialSpire) return;
+          if (!game || arena.stageEpoch !== sEpoch || !arena.celestialSpire || !arena.celestialSpire.active) return;
           arena.waveTransitioning = false;
-          if (arena.celestialSpire.practiceMode || (arena.celestialSpire.startFloor && arena.celestialSpire.startFloor > 1)) {
+          if (isPracticeModeActive() || arena.celestialSpire.practiceMode || (arena.celestialSpire.startFloor && arena.celestialSpire.startFloor > 1)) {
             completeSpirePracticeFloor();
           } else {
             openSpireCurioDraftModal();
@@ -20901,9 +20918,13 @@ const ART = {
       } else if (arena.bossRush && arena.bossRush.active) {
         arena.waveTransitioning = true;
         if (arena.bossRush.bout >= 7) {
-          arena.waveTransitioning = false;
           Sound.fanfare();
-          setTimeout(() => openBossRushVictoryModal(), 450);
+          const rEpoch = arena.stageEpoch;
+          setTimeout(() => {
+            if (!game || arena.stageEpoch !== rEpoch || !arena.bossRush || !arena.bossRush.active) return;
+            arena.waveTransitioning = false;
+            openBossRushVictoryModal();
+          }, 450);
         } else {
           arena.bossRush.bout += 1;
           const stR = getCombatStats(game);
@@ -20914,7 +20935,7 @@ const ART = {
           showToast(`★ 连战破阵！气血回补30%，即将迎战【${nextSpec.title}】！`);
           const rEpoch = arena.stageEpoch;
           setTimeout(() => {
-            if (!game || arena.stageEpoch !== rEpoch || !arena.bossRush) return;
+            if (!game || arena.stageEpoch !== rEpoch || !arena.bossRush || !arena.bossRush.active) return;
             arena.waveTransitioning = false;
             spawnBossRushBout();
           }, 750);
@@ -25892,7 +25913,18 @@ const ART = {
     } catch (e) {}
   }
 
-  function openModal(html, closeable = true) {
+  function openModal(html, closeable = true, opts = {}) {
+    const modalKind = (opts && opts.kind) || "";
+    if (activeGearOverflowItem && modalKind !== "gear_overflow") {
+      pendingGearOverflowQueue.unshift(activeGearOverflowItem);
+      activeGearOverflowItem = null;
+    }
+    if (activeSoulUnlockId && modalKind !== "soul_unlock") {
+      if (!pendingSoulUnlockQueue.includes(activeSoulUnlockId)) {
+        pendingSoulUnlockQueue.unshift(activeSoulUnlockId);
+      }
+      activeSoulUnlockId = null;
+    }
     clearTransientInputs();
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
@@ -25919,6 +25951,10 @@ const ART = {
     pendingSandboxEntry = null;
     pendingAlchemyCraft = null;
     pendingSoulRefineId = null;
+    if (activeGearOverflowItem) {
+      pendingGearOverflowQueue.unshift(activeGearOverflowItem);
+      activeGearOverflowItem = null;
+    }
     activeSoulUnlockId = null;
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
@@ -26898,7 +26934,7 @@ const ART = {
         <button type="button" id="btn-soul-keep-current" class="btn-ghost" data-soul-choice="keep" data-soul-id="${escapeHtml(newSoulId)}">保留当前</button>
         <button type="button" id="btn-soul-equip-new" class="btn-gold" data-soul-choice="equip" data-soul-id="${escapeHtml(newSoulId)}">装备新魂印</button>
       </div>
-    `, true);
+    `, true, { kind: "soul_unlock" });
   }
 
   function openSoulSealRefineConfirmModal(sid) {
@@ -27286,15 +27322,15 @@ const ART = {
             <div class="keybind-grid">${tr.acts.map(renderRow).join("")}</div>
           `).join("")}</div>`;
         })()}
-        <div class="jade-card" style="padding:7px 10px;gap:5px;margin-top:4px;border-color:rgba(128,255,234,0.45);">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <strong style="font-size:11.5px;color:#80ffea;">☁ 太虚大道云码（全存档 Base64 一键导出备份与跨端导入恢复）：</strong>
-            <span id="lbl-cloud-save-status" style="font-size:10px;color:var(--gold-bright);">校验就绪 ✓</span>
+        <div class="jade-card" style="padding:7px 10px;gap:5px;margin-top:4px;border-color:${sandboxMode ? "rgba(255,190,92,0.55)" : "rgba(128,255,234,0.45)"};">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
+            <strong style="font-size:11.5px;color:${sandboxMode ? "#ffd8a8" : "#80ffea"};">☁ 太虚大道云码（全存档 Base64 一键导出备份与跨端导入恢复）：</strong>
+            <span id="lbl-cloud-save-status" style="font-size:10px;color:${sandboxMode ? "#ffd8a8" : "var(--gold-bright)"};">${sandboxMode ? "🧪 演武沙盒模式已禁用云码导出与导入（请先退出沙盒）" : "校验就绪 ✓"}</span>
           </div>
           <div style="display:flex;gap:6px;align-items:center;">
-            <input id="inp-cloud-save-code" class="cloud-code-box" type="text" value="${exportFullCloudSaveCode()}" aria-label="太虚大道云码" />
-            <button type="button" id="btn-export-cloud-save" class="btn-ghost" style="padding:5px 10px;font-size:11px;white-space:nowrap;" data-action="copy-cloud-save">📋 复制云码</button>
-            <button type="button" id="btn-import-cloud-save" class="btn-gold" style="padding:5px 12px;font-size:11px;white-space:nowrap;" data-action="import-cloud-save">📥 导入恢复</button>
+            <input id="inp-cloud-save-code" class="cloud-code-box" type="text" value="${sandboxMode ? "" : exportFullCloudSaveCode()}" placeholder="${sandboxMode ? "演武沙盒模式已禁用云码导出与导入（请先退出沙盒）" : ""}" aria-label="太虚大道云码" ${sandboxMode ? "disabled" : ""} />
+            <button type="button" id="btn-export-cloud-save" class="btn-ghost" style="padding:5px 10px;font-size:11px;white-space:nowrap;" data-action="copy-cloud-save" ${sandboxMode ? "disabled" : ""}>📋 复制云码</button>
+            <button type="button" id="btn-import-cloud-save" class="btn-gold" style="padding:5px 12px;font-size:11px;white-space:nowrap;" data-action="import-cloud-save" ${sandboxMode ? "disabled" : ""}>📥 导入恢复</button>
           </div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-top:4px;">
@@ -28311,6 +28347,10 @@ const ART = {
       return;
     }
     if (m1Act === "overwrite-with-current-save") {
+      if (sandboxMode) {
+        showToast("🧪 演武沙盒模式禁止覆盖正式存档，请先点击【退出沙盒】！");
+        return;
+      }
       saveReadOnlyMode = false;
       saveConflictState = null;
       saveAlertDismissed = false;
@@ -28579,6 +28619,7 @@ const ART = {
     }
 
     if (t.id === "btn-sanctum-hub" || t.getAttribute("data-action") === "enter-sanctum") {
+      closeModal();
       closeDrawer();
       if (arena.sanctumMode) initArenaStage(arena.stageIdx, false);
       else enterSanctumHub();
@@ -28718,6 +28759,10 @@ const ART = {
       return;
     }
     if (t.id === "btn-export-cloud-save" || t.getAttribute("data-action") === "copy-cloud-save") {
+      if (sandboxMode) {
+        showToast("🧪 演武沙盒模式已禁用云码导出与导入（请先退出沙盒）");
+        return;
+      }
       const inp = document.getElementById("inp-cloud-save-code");
       if (inp) {
         inp.value = exportFullCloudSaveCode();
@@ -28730,6 +28775,10 @@ const ART = {
       return;
     }
     if (t.id === "btn-import-cloud-save" || t.getAttribute("data-action") === "import-cloud-save") {
+      if (sandboxMode) {
+        showToast("🧪 演武沙盒模式已禁用云码导出与导入（请先退出沙盒）");
+        return;
+      }
       const inp = document.getElementById("inp-cloud-save-code");
       const parsedRes = parseCloudSaveCode(inp ? inp.value : "");
       const stEl = document.getElementById("lbl-cloud-save-status");
