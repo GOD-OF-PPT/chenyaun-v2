@@ -28652,7 +28652,14 @@ const ART = {
       const savedRecap = deferredVolumeRecapModal;
       deferredVolumeRecapModal = null;
       if (game && arena.stageEpoch === savedRecap.stageEpoch) {
-        setTimeout(() => openVolumeEndRecapModal(savedRecap.stageIdx, savedRecap.payload, savedRecap.onDismiss), 0);
+        setTimeout(() => {
+          if (!game || arena.stageEpoch !== savedRecap.stageEpoch) return;
+          if (saveConflictState || storageReadError || arena.defeatPending) {
+            if (!deferredVolumeRecapModal) deferredVolumeRecapModal = savedRecap;
+            return;
+          }
+          openVolumeEndRecapModal(savedRecap.stageIdx, savedRecap.payload, savedRecap.onDismiss);
+        }, 0);
         return;
       }
     }
