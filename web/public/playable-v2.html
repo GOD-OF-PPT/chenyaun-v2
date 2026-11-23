@@ -9009,6 +9009,7 @@ const ART = {
   function startBossRushGauntlet(startBout = 1) {
     if (!game) return;
     if (!guardEcosystemAccess("sword_tomb_rush")) return;
+    resetStageTransitionState();
     closeModal();
     closeDrawer();
     const canvas = document.getElementById("fx-canvas");
@@ -9017,6 +9018,7 @@ const ART = {
     arena.stageEpoch += 1;
     arena.sanctumMode = false;
     arena.towerMode = false;
+    arena.dungeonMap = null;
     arena.celestialSpire = null;
     arena.sectDefense = null;
     arena.cloudFlight = null;
@@ -9637,6 +9639,7 @@ const ART = {
   function startSectDefenseSiege() {
     if (!game) return;
     if (!guardEcosystemAccess("sect_defense")) return;
+    resetStageTransitionState();
     closeModal();
     closeDrawer();
     const cv = document.getElementById("fx-canvas");
@@ -10057,6 +10060,7 @@ const ART = {
   function startCloudSeaAerialStage() {
     if (!game) return;
     if (!guardEcosystemAccess("cloud_sea_trial")) return;
+    resetStageTransitionState();
     closeModal();
     closeDrawer();
     const cv = document.getElementById("fx-canvas");
@@ -10065,6 +10069,7 @@ const ART = {
     arena.stageEpoch += 1;
     arena.sanctumMode = false;
     arena.towerMode = false;
+    arena.dungeonMap = null;
     arena.bossRush = null;
     arena.sectDefense = null;
     arena.celestialSpire = null;
@@ -10487,12 +10492,14 @@ const ART = {
 
   function startCelestialSpireRun(startFloor = 1) {
     if (!game) return;
+    resetStageTransitionState();
     closeModal();
     closeDrawer();
     if (!game.spireCurios) game.spireCurios = {};
     arena.stageEpoch += 1;
     arena.sanctumMode = false;
     arena.towerMode = false;
+    arena.dungeonMap = null;
     arena.bossRush = null;
     arena.sectDefense = null;
     arena.cloudFlight = null;
@@ -10581,7 +10588,7 @@ const ART = {
 
     if (sp.floor === 9) {
       // Floor 9 Apex Boss: Sky-Patrol Thunder-Roc Sovereign + Escort!
-      spawnSingleEnemy("sky_roc", w * 0.66, h * 0.48, 1.0, true, "登仙台九重帝君 · 九霄雷鹏神将");
+      spawnSingleEnemy("sky_roc", w * 0.66, h * 0.48, 1.0, true, "登仙台九重帝君 · 巡天金甲雷鹏将");
       applySpireStats(arena.enemies[arena.enemies.length - 1], rb.bossHp * 1.10, 1.06, 1.08);
       spawnSingleEnemy("sentinel", w * 0.60, h * 0.60, 1.0, false, "凌霄护殿金甲卫");
       applySpireStats(arena.enemies[arena.enemies.length - 1], rb.mobHp * 1.25, 0.78, 0.74);
@@ -11624,6 +11631,7 @@ const ART = {
       if (parsed) safeAssignPlain(workshopState, parsed);
     }
     const activeSeed = encodeWorkshopSeed(workshopState);
+    resetStageTransitionState();
     closeModal();
     closeDrawer();
 
@@ -11637,7 +11645,6 @@ const ART = {
     arena.cloudFlight = null;
     arena.celestialSpire = null;
     arena.dungeonMap = null;
-    arena.stageClearPending = false;
     arena.waveTransitioning = false;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
@@ -15340,6 +15347,7 @@ const ART = {
     arena.stageEpoch += 1;
     arena.waveTransitioning = false;
     clearTransientChoiceQueues();
+    resetStageTransitionState();
     closeModal();
     closeDrawer();
     arena.bossRush = null;
@@ -16284,6 +16292,33 @@ const ART = {
     pendingCompareGear = null;
     temperUseCoreDiscount = false;
     renderGearCompareCard();
+  }
+
+  function resetStageTransitionState() {
+    const wasCutscene = cutscene.active;
+    cutscene.active = false;
+    cutscene.onFinish = null;
+    cutscene.triggerEl = null;
+    const dlgBar = document.getElementById("story-dialogue-bar");
+    if (dlgBar) {
+      if (document.activeElement && dlgBar.contains(document.activeElement) && typeof document.activeElement.blur === "function") {
+        try { document.activeElement.blur(); } catch (e) {}
+      }
+      dlgBar.classList.remove("open");
+    }
+    const chBox = document.getElementById("dlg-choices-box");
+    if (chBox) {
+      chBox.innerHTML = "";
+      chBox.style.display = "none";
+    }
+    if (wasCutscene) {
+      const bd = document.getElementById("modal-backdrop");
+      arena.paused = Boolean(drawerOpen || (bd && bd.classList.contains("open")));
+      if (typeof renderOnboardingCoach === "function") renderOnboardingCoach();
+    }
+    arena.stageClearHandledEpoch = -1;
+    arena.stageClearPending = false;
+    pendingVolumeRecapOnDismiss = null;
   }
 
   function openGearBagFullModal(newItem) {
@@ -18091,19 +18126,8 @@ const ART = {
     const w = canvas.width || window.innerWidth;
     const h = canvas.height || window.innerHeight;
 
-    if (cutscene.active) {
-      cutscene.active = false;
-      cutscene.onFinish = null;
-      cutscene.triggerEl = null;
-      const dlgBar = document.getElementById("story-dialogue-bar");
-      if (dlgBar) dlgBar.classList.remove("open");
-      const bd0 = document.getElementById("modal-backdrop");
-      arena.paused = drawerOpen || !!(bd0 && bd0.classList.contains("open"));
-    }
+    resetStageTransitionState();
     arena.stageEpoch += 1;
-    arena.stageClearHandledEpoch = -1;
-    arena.stageClearPending = false;
-    pendingVolumeRecapOnDismiss = null;
     arena.waveTransitioning = false;
     arena.sanctumMode = true;
     arena.towerMode = false;
@@ -18275,19 +18299,8 @@ const ART = {
     const w = canvas.width || window.innerWidth;
     const h = canvas.height || window.innerHeight;
 
-    if (cutscene.active) {
-      cutscene.active = false;
-      cutscene.onFinish = null;
-      cutscene.triggerEl = null;
-      const dlgBar = document.getElementById("story-dialogue-bar");
-      if (dlgBar) dlgBar.classList.remove("open");
-      const bd0 = document.getElementById("modal-backdrop");
-      arena.paused = drawerOpen || !!(bd0 && bd0.classList.contains("open"));
-    }
+    resetStageTransitionState();
     arena.stageEpoch += 1;
-    arena.stageClearHandledEpoch = -1;
-    arena.stageClearPending = false;
-    pendingVolumeRecapOnDismiss = null;
     arena.waveTransitioning = false;
     arena.sanctumMode = false;
     arena.bossRush = null;
@@ -18971,12 +18984,12 @@ const ART = {
       const clearEpoch = arena.stageEpoch;
       const finalize = () => {
         arena.stageClearPending = false;
-        if (!game || arena.stageEpoch !== clearEpoch || arena.sanctumMode || arena.towerMode) return;
+        if (!game || arena.stageEpoch !== clearEpoch || !isNormalCampaignStage()) return;
         spawnStageClearPortals(stageIdx, clearPayload);
         updateHud();
       };
       playCutscene(`clear_stage${stageIdx}`, () => {
-        if (!game || arena.stageEpoch !== clearEpoch || arena.sanctumMode || arena.towerMode) {
+        if (!game || arena.stageEpoch !== clearEpoch || !isNormalCampaignStage()) {
           arena.stageClearPending = false;
           return;
         }
@@ -28081,8 +28094,7 @@ const ART = {
     }
     if (!game) game = createFreshGame("顾长青", "sword_bone");
     game.unlockAllArcana = true;
-    cutscene.active = false;
-    document.getElementById("story-dialogue-bar").classList.remove("open");
+    resetStageTransitionState();
     closeModal();
     closeDrawer();
     game.openingChoice = "help";
@@ -28291,7 +28303,12 @@ const ART = {
       const hasChoices = !!(curLine && curLine.choices && curLine.choices.length);
       if (!hasChoices && (ev.code === "Space" || ev.code === "Enter")) {
         ev.preventDefault();
-        advanceCutscene(false);
+        const ae = document.activeElement;
+        if (ae && ae.id === "btn-dlg-skip") {
+          advanceCutscene(true);
+        } else {
+          advanceCutscene(false);
+        }
         return;
       }
       if (ev.code === "Escape") {
@@ -29081,10 +29098,10 @@ const ART = {
       }
       game = null;
       lastSavedPayloadChecksum = null;
-      cutscene.active = false;
+      arena.stageEpoch += 1;
+      resetStageTransitionState();
       arena.nearbyProp = null;
       arena.defeatPending = null;
-      document.getElementById("story-dialogue-bar").classList.remove("open");
       const sbBadge = document.getElementById("hud-sandbox-badge");
       if (sbBadge) sbBadge.style.display = "none";
       closeModal();
@@ -29212,10 +29229,10 @@ const ART = {
       saveConflictState = null;
       storageWriteError = null;
       storageReadError = null;
-      cutscene.active = false;
+      arena.stageEpoch += 1;
+      resetStageTransitionState();
       arena.nearbyProp = null;
       arena.defeatPending = null;
-      document.getElementById("story-dialogue-bar").classList.remove("open");
       closeModal();
       closeDrawer();
       document.getElementById("welcome-screen").style.display = "flex";
@@ -30649,8 +30666,8 @@ const ART = {
       saveReadOnlyMode = false;
       saveConflictState = null;
       storageWriteError = null;
-      cutscene.active = false;
-      document.getElementById("story-dialogue-bar").classList.remove("open");
+      arena.stageEpoch += 1;
+      resetStageTransitionState();
       closeModal(); closeDrawer();
       if (metaState.ascensions >= 1) selectedPerkId = "immortal_echo";
       renderWelcomeScreen();
