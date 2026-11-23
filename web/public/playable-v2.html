@@ -8151,32 +8151,61 @@ const ART = {
     return true;
   }
 
+  // Centralized photo-mode cleanup so session exits & mode switches never leak photoPauseToken or stale photoMode.active
+  function resetPhotoModeOverlay({ resetCamera = false, skipCalmReeval = false } = {}) {
+    const wasActive = Boolean(photoMode.active || photoPauseToken);
+    photoMode.active = false;
+    photoMode.uiHidden = false;
+    photoMode.previewImpact = false;
+    photoMode.dragging = false;
+    if (resetCamera) {
+      photoMode.zoom = 1.15;
+      photoMode.panX = 0;
+      photoMode.panY = 0;
+    }
+    if (document && document.body) {
+      document.body.classList.remove("photo-mode-active", "photo-ui-hidden");
+    }
+    const panel = document.getElementById("photo-mode-panel");
+    if (panel) panel.classList.remove("open");
+    const prevPhotoTok = photoPauseToken;
+    photoPauseToken = null;
+    releasePauseToken(prevPhotoTok);
+    if (wasActive) {
+      syncPhotoStudioUi();
+      if (!skipCalmReeval) setTimeout(() => requestCalmReevaluation(), 0);
+    }
+  }
+
   // `P` Key AAA Free Photo Mode (`太虚绘卷 · 自由摄影模式`)
   function togglePhotoMode(force = null) {
-    if (!game || document.getElementById("welcome-screen").style.display !== "none") return;
-    const next = force !== null ? force : !photoMode.active;
-    photoMode.active = next;
+    if (!game || document.getElementById("welcome-screen").style.display !== "none") return false;
+    const next = force !== null ? Boolean(force) : !photoMode.active;
     const panel = document.getElementById("photo-mode-panel");
     if (next) {
+      const bd = document.getElementById("modal-backdrop");
+      const modalOpen = Boolean(bd && bd.classList.contains("open"));
+      const curPri = modalOpen ? (hasOwn(MODAL_PRIORITY, activeModalKind) ? MODAL_PRIORITY[activeModalKind] : MODAL_PRIORITY.default) : 0;
+      if (saveConflictState || arena.defeatPending || storageReadError || (modalOpen && (!modalCloseable || curPri >= 100))) {
+        showToast("当前有重要抉择或系统弹窗待处理，暂不可开启摄影模式。", { key: "photo_blocked_n0", throttleMs: 2000 });
+        return false;
+      }
+      // Acquire photoPauseToken BEFORE closing drawer/modal so pauseTokens.size NEVER dips to 0 mid-swap!
+      if (!photoPauseToken) photoPauseToken = acquirePauseToken("photo", "photo_mode");
+      photoMode.active = true;
       closeDrawer();
       closeModal();
-      if (!photoPauseToken) photoPauseToken = acquirePauseToken("photo", "photo_mode");
       photoMode.uiHidden = false;
       document.body.classList.add("photo-mode-active");
       document.body.classList.remove("photo-ui-hidden");
       if (panel) panel.classList.add("open");
       Sound.bianzhong(659.25, 0.08);
+      syncPhotoStudioUi();
+      return true;
     } else {
-      photoMode.uiHidden = false;
-      photoMode.previewImpact = false;
-      document.body.classList.remove("photo-mode-active", "photo-ui-hidden");
-      if (panel) panel.classList.remove("open");
-      const prevPhotoTok = photoPauseToken;
-      photoPauseToken = null;
-      releasePauseToken(prevPhotoTok);
-      setTimeout(() => requestCalmReevaluation(), 0);
+      resetPhotoModeOverlay();
+      return false;
     }
-    syncPhotoStudioUi();
   }
 
   function syncPhotoStudioUi() {
@@ -14055,6 +14084,7 @@ const ART = {
         showToast(`⚠ 云码导入失败：${reason}`);
         return { ok: false, reason };
       }
+      clearTransientChoiceQueues();
       saveA11ySettings();
       try { localStorage.setItem(STEMS_STORAGE_KEY, JSON.stringify(Sound.stems)); } catch (e) {}
       syncFlyingSwords();
@@ -15926,6 +15956,8 @@ const ART = {
     arena.waveTransitioning = false;
     clearTransientChoiceQueues();
     resetStageTransitionState();
+    resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
+    arena.defeatPending = null;
     releasePauseToken(defeatPauseToken); defeatPauseToken = null;
     closeModal();
     closeDrawer();
@@ -18005,7 +18037,11 @@ const ART = {
     storageWriteError = null;
     arena.stageEpoch += 1;
     resetStageTransitionState();
+    resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
+    arena.defeatPending = null;
+    releasePauseToken(defeatPauseToken); defeatPauseToken = null;
     closeModal(); closeDrawer();
+    syncPendingRewardsBadge();
     if (metaState.ascensions >= 1) selectedPerkId = "immortal_echo";
     renderWelcomeScreen();
     const customDr = document.getElementById("title-custom-drawer");
@@ -19641,6 +19677,15 @@ const ART = {
     if (!calm) {
       arena.calmT = 0;
       arena.calmFlushed = false;
+      const cmpEl = document.getElementById("gear-compare-card");
+      if ((cmpEl && cmpEl.style.display !== "none") || compareSmeltConfirm) {
+        clearCompareSmeltConfirm();
+        renderGearCompareCard();
+      }
+      const ulEl = document.getElementById("new-unlock-card");
+      if (ulEl && ulEl.style.display !== "none") {
+        renderActiveUnlockCard();
+      }
       return;
     }
     if (!isCalmUiBlocked()) {
@@ -20057,6 +20102,7 @@ const ART = {
         waveStarted = true;
         spawnCurrentWave();
         focusBattlefield();
+        requestCalmReevaluation();
       };
       if (enterKey && CHAPTER_CUTSCENES[enterKey] && !(game.seenCutscenes && game.seenCutscenes[enterKey])) {
         playCutscene(enterKey, startWaveOnce);
@@ -20431,9 +20477,11 @@ const ART = {
     const realmName = (REALMS[game.realm] && REALMS[game.realm].name) || "凡人";
     const nextObjective = computeVolumeEndNextObjective(stageIdx, game);
 
-    pendingVolumeRecapOnDismiss = typeof onDismiss === "function" ? onDismiss : null;
-    lastVolumeRecapArgs = { stageIdx, payload, onDismiss: pendingVolumeRecapOnDismiss, stageEpoch: arena.stageEpoch };
-    openModal(`
+    const onDismissFn = typeof onDismiss === "function" ? onDismiss : null;
+    const recapArgs = { stageIdx, payload, onDismiss: onDismissFn, stageEpoch: arena.stageEpoch };
+    pendingVolumeRecapOnDismiss = onDismissFn;
+    lastVolumeRecapArgs = recapArgs;
+    const opened = openModal(`
       <div class="drawer-mural-banner" style="height:106px;">
         <img src="${ART[act.arenaArt] || ART.arena_wilderness}" alt="${escapeHtml(meta.title)}" />
         <div class="drawer-mural-overlay">
@@ -20475,6 +20523,12 @@ const ART = {
         <button type="button" id="btn-volume-recap-confirm" class="btn-gold" style="padding:8px 20px;font-size:13px;" data-action="confirm-volume-recap">合卷前行 · 开启传送阵 ▸</button>
       </div>
     `, true, { kind: "volume_recap" });
+    if (!opened) {
+      pendingVolumeRecapOnDismiss = null;
+      lastVolumeRecapArgs = null;
+      deferredVolumeRecapModal = recapArgs;
+    }
+    return opened;
   }
 
   function spawnStageClearPortals(stageIdx, payload = {}) {
@@ -20750,6 +20804,7 @@ const ART = {
         Sound.drum(0.24);
         launchBossBanner();
         updateHud();
+        requestCalmReevaluation();
       };
       const preKey = `boss_pre_stage${arena.stageIdx}`;
       if (isNormalCampaignStage() && CHAPTER_CUTSCENES[preKey] && !(game.seenCutscenes && game.seenCutscenes[preKey])) {
@@ -22378,7 +22433,9 @@ const ART = {
       hardcore = true;
     }
 
+    resetPhotoModeOverlay({ skipCalmReeval: true });
     closeModal();
+    closeDrawer();
     arena.defeatRevivesUsed = 0;
     arena.player.meditating = false;
 
@@ -22515,7 +22572,8 @@ const ART = {
     if (!allUnowned.length) {
       if (activePendingRewardId) {
         const fruitEvId = activePendingRewardId;
-        commitPendingReward(fruitEvId, () => true);
+        const res = commitPendingReward(fruitEvId, () => true);
+        if (!res.ok) return;
         if (getPendingRewardsByKind("iconic_draft").length > 0) {
           requestCalmReevaluation({ immediate: isCombatCalm() });
           return;
@@ -28463,8 +28521,8 @@ const ART = {
     const curOpen = Boolean(bd.classList.contains("open"));
     const curPri = curOpen ? (hasOwn(MODAL_PRIORITY, activeModalKind) ? MODAL_PRIORITY[activeModalKind] : MODAL_PRIORITY.default) : 0;
 
-    // F09 Priority Guard: Lower-priority modals MUST NEVER overwrite active N0 overlays (save_conflict / save_corrupt / defeat).
-    if (curOpen && curPri >= 100 && nextPri < curPri && !(opts && opts.forcePreempt)) {
+    // F09 Priority Guard: Lower-priority modals MUST NEVER overwrite active N0 (100) or P0_STORY (70) overlays.
+    if (curOpen && curPri >= 70 && nextPri < curPri && !(opts && opts.forcePreempt)) {
       if (["gear_overflow", "soul_unlock", "destiny_fruit", "iconic_draft", "lifespan_exhausted"].includes(modalKind)) {
         revertActivePendingRewardToPending();
         activeGearOverflowItem = null;
@@ -28538,9 +28596,14 @@ const ART = {
     if (activePendingRewardId) {
       // If an N1 modal is closed without committing (e.g., Esc on closeable modal), keep it safely pending (except explicit lifespan dismiss via Esc/X)
       if (closingKind === "lifespan_exhausted" && activeLifespanModalOpen) {
-        lifespanExhaustedPromptDismissed = true;
-        pendingLifespanExhaustedPrompt = false;
-        commitPendingReward(activePendingRewardId, () => true);
+        const res = commitPendingReward(activePendingRewardId, () => true);
+        if (res.ok) {
+          lifespanExhaustedPromptDismissed = true;
+          pendingLifespanExhaustedPrompt = false;
+        } else if (saveConflictState && activeModalKind === "save_conflict") {
+          activeLifespanModalOpen = false;
+          return;
+        }
       } else {
         revertActivePendingRewardToPending();
       }
@@ -28578,6 +28641,12 @@ const ART = {
       restoreTriggerFocus(target);
     }
     if (recapCb) recapCb();
+    // F09: Resume active defeat decision modal if it was preempted by a peer N0 overlay (e.g., save_conflict) that has now cleared!
+    const stillOpen = Boolean(bd && bd.classList.contains("open"));
+    if (!stillOpen && arena.defeatPending && !saveConflictState && !storageReadError && game && closingKind !== "defeat") {
+      openDefeatDecisionModal(!!arena.defeatPending.isTribulation);
+      return;
+    }
     // Resume volume recap if it was preempted by an N0 modal that has now cleanly cleared!
     if (deferredVolumeRecapModal && !saveConflictState && !storageReadError && !arena.defeatPending) {
       const savedRecap = deferredVolumeRecapModal;
@@ -30681,6 +30750,7 @@ const ART = {
     if (m4QuickAct === "open-hall-of-lives") {
       const pav = document.getElementById("pavilion-popover"); if (pav) pav.classList.remove("open");
       const pavBtn = document.getElementById("btn-pavilion-menu"); if (pavBtn) pavBtn.classList.remove("open");
+      if (activeModalKind === "ending" && modalCloseable) closeModal();
       openHallOfLivesModal();
       return;
     }
@@ -30738,23 +30808,82 @@ const ART = {
     if (m4QuickAct === "lifespan-stay") {
       const evId = activePendingRewardId;
       activeLifespanModalOpen = false;
-      lifespanExhaustedPromptDismissed = true;
-      pendingLifespanExhaustedPrompt = false;
       if (evId) {
         const res = commitPendingReward(evId, () => true);
-        if (!res.ok && res.reason === "save_failed") {
+        if (!res.ok) {
           if (!saveConflictState) closeModal();
           return;
         }
       }
+      lifespanExhaustedPromptDismissed = true;
+      pendingLifespanExhaustedPrompt = false;
       closeModal();
       showToast("已暂留此世，进度完好保留；可炼制【延寿青莲丹】或破境延寿！");
       return;
     }
     if (m4QuickAct === "lifespan-use-pill") {
+      if (!game || (game.inventory.longevity_pill || 0) < 1) {
+        showToast("行囊中暂无【延寿青莲丹】！");
+        return;
+      }
       const evId = activePendingRewardId;
       if (evId) {
-        commitPendingReward(evId, () => true);
+        let prevLf = null;
+        let hpRes = null;
+        let lf = null;
+        const res = commitPendingReward(evId, () => {
+          if ((game.inventory.longevity_pill || 0) < 1) return false;
+          prevLf = getLifespanInfo(game);
+          game.inventory.longevity_pill -= 1;
+          game.lifespanBonusMonths = (game.lifespanBonusMonths || 0) + 360;
+          hpRes = grantPermanentStatBonus(game, { hp: 15, source: "alchemy" });
+          const stNew = getCombatStats(game);
+          if (hpRes.grantedHp > 0) game.hp = Math.min(stNew.maxHp, game.hp + hpRes.grantedHp);
+          lf = getLifespanInfo(game);
+          if (Array.isArray(game.journal)) game.journal.unshift(`服下【延寿青莲丹】，寿元延至 ${lf.maxYears} 载！`);
+          return true;
+        });
+        if (!res.ok) {
+          if (!saveConflictState) closeModal();
+          return;
+        }
+        if (lf && lf.ratio < 1.0) {
+          lifespanExhaustedPromptDismissed = false;
+          pendingLifespanExhaustedPrompt = false;
+        }
+        Sound.fanfare();
+        addRipple(arena.player.x, arena.player.y + 18, 120, "#70ffe6");
+        addFloat("🌿 延寿青莲丹 · 寿元 +30 载！", arena.player.x, arena.player.y - 54, "#70ffe6", 18, true);
+        const reliefNote = (lf && prevLf && (lf.status !== prevLf.status || lf.xpEfficiencyMult > prevLf.xpEfficiencyMult))
+          ? `（寿元警报已解，修炼效率恢复至 ${Math.round(lf.xpEfficiencyMult * 100)}%！）`
+          : "";
+        showToast(hpRes && hpRes.grantedHp > 0
+          ? `🌿 服下【延寿青莲丹】· 寿元永久 +30 载（${lf.curYears}/${lf.maxYears} 载）且气血上限 +${hpRes.grantedHp}${hpRes.hpCapped ? `（丹道气血已达上限 ${hpRes.pg.alchemyHp}/${hpRes.caps.alchemyHp}）` : ""}！${reliefNote}`
+          : `🌿 服下【延寿青莲丹】· 寿元永久 +30 载（${lf.curYears}/${lf.maxYears} 载，本境丹道永久气血已达上限 ${hpRes.pg.alchemyHp}/${hpRes.caps.alchemyHp}）！${reliefNote}`);
+        updateHud();
+        if (drawerOpen) renderDrawerContent();
+        if (activeLifespanModalOpen) {
+          activeLifespanModalOpen = false;
+          if (drawerOpen) {
+            const panel = document.getElementById("jade-panel");
+            if (panel && (!lastModalTriggerEl || !lastModalTriggerEl.isConnected || !isElementFocusable(lastModalTriggerEl))) {
+              const refreshedTrigger =
+                panel.querySelector('#panel-scroll-body [data-use-item="longevity_pill"]') ||
+                panel.querySelector('#panel-scroll-body [data-action="open-lifespan-exhausted"]') ||
+                panel.querySelector('[data-close-drawer]');
+              if (refreshedTrigger && isElementFocusable(refreshedTrigger)) {
+                lastModalTriggerEl = refreshedTrigger;
+              }
+            }
+          } else if (lastModalTriggerEl && lastModalTriggerEl.id === "hud-lifespan-badge" && (lastModalTriggerEl.style.display === "none" || !isElementFocusable(lastModalTriggerEl))) {
+            const fallbackBtn = document.getElementById("btn-open-profile") || document.getElementById("btn-open-settings");
+            if (fallbackBtn && isElementFocusable(fallbackBtn)) {
+              lastModalTriggerEl = fallbackBtn;
+            }
+          }
+          closeModal();
+        }
+        return;
       }
       consumeInventoryItem("longevity_pill");
       return;
@@ -31011,6 +31140,9 @@ const ART = {
       const inp = document.getElementById("player-name-input");
       game = createFreshGame(inp ? inp.value : "顾长青", selectedPerkId, selectedCalamityTier);
       arena.stanceIdx = 0;
+      resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
+      arena.defeatPending = null;
+      releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       closeModal();
       document.getElementById("welcome-screen").style.display = "none";
       Sound.fanfare();
@@ -31040,6 +31172,9 @@ const ART = {
         return;
       }
       clearTransientChoiceQueues();
+      resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
+      arena.defeatPending = null;
+      releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       sandboxMode = false;
       preSandboxSnapshot = null;
       const s = res.bundle;
@@ -31263,6 +31398,9 @@ const ART = {
       game = normalizeLoadedGame(s.game);
       arena.stanceIdx = ((Math.floor(num(s.stanceIdx, 0)) % SWORD_STANCES.length) + SWORD_STANCES.length) % SWORD_STANCES.length;
       arena.stageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(s.stageIdx, 0))));
+      resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
+      arena.defeatPending = null;
+      releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       closeModal();
       closeDrawer();
       if (s.sanctumMode) enterSanctumHub({ skipSave: true });
@@ -31316,8 +31454,8 @@ const ART = {
       lastSavedPayloadChecksum = null;
       arena.stageEpoch += 1;
       resetStageTransitionState();
+      resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
       releasePauseToken(defeatPauseToken); defeatPauseToken = null;
-      releasePauseToken(photoPauseToken); photoPauseToken = null;
       arena.nearbyProp = null;
       arena.defeatPending = null;
       const sbBadge = document.getElementById("hud-sandbox-badge");
@@ -31450,10 +31588,13 @@ const ART = {
       storageReadError = null;
       arena.stageEpoch += 1;
       resetStageTransitionState();
+      resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
+      releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       arena.nearbyProp = null;
       arena.defeatPending = null;
       closeModal();
       closeDrawer();
+      syncPendingRewardsBadge();
       document.getElementById("welcome-screen").style.display = "flex";
       renderWelcomeScreen();
       pendingCompareGear = null;
@@ -32370,19 +32511,20 @@ const ART = {
       const did = t.getAttribute("data-draft-id");
       const evId = activePendingRewardId;
       let newSynName = null;
+      let pickedPet = false;
+      let pickedLawId = null;
       const applyDraft = () => {
         if (dt === "pet") {
           if (hasOwn(SPIRIT_PETS, did)) {
             game.pet.id = did;
             game.pet.level = Math.max(1, game.pet.level || 1);
             if (!game.pet.skills || typeof game.pet.skills !== "object") game.pet.skills = { tier3: null, tier5: null };
-            queueNewUnlockCardsForState(game);
+            pickedPet = true;
           }
         } else if (DAO_LAWS[did] && !game.laws.includes(did)) {
           const beforeSyn = SYNERGIES.filter(s => s.active(game)).map(s => s.id);
           game.laws.push(did);
-          if (!sandboxMode && !metaState.seenLaws.includes(did)) metaState.seenLaws.push(did);
-          if (game.laws.length >= 5) unlockAchievement("ach_laws5");
+          pickedLawId = did;
           const newSyn = SYNERGIES.find(s => !beforeSyn.includes(s.id) && s.active(game));
           if (newSyn) newSynName = newSyn.name;
         }
@@ -32397,6 +32539,16 @@ const ART = {
       } else {
         applyDraft();
         saveGame();
+      }
+      if (pickedPet) {
+        queueNewUnlockCardsForState(game);
+      }
+      if (pickedLawId) {
+        if (!sandboxMode && !metaState.seenLaws.includes(pickedLawId)) {
+          metaState.seenLaws.push(pickedLawId);
+          saveMeta();
+        }
+        if (game.laws.length >= 5) unlockAchievement("ach_laws5");
       }
       if (newSynName) showToast(`★ 大道共鸣！激活神话羁绊【${newSynName}】！`);
       syncFlyingSwords(); Sound.fanfare();

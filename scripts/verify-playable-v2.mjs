@@ -2067,17 +2067,22 @@ try {
         moundHasPuppet: moundText.includes("古修剑冢") && moundText.includes("古境剑傀"),
         ch4DlgOpen: document.getElementById("story-dialogue-bar").classList.contains("open"),
         ch4Seen: !!(s.game.seenCutscenes && s.game.seenCutscenes.enter_sword_mound),
-        ch4Variants: s.arena.enemies.map(e => ({ name: e.name, tag: e.variantTag, color: e.variantColor }))
+        ch4EnemiesDuringCutscene: s.arena.enemies.length
       };
     });
     assert.equal(csCheck.secHasSerpent, true, "Ch3 enter_secret cutscene must reference 寒潭玄蛇");
     assert.equal(csCheck.moundHasPuppet, true, "Ch4 enter_sword_mound cutscene must reference 古修剑冢 & 古境剑傀");
     assert.equal(csCheck.ch4DlgOpen, true, "Entering Ch4 Sword Mound first time must open cutscene dialogue bar");
     assert.equal(csCheck.ch4Seen, true);
-    assert.ok(csCheck.ch4Variants.length > 0 && csCheck.ch4Variants.every(v => v.tag && v.color), "Ch4 enemies must carry chapter variant metadata");
+    assert.equal(csCheck.ch4EnemiesDuringCutscene, 0, "Q1 F12 A6: Ch4 enemies must wait until unseen enter_sword_mound cutscene closes");
     await maybeShot(page, "p4_01_ch4_sword_mound_cutscene.png");
     await page.keyboard.press("Escape");
     await page.waitForTimeout(120);
+    const ch4Variants = await page.evaluate(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      return s.arena.enemies.map(e => ({ name: e.name, tag: e.variantTag, color: e.variantColor }));
+    });
+    assert.ok(ch4Variants.length > 0 && ch4Variants.every(v => v.tag && v.color), "Ch4 enemies must carry chapter variant metadata");
 
     // 2. All 5 Chapters spawn distinct chapter-flavored enemy variants
     const allStageVariants = await page.evaluate(() => {
@@ -5935,6 +5940,8 @@ try {
     assert.equal(afterReloadCount, 3, "All 3 pendingRewards must survive page reload");
 
     await page.click("#btn-open-settings");
+    await page.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+    await page.click('#modal-backdrop.open [data-sys-tab="controls"]');
     await page.waitForSelector('#modal-backdrop.open [data-action="return-title-safe"]');
     await page.click('[data-action="return-title-safe"]');
     await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display !== "none");
@@ -6192,7 +6199,10 @@ try {
     assert.equal(enterSectDuring.enemiesDuringCutscene, 0, "A6: Enemies must NOT spawn until enter_sect cutscene finishes/skips");
 
     // Rapid double-skip click must spawn wave exactly ONCE
-    await page.click("#btn-dlg-skip");
+    await page.evaluate(() => {
+      const btn = document.getElementById("btn-dlg-skip");
+      if (btn) { btn.click(); btn.click(); }
+    });
     await page.waitForTimeout(180);
     const enterSectAfter = await page.evaluate(() => {
       const s = window.__CHENYUAN_V25__.getState();
