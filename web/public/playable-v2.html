@@ -2720,6 +2720,53 @@
   body:has(#jade-panel.drawer-open) #gear-compare-card {
     display: none !important;
   }
+  #new-unlock-card {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 104px;
+    width: min(560px, 90vw);
+    z-index: 58;
+    pointer-events: auto;
+    padding: 10px 14px;
+    border-radius: 13px;
+    background: linear-gradient(160deg, rgba(10, 28, 36, 0.96), rgba(6, 15, 22, 0.98));
+    border: 1px solid rgba(112, 255, 230, 0.65);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.72), 0 0 22px rgba(112, 255, 230, 0.18);
+    backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    color: var(--text-main);
+  }
+  #new-unlock-card.stack-above-coach {
+    bottom: 156px;
+  }
+  .unlock-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .unlock-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11.5px;
+    line-height: 1.42;
+  }
+  .unlock-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  body:has(#modal-backdrop.open) #new-unlock-card,
+  body:has(#jade-panel.drawer-open) #new-unlock-card,
+  body:has(#story-dialogue-bar.open) #new-unlock-card,
+  body.photo-mode-active #new-unlock-card {
+    display: none !important;
+  }
   .gear-cmp-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -3038,6 +3085,12 @@
     border: 1px solid rgba(255, 104, 104, 0.78);
     color: #ffd0cc;
   }
+  .lifespan-alert-card.exhausted {
+    background: linear-gradient(155deg, rgba(78, 12, 20, 0.96), rgba(38, 6, 12, 0.98));
+    border: 1.5px solid rgba(255, 92, 108, 0.92);
+    box-shadow: 0 0 18px rgba(255, 72, 92, 0.28);
+    color: #ffe0dc;
+  }
   .recap-companion-comment {
     margin-top: 6px;
     padding-top: 6px;
@@ -3093,6 +3146,85 @@
     border: 1px solid rgba(255, 118, 108, 0.72);
     box-shadow: 0 0 12px rgba(255, 82, 99, 0.32);
     white-space: nowrap;
+  }
+  .hud-lifespan-pill {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    transition: transform 0.14s ease, box-shadow 0.14s ease;
+  }
+  .hud-lifespan-pill:hover { transform: translateY(-1px); }
+  .hud-lifespan-pill.warning {
+    color: #ffe8a8;
+    background: rgba(66, 46, 12, 0.92);
+    border: 1px solid rgba(255, 212, 106, 0.72);
+  }
+  .hud-lifespan-pill.critical {
+    color: #ffd0cc;
+    background: rgba(88, 18, 22, 0.94);
+    border: 1px solid rgba(255, 112, 108, 0.82);
+    box-shadow: 0 0 10px rgba(255, 84, 92, 0.28);
+  }
+  .hud-lifespan-pill.exhausted {
+    color: #fff0ec;
+    background: linear-gradient(135deg, rgba(168, 22, 38, 0.96), rgba(96, 10, 22, 0.98));
+    border: 1px solid rgba(255, 122, 122, 0.92);
+    box-shadow: 0 0 14px rgba(255, 76, 92, 0.44);
+  }
+  .pet-feed-cost-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 5px 8px;
+    border-radius: 8px;
+    background: rgba(10, 24, 30, 0.76);
+    border: 1px solid rgba(112, 255, 230, 0.24);
+    font-size: 10.5px;
+    color: #cbe6e0;
+  }
+  .pet-skill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    padding-top: 4px;
+    border-top: 1px solid rgba(132, 208, 194, 0.18);
+  }
+  .pet-skill-choice-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 9px;
+  }
+  .pet-skill-card-btn {
+    padding: 11px 10px;
+    border-radius: 11px;
+    background: linear-gradient(165deg, rgba(14, 34, 42, 0.94), rgba(7, 18, 24, 0.98));
+    border: 1.5px solid rgba(216, 179, 106, 0.42);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    text-align: left;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .pet-skill-card-btn:hover {
+    transform: translateY(-2px);
+    border-color: #70ffe6;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55), 0 0 16px rgba(112, 255, 230, 0.18);
+  }
+  .pet-skill-card-btn.selected {
+    border-color: #ffe28a;
+    background: linear-gradient(165deg, rgba(40, 34, 16, 0.94), rgba(14, 24, 28, 0.98));
   }
   .hud-sandbox-banner {
     pointer-events: auto;
@@ -3290,6 +3422,7 @@
         </div>
 
         <div class="hud-stones-chip">◈ <span id="hud-stones">55</span></div>
+        <button type="button" id="hud-lifespan-badge" class="hud-lifespan-pill" style="display:none;" data-action="open-lifespan-status"></button>
       </div>
 
       <!-- Visual Build Icon Chain -->
@@ -3370,7 +3503,7 @@
           <button type="button" id="btn-boss-rush" class="pavilion-item-btn" data-eco-sys="sword_tomb_rush" data-tip="万剑冢 · 踏天连战 (元婴期解封)|连续迎战七阵强化妖王、心魔镜像与太古烛龙"><svg class="svg-ico" style="width:13px;height:13px;color:#ff9a8b;" viewBox="0 0 24 24"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/></svg><span>万剑冢</span></button>
           <button type="button" id="btn-quick-map" class="pavilion-item-btn" data-eco-sys="demon_tower" data-tip="太虚锁妖古塔 (炼气期解封)|直接挑战无尽镇妖塔试炼"><svg class="svg-ico" style="width:13px;height:13px;color:var(--jade);" viewBox="0 0 24 24"><path d="M6 21h12M8 21V9l4-5 4 5v12M9 14h6"/></svg><span id="quick-map-lbl">锁妖塔</span></button>
           <button type="button" id="btn-star-chart" class="pavilion-item-btn" data-eco-sys="star_chart" data-tip="太虚周天星图 (N · 金丹期解封)|点亮二十八星宿激活星魂共鸣"><svg class="svg-ico" style="width:13px;height:13px;color:var(--gold-bright);" viewBox="0 0 24 24"><polygon points="12 2 15 9 22 9.5 16.5 14 18 21 12 17.5 6 21 7.5 14 2 9.5 9 9 12 2"/></svg><span>周天星图</span></button>
-          <button type="button" class="pavilion-item-btn" data-action="open-celestial-spire" data-eco-sys="celestial_spire" data-tip="太虚登仙台 (L · 金丹期解封)|九重天宫肉鸽奇物深渊"><svg class="svg-ico" style="width:13px;height:13px;color:#d69eff;" viewBox="0 0 24 24"><path d="M12 3l8 5-8 5-8-5 8-5z"/><path d="M4 13l8 5 8-5"/></svg><span>登仙台</span></button>
+          <button type="button" class="pavilion-item-btn" data-action="open-celestial-spire" data-eco-sys="celestial_spire" data-tip="太虚登仙台 (L · 元婴期解封)|九重天宫肉鸽奇物深渊"><svg class="svg-ico" style="width:13px;height:13px;color:#d69eff;" viewBox="0 0 24 24"><path d="M12 3l8 5-8 5-8-5 8-5z"/><path d="M4 13l8 5 8-5"/></svg><span>登仙台</span></button>
         </div>
         <div class="pavilion-sec-lbl">绘卷、音效与演武工具</div>
         <div class="pavilion-grid">
@@ -3450,7 +3583,7 @@
         <button type="button" class="btn-ghost" style="padding:1px 8px;font-size:10.5px;" data-action="toggle-arcana-vault">收起 ▾</button>
       </div>
       <div id="v24-genesis-dock">
-        <button type="button" id="btn-sanqing-clones" class="v24-gen-btn" data-action="cast-sanqing-clones" data-tip="一气化三清 · 身外法身三影同击 (4键激活 / 二段按4移形归元爆)|凝练【玉清青莲法身(80ms)】与【上清紫电法身(160ms)】完全同步复刻一切普攻、三器混编、六象特技、空连与易剑斩！存续中再按 4 键瞬发【移形换位·三清归元十字斩】！">
+        <button type="button" id="btn-sanqing-clones" class="v24-gen-btn" data-action="cast-sanqing-clones" data-arcana-act="sanqing" data-tip="一气化三清 · 身外法身三影同击 (4键 · 元婴期解封 / 二段按4移形归元爆)|凝练【玉清青莲法身(80ms)】与【上清紫电法身(160ms)】完全同步复刻一切普攻、三器混编、六象特技、空连与易剑斩！存续中再按 4 键瞬发【移形换位·三清归元十字斩】！">
           <img id="img-sanqing-ico" alt="一气三清" />
           <div style="display:flex;flex-direction:column;gap:1px;">
             <strong id="lbl-sanqing-title" style="font-family:var(--font-serif);font-size:11px;color:#80ffea;">一气三清</strong>
@@ -3458,7 +3591,7 @@
           </div>
           <span class="v22-key-badge">4</span>
         </button>
-        <button type="button" id="btn-shanhe-domain" class="v24-gen-btn" data-action="cast-shanhe-domain" data-tip="山河社稷图 · 画中水墨降维领域 (5键展开宣纸青绿山水界)|将首领与群妖摄入10秒【太古青绿山水画中界】（敌减速42%且破防+45%）；每次挥剑烙印【临·兵·斗·者·皆·阵·列·在·前】九字真言，叠满触发【笔落惊风雨·破画万钧斩】！">
+        <button type="button" id="btn-shanhe-domain" class="v24-gen-btn" data-action="cast-shanhe-domain" data-arcana-act="shanhe" data-tip="山河社稷图 · 画中水墨降维领域 (5键 · 化神期解封)|将首领与群妖摄入10秒【太古青绿山水画中界】（敌减速42%且破防+45%）；每次挥剑烙印【临·兵·斗·者·皆·阵·列·在·前】九字真言，叠满触发【笔落惊风雨·破画万钧斩】！">
           <img id="img-shanhe-ico" alt="山河社稷" />
           <div style="display:flex;flex-direction:column;gap:1px;">
             <strong id="lbl-shanhe-title" style="font-family:var(--font-serif);font-size:11px;color:#ffe89e;">山河社稷</strong>
@@ -3466,7 +3599,7 @@
           </div>
           <span class="v22-key-badge">5</span>
         </button>
-        <button type="button" id="btn-warship-strike" class="v24-gen-btn" data-action="cast-warship-strike" data-tip="凌霄仙舟 · 破界天基轰炸 (6键召唤母舰 · 7自创剑谱 · 8九州远征)|召唤宗门浮空母舰【听雨凌霄仙舟】掠空投下镇妖锁链锚定敌酋，倾泻【十二门徒御剑空降剑雨 + 太初灵晶主炮轰击】！">
+        <button type="button" id="btn-warship-strike" class="v24-gen-btn" data-action="cast-warship-strike" data-arcana-act="warship" data-tip="凌霄仙舟 · 破界天基轰炸 (6键 · 化神期解封)|召唤宗门浮空母舰【听雨凌霄仙舟】掠空投下镇妖锁链锚定敌酋，倾泻【十二门徒御剑空降剑雨 + 太初灵晶主炮轰击】！">
           <img id="img-warship-ico" alt="凌霄仙舟" />
           <div style="display:flex;flex-direction:column;gap:1px;">
             <strong id="lbl-warship-title" style="font-family:var(--font-serif);font-size:11px;color:#ffd166;">凌霄仙舟</strong>
@@ -3502,7 +3635,7 @@
         </button>
       </div>
       <div id="v22-tactical-dock">
-        <button type="button" id="btn-astral-form" class="v22-tac-btn" data-arena-skill="astral" data-tip="法天象地 · 十丈元神真身 (O键 / 满元神或SSS激发)|依正魔道心化为【太清金阙剑仙真身】或【九幽修罗魔剑真身】：全程霸体免控，施展裂穹巨剑与星河剑指；迎击烛龙/首领直接触发【双巨神跨屏角力】瞬碎护甲！">
+        <button type="button" id="btn-astral-form" class="v22-tac-btn" data-arena-skill="astral" data-arcana-act="astral" data-tip="法天象地 · 十丈元神真身 (O键 · 元婴期解封 / 满元神或SSS激发)|依正魔道心化为【太清金阙剑仙真身】或【九幽修罗魔剑真身】：全程霸体免控，施展裂穹巨剑与星河剑指；迎击烛龙/首领直接触发【双巨神跨屏角力】瞬碎护甲！">
           <img id="img-astral-ico" alt="法天象地" />
           <div style="display:flex;flex-direction:column;gap:1px;">
             <strong id="lbl-astral-title" style="font-family:var(--font-serif);font-size:11.5px;color:#ffe89e;">法天象地</strong>
@@ -3510,7 +3643,7 @@
           </div>
           <span class="v22-key-badge" data-bind-cap="astral">O</span>
         </button>
-        <button type="button" id="btn-mount-call" class="v22-tac-btn" data-arena-skill="mount" data-tip="山海灵骑 · 神兽骑乘冲锋 (J键呼哨/冲锋 · Z/右键跃马坠劈)|呼哨召出【踏云墨麒麟 / 九天青鸾凤 / 玄冥白泽兽】破阵冲锋撞飞群妖！骑乘中按 Z 或右键施展【飞身跃马·凌空坠星劈】无缝接空连！">
+        <button type="button" id="btn-mount-call" class="v22-tac-btn" data-arena-skill="mount" data-arcana-act="mount" data-tip="山海灵骑 · 神兽骑乘冲锋 (J键 · 金丹期解封 / Z或右键跃马坠劈)|呼哨召出【踏云墨麒麟 / 九天青鸾凤 / 玄冥白泽兽】破阵冲锋撞飞群妖！骑乘中按 Z 或右键施展【飞身跃马·凌空坠星劈】无缝接空连！">
           <img id="img-mount-ico" alt="灵骑" />
           <div style="display:flex;flex-direction:column;gap:1px;">
             <strong id="lbl-mount-name" style="font-family:var(--font-serif);font-size:11.5px;color:#70ffe6;">踏云麒麟</strong>
@@ -3518,7 +3651,7 @@
           </div>
           <span class="v22-key-badge" data-bind-cap="mount">J</span>
         </button>
-        <button type="button" id="btn-qimen-array" class="v22-tac-btn" data-arena-skill="qimen" data-tip="奇门遁甲 · 八门随身风水阵盘 (U键布阵与轮转四门)|脚下瞬展奇门风水盘并轮换【生门回春 / 景门离火附魔 / 惊门震雷聚怪 / 死门剑狱双倍破甲】；阵内放六象或合璧触发【阵眼扩域爆破】！">
+        <button type="button" id="btn-qimen-array" class="v22-tac-btn" data-arena-skill="qimen" data-arcana-act="qimen" data-tip="奇门遁甲 · 八门随身风水阵盘 (U键 · 金丹期解封)|脚下瞬展奇门风水盘并轮换【生门回春 / 景门离火附魔 / 惊门震雷聚怪 / 死门剑狱双倍破甲】；阵内放六象或合璧触发【阵眼扩域爆破】！">
           <img id="img-qimen-ico" alt="奇门" />
           <div style="display:flex;flex-direction:column;gap:1px;">
             <strong id="lbl-qimen-gate" style="font-family:var(--font-serif);font-size:11.5px;color:#ffd166;">奇门·生门</strong>
@@ -3528,7 +3661,7 @@
         </button>
       </div>
     </div>
-    <button type="button" id="btn-toggle-arcana" data-action="toggle-arcana-vault" data-tip="太虚仙法秘匣|收合奇门阵盘、山海灵骑、法天象地、一气三清、山河社稷图、凌霄仙舟等高阶神通（金丹期解封，或于右上【仙阁】提前开启全神通演武）">
+    <button type="button" id="btn-toggle-arcana" data-action="toggle-arcana-vault" data-tip="太虚仙法秘匣|金丹解封山海灵骑(J)/奇门阵盘(U)，元婴解封一气三清(4)/法天象地(O)，化神解封山河社稷图(5)/凌霄仙舟(6)（或于右上【仙阁】开启演武沙盒）">
       <span class="arcana-dot"></span>
       <span id="lbl-arcana-toggle">太虚秘匣</span>
     </button>
@@ -3604,14 +3737,14 @@
       <div id="cd-finisher" class="skill-cd-mask"></div>
     </button>
 
-    <button type="button" id="orb-pet" class="skill-orb-btn" data-unlock-rank="2" data-arena-skill="pet_ult" data-tip="灵宠觉醒神通 (G)|结契灵兽或筑基期解封：催动随行本命灵兽释放全屏本源绝技！">
+    <button type="button" id="orb-pet" class="skill-orb-btn" data-unlock-rank="1" data-arena-skill="pet_ult" data-tip="灵宠觉醒神通 (G)|结契灵兽或炼气期解封：催动随行本命灵兽释放全屏本源绝技！">
       <img id="orb-img-pet" alt="灵兽" />
       <span class="skill-key-cap" data-bind-cap="pet">G</span>
       <span class="skill-orb-lbl" id="lbl-pet-orb">灵宠</span>
       <div id="cd-pet" class="skill-cd-mask"></div>
     </button>
 
-    <button type="button" id="orb-meditate" class="skill-orb-btn" data-unlock-rank="0" data-arena-skill="meditate" data-tip="周天吐纳 · 满修渡劫 (B)|盘膝悬浮引天地灵气入体：全屏吸纳掉落、积攒渡劫修为与剑心通明；修为圆满后按 B 直接引动天劫破境！">
+    <button type="button" id="orb-meditate" class="skill-orb-btn" data-unlock-rank="0" data-arena-skill="meditate" data-tip="周天吐纳 · 满修渡劫 (B)|盘膝悬浮引天地灵气入体：安全区（洞府/清场）全屏吸纳掉落（战中仅近身 200px 拾取）、积攒渡劫修为与剑心通明；修为圆满后按 B 直接引动天劫破境！">
       <img id="orb-img-meditate" alt="吐纳" />
       <span class="skill-key-cap" data-bind-cap="meditate">B</span>
       <span class="skill-orb-lbl" id="lbl-meditate">吐纳</span>
@@ -3845,6 +3978,7 @@
   <div id="hud-save-alert" role="alert" style="display:none;"></div>
   <div id="prop-interact-hud" aria-live="polite" style="display:none;"></div>
   <div id="gear-compare-card" role="region" aria-label="仙装拾取对比" style="display:none;"></div>
+  <div id="new-unlock-card" role="status" aria-live="polite" aria-label="新神通解封提示" style="display:none;"></div>
   <div id="modal-backdrop" role="dialog" aria-modal="true" aria-label="系统与抉择弹窗">
     <div id="modal-content" class="modal-box" tabindex="-1"></div>
   </div>
@@ -4483,13 +4617,13 @@ const ART = {
 
   const REALM_ORDER = ["mortal", "qi", "foundation", "golden", "nascent", "spirit", "ascended"];
   const REALMS = {
-    mortal:     { id: "mortal", name: "凡人", xpCap: 60, baseYield: 6.5, maxHp: 65, maxMp: 28, lifespanMonths: 744, power: 0, next: "qi", pill: null },
-    qi:         { id: "qi", name: "炼气", xpCap: 400, baseYield: 15, maxHp: 120, maxMp: 68, lifespanMonths: 1140, power: 6, next: "foundation", pill: "foundation_pill" },
-    foundation: { id: "foundation", name: "筑基", xpCap: 1300, baseYield: 38, maxHp: 205, maxMp: 110, lifespanMonths: 1800, power: 15, next: "golden", pill: "golden_pill" },
-    golden:     { id: "golden", name: "金丹", xpCap: 3300, baseYield: 86, maxHp: 325, maxMp: 160, lifespanMonths: 2880, power: 28, next: "nascent", pill: "nascent_pill" },
-    nascent:    { id: "nascent", name: "元婴", xpCap: 7400, baseYield: 175, maxHp: 480, maxMp: 225, lifespanMonths: 4560, power: 45, next: "spirit", pill: "spirit_seed" },
-    spirit:     { id: "spirit", name: "化神", xpCap: 14500, baseYield: 325, maxHp: 680, maxMp: 310, lifespanMonths: 6720, power: 66, next: null, pill: "ascension_seal" },
-    ascended:   { id: "ascended", name: "飞升真仙", xpCap: 0, baseYield: 0, maxHp: 850, maxMp: 380, lifespanMonths: 99999, power: 95, next: null, pill: null }
+    mortal:     { id: "mortal", name: "凡人", xpCap: 60, maxHp: 65, maxMp: 28, lifespanMonths: 744, power: 0, next: "qi", pill: null },
+    qi:         { id: "qi", name: "炼气", xpCap: 400, maxHp: 120, maxMp: 68, lifespanMonths: 1140, power: 6, next: "foundation", pill: "foundation_pill" },
+    foundation: { id: "foundation", name: "筑基", xpCap: 1300, maxHp: 205, maxMp: 110, lifespanMonths: 1800, power: 15, next: "golden", pill: "golden_pill" },
+    golden:     { id: "golden", name: "金丹", xpCap: 3300, maxHp: 325, maxMp: 160, lifespanMonths: 2880, power: 28, next: "nascent", pill: "nascent_pill" },
+    nascent:    { id: "nascent", name: "元婴", xpCap: 7400, maxHp: 480, maxMp: 225, lifespanMonths: 4560, power: 45, next: "spirit", pill: "spirit_seed" },
+    spirit:     { id: "spirit", name: "化神", xpCap: 14500, maxHp: 680, maxMp: 310, lifespanMonths: 6720, power: 66, next: null, pill: "ascension_seal" },
+    ascended:   { id: "ascended", name: "飞升真仙", xpCap: 0, maxHp: 850, maxMp: 380, lifespanMonths: 99999, power: 95, next: null, pill: null }
   };
 
   const ITEMS = {
@@ -4500,8 +4634,8 @@ const ART = {
     lotus:           { id: "lotus", name: "月华莲", min: "golden", buy: 68, sell: 24, kind: "material", art: "item_lotus", desc: "古境寒池绽放，炼制结婴丹与照魂灯珍材。" },
     soul:            { id: "soul", name: "凝魂晶", min: "nascent", buy: 95, sell: 34, kind: "material", art: "item_soul", desc: "静潭凝结的魂力结晶，化神与渡劫引必备。" },
     dao:             { id: "dao", name: "道蕴砂", min: "spirit", buy: 135, sell: 46, kind: "material", art: "item_dao", desc: "登仙台法则碎砂，炼制渡劫引的至高材料。" },
-    healing_pill:    { id: "healing_pill", name: "回春丹", min: "mortal", buy: 18, sell: 7, kind: "medicine", hpRatio: 0.46, hpFlat: 42, art: "item_healing_pill", desc: "立即恢复 46% 最大气血，道心垂危时可主动服丹重燃战意（悟【丹火不息】后额外引发丹火震爆）。" },
-    spirit_pill:     { id: "spirit_pill", name: "回灵丹", min: "qi", buy: 18, sell: 7, kind: "medicine", mpRatio: 0.5, mpFlat: 30, art: "item_spirit_pill", desc: "立即回满剑元并刷新爆剑、一闪、法宝与助阵冷却。" },
+    healing_pill:    { id: "healing_pill", name: "回春丹", min: "mortal", buy: 18, sell: 7, kind: "medicine", art: "item_healing_pill", desc: "立即恢复 46% 最大气血，道心垂危时可主动服丹重燃战意（悟【丹火不息】后额外引发丹火震爆）。" },
+    spirit_pill:     { id: "spirit_pill", name: "回灵丹", min: "qi", buy: 18, sell: 7, kind: "medicine", art: "item_spirit_pill", desc: "立即回满剑元并刷新爆剑、一闪、法宝与助阵冷却。" },
     longevity_pill:  { id: "longevity_pill", name: "延寿青莲丹", min: "qi", buy: 120, sell: 42, kind: "medicine", art: "item_lotus", desc: "紫微丹鼎 Lv.2 解封延寿仙丹：服用永久延寿 +30 载（+360 月）并增加 +15 气血上限，可解大限之忧。" },
     blood_fury_pill: { id: "blood_fury_pill", name: "嗜血煞丹", min: "qi", buy: 135, sell: 45, kind: "medicine", art: "item_core", desc: "赤渊黑市禁丹：服用永久剑道攻击 +10、劫煞魔心 -15，但折损 2 载寿元（慎择）。" },
     foundation_pill: { id: "foundation_pill", name: "筑基丹", min: "qi", buy: 260, sell: null, kind: "breakthrough", art: "item_foundation_pill", desc: "炼气冲关筑基护劫灵丹：渡劫仪轨携丹可获3层护脉丹障稳渡雷劫；亦可直接服用涨60%修为。" },
@@ -4523,32 +4657,32 @@ const ART = {
   };
 
   const SKILLS = {
-    sword_mind:    { id: "sword_mind", name: "青锋心诀", school: "sword", slot: "mind", min: "qi", price: 0, branch: null, art: "icon_blade", desc: "基础剑道心法：左键四段剑舞叠剑印，右键切手派生与爆剑破除敌方架势。" },
-    sword_still:   { id: "sword_still", name: "止水剑心", school: "sword", slot: "mind", min: "foundation", price: 95, branch: "sword-mind", art: "icon_heart", desc: "【稳守流】周天吐纳与修为获取 +25%，常驻护体减伤 +6。" },
-    sword_pierce:  { id: "sword_pierce", name: "破妄剑心", school: "sword", slot: "mind", min: "foundation", price: 95, branch: "sword-mind", art: "icon_blade", desc: "【锐攻流】基础剑道攻击永久 +14，高爆发斩破妖王架势。" },
-    sword_build:   { id: "sword_build", name: "青锋起势", school: "sword", slot: "builder", min: "qi", price: 0, branch: null, mp: 8, art: "icon_blade", desc: "基础起手剑势：稳定挥出青锋剑气并为目标叠剑印。" },
-    sword_guard:   { id: "sword_guard", name: "听雨剑势", school: "sword", slot: "builder", min: "foundation", price: 80, branch: "sword-builder", mp: 8, art: "icon_seal", desc: "【护体剑幕】出剑同步凝起短暂剑幕灵盾，稳健换血与防失误。" },
-    sword_surge:   { id: "sword_surge", name: "惊涛剑势", school: "sword", slot: "builder", min: "foundation", price: 80, branch: "sword-builder", mp: 12, art: "icon_blade", desc: "【狂澜猛攻】四段剑舞与剑气威力大幅提升 +24%！" },
-    sword_release: { id: "sword_release", name: "惊鸿斩", school: "sword", slot: "finisher", min: "qi", price: 0, branch: null, mp: 12, art: "icon_blade", desc: "基础收势终结技：四段末招必定暴击并激发旋风剑莲破势。" },
-    sword_echo:    { id: "sword_echo", name: "回风归一", school: "sword", slot: "finisher", min: "golden", price: 155, branch: "sword-finisher", mp: 12, art: "icon_heart", desc: "【续战收势】打出四段终结斩时自动回补气血，攻守一体。" },
-    sword_shatter: { id: "sword_shatter", name: "断岳斩", school: "sword", slot: "finisher", min: "golden", price: 155, branch: "sword-finisher", mp: 16, art: "icon_blade", desc: "【裂地爆发】四段终结斩伤害暴涨 +45%，强力轰碎护盾与架势！" },
+    sword_mind:    { id: "sword_mind", name: "青锋心诀", school: "sword", slot: "mind", min: "qi", price: 0, art: "icon_blade", desc: "基础剑道心法：左键四段剑舞叠剑印，右键切手派生与爆剑破除敌方架势。" },
+    sword_still:   { id: "sword_still", name: "止水剑心", school: "sword", slot: "mind", min: "foundation", price: 95, art: "icon_heart", desc: "【稳守流】周天吐纳与修为获取 +25%，常驻护体减伤 +6。" },
+    sword_pierce:  { id: "sword_pierce", name: "破妄剑心", school: "sword", slot: "mind", min: "foundation", price: 95, art: "icon_blade", desc: "【锐攻流】基础剑道攻击永久 +14，高爆发斩破妖王架势。" },
+    sword_build:   { id: "sword_build", name: "青锋起势", school: "sword", slot: "builder", min: "qi", price: 0, art: "icon_blade", desc: "基础起手剑势：稳定挥出青锋剑气并为目标叠剑印。" },
+    sword_guard:   { id: "sword_guard", name: "听雨剑势", school: "sword", slot: "builder", min: "foundation", price: 80, art: "icon_seal", desc: "【护体剑幕】出剑同步凝起短暂剑幕灵盾，稳健换血与防失误。" },
+    sword_surge:   { id: "sword_surge", name: "惊涛剑势", school: "sword", slot: "builder", min: "foundation", price: 80, art: "icon_blade", desc: "【狂澜猛攻】四段剑舞与剑气威力大幅提升 +24%！" },
+    sword_release: { id: "sword_release", name: "惊鸿斩", school: "sword", slot: "finisher", min: "qi", price: 0, art: "icon_blade", desc: "基础收势终结技：四段末招必定暴击并激发旋风剑莲破势。" },
+    sword_echo:    { id: "sword_echo", name: "回风归一", school: "sword", slot: "finisher", min: "golden", price: 155, art: "icon_heart", desc: "【续战收势】打出四段终结斩时自动回补气血，攻守一体。" },
+    sword_shatter: { id: "sword_shatter", name: "断岳斩", school: "sword", slot: "finisher", min: "golden", price: 155, art: "icon_blade", desc: "【裂地爆发】四段终结斩伤害暴涨 +45%，强力轰碎护盾与架势！" },
 
-    talisman_mind:    { id: "talisman_mind", name: "镇灵心诀", school: "talisman", slot: "mind", min: "qi", price: 0, branch: null, art: "icon_seal", desc: "基础雷符心法：出招附着灼魂符印与雷链共鸣，右键爆剑引爆高额符伤。" },
-    talisman_calm:    { id: "talisman_calm", name: "太清符心", school: "talisman", slot: "mind", min: "foundation", price: 95, branch: "talisman-mind", art: "icon_scroll", desc: "【回灵流】周天吐纳与修为获取 +25%，持久释放法宝剑域更从容。" },
-    talisman_clear:   { id: "talisman_clear", name: "清虚符心", school: "talisman", slot: "mind", min: "foundation", price: 95, branch: "talisman-mind", art: "icon_heart", desc: "【御守流】常驻护体减伤 +10、基础攻击 +6，稳扎稳打。" },
-    talisman_build:   { id: "talisman_build", name: "镇灵符", school: "talisman", slot: "builder", min: "qi", price: 0, branch: null, mp: 8, art: "icon_seal", desc: "基础镇灵起符：挥招附带符障护体并叠加剑印。" },
-    talisman_frost:   { id: "talisman_frost", name: "寒霜符", school: "talisman", slot: "builder", min: "foundation", price: 80, branch: "talisman-builder", mp: 10, art: "icon_seal", desc: "【寒霜附刃】剑气化作玄冥霜蓝，命中持续施加 2.6 秒寒霜减速！" },
-    talisman_ember:   { id: "talisman_ember", name: "烬火符", school: "talisman", slot: "builder", min: "foundation", price: 80, branch: "talisman-builder", mp: 12, art: "icon_seal", desc: "【烈焰余烬】剑招伤害 +24%，且敌方灼魂燃烧持续伤害暴涨 +45%！" },
-    talisman_release: { id: "talisman_release", name: "燃符诀", school: "talisman", slot: "finisher", min: "qi", price: 0, branch: null, mp: 10, art: "icon_scroll", desc: "基础燃符终式：四段终结与爆剑引爆符印，高效削减首领架势。" },
-    talisman_return:  { id: "talisman_return", name: "归元符", school: "talisman", slot: "finisher", min: "golden", price: 155, branch: "talisman-finisher", mp: 10, art: "icon_heart", desc: "【归元回春】打出四段终结斩时自动回复气血与灵元，续航拉满。" },
-    talisman_rupture: { id: "talisman_rupture", name: "裂阵符", school: "talisman", slot: "finisher", min: "golden", price: 155, branch: "talisman-finisher", mp: 15, art: "icon_seal", desc: "【超载裂阵】四段终结爆发威力提升 +45%，轻松击溃首领护阵！" }
+    talisman_mind:    { id: "talisman_mind", name: "镇灵心诀", school: "talisman", slot: "mind", min: "qi", price: 0, art: "icon_seal", desc: "基础雷符心法：出招附着灼魂符印与雷链共鸣，右键爆剑引爆高额符伤。" },
+    talisman_calm:    { id: "talisman_calm", name: "太清符心", school: "talisman", slot: "mind", min: "foundation", price: 95, art: "icon_scroll", desc: "【回灵流】周天吐纳与修为获取 +25%，持久释放法宝剑域更从容。" },
+    talisman_clear:   { id: "talisman_clear", name: "清虚符心", school: "talisman", slot: "mind", min: "foundation", price: 95, art: "icon_heart", desc: "【御守流】常驻护体减伤 +10、基础攻击 +6，稳扎稳打。" },
+    talisman_build:   { id: "talisman_build", name: "镇灵符", school: "talisman", slot: "builder", min: "qi", price: 0, art: "icon_seal", desc: "基础镇灵起符：挥招附带符障护体并叠加剑印。" },
+    talisman_frost:   { id: "talisman_frost", name: "寒霜符", school: "talisman", slot: "builder", min: "foundation", price: 80, art: "icon_seal", desc: "【寒霜附刃】剑气化作玄冥霜蓝，命中持续施加 2.6 秒寒霜减速！" },
+    talisman_ember:   { id: "talisman_ember", name: "烬火符", school: "talisman", slot: "builder", min: "foundation", price: 80, art: "icon_seal", desc: "【烈焰余烬】剑招伤害 +24%，且敌方灼魂燃烧持续伤害暴涨 +45%！" },
+    talisman_release: { id: "talisman_release", name: "燃符诀", school: "talisman", slot: "finisher", min: "qi", price: 0, art: "icon_scroll", desc: "基础燃符终式：四段终结与爆剑引爆符印，高效削减首领架势。" },
+    talisman_return:  { id: "talisman_return", name: "归元符", school: "talisman", slot: "finisher", min: "golden", price: 155, art: "icon_heart", desc: "【归元回春】打出四段终结斩时自动回复气血与灵元，续航拉满。" },
+    talisman_rupture: { id: "talisman_rupture", name: "裂阵符", school: "talisman", slot: "finisher", min: "golden", price: 155, art: "icon_seal", desc: "【超载裂阵】四段终结爆发威力提升 +45%，轻松击溃首领护阵！" }
   };
 
   const RELICS = {
-    frost_sword:  { id: "frost_sword", name: "青霜剑", art: "relic_frost_sword", stones: 130, inputs: { jade: 3, core: 1 }, passive: "剑道攻击 +10（随星级成长），环身飞剑额外 +1 柄", activeName: "霜天万剑引", mp: 14, cd: 3, activeDesc: "按 E 展开【太虚剑域】并降下霜天万剑雨，强力穿甲削韧！" },
-    jade_seal:    { id: "jade_seal", name: "玄玉印", art: "relic_jade_seal", stones: 130, inputs: { jade: 4 }, passive: "常驻护体减伤 +10（随星级成长），渡劫与硬拼更稳健", activeName: "玄武镇岳印", mp: 12, cd: 3, activeDesc: "按 E 展开【太虚剑域】并凝结厚重玄武灵盾、恢复气血！" },
-    soul_lamp:    { id: "soul_lamp", name: "照魂灯", art: "relic_soul_lamp", stones: 150, inputs: { jade: 2, lotus: 2 }, passive: "剑道攻击 +9（随星级成长），灼魂燃烧持续伤害 +35%", activeName: "九幽燃魂焰", mp: 14, cd: 3, activeDesc: "按 E 展开【太虚剑域】并点燃全场灼魂真火，持续炙烤群妖！" },
-    cloud_mirror: { id: "cloud_mirror", name: "流云镜", art: "relic_cloud_mirror", stones: 150, inputs: { jade: 2, dew: 4 }, passive: "兼修攻防与恢复，法宝升星同步强化剑域续航", activeName: "流云返照诀", mp: 10, cd: 3, activeDesc: "按 E 展开【太虚剑域】并瞬间回复大量气血与剑元！" }
+    frost_sword:  { id: "frost_sword", name: "青霜剑", art: "relic_frost_sword", stones: 130, passive: "剑道攻击 +9（随星级成长），环身飞剑额外 +1 柄", activeName: "霜天万剑引", mp: 14, activeDesc: "按 E 展开【太虚剑域】并降下霜天万剑雨，强力穿甲削韧！" },
+    jade_seal:    { id: "jade_seal", name: "玄玉印", art: "relic_jade_seal", stones: 130, passive: "常驻护体减伤 +12（随星级成长），渡劫与硬拼更稳健", activeName: "玄武镇岳印", mp: 12, activeDesc: "按 E 展开【太虚剑域】并凝结厚重玄武灵盾、恢复气血！" },
+    soul_lamp:    { id: "soul_lamp", name: "照魂灯", art: "relic_soul_lamp", stones: 150, passive: "剑道攻击 +8（随星级成长），灼魂燃烧持续伤害 +35%", activeName: "九幽燃魂焰", mp: 14, activeDesc: "按 E 展开【太虚剑域】并点燃全场灼魂真火，持续炙烤群妖！" },
+    cloud_mirror: { id: "cloud_mirror", name: "流云镜", art: "relic_cloud_mirror", stones: 150, passive: "兼修攻防与恢复，法宝升星同步强化剑域续航", activeName: "流云返照诀", mp: 10, activeDesc: "按 E 展开【太虚剑域】并瞬间回复大量气血与剑元！" }
   };
 
   // ==================== 3. DAO LAWS, PAINTED SPIRIT PETS & ACHIEVEMENTS ====================
@@ -4572,11 +4706,102 @@ const ART = {
 
   // Uses our newly generated painted xianxia illustrations!
   const SPIRIT_PETS = {
-    fox:          { id: "fox", art: "pet_fox", name: "青丘火狐", skill: "狐火燎原", color: "#ff8a65", desc: "喷吐青丘真火灼伤敌方并挂1枚剑印，主人暴击率 +12%" },
-    turtle:       { id: "turtle", art: "pet_turtle", name: "玄水灵龟", skill: "玄水灵障", color: "#4ad2b8", desc: "周期为主人回血并凝结玄水灵盾，常驻减伤 +8" },
+    fox:          { id: "fox", art: "pet_fox", name: "青丘火狐", skill: "狐火燎原", color: "#ff8a65", desc: "喷吐青丘真火灼伤敌方并挂1枚剑印，主人暴击率 +10%" },
+    turtle:       { id: "turtle", art: "pet_turtle", name: "玄水灵龟", skill: "玄水灵障", color: "#4ad2b8", desc: "周期为主人回血并凝结玄水灵盾，常驻减伤 +10" },
     roc:          { id: "roc", art: "pet_roc", name: "九霄雷鹏", skill: "九天落雷", color: "#b998fa", desc: "召唤紫金天雷重轰（对破势目标双倍伤害），高效削韧" },
     sword_spirit: { id: "sword_spirit", art: "pet_sword", name: "太虚剑灵", skill: "游龙剑影", color: "#f5dc9b", desc: "激发穿云双剑气叠剑印，并持续为主人回复剑元" }
   };
+
+  // G10: Tiered Spirit Pet Feeding Costs (herb → core → core → jade) & Lv.3 / Lv.5 Skill Trees
+  const PET_FEED_COSTS = {
+    1: { nextLevel: 2, mats: { herb: 3 }, tierLabel: "灵草初养" },
+    2: { nextLevel: 3, mats: { core: 2 }, tierLabel: "妖核化形" },
+    3: { nextLevel: 4, mats: { core: 4 }, tierLabel: "妖核淬骨" },
+    4: { nextLevel: 5, mats: { jade: 3 }, tierLabel: "灵玉通玄" }
+  };
+
+  const PET_SKILL_TIERS = {
+    tier3: [
+      { id: "swift_bond",  tier: 3, name: "灵息疾影", badge: "疾速协同", color: "#70ffe6", desc: "灵宠协同出手间隔 -25%，觉醒神通 (G) 冷却缩短 2.5s。" },
+      { id: "fury_fang",   tier: 3, name: "破势利爪", badge: "锐攻破势", color: "#ff9f68", desc: "灵宠协同与觉醒技威力 +35%、削韧 +50%，主人暴击率永久 +5%。" },
+      { id: "spirit_ward", tier: 3, name: "护主灵罡", badge: "护体续航", color: "#ffe28a", desc: "主人护体减伤 +12、最大气血 +8%，灵宠每次出手额外凝结 3% 气血灵盾并回 4 剑元。" }
+    ],
+    tier5: [
+      { id: "twin_resonance",  tier: 5, name: "双灵连击", badge: "追击叠印", color: "#80ecff", desc: "灵宠协同出手追加第二道 65% 威力共鸣追击（额外叠 1 剑印），觉醒技 (G) 额外降下两道天雷追击。" },
+      { id: "soul_siphon",     tier: 5, name: "返璞归元", badge: "回生护命", color: "#4ad2b8", desc: "灵宠协同出手为主人回复 4% 最大气血与 8 剑元；觉醒技 (G) 立即回 25% 气血、30 剑元并获 1.2s 无敌。" },
+      { id: "celestial_wrath", tier: 5, name: "太虚天威", badge: "绝杀爆发", color: "#d69eff", desc: "灵宠觉醒技 (G) 伤害 +55% 且必定暴击，施放后赋予主人 6s【兽魂沸腾】（攻击 +16%、攻速 +15%）。" }
+    ]
+  };
+
+  const PET_SKILLS_BY_ID = Object.fromEntries(
+    [...PET_SKILL_TIERS.tier3, ...PET_SKILL_TIERS.tier5].map(sk => [sk.id, sk])
+  );
+
+  function getPetNextFeedCost(level) {
+    const lv = Math.max(1, Math.min(5, Math.floor(num(level, 1))));
+    return lv >= 5 ? null : (PET_FEED_COSTS[lv] || null);
+  }
+
+  function formatPetFeedCost(cost, inv = null) {
+    if (!cost || !cost.mats) return "";
+    return Object.entries(cost.mats).map(([mk, req]) => {
+      const mName = (ITEMS[mk] && ITEMS[mk].name) || mk;
+      if (!inv) return `${mName}×${req}`;
+      const have = Math.max(0, Math.floor(num(inv[mk], 0)));
+      return `${mName}×${req}(持${have})`;
+    }).join(" + ");
+  }
+
+  function canAffordPetFeed(g) {
+    if (!g || !g.pet || !g.pet.id) return false;
+    const cost = getPetNextFeedCost(g.pet.level);
+    if (!cost) return false;
+    const inv = g.inventory || {};
+    return Object.entries(cost.mats).every(([mk, req]) => Math.max(0, Math.floor(num(inv[mk], 0))) >= req);
+  }
+
+  function getPetFeedMissingSummary(g) {
+    if (!g || !g.pet || !g.pet.id) return "";
+    const cost = getPetNextFeedCost(g.pet.level);
+    if (!cost) return "";
+    const inv = g.inventory || {};
+    const lacks = [];
+    Object.entries(cost.mats).forEach(([mk, req]) => {
+      const have = Math.max(0, Math.floor(num(inv[mk], 0)));
+      if (have < req) {
+        const mName = (ITEMS[mk] && ITEMS[mk].name) || mk;
+        lacks.push(`${mName}×${req - have}`);
+      }
+    });
+    return lacks.join("、");
+  }
+
+  function hasPetSkill(g, skillId) {
+    if (!g || !g.pet || !g.pet.id || !g.pet.skills || !skillId) return false;
+    const lv = Math.max(1, Math.floor(num(g.pet.level, 1)));
+    return Boolean(
+      (lv >= 3 && g.pet.skills.tier3 === skillId) ||
+      (lv >= 5 && g.pet.skills.tier5 === skillId)
+    );
+  }
+
+  function getPendingPetSkillTier(g) {
+    if (!g || !g.pet || !g.pet.id) return null;
+    const lv = Math.max(1, Math.floor(num(g.pet.level, 1)));
+    const skills = g.pet.skills || {};
+    if (lv >= 3 && (!skills.tier3 || !hasOwn(PET_SKILLS_BY_ID, skills.tier3))) return 3;
+    if (lv >= 5 && (!skills.tier5 || !hasOwn(PET_SKILLS_BY_ID, skills.tier5))) return 5;
+    return null;
+  }
+
+  function getPetChosenSkills(g) {
+    const out = [];
+    if (!g || !g.pet || !g.pet.id || !g.pet.skills) return out;
+    const lv = Math.max(1, Math.floor(num(g.pet.level, 1)));
+    if (lv >= 3 && g.pet.skills.tier3 && hasOwn(PET_SKILLS_BY_ID, g.pet.skills.tier3)) out.push(PET_SKILLS_BY_ID[g.pet.skills.tier3]);
+    if (lv >= 5 && g.pet.skills.tier5 && hasOwn(PET_SKILLS_BY_ID, g.pet.skills.tier5)) out.push(PET_SKILLS_BY_ID[g.pet.skills.tier5]);
+    return out;
+  }
 
   const ACHIEVEMENTS = [
     { id: "ach_qi", name: "引气入道", desc: "冲破凡胎踏入炼气期", pts: 60 },
@@ -4602,9 +4827,9 @@ const ART = {
     puppet:        { id: "puppet", name: "古境剑傀", min: "golden", location: "secret", art: "enemy_puppet", hp: 960, attack: 25, heavy: 54, stones: 90, xp: 155, loot: { lotus: 2, jade: 1 }, mech: "reflection", mechDesc: "【镜照反震】展开铜镜架势时反弹轻剑伤害，宜用【空格一闪】或【右键爆剑】强破镜阵！" },
     shadow:        { id: "shadow", name: "照影心魇", min: "nascent", location: "secret", art: "enemy_shadow", hp: 1240, attack: 28, heavy: 64, stones: 140, xp: 310, loot: { soul: 2, lotus: 1 }, mech: "drain", mechDesc: "【噬血魔影】瞬步绕后突袭并吸血，看准金芒识破剑反或开【Y键剑轮阵】压制。" },
     sentinel:      { id: "sentinel", name: "云台守灵", min: "spirit", location: "terrace", art: "enemy_sentinel", hp: 1520, attack: 32, heavy: 72, stones: 195, xp: 520, loot: { dao: 2, soul: 1 }, mech: "ward", mechDesc: "【护山灵阵】护阵期大幅减伤，切【`玄重巨阙式】重劈或右键爆剑崩碎其金盾！" },
-    trial_heart:   { id: "trial_heart", name: "第一劫 · 往昔心魔", min: "spirit", location: "terrace", art: "enemy_trial_heart", hp: 1380, attack: 30, heavy: 66, stones: 0, xp: 0, loot: {}, trial: true, mech: "drain", mechDesc: "九霄第一劫：幻化执念噬血攻心，识破其蓄势方见真我。" },
-    trial_thunder: { id: "trial_thunder", name: "第二劫 · 九霄雷劫", min: "spirit", location: "terrace", art: "enemy_trial_thunder", hp: 1620, attack: 33, heavy: 76, stones: 0, xp: 0, loot: {}, trial: true, mech: null, mechDesc: "九霄第二劫：沈清禾【灵枢药阵】与裴照【剑痕】将在此劫显化护持！" },
-    trial_gate:    { id: "trial_gate", name: "天门道影", min: "spirit", location: "terrace", art: "enemy_trial_gate", hp: 1820, attack: 36, heavy: 84, stones: 0, xp: 0, loot: {}, trial: true, mech: "ward", mechDesc: "九霄终劫：倾尽双姿态连携、法宝剑域、灵兽与故人合击斩开仙门！" },
+    trial_heart:   { id: "trial_heart", name: "第一劫 · 往昔心魔", min: "spirit", location: "terrace", art: "enemy_trial_heart", hp: 1380, attack: 30, heavy: 66, stones: 0, xp: 0, loot: {}, mech: "drain", mechDesc: "九霄第一劫：幻化执念噬血攻心，识破其蓄势方见真我。" },
+    trial_thunder: { id: "trial_thunder", name: "第二劫 · 九霄雷劫", min: "spirit", location: "terrace", art: "enemy_trial_thunder", hp: 1620, attack: 33, heavy: 76, stones: 0, xp: 0, loot: {}, mech: null, mechDesc: "九霄第二劫：沈清禾【灵枢药阵】与裴照【剑痕】将在此劫显化护持！" },
+    trial_gate:    { id: "trial_gate", name: "天门道影", min: "spirit", location: "terrace", art: "enemy_trial_gate", hp: 1820, attack: 36, heavy: 84, stones: 0, xp: 0, loot: {}, mech: "ward", mechDesc: "九霄终劫：倾尽双姿态连携、法宝剑域、灵兽与故人合击斩开仙门！" },
     sky_roc:       { id: "sky_roc",    name: "巡天金甲雷鹏将",   min: "golden", location: "terrace", art: "enemy_roc_sky_general", hp: 1200, attack: 28, heavy: 64, stones: 180, xp: 340, loot: { soul: 2, core: 2 }, mech: "sky_barrage", mechDesc: "【九霄巡天】振翅布下天雷激光网并攒射漫天雷球：按空格【滚筒侧闪】穿激光，按右键【太虚剑盾】将漫天法球原路震回破其金甲！" }
   };
 
@@ -4810,10 +5035,10 @@ const ART = {
   }
 
   const NPC_META = {
-    shen: { id: "shen", name: "沈清禾", role: "青云药庐 · 悬壶医修", art: "char_shen", coopName: "青莲回春阵", coopDesc: "合击：恢复38%气血并张开灵障", aidDesc: "盟约后天劫雷击减伤+10、每合回血+8；平时可召【青莲回春阵】", chain: ["shen_return", "shen_pact"] },
-    pei:  { id: "pei", name: "裴照", role: "青云剑阁 · 同辈剑首", art: "char_pei", coopName: "惊鸿裂天斩", coopDesc: "合击：裂天剑气重创并强断蓄势！", aidDesc: "盟约后天劫减伤+8、破招+20%；平时可召【惊鸿裂天斩】断势", chain: ["pei_meet", "pei_echo", "pei_pact"] },
-    lu:   { id: "lu", name: "陆玄松", role: "青云山门 · 传功执事", art: "char_lu", coopName: "青云镇山钟", coopDesc: "合击：回灵42%并附加金钟巨盾", aidDesc: "送别后天劫满状态入场；平时可召【青云镇山钟】回灵御守", chain: ["lu_intro", "lu_teach", "lu_farewell"] },
-    yan:  { id: "yan", name: "砚尘", role: "照影古境 · 守碑老人", art: "char_yan", coopName: "古镜定魂光", coopDesc: "合击：直照本心令敌陷入2合破绽！", aidDesc: "照心后削弱心魔噬血；平时可召【古镜定魂光】制造破绽", chain: ["yan_stone", "yan_mirror", "yan_gate"] }
+    shen: { id: "shen", name: "沈清禾", role: "青云药庐 · 悬壶医修", art: "char_shen", coopName: "青莲回春阵" },
+    pei:  { id: "pei", name: "裴照", role: "青云剑阁 · 同辈剑首", art: "char_pei", coopName: "惊鸿裂天斩" },
+    lu:   { id: "lu", name: "陆玄松", role: "青云山门 · 传功执事", art: "char_lu", coopName: "青云镇山钟" },
+    yan:  { id: "yan", name: "砚尘", role: "照影古境 · 守碑老人", art: "char_yan", coopName: "古镜定魂光" }
   };
 
   const STORIES = [
@@ -4926,15 +5151,15 @@ const ART = {
 
   const SYSTEM_ECOSYSTEM_LADDER = [
     {
-      tierId: "qi", realm: "qi", title: "一重仙阶 · 炼气初开", subtitle: "山门问道 · 采炼御兽初试锋芒",
+      realm: "qi", title: "一重仙阶 · 炼气初开（第二卷）", subtitle: "山门问道 · 采炼御兽初试锋芒",
       systems: [
-        { id: "spirit_pet",    min: "qi", name: "本命灵宠",     short: "灵宠",   keyHint: "修行抽屉", action: "open_drawer_cultivate", desc: "契约青丘灵狐/玄甲灵龟/剑灵青雀随行助战。" },
+        { id: "spirit_pet",    min: "qi", name: "本命灵宠",     short: "灵宠",   keyHint: "修行抽屉", action: "open_drawer_cultivate", desc: "契约青丘火狐 / 玄水灵龟 / 九霄雷鹏 / 太虚剑灵随行助战，分级喂养并在 Lv.3/Lv.5 择技化形。" },
         { id: "bagua_alchemy", min: "qi", name: "八卦丹剑微操", short: "丹剑",   keyHint: "百工/洞府", action: "open_taixu_craft",      desc: "亲手控火炼制仙品丹药与鸿蒙神兵淬火。" },
         { id: "demon_tower",   min: "qi", name: "太虚锁妖古塔", short: "锁妖塔", keyHint: "仙阁/舆图", action: "start_tower",           desc: "开启无尽镇妖塔试炼，冲层赢取海量灵石与仙装。" }
       ]
     },
     {
-      tierId: "foundation", realm: "foundation", title: "二重仙阶 · 筑基铸道", subtitle: "双姿易剑 · 化妖破招与护宗守阵",
+      realm: "foundation", title: "二重仙阶 · 筑基铸道（第三卷）", subtitle: "双姿易剑 · 化妖破招与护宗守阵",
       systems: [
         { id: "dual_stance",  min: "foundation", name: "双剑意姿态",   short: "双姿态", keyHint: "` 键",     action: "cycle_posture",     desc: "青莲疾剑式与玄重巨阙式瞬切，触发太虚易剑斩。" },
         { id: "soul_seal",    min: "foundation", name: "镇妖魂印",     short: "魂印",   keyHint: "C 键",     action: "open_drawer_cultivate", desc: "炼化妖王精魄化妖破招，联动五行场地核爆。" },
@@ -4943,20 +5168,25 @@ const ART = {
       ]
     },
     {
-      tierId: "golden", realm: "golden", title: "三重仙阶 · 金丹御霄（云海高潮过渡）", subtitle: "破云凌霄 · 执掌星图、远征与九重天宫",
+      realm: "golden", title: "三重仙阶 · 金丹启星（第四卷）", subtitle: "破云凌霄 · 御剑空战与周天星宿",
       systems: [
-        { id: "cloud_sea_trial", min: "golden", name: "九霄云海空战", short: "云海空战", keyHint: "高潮过渡关", action: "start_cloud_sea", desc: "高速御剑斩破巡天雷鹏防线！首破获【破云证道印】(+12攻·远征/登仙台收益+15%)。" },
-        { id: "star_chart",      min: "golden", name: "太虚周天星图", short: "星图",     keyHint: "N 键",       action: "open_star_chart", desc: "点亮二十八星宿激活青龙/白虎/朱雀/玄武四象圣核。" },
-        { id: "vein_expedition", min: "golden", name: "九州灵脉远征", short: "灵脉远征", keyHint: "8 键",       action: "open_expedition", desc: "委派弟子驻防五大灵脉收缴灵石星魄，触发仙门雷援。" },
-        { id: "celestial_spire", min: "golden", name: "太虚登仙台",   short: "登仙台",   keyHint: "L 键",       action: "open_spire",      desc: "九重天宫肉鸽奇物深渊，叠铸太古天道奇物体系。" }
+        { id: "cloud_sea_trial", min: "golden", name: "九霄云海空战", short: "云海空战", keyHint: "高潮过渡关", action: "start_cloud_sea", desc: "高速御剑斩破巡天雷鹏防线！首破获【破云证道印】(+12攻 · 为元婴期远征/登仙台提供+15%收益)。" },
+        { id: "star_chart",      min: "golden", name: "太虚周天星图", short: "星图",     keyHint: "N 键",       action: "open_star_chart", desc: "点亮二十八星宿激活青龙/白虎/朱雀/玄武四象圣核。" }
       ]
     },
     {
-      tierId: "nascent_spirit", realm: "nascent", title: "四重仙阶 · 元婴化神（终局绝巅）", subtitle: "剑冢七阵 · 烛龙三部讨伐与太虚造化",
+      realm: "nascent", title: "四重仙阶 · 元婴破虚（第五卷）", subtitle: "分神远征 · 九重登仙与剑冢七阵",
       systems: [
-        { id: "sword_tomb_rush", min: "nascent", name: "万剑冢七阵连战", short: "万剑冢",   keyHint: "元婴期解封", action: "open_boss_rush",  desc: "连战七阵强化妖王、太虚心魔镜像与太古烛龙三部位讨伐！" },
-        { id: "heavenly_pacts",  min: "nascent", name: "天道劫印契约",   short: "天道劫印", keyHint: "元婴期解封", action: "open_endgame_goals", desc: "缔结至多五道高难天道劫印，大幅飙升爆率与仙榜倍率。" },
-        { id: "seed_workshop",   min: "spirit",  name: "造化种子工坊",   short: "造化工坊", keyHint: "化神期解封", action: "open_workshop",   desc: "自定义双首领共斗、机关密度与奇物组合，生成 CY22 种子码分享！" }
+        { id: "vein_expedition", min: "nascent", name: "九州灵脉远征",   short: "灵脉远征", keyHint: "8 键",       action: "open_expedition", desc: "委派已结缘故人驻防五大灵脉收缴灵石星魄，触发仙门护道雷援。" },
+        { id: "celestial_spire", min: "nascent", name: "太虚登仙台",     short: "登仙台",   keyHint: "L 键",       action: "open_spire",      desc: "九重天宫肉鸽奇物深渊，叠铸太古天道奇物体系。" },
+        { id: "sword_tomb_rush", min: "nascent", name: "万剑冢七阵连战", short: "万剑冢",   keyHint: "元婴期解封", action: "open_boss_rush",  desc: "连战七阵强化妖王、太虚心魔镜像与太古烛龙三部位讨伐！" }
+      ]
+    },
+    {
+      realm: "spirit", title: "五重仙阶 · 化神凌霄（第六卷）", subtitle: "劫印问道 · 太虚造化与直叩天门",
+      systems: [
+        { id: "heavenly_pacts", min: "spirit", name: "天道劫印契约", short: "天道劫印", keyHint: "化神期解封", action: "open_endgame_goals", desc: "缔结至多五道高难天道劫印，大幅飙升爆率与仙榜倍率。" },
+        { id: "seed_workshop",  min: "spirit", name: "造化种子工坊", short: "造化工坊", keyHint: "化神期解封", action: "open_workshop",      desc: "自定义双首领共斗、机关密度与奇物组合，生成 CY22 种子码分享！" }
       ]
     }
   ];
@@ -5814,11 +6044,11 @@ const ART = {
   ];
 
   const PACT_SEALS = [
-    { id: "frenzy_hp",   name: "凶煞狂血", badge: "劫印·壹", desc: "群妖气血与攻击 +25%", dropBonus: 0.18, scoreBonus: 0.12 },
-    { id: "swift_windup",name: "疾影破阵", badge: "劫印·贰", desc: "妖兽蓄势提速 +20%",   dropBonus: 0.18, scoreBonus: 0.12 },
-    { id: "iron_posture",name: "镇岳金身", badge: "劫印·叁", desc: "首领架势上限 +35%",   dropBonus: 0.18, scoreBonus: 0.12 },
-    { id: "bitter_pill", name: "丹火受限", badge: "劫印·肆", desc: "灵丹回血效果 -20%",   dropBonus: 0.18, scoreBonus: 0.12 },
-    { id: "blood_moon",  name: "九幽血月", badge: "劫印·伍", desc: "首领直接觉醒二阶狂暴",dropBonus: 0.28, scoreBonus: 0.22 }
+    { id: "frenzy_hp",   name: "凶煞狂血", badge: "劫印·壹", desc: "群妖气血与攻击 +25%" },
+    { id: "swift_windup",name: "疾影破阵", badge: "劫印·贰", desc: "妖兽蓄势提速 +20%" },
+    { id: "iron_posture",name: "镇岳金身", badge: "劫印·叁", desc: "首领架势上限 +35%" },
+    { id: "bitter_pill", name: "丹火受限", badge: "劫印·肆", desc: "灵丹回血效果 -20%" },
+    { id: "blood_moon",  name: "九幽血月", badge: "劫印·伍", desc: "首领直接觉醒二阶狂暴" }
   ];
 
   const REGION_POEMS = Object.assign({
@@ -6577,6 +6807,7 @@ const ART = {
     }
     Sound.fanfare();
     showToast(opt.result || "故人盟契已成！");
+    queueNewUnlockCardsForState(game);
     saveGame();
     updateHud();
 
@@ -6807,7 +7038,7 @@ const ART = {
       x: 520, y: 480, z: 0, vz: 0, vx: 0, vy: 0, facing: 1, bob: 0, lean: 0,
       airComboStep: 0, plunging: false, vaultPrimed: false, jumpCd: 0, blinkCd: 0,
       samadhiFireReady: false, gourdHasteTimer: 0, gourdCritTimer: 0, boonOverloadTimer: 0, righteousPulseCd: 4.0,
-      meditating: false, meditateTick: 0, zenStacks: 0,
+      meditating: false, meditateTick: 0, meditateAgeTick: 0, meditateAgedDirty: false, zenStacks: 0, petBuffTimer: 0,
       comboStep: 0, comboWindow: 0, stepRippleCd: 0,
       dashTimer: 0, dashCd: 0, invuln: 0, shieldHp: 0,
       slashCd: 0, recallCd: 0, ultCd: 0, allyCd: 0,
@@ -7922,23 +8153,23 @@ const ART = {
   // ==================== V19 HALL-OF-FAME SYSTEMS: SOUL AVATARS, BLADE CLASH, 3-STATE EXECUTIONS, SSS STYLE METER, GHOST DOJO & 28-STAR ASTROLABE ====================
   const SOUL_SPIRITS = {
     blood_warden: {
-      id: "blood_warden", shortLbl: "石卫印", name: "守山石卫 · 裂地狂锤", bossId: "warden", art: "enemy_warden", elem: "fire", cd: 6.2,
+      id: "blood_warden", shortLbl: "石卫印", name: "守山石卫 · 裂地狂锤", art: "enemy_warden", elem: "fire", cd: 6.2,
       color: "#ff6b57", desc: "召唤守山石卫真身轰砸熔岩巨坑（340%范围重伤+64削韧+4秒霸体）；命中灵泉水洼触发【沸雾蒸云阵】，命中玄冰触发【融火晶爆】！"
     },
     frost_phoenix: {
-      id: "frost_phoenix", shortLbl: "玄蛇印", name: "寒潭玄蛇 · 极寒吐息", bossId: "serpent", art: "enemy_serpent", elem: "frost", cd: 5.8,
+      id: "frost_phoenix", shortLbl: "玄蛇印", name: "寒潭玄蛇 · 极寒吐息", art: "enemy_serpent", elem: "frost", cd: 5.8,
       color: "#80ecff", desc: "化现寒潭玄蛇法相喷吐极寒冰暴（315%范围冰伤+4.5秒深度冻结）；冻结灵泉水洼，命中火域触发【冰火蒸汽核爆(+180%真伤)】！"
     },
     sword_fiend: {
-      id: "sword_fiend", shortLbl: "剑傀印", name: "古境剑傀 · 万刃破空", bossId: "puppet", art: "enemy_puppet", elem: "metal", cd: 5.5,
+      id: "sword_fiend", shortLbl: "剑傀印", name: "古境剑傀 · 万刃破空", art: "enemy_puppet", elem: "metal", cd: 5.5,
       color: "#ffd166", desc: "召唤古境剑傀法相齐射八方裂空古剑（330%穿甲重伤+叠4枚剑印+瞬破盾卫正面玄盾）！"
     },
     thunder_lord: {
-      id: "thunder_lord", shortLbl: "守灵印", name: "云台守灵 · 天罚剑罡", bossId: "sentinel", art: "enemy_sentinel", elem: "thunder", cd: 6.4,
+      id: "thunder_lord", shortLbl: "守灵印", name: "云台守灵 · 天罚剑罡", art: "enemy_sentinel", elem: "thunder", cd: 6.4,
       color: "#d69eff", desc: "融汇云台守灵法相劈落五重紫霄天罚雷柱（365%雷伤+58削韧）；直接引爆全场水洼【超导感电】与火域【雷火超载爆破】！"
     },
     taixu_demon: {
-      id: "taixu_demon", shortLbl: "心魔印", name: "太虚心魔 · 破界双斩", bossId: "trial_gate", art: "actor_inner_demon", elem: "void", cd: 6.8,
+      id: "taixu_demon", shortLbl: "心魔印", name: "太虚心魔 · 破界双斩", art: "actor_inner_demon", elem: "void", cd: 6.8,
       color: "#ff9eff", desc: "召唤宿命太虚心魔同步施展阴阳破界十字斩（395%真伤+剑意+25%+开启1.2秒太虚凝时）！"
     }
   };
@@ -8437,6 +8668,7 @@ const ART = {
   function openStarChartModal() {
     if (!game) return;
     if (!guardEcosystemAccess("star_chart")) return;
+    notifyUnlockCardTried("star_chart");
     closeDrawer();
     arena.paused = true;
     if (!Array.isArray(game.litStars)) game.litStars = [];
@@ -9563,6 +9795,7 @@ const ART = {
   function cycleWeaponArsenalForm(targetForm = null) {
     if (!game) return;
     if (!guardActionRealm("weapon_form")) return;
+    notifyUnlockCardTried("weapon_form");
     const order = ["sword", "spear", "chakram"];
     const cur = hasOwn(WEAPON_ARSENAL_SPECS, game.weaponForm) ? game.weaponForm : "sword";
     game.weaponForm = (targetForm && hasOwn(WEAPON_ARSENAL_SPECS, targetForm)) ? targetForm : order[(order.indexOf(cur) + 1) % order.length];
@@ -10432,6 +10665,7 @@ const ART = {
   function openCelestialSpireModal() {
     if (!game) return;
     if (!guardEcosystemAccess("celestial_spire")) return;
+    notifyUnlockCardTried("spire");
     closeDrawer();
     arena.paused = true;
     const curEntries = Object.entries(game.spireCurios || {}).filter(([, lv]) => lv > 0);
@@ -11495,6 +11729,7 @@ const ART = {
   function openCustomWorkshopModal() {
     if (!game) return;
     if (!guardEcosystemAccess("seed_workshop")) return;
+    notifyUnlockCardTried("workshop");
     closeDrawer();
     arena.paused = true;
     const seedStr = encodeWorkshopSeed(workshopState);
@@ -12316,6 +12551,10 @@ const ART = {
           craftMinigame.lastJudge = `淬火礼成：攻击力 +${atkRes.grantedAtk}${capNote}（达成 ≥2 次星火靶心判定可锻入太初裂空剑痕）！`;
         }
       }
+      const craftAge = advanceLifespanMonths(3, craftMinigame.mode === "alchemy" ? "taixu_alchemy" : "taixu_forge");
+      if (craftAge && craftAge.aged > 0 && craftMinigame.lastJudge) {
+        craftMinigame.lastJudge += `（耗寿 ${craftAge.aged} 月）`;
+      }
       saveGame();
       updateHud();
     } else {
@@ -12864,6 +13103,7 @@ const ART = {
   function openComboSequencerModal() {
     if (!game) return;
     if (!guardActionRealm("sequencer")) return;
+    notifyUnlockCardTried("sequencer");
     closeDrawer();
     arena.paused = true;
     const seq = ensureCustomComboSeq(game);
@@ -12943,6 +13183,7 @@ const ART = {
   function triggerSanqingTriClones() {
     if (!game) return false;
     if (!guardActionRealm("sanqing")) return false;
+    notifyUnlockCardTried("sanqing");
     const sq = ensureSanqingState();
     const p = arena.player;
     const st = getCombatStats(game);
@@ -13072,6 +13313,7 @@ const ART = {
   function castShanheShejiDomain() {
     if (!game) return false;
     if (!guardActionRealm("shanhe")) return false;
+    notifyUnlockCardTried("shanhe");
     if (arena.shanheDomain && arena.shanheDomain.active && arena.shanheDomain.mantras.length >= 3) {
       detonateShanheScrollBreak();
       return true;
@@ -13168,11 +13410,11 @@ const ART = {
 
   // 4. Pillar 3: Lingxiao Celestial Warship Orbital Strike (`听雨凌霄仙舟·天基齐射`) & Jiuzhou Spirit-Vein Expedition Sandbox (`九州灵脉远征沙盘`)
   const EXPEDITION_NODES = [
-    { id: "qinglan_vein",  name: "青岚灵泉矿脉", art: "arena_sanctum_hub",    stoneRate: 18, starChance: 0.25, desc: "每轮产出灵石+18 · 宗门护道青雷支援" },
-    { id: "qingyun_peak",  name: "青云古剑仙台", art: "arena_sect",    stoneRate: 26, starChance: 0.35, desc: "每轮产出灵石+26 · 飞剑天基协同剑雨" },
-    { id: "zhaoying_lake", name: "照影玄冰灵渊", art: "arena_secret",  stoneRate: 34, starChance: 0.45, desc: "每轮产出灵石+34 · 寒魄护道冰雷震慑" },
-    { id: "suoyao_altar",  name: "锁妖古塔灵枢", art: "arena_tower",   stoneRate: 42, starChance: 0.60, desc: "每轮产出灵石+42 · 高概率凝结鸿蒙星魄" },
-    { id: "jiuxiao_sky",   name: "九霄星河天脉", art: "arena_terrace", stoneRate: 56, starChance: 0.85, desc: "每轮产出灵石+56 · 必凝鸿蒙星魄与紫霄神雷" }
+    { id: "qinglan_vein",  name: "青岚灵泉矿脉", art: "arena_sanctum_hub",    stoneRate: 18, desc: "每轮产出灵石+18 · 宗门护道青雷支援" },
+    { id: "qingyun_peak",  name: "青云古剑仙台", art: "arena_sect",    stoneRate: 26, desc: "每轮产出灵石+26 · 飞剑天基协同剑雨" },
+    { id: "zhaoying_lake", name: "照影玄冰灵渊", art: "arena_secret",  stoneRate: 34, desc: "每轮产出灵石+34 · 寒魄护道冰雷震慑" },
+    { id: "suoyao_altar",  name: "锁妖古塔灵枢", art: "arena_tower",   stoneRate: 42, desc: "每轮产出灵石+42 · 高概率凝结鸿蒙星魄" },
+    { id: "jiuxiao_sky",   name: "九霄星河天脉", art: "arena_terrace", stoneRate: 56, desc: "每轮产出灵石+56 · 必凝鸿蒙星魄与紫霄神雷" }
   ];
   const EXPEDITION_BANKED_STONES_CAP = 600;
   const EXPEDITION_BANKED_STARS_CAP = 5;
@@ -13258,6 +13500,7 @@ const ART = {
   function triggerWarshipOrbitalStrike() {
     if (!game) return false;
     if (!guardActionRealm("warship")) return false;
+    notifyUnlockCardTried("warship");
     if (arena.warshipStrike && arena.warshipStrike.active) {
       showToast("⛵ 听雨凌霄仙舟正在天际倾泻主炮齐射中！");
       return false;
@@ -13306,6 +13549,7 @@ const ART = {
   function openExpeditionSandboxModal() {
     if (!game) return;
     if (!guardEcosystemAccess("vein_expedition")) return;
+    notifyUnlockCardTried("expedition");
     closeDrawer();
     arena.paused = true;
     const ex = ensureExpeditionState(game);
@@ -14002,7 +14246,9 @@ const ART = {
     slash: 0, recall: 0, dash: 0, meditate: 0, pill: 0, hub: 0, photo: 0, telemetry: 0,
     stance: 1, jump: 1, ult: 1, ally: 1, pet: 1,
     posture: 2, soul: 2, swordBlink: 2, finisher: 2, tagSwitch: 2, weapon_form: 2,
-    astral: 3, mount: 3, qimen: 3, sanqing: 3, shanhe: 3, warship: 3, sequencer: 3
+    mount: 3, qimen: 3, sequencer: 3,
+    sanqing: 4, astral: 4,
+    shanhe: 5, warship: 5
   };
   const ACTION_DISPLAY_NAME = {
     stance: "三才剑阵 (Y)", jump: "御风腾跃 (Z)", ult: "法宝剑域 (E)", ally: "故人助阵 (R)", pet: "灵宠绝技 (G)",
@@ -14011,6 +14257,83 @@ const ART = {
     astral: "法天象地 (O)", mount: "山海灵骑 (J)", qimen: "奇门八门阵 (U)",
     sanqing: "一气化三清 (4)", shanhe: "山河社稷图 (5)", warship: "凌霄仙舟 (6)", sequencer: "自创剑谱 (7)"
   };
+
+  // S11+G7: Once-per-unlock crisp 2-line "新神通" tutorial cards
+  const UNLOCK_TUTORIAL_CATALOG = [
+    {
+      id: "unlock_ally_coop", min: "mortal", badge: "故人同心", title: "故人助阵 (R)",
+      line1: "已结契故人真身降临战场，结成同心剑链协战并助阵渡劫。",
+      line2: "按 R 键即可召唤助阵，点击下方【试用】立即体验。",
+      tryLabel: "试用 (R)", tryAction: "action:ally", tryKeys: ["ally"]
+    },
+    {
+      id: "unlock_qi_arts", min: "qi", badge: "炼气初开", title: "三才剑阵 (Y) / 御空 (Z) / 剑域 (E)",
+      line1: "Y 键切换游龙/剑轮/巨阙三阵，Z 键御空躲地波，E 键展法宝剑域。",
+      line2: "按 Y/Z/E 任一键即可施展，点击【试用】先变幻三才剑阵。",
+      tryLabel: "试用变阵 (Y)", tryAction: "action:stance", tryKeys: ["stance", "jump", "ult"]
+    },
+    {
+      id: "unlock_qi_eco", min: "qi", badge: "炼气生态", title: "本命灵宠 (G) / 八卦丹剑 / 锁妖古塔",
+      line1: "修行抽屉现已开放灵宠契约（分级喂养、Lv.3/5择技），洞府启八卦丹剑。",
+      line2: "可前往修行抽屉缔结随行灵宠，或按 G 键施放灵宠觉醒神通。",
+      tryLabel: "前往契约灵宠", tryAction: "drawer:cultivate", tryKeys: ["pet"]
+    },
+    {
+      id: "unlock_foundation_arts", min: "foundation", badge: "筑基战技", title: "双姿态 (`) / 魂印 (C) / 缩地 (F) / 奥义 (X)",
+      line1: "` 键疾剑/巨阙双姿互切，C 键魂印消后摇，F 键瞬身，X 键满剑意放奥义。",
+      line2: "按 `/C/F/X 即可施展，点击【试用】立即切换双剑意姿态。",
+      tryLabel: "试用双姿态 (`)", tryAction: "action:posture", tryKeys: ["posture", "soul", "swordBlink", "finisher"]
+    },
+    {
+      id: "unlock_foundation_eco", min: "foundation", badge: "筑基剑匣", title: "道侣瞬切 (V) / 剑匣三器 (1/2/3) / 护山守卫",
+      line1: "1/2/3 键幻化飞剑/龙胆枪/剑轮，V 键换人操控道侣，洞府开护山守卫战。",
+      line2: "按 1/2/3 或 V 即可体验，点击【试用】幻化龙胆长枪。",
+      tryLabel: "试用龙胆枪 (2)", tryAction: "weapon:spear", tryKeys: ["tagSwitch", "weapon_form"]
+    },
+    {
+      id: "unlock_golden_arts", min: "golden", badge: "金丹秘匣", title: "山海灵骑 (J) / 奇门八门阵 (U) / 自创剑谱 (7)",
+      line1: "太虚秘匣初阶已开：J 键呼灵骑冲锋，U 键布奇门四门，7 键混编四段剑谱。",
+      line2: "按 J/U/7 即可触发，点击【试用】立即脚下布设奇门风水阵。",
+      tryLabel: "试用奇门阵 (U)", tryAction: "action:qimen", tryKeys: ["qimen", "mount", "sequencer"]
+    },
+    {
+      id: "unlock_golden_eco", min: "golden", badge: "金丹启星", title: "九霄云海空战 / 周天星图 (N)",
+      line1: "舆图开启云海空战过渡关，N 键点亮二十八星宿激活四象圣核加成。",
+      line2: "按 N 键打开周天星图，或点击【试用】查看二十八星宿。",
+      tryLabel: "打开星图 (N)", tryAction: "modal:star_chart", tryKeys: ["star_chart"]
+    },
+    {
+      id: "unlock_nascent_arts", min: "nascent", badge: "元婴法身", title: "一气化三清 (4) / 法天象地 (O)",
+      line1: "4 键召双法身同步复刻招式（二段归元斩），O 键化十丈元神真身霸体破甲。",
+      line2: "按 4 或 O 键即可释放，点击【试用】凝练一气化三清法身。",
+      tryLabel: "试用三清 (4)", tryAction: "action:sanqing", tryKeys: ["sanqing", "astral"]
+    },
+    {
+      id: "unlock_nascent_eco", min: "nascent", badge: "元婴破虚", title: "九州灵脉远征 (8) / 登仙台 (L) / 万剑冢七阵",
+      line1: "8 键委派已结缘故人驻防灵脉，L 键闯九重登仙台，仙阁启万剑冢七阵。",
+      line2: "按 8 或 L 键即刻进入，点击【试用】展开灵脉远征沙盘。",
+      tryLabel: "打开远征 (8)", tryAction: "modal:expedition", tryKeys: ["expedition", "spire"]
+    },
+    {
+      id: "unlock_spirit_arts", min: "spirit", badge: "化神绝巅", title: "山河社稷图 (5) / 凌霄仙舟 (6)",
+      line1: "5 键展开宣纸画中界烙九字破画斩，6 键召宗门仙舟锁链主炮天基轰炸。",
+      line2: "按 5 或 6 键即可施放，点击【试用】展开山河社稷画中界。",
+      tryLabel: "试用社稷图 (5)", tryAction: "action:shanhe", tryKeys: ["shanhe", "warship"]
+    },
+    {
+      id: "unlock_spirit_eco", min: "spirit", badge: "化神造化", title: "天道劫印契约 / 造化种子工坊",
+      line1: "问道录终局页启五道天道劫印飙升倍率，造化工坊可自定义双王 CY22 种子。",
+      line2: "可赴目标终局页缔结劫印，或点击【试用】开启造化种子工坊。",
+      tryLabel: "打开造化工坊", tryAction: "modal:workshop", tryKeys: ["workshop"]
+    }
+  ];
+
+  function isUnlockCardEarned(g, card) {
+    if (!g || !card) return false;
+    if (card.id === "unlock_ally_coop") return countBondedAllies(g) > 0 || rankOf(g.realm) >= 1;
+    if (card.id === "unlock_qi_eco") return rankOf(g.realm) >= 1 || !!(g.pet && g.pet.id);
+    return rankOf(g.realm) >= rankOf(card.min || "mortal");
+  }
 
   function isActionUnlockedByRealm(g, act) {
     if (!g) return false;
@@ -14074,6 +14397,7 @@ const ART = {
 
   function executeActionImmediate(act, fromBuffer = false) {
     if (!guardActionRealm(act)) return;
+    notifyUnlockCardTried(act);
     const labelMap = { posture: (arena.player.comboWindow > 0.12 || arena.player.dashTimer > 0) ? "☯易剑连携斩" : "易剑切姿", slash: `${arena.weaponPosture === "xuanzhong" ? "巨阙" : "疾剑"}S${((arena.player.comboWindow > 0 ? arena.player.comboStep + 1 : 0) % 4) + 1}`, recall: (arena.player.comboWindow > 0.25 && (arena.morphCd || 0) <= 0) ? "切手重技" : "收剑爆印", dash: "闪身/剑反", stance: "变阵", ult: "法宝剑域", finisher: "真传奥义", ally: "故人助阵", pet: "灵兽绝技", pill: "灵丹", meditate: "吐纳" };
     if (labelMap[act]) pushTelemetryInput((fromBuffer ? "⚡" : "") + labelMap[act], fromBuffer);
     if (arena.bladeClash && ["slash", "recall", "dash", "soul", "posture"].includes(act)) {
@@ -14959,7 +15283,7 @@ const ART = {
       ownedRelics: [],
       relicStars: {},
       laws,
-      pet: { id: null, level: 1 },
+      pet: { id: null, level: 1, skills: { tier3: null, tier5: null } },
       towerFloor: 1,
       towerBest: 0,
       bestSpireFloor: 0,
@@ -15010,6 +15334,7 @@ const ART = {
       lifespanBonusMonths: 0,
       tutorialStep: 0,
       tutorialDismissed: false,
+      seenUnlockIds: [],
       sanctumChatStage: {},
       karmaMarketBought: {},
       weaponForm: "sword",
@@ -15124,9 +15449,15 @@ const ART = {
     else g.gearBag = g.gearBag.map(it => normalizeGearItem(it)).filter(Boolean);
     if (!Array.isArray(g.marketStock)) g.marketStock = [];
     else g.marketStock = g.marketStock.map(it => normalizeGearItem(it)).filter(Boolean);
-    g.pet = safeAssignPlain({ id: null, level: 1 }, raw.pet);
-    if (g.pet.id && !hasOwn(SPIRIT_PETS, g.pet.id)) g.pet.id = null;
-    g.pet.level = Math.max(1, Math.min(5, Math.floor(num(g.pet.level, 1))));
+    const rawPet = (raw.pet && typeof raw.pet === "object" && !Array.isArray(raw.pet)) ? raw.pet : {};
+    const rawPetSkills = (rawPet.skills && typeof rawPet.skills === "object" && !Array.isArray(rawPet.skills)) ? rawPet.skills : {};
+    const safeTier3 = (typeof rawPetSkills.tier3 === "string" && hasOwn(PET_SKILLS_BY_ID, rawPetSkills.tier3) && PET_SKILLS_BY_ID[rawPetSkills.tier3].tier === 3) ? rawPetSkills.tier3 : null;
+    const safeTier5 = (typeof rawPetSkills.tier5 === "string" && hasOwn(PET_SKILLS_BY_ID, rawPetSkills.tier5) && PET_SKILLS_BY_ID[rawPetSkills.tier5].tier === 5) ? rawPetSkills.tier5 : null;
+    g.pet = {
+      id: (typeof rawPet.id === "string" && hasOwn(SPIRIT_PETS, rawPet.id)) ? rawPet.id : null,
+      level: Math.max(1, Math.min(5, Math.floor(num(rawPet.level, 1)))),
+      skills: { tier3: safeTier3, tier5: safeTier5 }
+    };
     g.aids = safeAssignPlain({ shen: false, pei: false, lu: false, yan: false }, raw.aids);
     g.dao = safeAssignPlain({ benevolence: 6, edge: 10, serenity: 6 }, raw.dao);
     ["benevolence", "edge", "serenity"].forEach(k => {
@@ -15237,6 +15568,19 @@ const ART = {
     } else {
       g.tutorialStep = (rankOf(g.realm) >= 1 || !!g.openingChoice) ? 4 : 0;
     }
+    const validUnlockIds = new Set(UNLOCK_TUTORIAL_CATALOG.map(c => c.id));
+    if (Array.isArray(raw.seenUnlockIds)) {
+      const seenSet = new Set();
+      g.seenUnlockIds = [];
+      for (const uid of raw.seenUnlockIds) {
+        if (typeof uid === "string" && validUnlockIds.has(uid) && !seenSet.has(uid)) {
+          seenSet.add(uid);
+          g.seenUnlockIds.push(uid);
+        }
+      }
+    } else {
+      g.seenUnlockIds = UNLOCK_TUTORIAL_CATALOG.filter(c => isUnlockCardEarned(g, c)).map(c => c.id);
+    }
     g.sanctumChatStage = safeAssignPlain({}, raw.sanctumChatStage);
     g.karmaMarketBought = safeAssignPlain({}, raw.karmaMarketBought);
     if (!Array.isArray(g.journal)) g.journal = base.journal.slice();
@@ -15324,6 +15668,11 @@ const ART = {
       game = game ? JSON.parse(JSON.stringify(game)) : createFreshGame("顾长青", "sword_bone");
       sandboxMode = true;
       game.unlockAllArcana = true;
+      pendingUnlockCardQueue.length = 0;
+      activeUnlockCardId = null;
+      pendingLifespanExhaustedPrompt = false;
+      activeLifespanModalOpen = false;
+      renderActiveUnlockCard();
     }
     closeModal();
     if (opts && opts.preset) {
@@ -16220,12 +16569,14 @@ const ART = {
     if (arena.comboCount >= 5) unlockAchievement("ach_orb5");
   }
 
-  function gainRealmXp(amount) {
+  function gainRealmXp(amount, opts = {}) {
     if (!game || amount <= 0) return;
     const r = REALMS[game.realm];
     const omenMult = currentOmen(game).id === "tide" ? 1.45 : 1.0;
     const mindMult = (game.loadout.mind === "sword_still" || game.loadout.mind === "talisman_calm") ? 1.25 : 1.0;
-    const finalAmt = Math.max(1, Math.round(amount * omenMult * mindMult));
+    const lf = getLifespanInfo(game);
+    const lifeMult = (opts && opts.bypassLifespanPenalty) ? 1.0 : lf.xpEfficiencyMult;
+    const finalAmt = Math.max(1, Math.round(amount * omenMult * mindMult * lifeMult));
     if (r.xpCap > 0) {
       const prevXp = game.xp;
       const total = game.xp + finalAmt;
@@ -16278,6 +16629,11 @@ const ART = {
   let pendingSoulRefineId = null;
   let pendingVolumeRecapOnDismiss = null;
   let temperUseCoreDiscount = false;
+  const pendingUnlockCardQueue = [];
+  let activeUnlockCardId = null;
+  let lifespanExhaustedPromptDismissed = false;
+  let pendingLifespanExhaustedPrompt = false;
+  let activeLifespanModalOpen = false;
 
   function clearTransientChoiceQueues() {
     pendingGearOverflowQueue.length = 0;
@@ -16288,10 +16644,16 @@ const ART = {
     pendingAlchemyCraft = null;
     pendingSoulRefineId = null;
     pendingVolumeRecapOnDismiss = null;
+    pendingUnlockCardQueue.length = 0;
+    activeUnlockCardId = null;
+    lifespanExhaustedPromptDismissed = false;
+    pendingLifespanExhaustedPrompt = false;
+    activeLifespanModalOpen = false;
     arena.stageClearPending = false;
     pendingCompareGear = null;
     temperUseCoreDiscount = false;
     renderGearCompareCard();
+    renderActiveUnlockCard();
   }
 
   function resetStageTransitionState() {
@@ -16382,12 +16744,155 @@ const ART = {
     `, false, { kind: "gear_overflow" });
   }
 
+  function syncUnlockCardStacking() {
+    const cardEl = document.getElementById("new-unlock-card");
+    if (!cardEl) return;
+    const coach = document.getElementById("onboarding-coach-bar");
+    cardEl.classList.toggle("stack-above-coach", Boolean(coach && coach.classList.contains("show")));
+  }
+
+  function markUnlockCardSeen(cardId) {
+    if (!game || sandboxMode || !cardId) return;
+    if (!Array.isArray(game.seenUnlockIds)) game.seenUnlockIds = [];
+    if (!game.seenUnlockIds.includes(cardId)) {
+      game.seenUnlockIds.push(cardId);
+      saveGame();
+    }
+  }
+
+  function renderActiveUnlockCard() {
+    const el = document.getElementById("new-unlock-card");
+    if (!el) return;
+    const ws = document.getElementById("welcome-screen");
+    const onWelcome = Boolean(ws && ws.style.display !== "none");
+    const card = activeUnlockCardId ? UNLOCK_TUTORIAL_CATALOG.find(c => c.id === activeUnlockCardId) : null;
+    if (!game || sandboxMode || onWelcome || !card) {
+      el.style.display = "none";
+      el.innerHTML = "";
+      return;
+    }
+    const rem = pendingUnlockCardQueue.length;
+    el.style.display = "flex";
+    syncUnlockCardStacking();
+    el.innerHTML = `
+      <div class="unlock-card-top">
+        <div style="display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;">
+          <span class="cinnabar-seal" style="font-size:9.5px;padding:1px 7px;">新神通 · ${escapeHtml(card.badge)}</span>
+          <strong style="font-family:var(--font-serif);font-size:13.5px;color:#ffe89e;">${escapeHtml(card.title)}</strong>
+          ${rem > 0 ? `<span class="tag-chip" style="font-size:9.5px;">+${rem}</span>` : ""}
+        </div>
+        <div class="unlock-card-actions">
+          <button type="button" id="btn-unlock-try" class="btn-jade" style="padding:3px 10px;font-size:11px;white-space:nowrap;" data-action="unlock-card-try">${escapeHtml(card.tryLabel || "立即试用")}</button>
+          <button type="button" id="btn-unlock-dismiss" class="btn-ghost" style="padding:3px 8px;font-size:11px;white-space:nowrap;" data-action="unlock-card-dismiss">知道了 ✕</button>
+        </div>
+      </div>
+      <div class="unlock-card-body">
+        <div>${escapeHtml(card.line1)}</div>
+        <div style="color:var(--text-sub);">${escapeHtml(card.line2)}</div>
+      </div>
+    `;
+  }
+
+  function queueNewUnlockCardsForState(g) {
+    if (!g || sandboxMode) return 0;
+    if (!Array.isArray(g.seenUnlockIds)) g.seenUnlockIds = [];
+    let added = 0;
+    for (const card of UNLOCK_TUTORIAL_CATALOG) {
+      if (isUnlockCardEarned(g, card) && !g.seenUnlockIds.includes(card.id) && activeUnlockCardId !== card.id && !pendingUnlockCardQueue.includes(card.id)) {
+        pendingUnlockCardQueue.push(card.id);
+        added += 1;
+      }
+    }
+    if (added > 0) setTimeout(flushDeferredChoiceModals, 0);
+    return added;
+  }
+
+  function flushNewUnlockCard() {
+    if (!game || sandboxMode) {
+      activeUnlockCardId = null;
+      renderActiveUnlockCard();
+      return false;
+    }
+    const ws = document.getElementById("welcome-screen");
+    if (ws && ws.style.display !== "none") return false;
+    if (cutscene.active || pendingVolumeRecapOnDismiss || arena.stageClearPending || arena.tribulation || arena.defeatPending) return false;
+    const bd = document.getElementById("modal-backdrop");
+    if ((bd && bd.classList.contains("open")) || drawerOpen) return false;
+    if (activeUnlockCardId) {
+      renderActiveUnlockCard();
+      return true;
+    }
+    while (pendingUnlockCardQueue.length > 0) {
+      const nextId = pendingUnlockCardQueue.shift();
+      if (Array.isArray(game.seenUnlockIds) && game.seenUnlockIds.includes(nextId)) continue;
+      activeUnlockCardId = nextId;
+      renderActiveUnlockCard();
+      return true;
+    }
+    renderActiveUnlockCard();
+    return false;
+  }
+
+  function dismissActiveUnlockCard() {
+    if (!activeUnlockCardId) return false;
+    const doneId = activeUnlockCardId;
+    activeUnlockCardId = null;
+    markUnlockCardSeen(doneId);
+    renderActiveUnlockCard();
+    setTimeout(flushNewUnlockCard, 0);
+    return true;
+  }
+
+  function tryActiveUnlockCard() {
+    if (!game || !activeUnlockCardId) return false;
+    const card = UNLOCK_TUTORIAL_CATALOG.find(c => c.id === activeUnlockCardId);
+    const doneId = activeUnlockCardId;
+    activeUnlockCardId = null;
+    markUnlockCardSeen(doneId);
+    renderActiveUnlockCard();
+    if (!card) return false;
+    const actStr = card.tryAction || "";
+    if (actStr.startsWith("action:")) {
+      const subAct = actStr.slice(7);
+      if (subAct === "sanqing") triggerSanqingTriClones();
+      else if (subAct === "shanhe") castShanheShejiDomain();
+      else if (subAct === "warship") triggerWarshipOrbitalStrike();
+      else triggerMappedAction(subAct);
+    } else if (actStr.startsWith("weapon:")) {
+      cycleWeaponArsenalForm(actStr.slice(7));
+    } else if (actStr === "drawer:cultivate") {
+      toggleDrawer("cultivate");
+    } else if (actStr === "modal:star_chart") {
+      openStarChartModal();
+    } else if (actStr === "modal:expedition") {
+      openExpeditionSandboxModal();
+    } else if (actStr === "modal:workshop") {
+      openCustomWorkshopModal();
+    }
+    showToast(`✦ 已试用【${card.title}】！`);
+    setTimeout(flushNewUnlockCard, 0);
+    return true;
+  }
+
+  function notifyUnlockCardTried(tryKey) {
+    if (!game || sandboxMode || !activeUnlockCardId || !tryKey) return false;
+    const card = UNLOCK_TUTORIAL_CATALOG.find(c => c.id === activeUnlockCardId);
+    if (!card || !Array.isArray(card.tryKeys) || !card.tryKeys.includes(tryKey)) return false;
+    const doneId = activeUnlockCardId;
+    activeUnlockCardId = null;
+    markUnlockCardSeen(doneId);
+    renderActiveUnlockCard();
+    showToast(`✦ 已试用【${card.title}】！`);
+    setTimeout(flushNewUnlockCard, 0);
+    return true;
+  }
+
   function flushDeferredChoiceModals() {
     if (!game) return;
     const ws = document.getElementById("welcome-screen");
     if (ws && ws.style.display !== "none") return;
-    if (cutscene.active || pendingVolumeRecapOnDismiss || arena.stageClearPending) return;
-    if (activeGearOverflowItem || activeSoulUnlockId) return;
+    if (cutscene.active || pendingVolumeRecapOnDismiss || arena.stageClearPending || arena.tribulation || arena.defeatPending) return;
+    if (activeGearOverflowItem || activeSoulUnlockId || activeLifespanModalOpen) return;
     const bd = document.getElementById("modal-backdrop");
     if (bd && bd.classList.contains("open")) return;
     if (pendingGearOverflowQueue.length > 0) {
@@ -16398,7 +16903,14 @@ const ART = {
     if (pendingSoulUnlockQueue.length > 0) {
       activeSoulUnlockId = pendingSoulUnlockQueue.shift();
       openSoulSealUnlockChoiceModal(activeSoulUnlockId);
+      return;
     }
+    if (pendingLifespanExhaustedPrompt && !lifespanExhaustedPromptDismissed && !sandboxMode && !isPracticeModeActive() && getLifespanInfo(game).status === "exhausted") {
+      pendingLifespanExhaustedPrompt = false;
+      openLifespanExhaustedModal(false);
+      return;
+    }
+    flushNewUnlockCard();
   }
 
   function equipGearWithOptionalTransfer(item, transferQuench = false) {
@@ -16538,9 +17050,10 @@ const ART = {
     const gt = getGearTotals(g);
     const sb = getStarChartBonuses(g);
     const tortoiseMult = hasStarCore(g, "black_tortoise") ? 1.18 : 1.0;
+    const petHpMult = hasPetSkill(g, "spirit_ward") ? 1.08 : 1.0;
     const realmHp = (REALMS[g.realm] && REALMS[g.realm].maxHp) || 80;
     const statCap = 1 + softCapPct(Math.max(0, (g.statMultBonus || 1) - 1), 0.75, 1.40);
-    return Math.round((realmHp + (g.maxHpBonus || 0) + gt.hp + sb.hp) * statCap * tortoiseMult);
+    return Math.round((realmHp + (g.maxHpBonus || 0) + gt.hp + sb.hp) * statCap * tortoiseMult * petHpMult);
   }
 
   // ==================== M3 ENGINE: SANCTUM CONSTRUCTION, LIFESPAN, COMPANION PRESENCE & KARMA WORLD ====================
@@ -16621,20 +17134,270 @@ const ART = {
   }
 
   function getLifespanInfo(g) {
-    if (!g) return { curMonths: 216, maxMonths: 744, curYears: 18, maxYears: 62, remainYears: 44, ratio: 0.29, status: "normal", medPenaltyMult: 1.0 };
+    if (!g) {
+      return {
+        curMonths: 216, maxMonths: 744, remainMonths: 528, curYears: 18, maxYears: 62, remainYears: 44,
+        ratio: 0.29, status: "normal", xpEfficiencyMult: 1.0, penaltyPct: 0, isExhausted: false, medPenaltyMult: 1.0
+      };
+    }
     const r = REALMS[g.realm] || REALMS.mortal;
     const curMonths = Math.max(12, Math.round((g.startAgeMonths || 216) + (g.elapsedMonths || 0)));
     const maxMonths = Math.max(240, (r.lifespanMonths || 744) + (g.perk === "immortal_echo" ? 480 : 0) + (g.lifespanBonusMonths || 0));
+    const remainMonths = Math.max(0, maxMonths - curMonths);
     const curYears = Math.floor(curMonths / 12);
     const maxYears = Math.floor(maxMonths / 12);
     const remainYears = Math.max(0, maxYears - curYears);
     const ratio = g.realm === "ascended" ? 0.05 : curMonths / Math.max(1, maxMonths);
-    const status = ratio >= 0.92 ? "critical" : ratio >= 0.75 ? "warning" : "normal";
+    let status = "normal";
+    let xpEfficiencyMult = 1.0;
+    let penaltyPct = 0;
+    let isExhausted = false;
+    if (g.realm !== "ascended" && ratio >= 1.0) {
+      status = "exhausted";
+      xpEfficiencyMult = 0.25;
+      penaltyPct = 75;
+      isExhausted = true;
+    } else if (ratio >= 0.95) {
+      status = "critical";
+      xpEfficiencyMult = 0.50;
+      penaltyPct = 50;
+    } else if (ratio >= 0.90) {
+      status = "critical";
+      xpEfficiencyMult = 0.75;
+      penaltyPct = 25;
+    } else if (ratio >= 0.75) {
+      status = "warning";
+      xpEfficiencyMult = 1.0;
+      penaltyPct = 0;
+    }
     return {
-      curMonths, maxMonths, curYears, maxYears, remainYears, ratio: Number(ratio.toFixed(3)),
+      curMonths, maxMonths, remainMonths, curYears, maxYears, remainYears,
+      ratio: Number(ratio.toFixed(3)),
       status,
-      medPenaltyMult: status === "critical" ? 0.90 : 1.0
+      xpEfficiencyMult,
+      penaltyPct,
+      isExhausted,
+      medPenaltyMult: xpEfficiencyMult
     };
+  }
+
+  function advanceLifespanMonths(months, reason = "", opts = {}) {
+    if (!game || !(months > 0) || sandboxMode || isPracticeModeActive() || game.realm === "ascended") {
+      return { aged: 0, skipped: true, info: getLifespanInfo(game) };
+    }
+    const prevLf = getLifespanInfo(game);
+    const delta = Math.max(1, Math.round(months));
+    game.elapsedMonths = Math.max(0, Math.floor(num(game.elapsedMonths, 0))) + delta;
+    const nextLf = getLifespanInfo(game);
+    if (!(opts && opts.silentToast)) {
+      if (prevLf.status === "normal" && nextLf.status === "warning") {
+        showToast(`⚠ 寿元已过 75%（${nextLf.curYears}/${nextLf.maxYears}载），宜炼制【延寿青莲丹】或破境延寿！`);
+      } else if (prevLf.ratio < 0.90 && nextLf.ratio >= 0.90 && nextLf.status === "critical") {
+        showToast(`⏳ 大限临近（${nextLf.curYears}/${nextLf.maxYears}载），修炼效率降至 ${Math.round(nextLf.xpEfficiencyMult * 100)}%！`);
+      } else if (prevLf.ratio < 0.95 && nextLf.ratio >= 0.95 && nextLf.status === "critical") {
+        showToast(`⏳ 寿元垂危（${nextLf.curYears}/${nextLf.maxYears}载），修炼效率降至 ${Math.round(nextLf.xpEfficiencyMult * 100)}%！速服延寿丹或破境！`);
+      }
+    }
+    if (nextLf.status === "exhausted" && !lifespanExhaustedPromptDismissed) {
+      pendingLifespanExhaustedPrompt = true;
+      setTimeout(flushDeferredChoiceModals, 0);
+    }
+    return { aged: delta, skipped: false, reason, prev: prevLf, info: nextLf };
+  }
+
+  function openLifespanExhaustedModal(confirmStep = false) {
+    if (!game) return;
+    const lf = getLifespanInfo(game);
+    const longPills = Math.max(0, Math.floor(num(game.inventory && game.inventory.longevity_pill, 0)));
+    activeLifespanModalOpen = true;
+    if (confirmStep) {
+      openModal(`
+        <div class="drawer-mural-banner" style="height:86px;">
+          <img src="${ART.heaven_gate}" alt="兵解转世确认" />
+          <div class="drawer-mural-overlay">
+            <div>
+              <span class="cinnabar-seal">二次确认 · 兵解转世</span>
+              <h2 style="font-family:var(--font-serif);font-size:20px;color:#ffd0cc;margin-top:3px;">确认舍去今世修为，兵解转世重入仙途？</h2>
+            </div>
+            <button type="button" class="btn-ghost" data-action="open-lifespan-exhausted">返回 ✕</button>
+          </div>
+        </div>
+        <div class="jade-card" style="gap:6px;border-color:rgba(255,104,104,0.68);">
+          <div style="font-size:12px;color:#ffd0cc;font-weight:700;">⚠ 兵解转世影响说明：</div>
+          <div style="font-size:11.5px;color:#e6f4f1;line-height:1.58;">
+            1. 将<b>清空当前主存档</b>（<code>${STORAGE_KEY}</code>），携【${escapeHtml(game.name)}】之执念重返标题页开启新一世；<br/>
+            2. <b>完整保留元存档</b>（累世轮回功德、图鉴、历史飞升纪录与已解锁命格），并额外铭刻 <b>+40 轮回道果点</b>（不计入白日飞升世数）；<br/>
+            3. 若仍想留在此世服丹续命或冲关破境，可随时点击【返回】或【暂留延寿】，进度绝不丢失。
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
+          <button type="button" id="btn-bingjie-back" class="btn-ghost" data-action="open-lifespan-exhausted">返回上一步</button>
+          <button type="button" id="btn-confirm-bingjie-reincarnate" class="btn-gold" style="background:linear-gradient(135deg,#9e2632,#d45542);color:#fff6e8;" data-action="confirm-bingjie-reincarnate">确认兵解转世</button>
+        </div>
+      `, true, { kind: "lifespan_exhausted" });
+      return;
+    }
+    openModal(`
+      <div class="drawer-mural-banner" style="height:88px;">
+        <img src="${ART.banner_tribulation}" alt="大限已至" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">寿元已尽 · 温和抉择</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:#ffd89b;margin-top:3px;">大限已至（${lf.curYears}/${lf.maxYears} 载）</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-action="lifespan-stay">暂留延寿 ✕</button>
+        </div>
+      </div>
+      <div class="jade-card" style="gap:6px;border-color:rgba(255,112,108,0.62);">
+        <div style="font-size:12px;color:#ffe0dc;line-height:1.58;">
+          道友本世寿元已达大限，周身灵脉渐衰——<b>修炼效率降至 ${Math.round(lf.xpEfficiencyMult * 100)}%（-${lf.penaltyPct}%）</b>，但<b>绝不强制删档或中断历练</b>！<br/>
+          你可立即服下【延寿青莲丹】增寿 30 载解厄、暂留此世破境延寿，或主动选择【兵解转世】保留累世功德重开新世。
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
+        ${longPills > 0 ? `<button type="button" id="btn-lifespan-use-pill" class="btn-jade" data-action="lifespan-use-pill">🌿 服用延寿青莲丹 (${longPills})</button>` : ""}
+        <button type="button" id="btn-lifespan-stay" class="btn-gold" data-action="lifespan-stay">暂留延寿（继续游玩）</button>
+        <button type="button" id="btn-lifespan-bingjie" class="btn-ghost" style="border-color:rgba(255,118,110,0.62);color:#ffb4ae;" data-action="open-bingjie-confirm">☯ 兵解转世…</button>
+      </div>
+    `, true, { kind: "lifespan_exhausted" });
+  }
+
+  function executeReincarnation(opts = {}) {
+    const source = (opts && opts.source) || "ascension";
+    if (sandboxMode) {
+      showToast("🧪 演武沙盒模式不记录轮回飞升，请先点击【退出沙盒】！");
+      return false;
+    }
+    if (storageReadError) {
+      saveAlertDismissed = false;
+      renderWelcomeSaveStatusBanner();
+      renderHudSaveAlert();
+      showToast("⚠ 检测到本地受损主存档尚未处理，已中止轮回清档并保留原数据！");
+      return false;
+    }
+    if (saveReadOnlyMode || saveConflictState) {
+      renderHudSaveAlert();
+      showToast(saveConflictState
+        ? "⚠ 存在多标签页存档冲突，已拒绝轮回清档！请先处理冲突。"
+        : "⚠ 当前处于只读观览态，已拒绝轮回清档以免误删另一标签页的进度！");
+      return false;
+    }
+    if (metaReadError) {
+      saveAlertDismissed = false;
+      renderHudSaveAlert();
+      showToast("⚠ 元存档损坏尚未处理，已中止轮回清档以免丢失累世功德！请先备份或重置元存档。");
+      return false;
+    }
+    try {
+      const curRaw = localStorage.getItem(STORAGE_KEY);
+      if (curRaw !== null && curRaw !== "") {
+        const curRes = parseAndValidateSaveRaw(curRaw, STORAGE_KEY);
+        if (!curRes.ok) {
+          storageReadError = {
+            key: STORAGE_KEY,
+            reason: curRes.reason || "本地存档结构异常",
+            raw: curRaw,
+            rawLength: curRaw.length,
+            at: Date.now()
+          };
+          saveAlertDismissed = false;
+          renderWelcomeSaveStatusBanner();
+          renderHudSaveAlert();
+          showToast("⚠ 检测到本地主存档已损坏，已中止轮回清档并保留原数据！");
+          return false;
+        }
+        if (curRes.tabId && curRes.tabId !== TAB_ID && curRes.rev > loadedSaveRev) {
+          triggerSaveConflict(curRes, true);
+          showToast("⚠ 检测到另一标签页更新了存档，已中止轮回清档！");
+          return false;
+        }
+      }
+    } catch (e) {}
+    const prevMetaSnap = JSON.parse(JSON.stringify(metaState));
+    const prevLifeRecorded = !!(game && game.lifeRecorded);
+    if (source === "bingjie" && (!game || game.status !== "ascended")) {
+      ensureMetaState();
+      metaState.reincarnationPoints = (metaState.reincarnationPoints || 0) + 40;
+    } else if (game && game.status === "ascended" && game.ending && !game.lifeRecorded) {
+      recordPastLifeInHall(game, game.ending);
+    }
+    const metaSaved = saveMeta();
+    if (!metaSaved) {
+      Object.keys(metaState).forEach(k => { if (!(k in prevMetaSnap)) delete metaState[k]; });
+      Object.assign(metaState, prevMetaSnap);
+      if (game) game.lifeRecorded = prevLifeRecorded;
+      saveAlertDismissed = false;
+      renderHudSaveAlert();
+      const errMsg = metaReadError
+        ? metaReadError.reason
+        : ((metaWriteError && metaWriteError.message) ? metaWriteError.message : "元存档写入失败");
+      showToast(`⚠ 元存档保存失败（${errMsg}），已中止轮回并保留当前主存档！`);
+      return false;
+    }
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    clearTransientChoiceQueues();
+    game = null;
+    loadedSaveRev = 0;
+    lastSavedPayloadChecksum = null;
+    saveReadOnlyMode = false;
+    saveConflictState = null;
+    storageWriteError = null;
+    arena.stageEpoch += 1;
+    resetStageTransitionState();
+    closeModal(); closeDrawer();
+    if (metaState.ascensions >= 1) selectedPerkId = "immortal_echo";
+    renderWelcomeScreen();
+    const customDr = document.getElementById("title-custom-drawer");
+    if (customDr) customDr.classList.add("open");
+    document.getElementById("welcome-screen").style.display = "flex";
+    if (source === "bingjie") {
+      showToast("☯ 兵解转世已成！已保留累世功德并铭刻 +40 轮回道果点，可重开新一世！");
+    }
+    return true;
+  }
+
+  function openPetSkillChoiceModal(tier) {
+    if (!game || !game.pet || !game.pet.id || !hasOwn(SPIRIT_PETS, game.pet.id)) return false;
+    const safeTier = tier === 5 ? 5 : 3;
+    if ((game.pet.level || 1) < safeTier) {
+      showToast(`灵宠达到 Lv.${safeTier} 后方可择定此阶灵技！`);
+      return false;
+    }
+    const sp = SPIRIT_PETS[game.pet.id];
+    const pool = safeTier === 5 ? PET_SKILL_TIERS.tier5 : PET_SKILL_TIERS.tier3;
+    const curPicked = game.pet.skills ? game.pet.skills[safeTier === 5 ? "tier5" : "tier3"] : null;
+    openModal(`
+      <div class="drawer-mural-banner" style="height:86px;">
+        <img src="${ART[sp.art]}" alt="${escapeHtml(sp.name)}" style="object-fit:contain;background:radial-gradient(circle,#193b44,#07131a);" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">灵宠化形 · 自主择技</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:3px;">${escapeHtml(sp.name)} · Lv.${safeTier} ${safeTier === 5 ? "化境神通" : "化形灵技"}三选一</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-modal-close="1">暂缓选择 ✕</button>
+        </div>
+      </div>
+      <div style="font-size:11.5px;color:#b8dcd5;">择定后永久铭刻于本命灵兽血脉（切换随行灵宠亦完全保留）；关闭弹窗不会自动代选，随时可于修行抽屉重新打开择技。</div>
+      <div class="pet-skill-choice-grid">
+        ${pool.map(sk => {
+          const sel = curPicked === sk.id;
+          return `
+            <button type="button" class="pet-skill-card-btn ${sel ? "selected" : ""}" data-pick-pet-skill="${sk.id}" data-pet-skill-tier="${safeTier}">
+              <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:6px;">
+                <strong style="font-family:var(--font-serif);font-size:15px;color:${sk.color};">${escapeHtml(sk.name)}</strong>
+                <span class="tag-chip ${sel ? "mythic" : "done"}" style="font-size:9.5px;">${sel ? "已选" : escapeHtml(sk.badge)}</span>
+              </div>
+              <div style="font-size:11px;color:#d6eee8;line-height:1.5;">${escapeHtml(sk.desc)}</div>
+              <span class="tag-chip" style="margin-top:auto;font-size:9.8px;">点击铭刻此技 ▸</span>
+            </button>
+          `;
+        }).join("")}
+      </div>
+      <div style="display:flex;justify-content:flex-end;">
+        <button type="button" class="btn-ghost" data-modal-close="1">暂缓选择</button>
+      </div>
+    `, true, { kind: "pet_skill_choice" });
+    return true;
   }
 
   function canAffordSanctumUpgrade(g, bId) {
@@ -17113,6 +17876,14 @@ const ART = {
     if (sandboxMode || g.unlockAllArcana) return true;
     const spec = getEcosystemSystemSpec(sysId);
     if (!spec) return true;
+    // S11+G7 legacy zero-regression guard: preserve existing investment on pre-M6 saves
+    if (sysId === "vein_expedition" && g.expeditions && (
+      Object.keys(g.expeditions.assignments || {}).length > 0 ||
+      (g.expeditions.bankedStones || 0) > 0 ||
+      (g.expeditions.bankedStars || 0) > 0
+    )) return true;
+    if (sysId === "celestial_spire" && (g.bestSpireFloor || 0) > 0) return true;
+    if (sysId === "heavenly_pacts" && Array.isArray(g.pactSeals) && g.pactSeals.length > 0) return true;
     return rankOf(g.realm) >= rankOf(spec.min);
   }
 
@@ -17388,6 +18159,8 @@ const ART = {
     rawPassivePct += celPh.id === "noon" ? 0.10 : (celPh.id === "blood_dusk" ? (ks.mode === "demonic" ? 0.22 : 0.12) : 0);
     if (hasRunBoon("gold_alchemist")) rawPassivePct += Math.min(0.28, Math.floor((g.stones || 0) / 100) * 0.03);
     if (arena && arena.player && (arena.player.boonOverloadTimer || 0) > 0) rawPassivePct += 0.28;
+    const petWrathBuffActive = Boolean(arena && arena.player && (arena.player.petBuffTimer || 0) > 0 && hasPetSkill(g, "celestial_wrath"));
+    if (petWrathBuffActive) rawPassivePct += 0.16;
     const cappedPassivePct = softCapPct(rawPassivePct, 0.95, 1.65);
 
     // Bucket 3: Active Stance / Burst / Climate Multiplier (capped cleanly at 1.95x)
@@ -17403,6 +18176,7 @@ const ART = {
 
     const dmgReduce = gt.dr
       + (g.pet.id === "turtle" ? 10 : 0)
+      + (hasPetSkill(g, "spirit_ward") ? 12 : 0)
       + (g.loadout.mind === "sword_still" ? 8 : 0)
       + (g.loadout.mind === "talisman_clear" ? 12 : 0)
       + (g.loadout.relic === "jade_seal" ? Math.round(12 * starScale) : 0)
@@ -17411,7 +18185,7 @@ const ART = {
 
     const tier = getComboTier(arena.comboCount);
     const lowHpBoonCrit = (hasRunBoon("blood_intent") && g.hp <= maxHp * 0.55) ? 0.20 : 0;
-    const crit = Math.min(0.78, 0.10 + gt.crit + (g.perk === "sword_bone" ? 0.08 : 0) + (g.pet.id === "fox" ? 0.10 : 0) + (hasLaw(g, "crit_lotus") ? 0.18 : 0) + (currentOmen(g).id === "wolf_star" ? 0.12 : 0) + lowHpBoonCrit);
+    const crit = Math.min(0.78, 0.10 + gt.crit + (g.perk === "sword_bone" ? 0.08 : 0) + (g.pet.id === "fox" ? 0.10 : 0) + (hasPetSkill(g, "fury_fang") ? 0.05 : 0) + (hasLaw(g, "crit_lotus") ? 0.18 : 0) + (currentOmen(g).id === "wolf_star" ? 0.12 : 0) + lowHpBoonCrit);
     const climSpdMult = (clim && clim.id === "sword_wind") ? 1.10 : 1.0;
     const climHaste = (clim && clim.id === "sword_wind") ? 0.12 : 0;
     const climCritMult = (clim && clim.id === "thunder_loom") ? 0.14 : 0;
@@ -17439,7 +18213,7 @@ const ART = {
       dmgReduce: dmgReduce + (isHeavyPosture ? 16 : 0) + karmaDr + starB.dr + celDrBonus,
       crit: Math.min(0.78, crit + pineCrit + gourdCrit + starB.crit + daoB.critBonus),
       critMult: Math.min(2.35, 1.48 + styleSpec.critDmg * 0.75 + starB.critMult + celCritMult + climCritMult + perkCritMult + (schoolB.critMultBonus || 0) + (hasLaw(g, "crit_lotus") ? 0.18 : 0) + pineMult + ((setB && setB.critMult) || 0)),
-      atkHaste: Math.max(0.70, Math.min(1.85, 1 + gt.spd + starB.spd + styleSpec.haste * 0.7 + postureHasteBonus + gourdHaste + climHaste + perkHaste + (schoolB.hasteBonus || 0) + (arena.domain ? 0.24 : 0) + ((arena.reversedDomainTimer || 0) > 0 ? 0.20 : 0))),
+      atkHaste: Math.max(0.70, Math.min(1.85, 1 + gt.spd + starB.spd + styleSpec.haste * 0.7 + postureHasteBonus + gourdHaste + climHaste + perkHaste + (petWrathBuffActive ? 0.15 : 0) + (schoolB.hasteBonus || 0) + (arena.domain ? 0.24 : 0) + ((arena.reversedDomainTimer || 0) > 0 ? 0.20 : 0))),
       speed: speed * postureSpdMult * (1 + gourdHaste * 0.7 + starB.spd),
       daoBonuses: daoB,
       schoolSpec: schoolB,
@@ -17783,6 +18557,10 @@ const ART = {
       ];
       const pactsOk = isEcosystemSystemUnlocked(game, "heavenly_pacts");
       const starOk = isEcosystemSystemUnlocked(game, "star_chart");
+      const starSpec = getEcosystemSystemSpec("star_chart");
+      const pactSpec = getEcosystemSystemSpec("heavenly_pacts");
+      const starMinName = (starSpec && REALMS[starSpec.min]) ? REALMS[starSpec.min].name : "金丹";
+      const pactMinName = (pactSpec && REALMS[pactSpec.min]) ? REALMS[pactSpec.min].name : "化神";
       tabBody = `
         <div class="jade-card" style="gap:8px;">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
@@ -17790,14 +18568,14 @@ const ART = {
             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
               <button type="button" class="btn-jade" style="padding:3px 9px;font-size:11px;" data-action="open-ascension-roadmap">📊 问道阶梯</button>
               <button type="button" class="btn-ghost" style="padding:3px 9px;font-size:11px;border-color:rgba(248,220,144,0.52);color:#ffe8a3;" data-action="open-hall-of-lives">🏛 九世轮回殿</button>
-              <button type="button" class="btn-gold ${starOk ? "" : "eco-locked-btn"}" style="padding:3px 10px;font-size:11px;" data-action="open-star-chart" data-eco-lock-tag="金丹启">${starOk ? `🌟 周天星图 (${(game.litStars || []).length}/28)` : "🔒 周天星图"}</button>
+              <button type="button" class="btn-gold ${starOk ? "" : "eco-locked-btn"}" style="padding:3px 10px;font-size:11px;" data-action="open-star-chart" data-eco-lock-tag="${starMinName}启">${starOk ? `🌟 周天星图 (${(game.litStars || []).length}/28)` : "🔒 周天星图"}</button>
               <span class="tag-chip mythic">完成度 ${pct}%</span>
             </div>
           </div>
           <div style="padding:8px 10px;border-radius:10px;background:rgba(28,12,18,0.68);border:1px solid rgba(255,120,110,0.35);display:flex;flex-direction:column;gap:6px;${pactsOk ? "" : "opacity:0.78;"}">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
-              <strong style="font-size:12.5px;color:#ffb3ae;">🔥 天道劫印 · 巅峰难度契约（已启 ${getActivePactCount(game)}/5 劫${pactsOk ? "" : " · 🔒元婴期解封"}）</strong>
-              <span style="font-size:11px;color:#ffe28a;">神装爆率 +${getActivePactCount(game) * 18}% · 仙榜总分 +${getActivePactCount(game) * 14}%</span>
+              <strong style="font-size:12.5px;color:#ffb3ae;">🔥 天道劫印 · 巅峰难度契约（已启 ${getActivePactCount(game)}/5 劫${pactsOk ? "" : ` · 🔒${pactMinName}期解封`}）</strong>
+              <span style="font-size:11px;color:#ffe28a;">神装爆率 +${getActivePactCount(game) * 18}% · 仙榜总分 +${getActivePactCount(game) * 12}%</span>
             </div>
             <div class="pact-seal-grid">
               ${PACT_SEALS.map(ps => {
@@ -17972,10 +18750,11 @@ const ART = {
     const onWelcome = document.getElementById("welcome-screen") && document.getElementById("welcome-screen").style.display !== "none";
     if (!game || onWelcome || cutscene.active || game.tutorialDismissed || (game.tutorialStep || 0) >= 4 || rankOf(game.realm) >= 1) {
       bar.classList.remove("show");
+      syncUnlockCardStacking();
       return;
     }
     const step = ONBOARDING_STEPS[game.tutorialStep || 0];
-    if (!step) { bar.classList.remove("show"); return; }
+    if (!step) { bar.classList.remove("show"); syncUnlockCardStacking(); return; }
     const pips = ONBOARDING_STEPS.map(s => `<span class="ob-pip ${s.idx < step.idx ? "done" : s.idx === step.idx ? "cur" : ""}"></span>`).join("");
     let dynamicHint = step.hint;
     if (step.idx === 3 && REALMS[game.realm] && game.xp >= REALMS[game.realm].xpCap) {
@@ -17995,6 +18774,7 @@ const ART = {
       `;
     }
     bar.classList.add("show");
+    syncUnlockCardStacking();
   }
 
   function advanceOnboardingStep(completedIdx) {
@@ -18045,24 +18825,77 @@ const ART = {
     }
   }
 
+  // G12: Safe-zone-scoped meditation drop magnet configuration
+  const DROP_MAGNET_CONFIG = {
+    normalRadius: 240,
+    normalSpeed: 10.8,
+    safeMeditateRadius: 1800,
+    safeMeditateSpeed: 22.0,
+    combatMeditateRadius: 200,
+    combatMeditateSpeed: 10.8,
+    gearRadius: 115
+  };
+
+  function isMeditationSafeZone() {
+    if (!arena) return false;
+    if (arena.tribulation) return false;
+    if (arena.cloudFlight && arena.cloudFlight.active) return false;
+    if (arena.sectDefense && arena.sectDefense.active) return false;
+    if (arena.waveTransitioning) return false;
+    const hasLiveHostiles = Array.isArray(arena.enemies) &&
+      arena.enemies.some(e => e && e.hp > 0 && !e.isDummy && !e.isTreasure);
+    if (hasLiveHostiles) return false;
+    return true;
+  }
+
+  function getDropMagnetParams() {
+    const meditating = Boolean(arena && arena.player && arena.player.meditating);
+    const safeZone = isMeditationSafeZone();
+    if (!meditating) {
+      return { radius: DROP_MAGNET_CONFIG.normalRadius, speed: DROP_MAGNET_CONFIG.normalSpeed, safeZone, meditating: false };
+    }
+    return {
+      radius: safeZone ? DROP_MAGNET_CONFIG.safeMeditateRadius : DROP_MAGNET_CONFIG.combatMeditateRadius,
+      speed: safeZone ? DROP_MAGNET_CONFIG.safeMeditateSpeed : DROP_MAGNET_CONFIG.combatMeditateSpeed,
+      safeZone,
+      meditating: true
+    };
+  }
+
   function toggleMeditation(forceState = null) {
     if (!game) return;
     const p = arena.player;
     const next = forceState !== null ? forceState : !p.meditating;
     if (p.meditating === next) return;
     p.meditating = next;
+    p.meditateAgeTick = 0;
     if (next) {
+      p.meditateAgedDirty = false;
       pointer.moveTarget = null;
       Sound.qiOrb(2);
       addRipple(p.x, p.y + 28, 72, "#ffe28a");
-      addFloat(arena.sanctumMode ? "☯ 洞府聚灵 · 三倍周天吐纳" : "☯ 周天吐纳 · 引气归元", p.x, p.y - 54, "#ffe28a", 18, true);
+      const safeMed = isMeditationSafeZone();
+      addFloat(
+        arena.sanctumMode && safeMed ? "☯ 洞府聚灵 · 三倍吐纳/全屏吸纳" : safeMed ? "☯ 安全吐纳 · 全屏吸纳" : "☯ 战中吐纳 · 近身聚气",
+        p.x, p.y - 54, "#ffe28a", 18, true
+      );
+    } else if (p.meditateAgedDirty) {
+      p.meditateAgedDirty = false;
+      if (!sandboxMode && !isPracticeModeActive()) saveGame();
     }
     updateHud();
   }
 
   function consumeZenEmpowerment() {
     const p = arena.player;
-    if (p.meditating) p.meditating = false;
+    if (p.meditating) {
+      p.meditating = false;
+      p.meditateAgeTick = 0;
+      if (p.meditateAgedDirty) {
+        p.meditateAgedDirty = false;
+        if (!sandboxMode && !isPracticeModeActive()) saveGame();
+      }
+    }
     if ((p.zenStacks || 0) > 0) {
       const stacks = p.zenStacks;
       p.zenStacks = 0;
@@ -18329,6 +19162,9 @@ const ART = {
     arena.stageElement = null;
     arena.domain = null;
     arena.player.meditating = false;
+    arena.player.meditateAgeTick = 0;
+    arena.player.meditateAgedDirty = false;
+    arena.player.petBuffTimer = 0;
     arena.enemies = [];
     arena.projectiles = [];
     arena.drops = [];
@@ -18953,7 +19789,7 @@ const ART = {
       if (stageIdx === STAGES.length - 1) game.trialCompleted = true;
       if (!game.stageStars) game.stageStars = {};
       game.stageStars[stageIdx] = bestStars;
-      game.elapsedMonths = (game.elapsedMonths || 0) + 6;
+      advanceLifespanMonths(6, "stage_clear", { silentToast: true });
       if (Array.isArray(game.journal)) {
         game.journal.unshift(`【${meta.volEndLabel}】斩破【${act.bossName}】（${starStr}）`);
       }
@@ -20233,8 +21069,15 @@ const ART = {
     const sp = SPIRIT_PETS[game.pet.id];
     const p = arena.player;
     const st = getCombatStats(game);
-    const lvScale = 1 + ((game.pet.level || 1) - 1) * 0.20;
-    arena.petUltCd = hasLaw(game, "beast_soul") ? 11.0 : 15.5;
+    const swiftOn = hasPetSkill(game, "swift_bond");
+    const furyOn = hasPetSkill(game, "fury_fang");
+    const wrathOn = hasPetSkill(game, "celestial_wrath");
+    const siphonOn = hasPetSkill(game, "soul_siphon");
+    const twinOn = hasPetSkill(game, "twin_resonance");
+    const lvScale = (1 + ((game.pet.level || 1) - 1) * 0.20) * (furyOn ? 1.35 : 1.0) * (wrathOn ? 1.55 : 1.0);
+    const posMult = furyOn ? 1.5 : 1.0;
+    const forceCrit = wrathOn;
+    arena.petUltCd = Math.max(6.0, (hasLaw(game, "beast_soul") ? 11.0 : 15.5) - (swiftOn ? 2.5 : 0));
     arena.camZoom = 1.055;
     arena.shake = 10;
     Sound.fanfare();
@@ -20247,8 +21090,8 @@ const ART = {
         arena.projectiles.push({
           friendly: true, kind: "crescent", x: p.x, y: p.y,
           vx: Math.cos(a) * 12.5, vy: Math.sin(a) * 8.5, ang: a, r: 54,
-          dmg: Math.round(st.atk * 1.25 * lvScale), postureDmg: 16, knock: 6, addMark: 2, life: 0.68,
-          pierced: new Set(), color: "#ff8a5b"
+          dmg: Math.round(st.atk * 1.25 * lvScale), postureDmg: Math.round(16 * posMult), knock: 6, addMark: 2, life: 0.68,
+          forceCrit, pierced: new Set(), color: "#ff8a5b"
         });
       }
     } else if (sp.id === "turtle") {
@@ -20259,7 +21102,7 @@ const ART = {
       addRipple(p.x, p.y + 20, 190, "#70ffe6");
       arena.enemies.slice().forEach(e => {
         e.chillTimer = 4.0;
-        damageEnemy(e, Math.round(st.atk * 1.35 * lvScale), false, 24, Math.atan2(e.y - p.y, e.x - p.x), 10, true);
+        damageEnemy(e, Math.round(st.atk * 1.35 * lvScale), forceCrit, Math.round(24 * posMult), Math.atan2(e.y - p.y, e.x - p.x), 10, true);
       });
     } else if (sp.id === "sword_spirit") {
       addFloat("🗡 太虚剑灵 · 百剑归元斩！", p.x, p.y - 64, "#ffe28a", 21, true);
@@ -20268,15 +21111,38 @@ const ART = {
       arena.enemies.slice().forEach(e => {
         e.swordMarks = 6;
         arena.skyBolts.push({ x: e.x, y: e.y, t: 0, color: "#ffe28a" });
-        damageEnemy(e, Math.round(st.atk * 1.75 * lvScale), false, 32, 0, 6, true);
+        damageEnemy(e, Math.round(st.atk * 1.75 * lvScale), forceCrit, Math.round(32 * posMult), 0, 6, true);
       });
     } else {
       addFloat("🦅 九霄雷鹏 · 万雷劫狱破！", p.x, p.y - 64, "#d69eff", 21, true);
       arena.enemies.slice().forEach(e => {
         arena.skyBolts.push({ x: e.x, y: e.y, t: 0, color: "#d69eff" });
         e.swordMarks = Math.min(6, (e.swordMarks || 0) + 3);
-        damageEnemy(e, Math.round(st.atk * 1.85 * lvScale), false, 36, 0, 7, true);
+        damageEnemy(e, Math.round(st.atk * 1.85 * lvScale), forceCrit, Math.round(36 * posMult), 0, 7, true);
       });
+    }
+
+    if (twinOn) {
+      const liveFoes = arena.enemies.filter(e => e && e.hp > 0);
+      for (let k = 0; k < 2 && liveFoes.length > 0; k++) {
+        const tgt = liveFoes[k % liveFoes.length];
+        if (tgt && tgt.hp > 0) {
+          arena.skyBolts.push({ x: tgt.x + (k === 0 ? -18 : 18), y: tgt.y, t: 0, color: "#80ecff" });
+          tgt.swordMarks = Math.min(6, (tgt.swordMarks || 0) + 1);
+          damageEnemy(tgt, Math.round(st.atk * 0.65 * lvScale), forceCrit, Math.round(14 * posMult), 0, 4, true);
+        }
+      }
+      addFloat("🐾 双灵连击 · 双雷追击！", p.x, p.y - 84, "#80ecff", 16, true);
+    }
+    if (siphonOn) {
+      game.hp = Math.min(st.maxHp, game.hp + Math.round(st.maxHp * 0.25));
+      game.mp = Math.min(st.maxMp, (game.mp || 0) + 30);
+      p.invuln = Math.max(p.invuln, 1.2);
+      addFloat("🐾 返璞归元 · 血+25% 灵+30 · 无敌1.2s！", p.x, p.y - 90, "#70ffe6", 16, true);
+    }
+    if (wrathOn) {
+      p.petBuffTimer = 6.0;
+      addFloat("🐾 兽魂沸腾 · 攻+16% 速+15% (6s)！", p.x, p.y - 96, "#ffd166", 17, true);
     }
     updateHud();
   }
@@ -20410,19 +21276,31 @@ const ART = {
       return;
     }
     if (itemId === "longevity_pill") {
+      const prevLf = getLifespanInfo(game);
       game.inventory.longevity_pill -= 1;
       game.lifespanBonusMonths = (game.lifespanBonusMonths || 0) + 360;
       const hpRes = grantPermanentStatBonus(game, { hp: 15, source: "alchemy" });
       const stNew = getCombatStats(game);
       if (hpRes.grantedHp > 0) game.hp = Math.min(stNew.maxHp, game.hp + hpRes.grantedHp);
       const lf = getLifespanInfo(game);
+      if (lf.ratio < 1.0) {
+        lifespanExhaustedPromptDismissed = false;
+        pendingLifespanExhaustedPrompt = false;
+      }
+      if (activeLifespanModalOpen) {
+        activeLifespanModalOpen = false;
+        closeModal();
+      }
       if (Array.isArray(game.journal)) game.journal.unshift(`服下【延寿青莲丹】，寿元延至 ${lf.maxYears} 载！`);
       Sound.fanfare();
       addRipple(arena.player.x, arena.player.y + 18, 120, "#70ffe6");
       addFloat("🌿 延寿青莲丹 · 寿元 +30 载！", arena.player.x, arena.player.y - 54, "#70ffe6", 18, true);
+      const reliefNote = (lf.status !== prevLf.status || lf.xpEfficiencyMult > prevLf.xpEfficiencyMult)
+        ? `（寿元警报已解，修炼效率恢复至 ${Math.round(lf.xpEfficiencyMult * 100)}%！）`
+        : "";
       showToast(hpRes.grantedHp > 0
-        ? `🌿 服下【延寿青莲丹】· 寿元永久 +30 载（${lf.curYears}/${lf.maxYears} 载）且气血上限 +${hpRes.grantedHp}${hpRes.hpCapped ? `（丹道气血已达上限 ${hpRes.pg.alchemyHp}/${hpRes.caps.alchemyHp}）` : ""}！`
-        : `🌿 服下【延寿青莲丹】· 寿元永久 +30 载（${lf.curYears}/${lf.maxYears} 载，本境丹道永久气血已达上限 ${hpRes.pg.alchemyHp}/${hpRes.caps.alchemyHp}）！`);
+        ? `🌿 服下【延寿青莲丹】· 寿元永久 +30 载（${lf.curYears}/${lf.maxYears} 载）且气血上限 +${hpRes.grantedHp}${hpRes.hpCapped ? `（丹道气血已达上限 ${hpRes.pg.alchemyHp}/${hpRes.caps.alchemyHp}）` : ""}！${reliefNote}`
+        : `🌿 服下【延寿青莲丹】· 寿元永久 +30 载（${lf.curYears}/${lf.maxYears} 载，本境丹道永久气血已达上限 ${hpRes.pg.alchemyHp}/${hpRes.caps.alchemyHp}）！${reliefNote}`);
       saveGame(); updateHud();
       if (drawerOpen) renderDrawerContent();
       return;
@@ -20436,7 +21314,7 @@ const ART = {
       game.inventory.blood_fury_pill -= 1;
       const atkRes = grantPermanentStatBonus(game, { atk: 10, source: "general" });
       game.karmaScore = Math.max(-100, Math.min(100, (game.karmaScore || 0) - 15));
-      game.elapsedMonths = (game.elapsedMonths || 0) + 24;
+      advanceLifespanMonths(24, "blood_fury_pill");
       const lf = getLifespanInfo(game);
       if (Array.isArray(game.journal)) game.journal.unshift(`吞服黑市【嗜血煞丹】，剑攻永久+${atkRes.grantedAtk}，折损2载寿元。`);
       Sound.clang(0.95, 0.14);
@@ -20473,11 +21351,13 @@ const ART = {
   let activeDraftMeta = { titleText: "", lastIds: [] };
 
   const REALM_UNLOCK_NOTICES = {
-    qi: "新境解封：本命灵宠、八卦丹剑微操、太虚锁妖古塔，以及三才剑阵 (Y) / 御风腾跃 (Z) / 法宝剑域 (E) / 故人助阵 (R)",
-    foundation: "新境解封：双剑意姿态 (`)、镇妖魂印 (C)、道侣瞬切换人 (V)、护山大阵守卫战、流派奥义 (X) 与红尘因果问心",
-    golden: "新境解封：【九霄云海御剑空战】高潮过渡关、太虚周天星图 (N)、九州灵脉远征 (8)、太虚登仙台肉鸽 (L) 与太虚秘匣神通",
-    nascent: "新境解封：【万剑冢七阵连战】（含心魔镜像与太古烛龙三部位讨伐）与【天道劫印】巅峰难度契约",
-    spirit: "新境解封：【太虚造化种子工坊】（自定义双王共斗与 CY22 种子码），已可直指九霄天门白日飞升！"
+    mortal: "凡胎启剑：核心六招已备——左键挥剑、右键爆印、空格一闪、Q 仙葫、B 吐纳渡劫、H 听雨洞府",
+    qi: "炼气初开：解封【三才剑阵 (Y)】【御风腾跃 (Z)】【法宝剑域 (E)】【故人助阵 (R)】【本命灵宠 (G)】，并开启八卦丹剑与太虚锁妖古塔",
+    foundation: "筑基铸道：解封【双剑意姿态 (`)】【镇妖魂印 (C)】【缩地瞬身 (F)】【流派奥义 (X)】【道侣瞬切 (V)】【太虚剑匣 (1/2/3)】与护山大阵守卫战",
+    golden: "金丹启星：解封太虚秘匣初阶【山海灵骑 (J)】【奇门八门阵 (U)】【自创剑谱 (7)】，并开启【九霄云海空战】与【太虚周天星图 (N)】",
+    nascent: "元婴破虚：解封元婴法身【一气化三清 (4)】【法天象地 (O)】，并开启【九州灵脉远征 (8)】【太虚登仙台 (L)】与【万剑冢七阵连战】",
+    spirit: "化神凌霄：解封化神绝巅【山河社稷图 (5)】【凌霄仙舟 (6)】，并开启【天道劫印契约】与【造化种子工坊】，可直指九霄天门飞升！",
+    ascended: "白日飞升：已证道真仙！历世道果已铭刻【九世轮回殿】，可携轮回命格与剑意幻化开启高难【劫火周目】与锁妖塔极限冲层！"
   };
 
   function openTribulationPrepModal() {
@@ -20603,7 +21483,7 @@ const ART = {
         </div>
       </div>
       <div class="pity-bar-card">
-        <span>当前战力：<b>气血 ${Math.round(game.hp)}/${st.maxHp} · 攻击 ${st.atk} · 护脉丹障 ${Math.max(0, Math.floor(num(game.tribShield, 0)))} 层</b></span>
+        <span>当前战力：<b>气血 ${Math.round(game.hp)}/${st.maxHp} · 攻击 ${st.atk} · 护脉丹障 ${Math.max(0, Math.floor(num(game.tribShield, 0)))} 层</b> · <span style="color:#ffd8a8;">⏳ 渡劫历时 1 载 / 受挫散功 1.5 载</span></span>
         <span style="color:var(--jade);">${aidsTxt}</span>
       </div>
       ${pathBody}
@@ -20742,14 +21622,23 @@ const ART = {
     if (game.realm === "qi") unlockAchievement("ach_qi");
     if (isHeaven) unlockAchievement("ach_heaven_core");
 
+    if (game.realm !== "ascended") {
+      advanceLifespanMonths(12, "tribulation_success", { silentToast: true });
+      if (getLifespanInfo(game).ratio < 1.0) {
+        lifespanExhaustedPromptDismissed = false;
+        pendingLifespanExhaustedPrompt = false;
+      }
+    }
+
     const unlockMsg = REALM_UNLOCK_NOTICES[game.realm];
     const lfNew = getLifespanInfo(game);
-    if (Array.isArray(game.journal)) game.journal.unshift(`破境晋升【${REALMS[game.realm].name}】，寿元增至 ${lfNew.maxYears} 载！`);
+    if (Array.isArray(game.journal)) game.journal.unshift(`破境晋升【${REALMS[game.realm].name}】，历劫一载，寿元增至 ${lfNew.maxYears} 载！`);
     if (unlockMsg) showToast(`★ ${unlockMsg}（寿元延至 ${lfNew.maxYears} 载！）`);
     else showToast(`★ 破境【${REALMS[game.realm].name}】功成 · 寿元延至 ${lfNew.maxYears} 载！`);
 
     addFloat(`${tb.hardcore ? "⚡ 逆天傲骨 · " : isHeaven ? "★ 天道一品 · " : ""}破境【${REALMS[game.realm].name}】· 寿元 ${lfNew.maxYears} 载！`, arena.player.x, arena.player.y - 64, "#fff4c2", 22, true);
     arena.enemies.slice().forEach(e => damageEnemy(e, Math.round(st.atk * 2.6), true, 48, 0, 9, true));
+    queueNewUnlockCardsForState(game);
     saveGame(); updateHud(true);
     activeFruitRerolls = 1;
     openDestinyFruitModal(isHeaven, false);
@@ -20771,7 +21660,7 @@ const ART = {
       ? `<div class="pity-bar-card" style="border-color:rgba(112,255,230,0.45);color:#9effec;"><span>★ ${REALM_UNLOCK_NOTICES[game.realm]}</span></div>`
       : "";
     const goldenCloudHint = (game.realm === "golden" && !game.cloudSeaCleared)
-      ? `<div class="pity-bar-card" style="border-color:rgba(128,236,255,0.55);color:#c8f7ff;"><span>☁ 金丹高潮过渡关已启：择完道果后可由【舆图 / 仙阁·问道阶梯】起飞征战【九霄云海空战】，首破立得【破云证道印】(+12攻 · 远征/登仙台收益+15%)！</span></div>`
+      ? `<div class="pity-bar-card" style="border-color:rgba(128,236,255,0.55);color:#c8f7ff;"><span>☁ 金丹高潮过渡关已启：择完道果后可由【舆图 / 仙阁·问道阶梯】起飞征战【九霄云海空战】，首破立得【破云证道印】(+12攻 · 为元婴期远征/登仙台提供+15%收益)！</span></div>`
       : "";
 
     arena.paused = true;
@@ -20813,6 +21702,10 @@ const ART = {
     const spireOk = isEcosystemSystemUnlocked(game, "celestial_spire");
     const defOk = isEcosystemSystemUnlocked(game, "sect_defense");
     const rushOk = isEcosystemSystemUnlocked(game, "sword_tomb_rush");
+    const ecoLockTag = (sysId, fallback) => {
+      const sp = getEcosystemSystemSpec(sysId);
+      return (sp && REALMS[sp.min]) ? `${REALMS[sp.min].name}启` : fallback;
+    };
     openModal(`
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
         <div>
@@ -20820,10 +21713,10 @@ const ART = {
           <span style="font-family:var(--font-serif);font-size:20px;font-weight:700;color:var(--gold-bright);margin-left:8px;">千里江山 · 御剑选域舆图</span>
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-          <button type="button" class="btn-ghost ${cloudOk ? "" : "eco-locked-btn"}" style="border-color:#80ecff;color:#b8f7ff;padding:4px 9px;font-size:11px;" data-action="start-cloud-sea" data-eco-lock-tag="金丹启">${cloudOk ? "☁ 九霄云海空战" : "🔒 九霄空战"}</button>
-          <button type="button" class="btn-ghost ${spireOk ? "" : "eco-locked-btn"}" style="border-color:#ff9eff;color:#f5d0ff;padding:4px 9px;font-size:11px;" data-action="open-celestial-spire" data-eco-lock-tag="金丹启">${spireOk ? "🏯 太虚登仙台(肉鸽)" : "🔒 登仙台"}</button>
-          <button type="button" class="btn-ghost ${defOk ? "" : "eco-locked-btn"}" style="border-color:#70ffe6;color:#9effec;padding:4px 9px;font-size:11px;" data-action="start-sect-defense" data-eco-lock-tag="筑基启">${defOk ? "🛡 护山守卫战" : "🔒 护山战"}</button>
-          <button type="button" class="btn-gold ${rushOk ? "" : "eco-locked-btn"}" style="padding:4px 10px;font-size:11px;" data-start-rush="7" data-eco-lock-tag="元婴启">${rushOk ? "🐉 太古烛龙(练习)" : "🔒 太古烛龙"}</button>
+          <button type="button" class="btn-ghost ${cloudOk ? "" : "eco-locked-btn"}" style="border-color:#80ecff;color:#b8f7ff;padding:4px 9px;font-size:11px;" data-action="start-cloud-sea" data-eco-lock-tag="${ecoLockTag("cloud_sea_trial", "金丹启")}">${cloudOk ? "☁ 九霄云海空战" : "🔒 九霄空战"}</button>
+          <button type="button" class="btn-ghost ${spireOk ? "" : "eco-locked-btn"}" style="border-color:#ff9eff;color:#f5d0ff;padding:4px 9px;font-size:11px;" data-action="open-celestial-spire" data-eco-lock-tag="${ecoLockTag("celestial_spire", "元婴启")}">${spireOk ? "🏯 太虚登仙台(肉鸽)" : "🔒 登仙台"}</button>
+          <button type="button" class="btn-ghost ${defOk ? "" : "eco-locked-btn"}" style="border-color:#70ffe6;color:#9effec;padding:4px 9px;font-size:11px;" data-action="start-sect-defense" data-eco-lock-tag="${ecoLockTag("sect_defense", "筑基启")}">${defOk ? "🛡 护山守卫战" : "🔒 护山战"}</button>
+          <button type="button" class="btn-gold ${rushOk ? "" : "eco-locked-btn"}" style="padding:4px 10px;font-size:11px;" data-start-rush="7" data-eco-lock-tag="${ecoLockTag("sword_tomb_rush", "元婴启")}">${rushOk ? "🐉 太古烛龙(练习)" : "🔒 太古烛龙"}</button>
           <button class="btn-ghost" data-modal-close="1">收起舆图 ×</button>
         </div>
       </div>
@@ -21739,6 +22632,7 @@ const ART = {
     if (p.gourdHasteTimer > 0) p.gourdHasteTimer = Math.max(0, p.gourdHasteTimer - dt);
     if (p.boonOverloadTimer > 0) p.boonOverloadTimer = Math.max(0, p.boonOverloadTimer - dt);
     if (p.gourdCritTimer > 0) p.gourdCritTimer = Math.max(0, p.gourdCritTimer - dt);
+    if (p.petBuffTimer > 0) p.petBuffTimer = Math.max(0, p.petBuffTimer - dt);
     if (arena.soulCd > 0) arena.soulCd = Math.max(0, arena.soulCd - dt);
     if (arena.sanqingCd > 0) arena.sanqingCd = Math.max(0, arena.sanqingCd - dt);
     if (arena.shanheCd > 0) arena.shanheCd = Math.max(0, arena.shanheCd - dt);
@@ -21882,10 +22776,10 @@ const ART = {
 
     if (p.meditating) {
       p.meditateTick += dt;
+      p.meditateAgeTick = (p.meditateAgeTick || 0) + dt;
       const sanctumMed = getSanctumBonuses(game).medMult;
-      const lifeMed = getLifespanInfo(game).medPenaltyMult;
-      const healEyeMult = (arena.sanctumMode ? 2.4 * sanctumMed : (inSpiritEye ? 1.8 * sanctumMed : 1.0)) * lifeMed;
-      const xpEyeMult = (arena.sanctumMode ? 1.85 * sanctumMed : (inSpiritEye ? 1.45 * sanctumMed : 1.0)) * (hasDestinyFruit(game, "lotus_body") ? 1.35 : 1.0) * lifeMed;
+      const healEyeMult = arena.sanctumMode ? 2.4 * sanctumMed : (inSpiritEye ? 1.8 * sanctumMed : 1.0);
+      const xpEyeMult = (arena.sanctumMode ? 1.85 * sanctumMed : (inSpiritEye ? 1.45 * sanctumMed : 1.0)) * (hasDestinyFruit(game, "lotus_body") ? 1.35 : 1.0);
       game.hp = Math.min(st.maxHp, game.hp + st.maxHp * 0.12 * healEyeMult * dt);
       game.mp = Math.min(st.maxMp, (game.mp || 0) + st.maxMp * 0.28 * healEyeMult * dt);
       if (Math.random() < 0.55) {
@@ -21907,6 +22801,12 @@ const ART = {
           Sound.qiOrb(p.zenStacks + 2);
           addFloat(`剑心通明 ×${p.zenStacks}`, p.x, p.y - 52, "#ffe28a", 15);
         }
+        updateHud();
+      }
+      while (p.meditateAgeTick >= 3.0) {
+        p.meditateAgeTick -= 3.0;
+        const ageRes = advanceLifespanMonths(1, "meditation");
+        if (ageRes && ageRes.aged > 0) p.meditateAgedDirty = true;
         updateHud();
       }
     }
@@ -21961,7 +22861,15 @@ const ART = {
       let my = (keysDown["KeyS"] || keysDown["ArrowDown"] ? 1 : 0) - (keysDown["KeyW"] || keysDown["ArrowUp"] ? 1 : 0) + GamepadSystem.moveY;
       if (mx !== 0 || my !== 0) {
         pointer.moveTarget = null;
-        if (p.meditating) { p.meditating = false; updateHud(); }
+        if (p.meditating) {
+          p.meditating = false;
+          p.meditateAgeTick = 0;
+          if (p.meditateAgedDirty) {
+            p.meditateAgedDirty = false;
+            if (!sandboxMode && !isPracticeModeActive()) saveGame();
+          }
+          updateHud();
+        }
       } else if (pointer.moveTarget) {
         const dx = pointer.moveTarget.x - p.x, dy = pointer.moveTarget.y - p.y;
         if (Math.hypot(dx, dy) > 16) { mx = dx; my = dy; }
@@ -22240,16 +23148,18 @@ const ART = {
     if (game.pet.id && arena.enemies.length > 0) {
       petAssistTimer -= dt;
       if (petAssistTimer <= 0) {
-        petAssistTimer = hasLaw(game, "beast_soul") ? 2.2 : 3.2;
+        petAssistTimer = (hasLaw(game, "beast_soul") ? 2.2 : 3.2) * (hasPetSkill(game, "swift_bond") ? 0.75 : 1.0);
         const sp = SPIRIT_PETS[game.pet.id];
         const tgt = arena.enemies[0];
-        const petScale = 1 + (game.pet.level - 1) * 0.22;
+        const furyOn = hasPetSkill(game, "fury_fang");
+        const petScale = (1 + (game.pet.level - 1) * 0.22) * (furyOn ? 1.35 : 1.0);
+        const posMult = furyOn ? 1.5 : 1.0;
         if (sp && sp.id === "fox") {
           const ang = Math.atan2(tgt.y - p.y, tgt.x - p.x);
           arena.projectiles.push({
             friendly: true, kind: "fireball", x: p.x - p.facing * 28, y: p.y - 16,
             vx: Math.cos(ang) * 10.8, vy: Math.sin(ang) * 10.8, ang, r: 20,
-            dmg: Math.round(st.atk * 0.48 * petScale), postureDmg: 6, knock: 3.0, addMark: 1, life: 0.9, pierced: new Set(), color: "#ff8a65"
+            dmg: Math.round(st.atk * 0.48 * petScale), postureDmg: Math.round(6 * posMult), knock: 3.0, addMark: 1, life: 0.9, pierced: new Set(), color: "#ff8a65"
           });
         } else if (sp && sp.id === "turtle") {
           game.hp = Math.min(st.maxHp, game.hp + Math.round(st.maxHp * 0.03 * petScale));
@@ -22260,11 +23170,24 @@ const ART = {
           arena.projectiles.push({
             friendly: true, kind: "twin_x", x: p.x - p.facing * 24, y: p.y - 18,
             vx: Math.cos(ang) * 15.0, vy: Math.sin(ang) * 15.0, ang, r: 52,
-            dmg: Math.round(st.atk * 0.55 * petScale), postureDmg: 8, knock: 3.5, addMark: 1, life: 0.55, pierced: new Set(), color: "#ffe28a"
+            dmg: Math.round(st.atk * 0.55 * petScale), postureDmg: Math.round(8 * posMult), knock: 3.5, addMark: 1, life: 0.55, pierced: new Set(), color: "#ffe28a"
           });
         } else {
           arena.lightnings.push({ x1: p.x, y1: p.y - 40, x2: tgt.x, y2: tgt.y, t: 0, color: "#c792ff" });
-          damageEnemy(tgt, Math.round(st.atk * 0.55 * petScale), false, 8, 0, 2.5, false);
+          damageEnemy(tgt, Math.round(st.atk * 0.55 * petScale), false, Math.round(8 * posMult), 0, 2.5, false);
+        }
+        if (hasPetSkill(game, "spirit_ward")) {
+          p.shieldHp = Math.min(Math.round(st.maxHp * 0.25), (p.shieldHp || 0) + Math.round(st.maxHp * 0.03));
+          game.mp = Math.min(st.maxMp, (game.mp || 0) + 4);
+        }
+        if (hasPetSkill(game, "soul_siphon")) {
+          game.hp = Math.min(st.maxHp, game.hp + Math.round(st.maxHp * 0.04));
+          game.mp = Math.min(st.maxMp, (game.mp || 0) + 8);
+        }
+        if (hasPetSkill(game, "twin_resonance") && tgt && tgt.hp > 0) {
+          tgt.swordMarks = Math.min(6, (tgt.swordMarks || 0) + 1);
+          arena.lightnings.push({ x1: p.x - p.facing * 20, y1: p.y - 26, x2: tgt.x, y2: tgt.y, t: 0, color: "#80ecff" });
+          damageEnemy(tgt, Math.max(4, Math.round(st.atk * 0.36 * petScale)), false, Math.round(6 * posMult), 0, 2.0, false);
         }
       }
     }
@@ -22861,7 +23784,7 @@ const ART = {
               e.burnTimer = 4.0;
               arena.fireZones.push({ x: e.x, y: e.y, r: 72, life: 3.2, tickCd: 0.15 });
             }
-            damageEnemy(e, pr.dmg, false, pr.postureDmg || 8, pr.ang, pr.knock || 4.0, !!pr.heavyPosture);
+            damageEnemy(e, pr.dmg, !!pr.forceCrit, pr.postureDmg || 8, pr.ang, pr.knock || 4.0, !!pr.heavyPosture);
             if (pr.kind !== "crescent" && pr.kind !== "twin_x") { pr.life = 0; break; }
           }
         }
@@ -22873,15 +23796,17 @@ const ART = {
       }
     }
 
-    // Magnetic Drops (including Gear Loot Beams!)
-    const pullRadius = p.meditating ? 1800 : 240;
-    const pullSpd = p.meditating ? 22.0 : 10.8;
+    // Magnetic Drops (including Gear Loot Beams! G12: 1800px safe-zone only; 200px during active combat meditation)
+    const magnetCfg = getDropMagnetParams();
+    const pullRadius = magnetCfg.radius;
+    const pullSpd = magnetCfg.speed;
     for (let i = arena.drops.length - 1; i >= 0; i--) {
       const d = arena.drops[i];
       d.vx *= 0.88; d.vy *= 0.88;
       const dx = p.x - d.x, dy = p.y - d.y;
       const dist = Math.hypot(dx, dy) || 1;
-      if (dist < (d.kind === "gear" ? 115 : pullRadius)) { d.x += (dx / dist) * pullSpd; d.y += (dy / dist) * pullSpd; }
+      const effectivePull = d.kind === "gear" ? Math.min(DROP_MAGNET_CONFIG.gearRadius, pullRadius) : pullRadius;
+      if (dist < effectivePull) { d.x += (dx / dist) * pullSpd; d.y += (dy / dist) * pullSpd; }
       else { d.x += d.vx; d.y += d.vy; }
       if (dist < 36) {
         if (isPracticeModeActive() && d.kind !== "essence") {
@@ -23395,11 +24320,13 @@ const ART = {
       if (r && r.xpCap > 0) {
         game.xp = Math.min(game.xp, Math.round(r.xpCap * 0.75));
       }
-      if (Array.isArray(game.journal)) game.journal.unshift(`冲击【${REALMS[r.next || "ascended"].name}】渡劫受挫，保留七成五修为退返听雨洞府重整道基。`);
+      const failAge = advanceLifespanMonths(18, "tribulation_fail");
+      const ageTxt = failAge && failAge.aged > 0 ? `（耗寿 ${failAge.aged} 月）` : "";
+      if (Array.isArray(game.journal)) game.journal.unshift(`冲击【${REALMS[r.next || "ascended"].name}】渡劫受挫${ageTxt}，保留七成五修为退返听雨洞府重整道基。`);
       closeModal();
       arena.paused = false;
       enterSanctumHub();
-      showToast("⚡ 渡劫受挫 · 已保留 75% 修为安全返洞府，建议炼制破境丹或强化神兵后再冲关！");
+      showToast(`⚡ 渡劫受挫${ageTxt} · 已保留 75% 修为安全返洞府，建议炼制破境丹或强化神兵后再冲关！`);
       return;
     }
 
@@ -23424,6 +24351,7 @@ const ART = {
     if (!game || arena.player.invuln > 0 || arena.defeatPending) return;
     const p = arena.player;
     p.meditating = false;
+    p.meditateAgeTick = 0;
     const st = getCombatStats(game);
     const pactEnemyMult = hasPact(game, "frenzy_hp") ? 1.25 : 1.0;
     const hasLotusSoak = game && game.gourd && Array.isArray(game.gourd.soaks) && game.gourd.soaks.includes("iron_lotus");
@@ -23517,6 +24445,9 @@ const ART = {
     });
     if (!game.tutorialDismissed && (game.tutorialStep || 0) < 2) {
       game.tutorialStep = 2;
+    }
+    if (pr.choice === "help") {
+      queueNewUnlockCardsForState(game);
     }
     showToast("✨ 破庙初缘已定！可择阵门【踏入青岚荒野】追击雾隐狼王，或【先返听雨洞府】整备炼丹！");
     saveGame(); updateHud();
@@ -26106,7 +27037,7 @@ const ART = {
     const bCult = document.getElementById("badge-cultivate");
     if (bCult) {
       const needPet = rankOf(game.realm) >= 1 && !game.pet.id;
-      const canFeed = game.pet.id && game.pet.level < 5 && (game.inventory.herb || 0) >= 2;
+      const canFeed = canAffordPetFeed(game) || getPendingPetSkillTier(game) !== null;
       bCult.style.display = (needPet || canFeed) ? "flex" : "none";
     }
     const bAlch = document.getElementById("badge-alchemy");
@@ -26142,7 +27073,28 @@ const ART = {
         calBadge.style.display = "none";
       }
     }
-    document.getElementById("hud-age-school").textContent = `飞剑×${getSwordCount(game)} · 攻${st.atk}`;
+    const lf = getLifespanInfo(game);
+    document.getElementById("hud-age-school").textContent = `寿 ${lf.curYears}/${lf.maxYears}载 · 飞剑×${getSwordCount(game)} · 攻${st.atk}`;
+    const lifeBadge = document.getElementById("hud-lifespan-badge");
+    if (lifeBadge) {
+      if (lf.status === "normal") {
+        lifeBadge.style.display = "none";
+        lifeBadge.textContent = "";
+      } else {
+        lifeBadge.style.display = "inline-flex";
+        lifeBadge.className = `hud-lifespan-pill ${lf.status}`;
+        if (lf.status === "exhausted") {
+          lifeBadge.textContent = "💀 寿尽 · 兵解/延寿";
+          lifeBadge.setAttribute("data-tip", escTip(`大限已至 (${lf.curYears}/${lf.maxYears}载)`, `修炼效率降至 ${Math.round(lf.xpEfficiencyMult * 100)}%（不删档）；点击可服延寿青莲丹、暂留延寿或兵解转世`));
+        } else if (lf.status === "critical") {
+          lifeBadge.textContent = `⏳ 修炼${Math.round(lf.xpEfficiencyMult * 100)}%`;
+          lifeBadge.setAttribute("data-tip", escTip(`大限临近 (${lf.curYears}/${lf.maxYears}载)`, `修炼效率降至 ${Math.round(lf.xpEfficiencyMult * 100)}%（-${lf.penaltyPct}%）；点击前往修行抽屉服延寿丹或破境延寿`));
+        } else {
+          lifeBadge.textContent = `⚠ 寿元${Math.round(lf.ratio * 100)}%`;
+          lifeBadge.setAttribute("data-tip", escTip(`寿元警报 (${lf.curYears}/${lf.maxYears}载)`, "寿元已过 75%，建议炼制【延寿青莲丹】或积满修为破境延寿"));
+        }
+      }
+    }
 
     document.getElementById("hud-hp-bar").style.width = `${Math.min(100, Math.round((game.hp / st.maxHp) * 100))}%`;
     document.getElementById("hud-mp-bar").style.width = `${Math.min(100, Math.round(((game.mp || 0) / st.maxMp) * 100))}%`;
@@ -26189,12 +27141,16 @@ const ART = {
       }
       if (game.pet.id && hasOwn(SPIRIT_PETS, game.pet.id)) {
         const sp = SPIRIT_PETS[game.pet.id];
-        icons.push(`<div class="build-mini-ico" data-tip="${escTip(sp.name + " Lv." + Math.max(1, Math.floor(num(game.pet.level, 1))), sp.desc)}"><img src="${ART[sp.art]}" alt="" /></div>`);
+        const chosenPetSkills = getPetChosenSkills(game);
+        const petTipDesc = chosenPetSkills.length
+          ? `${sp.desc}｜已习灵技：${chosenPetSkills.map(sk => `${sk.name}(${sk.badge})`).join(" · ")}`
+          : sp.desc;
+        icons.push(`<div class="build-mini-ico" data-tip="${escTip(sp.name + " Lv." + Math.max(1, Math.floor(num(game.pet.level, 1))), petTipDesc)}"><img src="${ART[sp.art]}" alt="" /></div>`);
       }
       if (game.loadout.relic && hasOwn(RELICS, game.loadout.relic)) {
         const rl = RELICS[game.loadout.relic];
         const stars = getEquippedRelicStars(game);
-        icons.push(`<div class="build-mini-ico" data-tip="${escTip(`${rl.name} ★${stars}`, rl.activeDesc)}"><img src="${ART[rl.art]}" alt="" /></div>`);
+        icons.push(`<div class="build-mini-ico" data-tip="${escTip(`${rl.name} ★${stars}`, `${rl.passive}｜主动：${rl.activeDesc}`)}"><img src="${ART[rl.art]}" alt="" /></div>`);
       }
       game.laws.forEach(id => {
         const l = hasOwn(DAO_LAWS, id) ? DAO_LAWS[id] : null;
@@ -26228,7 +27184,7 @@ const ART = {
     else if (arena.tribulation) subTag.textContent = `⚡ 天劫余 ${arena.tribulation.boltsLeft + arena.tribulation.strikes.length} 道`;
     else if (arena.sanctumMode) subTag.textContent = "安全休整 · 聚灵养剑";
     else if (arena.domain) subTag.textContent = `☯ 太虚剑域 ${arena.domain.life.toFixed(1)}s`;
-    else if (arena.player.meditating) subTag.textContent = `☯ 周天吐纳 (${xpPct}%)`;
+    else if (arena.player.meditating) subTag.textContent = lf.xpEfficiencyMult < 1 ? `☯ 周天吐纳 (${xpPct}% · 效率${Math.round(lf.xpEfficiencyMult * 100)}%)` : `☯ 周天吐纳 (${xpPct}%)`;
     else if (arena.towerMode) subTag.textContent = hostiles > 0 ? `余妖 ×${hostiles}` : "点击/Enter 进下一层";
     else if (arena.stageIdx === 0 && !game.openingChoice) subTag.textContent = hostiles > 0 ? `救沈清禾 (${hostiles})` : "点击/Enter 择玉莲仙缘";
     else if (arena.props.some(x => x.kind === "ascend_gate")) subTag.textContent = game.realm === "spirit" ? "点击/Enter 叩九霄仙门" : "点击/Enter 登九霄化神台";
@@ -26310,12 +27266,22 @@ const ART = {
     document.getElementById("lbl-pill-count").textContent = `葫${game.gourd.charges}/${game.gourd.maxCharges}`;
     syncKarmaHudPill();
 
+    const petOrbBtn = document.getElementById("orb-pet");
     const petImg = document.getElementById("orb-img-pet");
     const petLbl = document.getElementById("lbl-pet-orb");
     if (petImg && petLbl) {
       const sp = game.pet && game.pet.id ? SPIRIT_PETS[game.pet.id] : null;
       petImg.src = sp ? ART[sp.art] : ART.pet_fox;
       petLbl.textContent = sp ? `${sp.name.slice(2, 4)}Lv${game.pet.level || 1}` : "择灵兽";
+      if (petOrbBtn) {
+        if (sp) {
+          const chosenSkills = getPetChosenSkills(game);
+          const skillTxt = chosenSkills.length ? `｜已习灵技：${chosenSkills.map(sk => sk.name).join(" / ")}` : "";
+          petOrbBtn.setAttribute("data-tip", escTip(`灵宠觉醒神通 · ${sp.name} Lv.${game.pet.level || 1} (G)`, `${sp.desc}${skillTxt}`));
+        } else {
+          petOrbBtn.setAttribute("data-tip", "灵宠觉醒神通 (G)|结契灵兽或炼气期解封：催动随行本命灵兽释放全屏本源绝技！");
+        }
+      }
     }
 
     const tribLive = document.getElementById("tribulation-live-banner");
@@ -26359,7 +27325,11 @@ const ART = {
     const pastPrologue = !!game.openingChoice || curRank >= 1 || fullOpen;
 
     document.querySelectorAll("#action-skill-dock .skill-orb-btn[data-unlock-rank]").forEach(btn => {
-      const req = Number(btn.getAttribute("data-unlock-rank") || 0);
+      const rawSk = btn.getAttribute("data-arena-skill");
+      const mappedAct = rawSk === "pet_ult" ? "pet" : rawSk;
+      const req = (mappedAct && ACTION_REALM_REQ[mappedAct] !== undefined)
+        ? ACTION_REALM_REQ[mappedAct]
+        : Number(btn.getAttribute("data-unlock-rank") || 0);
       let unlocked = fullOpen || curRank >= req;
       if (btn.id === "orb-ally" && hasAlly) unlocked = true;
       if (btn.id === "orb-pet" && hasPet) unlocked = true;
@@ -26412,6 +27382,18 @@ const ART = {
         ? (arcWrap && arcWrap.classList.contains("open") ? "收起秘匣" : "太虚秘匣")
         : "太虚秘匣 · 金丹启";
     }
+    document.querySelectorAll("#arcana-vault-drawer [data-arcana-act]").forEach(btn => {
+      const actKey = btn.getAttribute("data-arcana-act");
+      const ok = isActionUnlockedByRealm(game, actKey);
+      btn.classList.toggle("eco-locked-btn", !ok);
+      if (!ok) {
+        const reqRank = ACTION_REALM_REQ[actKey] || 3;
+        const reqRealm = REALMS[REALM_ORDER[reqRank] || "golden"];
+        btn.setAttribute("data-eco-lock-tag", `🔒${reqRealm ? reqRealm.name : "高阶"}`);
+      } else {
+        btn.removeAttribute("data-eco-lock-tag");
+      }
+    });
 
     const allToggleBtn = document.getElementById("btn-toggle-arcana-all");
     const allToggleLbl = document.getElementById("lbl-arcana-all-state");
@@ -26581,6 +27563,11 @@ const ART = {
       }
       activeSoulUnlockId = null;
     }
+    if (activeLifespanModalOpen && modalKind !== "lifespan_exhausted") {
+      activeLifespanModalOpen = false;
+      lifespanExhaustedPromptDismissed = true;
+      pendingLifespanExhaustedPrompt = false;
+    }
     clearTransientInputs();
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
@@ -26613,6 +27600,11 @@ const ART = {
     pendingSandboxEntry = null;
     pendingAlchemyCraft = null;
     pendingSoulRefineId = null;
+    if (activeLifespanModalOpen) {
+      activeLifespanModalOpen = false;
+      lifespanExhaustedPromptDismissed = true;
+      pendingLifespanExhaustedPrompt = false;
+    }
     if (activeGearOverflowItem) {
       pendingGearOverflowQueue.unshift(activeGearOverflowItem);
       activeGearOverflowItem = null;
@@ -26680,6 +27672,7 @@ const ART = {
       const target = lastDrawerTriggerEl;
       lastDrawerTriggerEl = null;
       restoreTriggerFocus(target);
+      if (!cutscene.active) setTimeout(flushDeferredChoiceModals, 0);
     }
   }
 
@@ -26736,13 +27729,15 @@ const ART = {
       const showQiTier = fullOpen || curRank >= 1;
       const showFoundTier = fullOpen || curRank >= 2;
       const showGoldTier = fullOpen || curRank >= 3;
+      const showNascentTier = fullOpen || curRank >= 4;
+      const showSpiritTier = fullOpen || curRank >= 5;
       const showWardrobe = showFoundTier || (metaState.ascensions || 0) >= 1;
       const schoolSkills = Object.values(SKILLS).filter(s => s.school === game.school && (fullOpen || game.learned.includes(s.id) || rankOf(s.min) <= curRank + 1));
       const lf = getLifespanInfo(game);
       const ageYears = lf.curYears;
       const maxYears = lf.maxYears;
       const longPills = game.inventory.longevity_pill || 0;
-      const lifeColor = lf.status === "critical" ? "#ff8080" : lf.status === "warning" ? "#ffe28a" : "var(--gold-bright)";
+      const lifeColor = lf.status === "exhausted" ? "#ff6b78" : lf.status === "critical" ? "#ff8080" : lf.status === "warning" ? "#ffe28a" : "var(--gold-bright)";
       const daoB = st.daoBonuses || getDaoBonuses(game);
       const schoolB = st.schoolSpec || getSchoolSpecBonus(game);
 
@@ -26755,6 +27750,7 @@ const ART = {
             ${buildDaoRadarSvg(game)}
             <div class="stat-kv-grid" style="flex:1;">
               <div class="stat-kv-row"><span>骨龄寿元</span><b style="color:${lifeColor};">${ageYears}/${maxYears}载</b></div>
+              <div class="stat-kv-row"><span>修炼效率</span><b style="color:${lifeColor};">${Math.round(lf.xpEfficiencyMult * 100)}%${lf.penaltyPct > 0 ? ` (-${lf.penaltyPct}%)` : ""}</b></div>
               <div class="stat-kv-row"><span>环身飞剑</span><b>×${getSwordCount(game)} 柄</b></div>
               <div class="stat-kv-row"><span>剑道攻击</span><b>${st.atk}</b></div>
               <div class="stat-kv-row"><span>护体减伤</span><b>${st.dmgReduce} (${Math.round((1 - Math.max(0.35, 100 / (100 + Math.max(0, st.dmgReduce || 0)))) * 100)}%)</b></div>
@@ -26771,14 +27767,23 @@ const ART = {
         </div>
 
         ${lf.status !== "normal" ? `
-          <div class="lifespan-alert-card ${lf.status}">
+          <div class="lifespan-alert-card ${lf.status === "exhausted" ? "critical exhausted" : lf.status}">
             <div>
-              <strong>${lf.status === "critical" ? "⏳ 大限临近" : "⚠ 寿元将近"}（余 ${lf.remainYears} 载）</strong>
-              <div style="font-size:10px;opacity:0.92;margin-top:2px;">${lf.status === "critical" ? "灵脉渐衰（吐纳效率 -10%，不死档）：速服【延寿青莲丹】或渡劫破境大增寿元！" : "建议早做筹谋：升级紫微丹鼎 Lv.2 炼制延寿丹，或积满修为破境延寿！"}</div>
+              <strong>${lf.status === "exhausted" ? "💀 大限已至" : lf.status === "critical" ? "⏳ 大限临近" : "⚠ 寿元将近"}（余 ${lf.remainYears} 载 · 修炼效率 ${Math.round(lf.xpEfficiencyMult * 100)}%）</strong>
+              <div style="font-size:10px;opacity:0.92;margin-top:2px;">${lf.status === "exhausted"
+                ? "寿元已尽（修炼效率 -75%，绝不强制删档）：可服【延寿青莲丹】增寿30载、破境延寿，或主动选择【兵解转世】！"
+                : lf.status === "critical"
+                  ? `寿元已逾 ${lf.ratio >= 0.95 ? "95%" : "90%"}（修炼效率 -${lf.penaltyPct}%）：速服【延寿青莲丹】或渡劫破境大增寿元！`
+                  : "寿元已过 75%：建议升级紫微丹鼎 Lv.2 炼制延寿青莲丹，或积满修为破境延寿！"}</div>
             </div>
-            ${longPills > 0
-              ? `<button type="button" class="btn-jade" style="padding:4px 9px;font-size:10.5px;white-space:nowrap;" data-use-item="longevity_pill">服延寿丹(${longPills})</button>`
-              : `<button type="button" class="btn-gold" style="padding:4px 9px;font-size:10.5px;white-space:nowrap;" data-action="open-sanctum-upgrade">建丹鼎延寿</button>`}
+            <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;">
+              ${longPills > 0
+                ? `<button type="button" class="btn-jade" style="padding:4px 9px;font-size:10.5px;white-space:nowrap;" data-use-item="longevity_pill">服延寿丹(${longPills})</button>`
+                : `<button type="button" class="btn-gold" style="padding:4px 9px;font-size:10.5px;white-space:nowrap;" data-action="open-sanctum-upgrade">建丹鼎延寿</button>`}
+              ${lf.status === "exhausted"
+                ? `<button type="button" class="btn-ghost" style="padding:4px 9px;font-size:10.5px;white-space:nowrap;border-color:rgba(255,118,110,0.62);color:#ffb4ae;" data-action="open-lifespan-exhausted">兵解转世…</button>`
+                : ""}
+            </div>
           </div>
         ` : ""}
 
@@ -26896,12 +27901,30 @@ const ART = {
           </div>
         </div>
 
-        ${showQiTier ? `
-        <div class="jade-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <strong style="font-size:12px;color:var(--gold-bright);">🐾 随行本命灵兽（炼气期契约）</strong>
-            ${game.pet.id ? `<button class="btn-jade" style="padding:3px 9px;font-size:11px;" data-action="feed-pet">${num(game.pet.level, 1) >= 5 ? "已满阶 Lv.5" : `喂草升阶 Lv.${Math.max(1, Math.floor(num(game.pet.level, 1)))}`}</button>` : ""}
+        ${showQiTier ? (() => {
+          const petLv = Math.max(1, Math.min(5, Math.floor(num(game.pet.level, 1))));
+          const feedCost = game.pet.id ? getPetNextFeedCost(petLv) : null;
+          const canFeedNow = canAffordPetFeed(game);
+          const feedCostCompact = feedCost ? formatPetFeedCost(feedCost, null) : "";
+          const feedCostOwned = feedCost ? formatPetFeedCost(feedCost, game.inventory) : "";
+          const petSkills = game.pet.skills || {};
+          const sk3 = (petLv >= 3 && petSkills.tier3 && hasOwn(PET_SKILLS_BY_ID, petSkills.tier3)) ? PET_SKILLS_BY_ID[petSkills.tier3] : null;
+          const sk5 = (petLv >= 5 && petSkills.tier5 && hasOwn(PET_SKILLS_BY_ID, petSkills.tier5)) ? PET_SKILLS_BY_ID[petSkills.tier5] : null;
+          const feedTip = feedCost
+            ? `${feedCost.tierLabel} · 升至 Lv.${feedCost.nextLevel}|所需灵材：${feedCostOwned}${feedCost.nextLevel === 3 ? "｜升至 Lv.3 解锁【化形灵技】三选一！" : feedCost.nextLevel === 5 ? "｜升至 Lv.5 解锁【化境神通】三选一！" : ""}`
+            : "灵兽已臻化境 Lv.5|已解锁全部 Lv.3/Lv.5 血脉灵技槽位";
+          return `
+        <div class="jade-card" style="gap:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
+            <strong style="font-size:12px;color:var(--gold-bright);">🐾 随行本命灵兽（${game.pet.id ? `Lv.${petLv}/5` : "炼气期契约"}）</strong>
+            ${game.pet.id ? `<button type="button" class="${canFeedNow ? "btn-gold" : "btn-jade"}" style="padding:3px 9px;font-size:11px;white-space:nowrap;" data-action="feed-pet" data-tip="${escTip(feedTip.split("|")[0], feedTip.split("|")[1] || "")}">${petLv >= 5 ? "已满阶 Lv.5" : `喂养升 Lv.${feedCost.nextLevel} (${feedCostCompact})`}</button>` : ""}
           </div>
+          ${game.pet.id && feedCost ? `
+            <div class="pet-feed-cost-strip">
+              <span>${escapeHtml(feedCost.tierLabel)}：<b>${escapeHtml(feedCostOwned)}</b></span>
+              <span style="color:${canFeedNow ? "#70ffe6" : "#ffd8a8"};">${feedCost.nextLevel === 3 ? "✦ 下阶启 Lv.3 择技" : feedCost.nextLevel === 5 ? "✦ 下阶启 Lv.5 神通" : canFeedNow ? "灵材齐备 ✓" : "灵材待补"}</span>
+            </div>
+          ` : ""}
           <div class="grid-2">
             ${Object.values(SPIRIT_PETS).map(sp => `
               <button class="visual-tile ${game.pet.id === sp.id ? "equipped" : ""}" data-pet="${sp.id}" data-tip="${escTip(sp.name, sp.desc)}">
@@ -26910,7 +27933,23 @@ const ART = {
               </button>
             `).join("")}
           </div>
-        </div>` : ""}
+          ${game.pet.id ? `
+            <div class="pet-skill-row">
+              <span style="font-size:10px;color:var(--text-sub);">化形灵技：</span>
+              ${sk3
+                ? `<span class="tag-chip done" data-tip="${escTip("Lv.3 化形灵技 · " + sk3.name, sk3.desc)}">Lv.3 ${escapeHtml(sk3.name)}</span>`
+                : petLv >= 3
+                  ? `<button type="button" class="btn-gold" style="padding:2px 8px;font-size:10px;" data-open-pet-skill-tier="3">✨ 择 Lv.3 技能</button>`
+                  : `<span class="tag-chip" style="opacity:0.72;">🔒 Lv.3 解锁化形灵技</span>`}
+              ${sk5
+                ? `<span class="tag-chip mythic" data-tip="${escTip("Lv.5 化境神通 · " + sk5.name, sk5.desc)}">Lv.5 ${escapeHtml(sk5.name)}</span>`
+                : petLv >= 5
+                  ? `<button type="button" class="btn-gold" style="padding:2px 8px;font-size:10px;" data-open-pet-skill-tier="5">✨ 择 Lv.5 技能</button>`
+                  : `<span class="tag-chip" style="opacity:0.72;">🔒 Lv.5 解锁化境神通</span>`}
+            </div>
+          ` : ""}
+        </div>`;
+        })() : ""}
 
         ${showFoundTier ? `
         <!-- V19 Taixu Demon-Quelling Soul Seal Selector (Foundation+) -->
@@ -26962,15 +28001,15 @@ const ART = {
         </div>` : ""}
 
         ${showGoldTier ? `
-        <!-- V24 Custom 4-Step Combo Sequencer & Genesis Divine Powers (Golden+) -->
+        <!-- V24 Custom 4-Step Combo Sequencer (Golden+) -->
         <div class="jade-card" style="border-color:rgba(255,222,128,0.62);gap:6px;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
             <div style="display:flex;align-items:center;gap:8px;">
-              <img src="${ART.clone_yuqing_cyan}" alt="一气化三清" style="width:36px;height:36px;object-fit:contain;" />
-              <img src="${ART.scroll_shanhe_sheji}" alt="山河社稷图" style="width:36px;height:36px;object-fit:contain;" />
+              <img src="${ART.clone_yuqing_cyan}" alt="太虚创招谱" style="width:36px;height:36px;object-fit:contain;" />
+              <img src="${ART.scroll_shanhe_sheji}" alt="太虚秘匣" style="width:36px;height:36px;object-fit:contain;" />
               <div>
-                <strong style="font-size:12.5px;color:var(--gold-bright);">🎼 太虚创招谱 · 四段三器混编 & 一气三清 (4/5/6/7)</strong>
-                <div style="font-size:10px;color:var(--jade);">自由指定 1~4 段飞剑/龙枪/剑轮招式，并由三清法身同步复刻</div>
+                <strong style="font-size:12.5px;color:var(--gold-bright);">🎼 太虚创招谱 · 四段三器混编 (7键)</strong>
+                <div style="font-size:10px;color:var(--jade);">金丹期启 7 剑谱 / J 灵骑 / U 奇门阵（4/O 元婴启 · 5/6 化神启）</div>
               </div>
             </div>
             <button type="button" class="btn-gold" style="padding:4px 10px;font-size:11px;white-space:nowrap;" data-action="open-sequencer">🎼 编排四段剑谱</button>
@@ -26984,7 +28023,7 @@ const ART = {
               <img src="${ART.mount_ink_qilin}" alt="山海灵骑" style="width:36px;height:36px;object-fit:contain;" />
               <div>
                 <strong style="font-size:12.5px;color:var(--gold-bright);">🐎 山海灵骑 · 太古神兽骑战 (J键冲锋)</strong>
-                <div style="font-size:10px;color:var(--jade);">配合 U 键奇门八门阵与 O 键法天象地纵横九州</div>
+                <div style="font-size:10px;color:var(--jade);">配合 U 键奇门八门阵纵横九州（元婴启 4 三清/O 法天 · 化神启 5 社稷/6 仙舟）</div>
               </div>
             </div>
             ${isEcosystemSystemUnlocked(game, "seed_workshop") ? `<button type="button" class="btn-gold" style="padding:3px 9px;font-size:10.5px;white-space:nowrap;" data-action="open-workshop">🛠 造化论剑码</button>` : ""}
@@ -27045,11 +28084,19 @@ const ART = {
           </div>
         </div>` : ""}
 
-        ${!showGoldTier ? `
+        ${!showSpiritTier ? `
         <div class="jade-card" style="flex-direction:row;align-items:center;justify-content:space-between;gap:8px;opacity:0.92;">
           <div style="font-size:11px;color:var(--text-sub);line-height:1.45;">
-            <strong style="color:var(--gold-bright);">🔒 高阶传承随境解封</strong><br/>
-            ${!showQiTier ? "炼气期解封【灵宠·三才剑阵·法宝】 · 筑基解封【魂印·剑匣·衣橱】 · 金丹解封【星图·灵骑·创招谱】" : !showFoundTier ? "筑基期解封【镇妖魂印·剑匣三器·万剑衣橱】 · 金丹期解封【周天星图·山海灵骑·自创剑谱】" : "金丹期解封【周天星图·山海灵骑·太虚创招谱·一气三清】"}
+            <strong style="color:var(--gold-bright);">🔒 高阶传承随境分批解封</strong><br/>
+            ${!showQiTier
+              ? "炼气启【灵宠·三才剑阵·丹剑·锁妖塔】 · 筑基启【魂印·剑匣·护山战】 · 金丹启【云海空战·星图·灵骑/奇门/剑谱】"
+              : !showFoundTier
+                ? "筑基启【双姿态·镇妖魂印·剑匣三器·护山战】 · 金丹启【云海空战·星图·山海灵骑·奇门·剑谱】"
+                : !showGoldTier
+                  ? "金丹启【云海空战·周天星图(N)·山海灵骑(J)·奇门阵(U)·剑谱(7)】 · 元婴启【一气三清(4)·法天象地(O)·远征/登仙台/万剑冢】"
+                  : !showNascentTier
+                    ? "元婴启【一气三清(4)·法天象地(O)·九州远征(8)·登仙台(L)·万剑冢七阵】 · 化神启【山河社稷图(5)·凌霄仙舟(6)·劫印/工坊】"
+                    : "化神启【山河社稷图(5)·凌霄仙舟(6)·天道劫印契约·造化种子工坊】，直指九霄天门飞升！"}
           </div>
           <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;white-space:nowrap;" data-action="open-ascension-roadmap">问道阶梯</button>
         </div>` : ""}
@@ -27132,18 +28179,21 @@ const ART = {
       `;
     } else if (currentTab === "explore") {
       const towerUnlocked = rankOf(game.realm) >= 1;
+      const expOk = isEcosystemSystemUnlocked(game, "vein_expedition");
+      const expSpec = getEcosystemSystemSpec("vein_expedition");
+      const expMinName = (expSpec && REALMS[expSpec.min]) ? REALMS[expSpec.min].name : "元婴";
       const cdLeft = arena.sourceCd > 0 ? `(${arena.sourceCd.toFixed(1)}s)` : "";
       body.innerHTML = `
         ${muralHeader("scene_secret", "山海星盘", "九州洞府主城与五大秘境")}
-        <div class="jade-card" style="flex-direction:row;align-items:center;justify-content:space-between;gap:8px;border-color:rgba(128,255,234,0.58);">
+        <div class="jade-card" style="flex-direction:row;align-items:center;justify-content:space-between;gap:8px;border-color:rgba(128,255,234,0.58);${expOk ? "" : "opacity:0.84;"}">
           <div style="display:flex;align-items:center;gap:8px;">
             <img src="${ART.warship_lingxiao_ark}" alt="凌霄仙舟" style="width:40px;height:40px;object-fit:contain;" />
             <div>
-              <strong style="font-size:13.5px;color:var(--gold-bright);font-family:var(--font-serif);">⛵ 仙门远征 · 九州灵脉驻防沙盘 (8键)</strong>
-              <div style="font-size:10.5px;color:var(--jade);">委派道侣驻守灵脉产出星魄灵石，战斗享跨区雷援与6键仙舟轰炸</div>
+              <strong style="font-size:13.5px;color:var(--gold-bright);font-family:var(--font-serif);">⛵ 仙门远征 · 九州灵脉驻防沙盘 (8键${expOk ? "" : ` · ${expMinName}期解封`})</strong>
+              <div style="font-size:10.5px;color:var(--jade);">委派已结缘道侣驻守灵脉产出星魄灵石，战中享跨区护道雷援</div>
             </div>
           </div>
-          <button type="button" class="btn-gold" style="padding:5px 11px;font-size:11px;white-space:nowrap;" data-action="open-expedition">⛵ 灵脉沙盘</button>
+          <button type="button" class="btn-gold ${expOk ? "" : "eco-locked-btn"}" style="padding:5px 11px;font-size:11px;white-space:nowrap;" data-action="open-expedition" ${expOk ? "" : `data-eco-lock-tag="🔒${expMinName}"`}>${expOk ? "⛵ 灵脉沙盘" : "🔒 灵脉沙盘"}</button>
         </div>
         <div class="jade-card" style="flex-direction:row;align-items:center;justify-content:space-between;gap:8px;">
           <div>
@@ -27188,9 +28238,9 @@ const ART = {
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <button type="button" class="btn-jade" style="padding:5px 10px;font-size:11px;" data-action="open-bounties">📜 宗门悬赏令 (T)</button>
-            ${isEcosystemSystemUnlocked(game, "vein_expedition")
+            ${expOk
               ? `<button type="button" class="btn-gold" style="padding:5px 10px;font-size:11px;" data-action="open-expedition-sandbox">⛵ 灵脉远征 (8)</button>`
-              : `<span class="tag-chip">⛵ 灵脉远征 · 金丹期解封</span>`}
+              : `<span class="tag-chip">⛵ 灵脉远征 · ${expMinName}期解封</span>`}
           </div>
         </div>
       `;
@@ -27269,10 +28319,11 @@ const ART = {
               const lockedByCaul = Boolean(rec.reqCauldronLv && caulLv < rec.reqCauldronLv);
               const bd = computeRecipeCostBreakdown(game, rec);
               const ownedCount = Math.max(0, Math.floor(num(game.inventory[rec.output], 0)));
+              const craftMonths = Math.max(1, Math.floor(num(rec.months, 3)));
               const matSummary = Object.entries(rec.inputs).map(([k, n]) => `${ITEMS[k] ? ITEMS[k].name : k}×${n}(持${Math.max(0, Math.floor(num(game.inventory[k], 0)))})`).join(" · ");
               const missSummary = bd.missingItems.map(m => `${m.name}×${m.lack}`).join("、");
               return `
-                <div class="visual-tile" style="justify-content:space-between;padding:7px;gap:6px;${lockedByCaul ? "opacity:0.65;" : ""}" data-tip="${escTip(rec.name, lockedByCaul ? `需先在洞府将【紫微丹鼎】升至 Lv.${rec.reqCauldronLv} 解封！` : `${out.desc}｜所需：${matSummary}`)}">
+                <div class="visual-tile" style="justify-content:space-between;padding:7px;gap:6px;${lockedByCaul ? "opacity:0.65;" : ""}" data-tip="${escTip(rec.name, lockedByCaul ? `需先在洞府将【紫微丹鼎】升至 Lv.${rec.reqCauldronLv} 解封！` : `${out.desc}｜耗时：${craftMonths}月｜所需：${matSummary}`)}">
                   <div style="display:flex;align-items:center;gap:7px;min-width:0;flex:1;">
                     <img src="${ART[out.art]}" alt="${escapeHtml(out.name)}" style="width:32px;height:32px;flex-shrink:0;" />
                     <div style="min-width:0;">
@@ -27281,12 +28332,16 @@ const ART = {
                         ? `<span class="tag-chip">丹鼎Lv.${rec.reqCauldronLv}解封</span>`
                         : bd.hasMissing
                           ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;">
+                              <span class="tag-chip" style="font-size:9.5px;">⏳ ${craftMonths}月</span>
                               <span class="tag-chip" style="font-size:9.5px;">丹火 ${bd.baseStones}石</span>
                               <span class="tag-chip mythic" style="font-size:9.5px;">购入缺料 ${bd.matBuyCost} 灵石</span>
                               <span class="tag-chip" style="font-size:9.5px;">共 ${bd.totalStoneCost}石</span>
                             </div>
                             <div style="font-size:9.5px;color:#ffd8a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">缺 ${escapeHtml(missSummary)}</div>`
-                          : `<span class="tag-chip done" style="font-size:9.8px;">灵材齐备 · 丹火 ${bd.baseStones}石</span>`}
+                          : `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;">
+                              <span class="tag-chip" style="font-size:9.5px;">⏳ ${craftMonths}月</span>
+                              <span class="tag-chip done" style="font-size:9.8px;">灵材齐备 · 丹火 ${bd.baseStones}石</span>
+                            </div>`}
                     </div>
                   </div>
                   <button type="button" class="btn-jade" style="padding:4px 8px;font-size:10.5px;white-space:nowrap;" data-quick-craft="${rec.id}" ${(lockedByCaul || game.stones < bd.totalStoneCost) ? "disabled" : ""}>${lockedByCaul ? "未封" : bd.hasMissing ? "补料稳炼" : "稳炼"}</button>
@@ -27315,7 +28370,7 @@ const ART = {
               const tc = getRelicTemperCost(game, stars, temperUseCoreDiscount);
               return `
                 <div class="visual-tile ${eq ? "equipped" : ""}" style="flex-direction:column;align-items:stretch;gap:6px;">
-                  <button style="display:flex;align-items:center;gap:8px;text-align:left;" data-relic="${rel.id}" data-tip="${escTip(rel.name + " · " + rel.activeName, rel.activeDesc)}">
+                  <button style="display:flex;align-items:center;gap:8px;text-align:left;" data-relic="${rel.id}" data-tip="${escTip(rel.name + " · " + rel.activeName, `${rel.passive}｜主动：${rel.activeDesc}`)}">
                     <img src="${ART[rel.art]}" alt="${rel.name}" />
                     <div>
                       <div style="font-size:12px;font-weight:700;">${rel.name} ${owned ? `<span style="color:#ffe28a;">${"★".repeat(stars)}</span>` : ""}</div>
@@ -27542,10 +28597,13 @@ const ART = {
       game.inventory.healing_pill = (game.inventory.healing_pill || 0) + 1;
     }
     game.immortalPills = (game.immortalPills || 0) + 1;
+    const craftMonths = Math.max(1, Math.floor(num(rec.months, 3)));
+    const ageRes = advanceLifespanMonths(craftMonths, "alchemy");
     unlockAchievement("ach_pill");
     Sound.qiOrb(4);
     const outSpec = ITEMS[rec.output];
-    showToast(`速炼成丹 ×${count} · 【${outSpec.name}】${bd.hasMissing ? `（含购入缺料 ${bd.matBuyCost} 灵石，共耗 ${bd.totalStoneCost} 石）` : `（消耗 ${bd.baseStones} 石）`}`);
+    const ageSuffix = ageRes && ageRes.aged > 0 ? ` · 耗寿 ${ageRes.aged} 月` : "";
+    showToast(`速炼成丹 ×${count} · 【${outSpec.name}】${bd.hasMissing ? `（含购入缺料 ${bd.matBuyCost} 灵石，共耗 ${bd.totalStoneCost} 石${ageSuffix}）` : `（消耗 ${bd.baseStones} 石${ageSuffix}）`}`);
     saveGame(); updateHud();
     if (drawerOpen) renderDrawerContent();
     return true;
@@ -27556,6 +28614,7 @@ const ART = {
     const rec = RECIPES[recId];
     const out = ITEMS[rec.output];
     const bd = computeRecipeCostBreakdown(game, rec);
+    const craftMonths = Math.max(1, Math.floor(num(rec.months, 3)));
     pendingAlchemyCraft = { recId, mode };
     openModal(`
       <div class="drawer-mural-banner" style="height:84px;">
@@ -27577,6 +28636,7 @@ const ART = {
           </div>
         `).join("")}
         <div style="border-top:1px solid var(--border-subtle);padding-top:6px;display:flex;flex-direction:column;gap:3px;font-size:12px;">
+          <div style="display:flex;justify-content:space-between;"><span>炼丹耗时：</span><b>⏳ ${craftMonths} 月</b></div>
           <div style="display:flex;justify-content:space-between;"><span>基础丹火费：</span><b>${bd.baseStones} 灵石</b></div>
           <div style="display:flex;justify-content:space-between;color:#ffd8a8;"><span>购入缺料：</span><b>购入缺料 ${bd.matBuyCost} 灵石</b></div>
           <div style="display:flex;justify-content:space-between;color:var(--gold-bright);font-size:13px;"><span>总计扣除：</span><b>${bd.totalStoneCost} 灵石（当前持有 ${Math.floor(num(game.stones, 0))}）</b></div>
@@ -27727,6 +28787,9 @@ const ART = {
       game.inventory.healing_pill = (game.inventory.healing_pill || 0) + 1;
     }
     game.immortalPills = (game.immortalPills || 0) + 1;
+    const craftMonths = Math.max(1, Math.floor(num(rec.months, 3)));
+    const ageRes = advanceLifespanMonths(craftMonths, "alchemy");
+    const ageSuffix = ageRes && ageRes.aged > 0 ? ` · 耗寿 ${ageRes.aged} 月` : "";
     unlockAchievement("ach_pill");
 
     if (inSweet) {
@@ -27736,7 +28799,7 @@ const ART = {
       const capMsg = (bRes.hpCapped || bRes.atkCapped)
         ? `（本境丹道上限 血${bRes.pg.alchemyHp}/${bRes.caps.alchemyHp} · 攻${bRes.pg.alchemyAtk}/${bRes.caps.alchemyAtk}，破境后提升）`
         : "";
-      furnaceGame.lastResult = `★ 九转仙品云纹丹 ×${count}！（气血+${bRes.grantedHp} · 攻击+${bRes.grantedAtk}）${capMsg}`;
+      furnaceGame.lastResult = `★ 九转仙品云纹丹 ×${count}！（气血+${bRes.grantedHp} · 攻击+${bRes.grantedAtk}${ageSuffix}）${capMsg}`;
       showToast(furnaceGame.lastResult);
     } else {
       Sound.qiOrb(4);
@@ -27744,7 +28807,7 @@ const ART = {
       const capMsg = bRes.hpCapped
         ? `（本境丹道气血已达上限 ${bRes.pg.alchemyHp}/${bRes.caps.alchemyHp}，破境后提升上限）`
         : "";
-      furnaceGame.lastResult = `成丹 ×${count} · ${outSpec.name}（气血+${bRes.grantedHp}）${capMsg}`;
+      furnaceGame.lastResult = `成丹 ×${count} · ${outSpec.name}（气血+${bRes.grantedHp}${ageSuffix}）${capMsg}`;
       showToast(furnaceGame.lastResult);
     }
     saveGame();
@@ -28006,7 +29069,7 @@ const ART = {
           const tiers = [
             { title: "一 · 核心动作（凡人起步 6 键）", sub: "WASD 移动 · 左/右键挥剑爆印 · 空格一闪 · Q 仙葫 · B 吐纳渡劫 · H 洞府", acts: ["slash", "recall", "dash", "pill", "meditate", "hub"] },
             { title: "二 · 进阶战技（炼气 / 筑基解封）", sub: "随境界逐步解封 · 剑阵/跃破/剑域/助阵/双姿态/魂印/奥义", acts: ["stance", "jump", "ult", "ally", "pet", "posture", "soul", "swordBlink", "finisher", "tagSwitch"] },
-            { title: "三 · 高阶神通与系统快捷键（金丹+ / 绘卷）", sub: "1/2/3 三器 · 4/5/6/7/8 创世神通 · M 舆图 · T 目标 · N 星图 · L 登仙台", acts: ["astral", "mount", "qimen", "photo", "telemetry"] }
+            { title: "三 · 高阶神通与系统快捷键（金丹+ / 绘卷）", sub: "J/U/7 金丹 · 4/O/8/L 元婴 · 5/6 化神 · M 舆图 · T 目标 · N 星图", acts: ["astral", "mount", "qimen", "photo", "telemetry"] }
           ];
           const renderRow = (act) => {
             const cfg = keybinds[act];
@@ -28119,7 +29182,7 @@ const ART = {
       game.defeatedStageBosses = { 0: true, 1: true, 2: true };
       game.goalStats = { kills: 14, techBreaks: 3, craftOrLoot: 3 };
       game.laws = ["wanjian", "void_haste", "yinyang", "thunder_body"];
-      game.pet = { id: "sword_spirit", level: 4 };
+      game.pet = { id: "sword_spirit", level: 4, skills: { tier3: "fury_fang", tier5: null } };
       game.loadout.relic = "frost_sword";
       game.ownedRelics = ["frost_sword"];
       game.relicStars = { frost_sword: 3 };
@@ -28142,7 +29205,7 @@ const ART = {
       game.defeatedStageBosses = { 0: true, 1: true };
       game.bonusSwords = 2;
       game.laws = ["crit_lotus", "stagger_surge", "wanjian"];
-      game.pet = { id: "turtle", level: 3 };
+      game.pet = { id: "turtle", level: 3, skills: { tier3: "spirit_ward", tier5: null } };
       game.loadout.relic = "jade_seal";
       game.ownedRelics = ["jade_seal"];
       game.relicStars = { jade_seal: 2 };
@@ -28162,7 +29225,7 @@ const ART = {
       game.statMultBonus = 1.5;
       game.bonusSwords = 4;
       game.laws = ["wanjian", "yinyang", "void_haste", "crit_lotus", "thunder_body", "stagger_surge"];
-      game.pet = { id: "roc", level: 5 };
+      game.pet = { id: "roc", level: 5, skills: { tier3: "swift_bond", tier5: "celestial_wrath" } };
       game.loadout.relic = "frost_sword";
       game.ownedRelics = ["frost_sword"];
       game.relicStars = { frost_sword: 5 };
@@ -28401,6 +29464,11 @@ const ART = {
       }
       return;
     }
+    if (ev.code === "Escape" && activeUnlockCardId) {
+      ev.preventDefault();
+      dismissActiveUnlockCard();
+      return;
+    }
     if (!game || arena.paused) return;
 
     if (ev.code === "Enter" && arena.nearbyProp) {
@@ -28633,6 +29701,72 @@ const ART = {
       exitSandboxMode();
       return;
     }
+    if (m4QuickAct === "unlock-card-try") {
+      tryActiveUnlockCard();
+      return;
+    }
+    if (m4QuickAct === "unlock-card-dismiss") {
+      dismissActiveUnlockCard();
+      return;
+    }
+    if (m4QuickAct === "open-lifespan-status") {
+      if (!game) return;
+      if (getLifespanInfo(game).status === "exhausted") openLifespanExhaustedModal(false);
+      else toggleDrawer("cultivate");
+      return;
+    }
+    if (m4QuickAct === "open-lifespan-exhausted") {
+      openLifespanExhaustedModal(false);
+      return;
+    }
+    if (m4QuickAct === "open-bingjie-confirm") {
+      openLifespanExhaustedModal(true);
+      return;
+    }
+    if (m4QuickAct === "lifespan-stay") {
+      activeLifespanModalOpen = false;
+      lifespanExhaustedPromptDismissed = true;
+      pendingLifespanExhaustedPrompt = false;
+      closeModal();
+      showToast("已暂留此世，进度完好保留；可炼制【延寿青莲丹】或破境延寿！");
+      return;
+    }
+    if (m4QuickAct === "lifespan-use-pill") {
+      consumeInventoryItem("longevity_pill");
+      return;
+    }
+    if (m4QuickAct === "confirm-bingjie-reincarnate") {
+      executeReincarnation({ source: "bingjie" });
+      return;
+    }
+    if (t.hasAttribute("data-open-pet-skill-tier")) {
+      const tier = Number(t.getAttribute("data-open-pet-skill-tier")) === 5 ? 5 : 3;
+      openPetSkillChoiceModal(tier);
+      return;
+    }
+    if (t.hasAttribute("data-pick-pet-skill")) {
+      if (!game || !game.pet || !game.pet.id) return;
+      const skId = t.getAttribute("data-pick-pet-skill");
+      const tier = Number(t.getAttribute("data-pet-skill-tier")) === 5 ? 5 : 3;
+      if (!hasOwn(PET_SKILLS_BY_ID, skId) || PET_SKILLS_BY_ID[skId].tier !== tier || (game.pet.level || 1) < tier) return;
+      if (!game.pet.skills || typeof game.pet.skills !== "object") game.pet.skills = { tier3: null, tier5: null };
+      game.pet.skills[tier === 5 ? "tier5" : "tier3"] = skId;
+      const sk = PET_SKILLS_BY_ID[skId];
+      Sound.fanfare();
+      saveGame();
+      updateHud();
+      if (drawerOpen) renderDrawerContent();
+      const panel = document.getElementById("jade-panel");
+      if (drawerOpen && panel) {
+        const refreshedTrigger = panel.querySelector(`[data-open-pet-skill-tier]`) || panel.querySelector(`[data-action="feed-pet"]`);
+        if (refreshedTrigger && isElementFocusable(refreshedTrigger)) {
+          lastModalTriggerEl = refreshedTrigger;
+        }
+      }
+      closeModal();
+      showToast(`✨ 本命灵宠习得 Lv.${tier} ${tier === 5 ? "化境神通" : "化形灵技"}【${sk.name}】！`);
+      return;
+    }
     if (m4QuickAct === "overflow-smelt-new") {
       if (!game || !activeGearOverflowItem) { closeModal(); return; }
       const item = activeGearOverflowItem.item;
@@ -28857,6 +29991,7 @@ const ART = {
       if (hadLegacyUnlockAll) {
         showToast("旧档中的【全神通演武】已升级为独立沙盒模式，可在右上【仙阁】随时开启！");
       }
+      queueNewUnlockCardsForState(game);
       updateHud();
       renderHudSaveAlert();
       return;
@@ -30120,8 +31255,14 @@ const ART = {
     if (t.hasAttribute("data-draft-type")) {
       const dt = t.getAttribute("data-draft-type");
       const did = t.getAttribute("data-draft-id");
-      if (dt === "pet") { game.pet.id = did; game.pet.level = Math.max(1, game.pet.level || 1); }
-      else if (DAO_LAWS[did] && !game.laws.includes(did)) {
+      if (dt === "pet") {
+        if (hasOwn(SPIRIT_PETS, did)) {
+          game.pet.id = did;
+          game.pet.level = Math.max(1, game.pet.level || 1);
+          if (!game.pet.skills || typeof game.pet.skills !== "object") game.pet.skills = { tier3: null, tier5: null };
+          queueNewUnlockCardsForState(game);
+        }
+      } else if (DAO_LAWS[did] && !game.laws.includes(did)) {
         const beforeSyn = SYNERGIES.filter(s => s.active(game)).map(s => s.id);
         game.laws.push(did);
         if (!sandboxMode && !metaState.seenLaws.includes(did)) metaState.seenLaws.push(did);
@@ -30513,8 +31654,12 @@ const ART = {
     }
     if (t.hasAttribute("data-pet")) {
       if (!guardEcosystemAccess("spirit_pet")) return;
-      game.pet.id = t.getAttribute("data-pet");
+      const pid = t.getAttribute("data-pet");
+      if (!hasOwn(SPIRIT_PETS, pid)) return;
+      game.pet.id = pid;
       if (!game.pet.level) game.pet.level = 1;
+      if (!game.pet.skills || typeof game.pet.skills !== "object") game.pet.skills = { tier3: null, tier5: null };
+      queueNewUnlockCardsForState(game);
       Sound.fanfare(); saveGame(); updateHud(); renderDrawerContent();
       return;
     }
@@ -30566,12 +31711,35 @@ const ART = {
       if (!guardEcosystemAccess("demon_tower")) return;
       closeDrawer(); initArenaStage(3, true); saveGame();
     } else if (act === "feed-pet" && game.pet.id) {
-      if (game.pet.level >= 5) { showToast("灵兽已臻化境 Lv.5"); return; }
-      if ((game.inventory.herb || 0) >= 2) {
-        game.inventory.herb -= 2; game.pet.level += 1;
-        if (game.pet.level >= 3) unlockAchievement("ach_pet3");
-        Sound.fanfare(); saveGame(); updateHud(); renderDrawerContent();
-      } else showToast("需凝气草 ×2");
+      const curLv = Math.max(1, Math.min(5, Math.floor(num(game.pet.level, 1))));
+      if (curLv >= 5) { showToast("灵兽已臻化境 Lv.5"); return; }
+      const cost = getPetNextFeedCost(curLv);
+      if (!cost) return;
+      if (!canAffordPetFeed(game)) {
+        const missStr = getPetFeedMissingSummary(game);
+        showToast(`喂养升至 Lv.${cost.nextLevel} 灵材不足：缺 ${missStr}（可赴秘境斩妖或宗门悬赏获取）`);
+        return;
+      }
+      Object.entries(cost.mats).forEach(([mk, req]) => {
+        game.inventory[mk] = Math.max(0, Math.floor(num(game.inventory[mk], 0)) - req);
+      });
+      game.pet.level = cost.nextLevel;
+      if (!game.pet.skills || typeof game.pet.skills !== "object") game.pet.skills = { tier3: null, tier5: null };
+      if (game.pet.level >= 3) unlockAchievement("ach_pet3");
+      Sound.fanfare();
+      saveGame(); updateHud(); renderDrawerContent();
+      showToast(`🐾 本命灵宠晋升 Lv.${game.pet.level}（消耗 ${formatPetFeedCost(cost, null)}）！`);
+      if (game.pet.level === 3 && !game.pet.skills.tier3) {
+        const panel = document.getElementById("jade-panel");
+        const trig = panel ? (panel.querySelector('[data-open-pet-skill-tier="3"]') || panel.querySelector('[data-action="feed-pet"]')) : null;
+        openPetSkillChoiceModal(3);
+        if (trig && isElementFocusable(trig)) lastModalTriggerEl = trig;
+      } else if (game.pet.level === 5 && !game.pet.skills.tier5) {
+        const panel = document.getElementById("jade-panel");
+        const trig = panel ? (panel.querySelector('[data-open-pet-skill-tier="5"]') || panel.querySelector('[data-action="feed-pet"]')) : null;
+        openPetSkillChoiceModal(5);
+        if (trig && isElementFocusable(trig)) lastModalTriggerEl = trig;
+      }
     } else if (act === "gamble-jade") {
       if (isAllDaoLawsCollected(game)) {
         showToast("诸天大道法则已尽数参悟，无需再行切玉赌注！");
@@ -30591,89 +31759,7 @@ const ART = {
     } else if (act === "show-verdict") {
       closeDrawer(); openEndingModal();
     } else if (act === "reincarnate-now") {
-      if (sandboxMode) {
-        showToast("🧪 演武沙盒模式不记录轮回飞升，请先点击【退出沙盒】！");
-        return;
-      }
-      if (storageReadError) {
-        saveAlertDismissed = false;
-        renderWelcomeSaveStatusBanner();
-        renderHudSaveAlert();
-        showToast("⚠ 检测到本地受损主存档尚未处理，已中止轮回清档并保留原数据！");
-        return;
-      }
-      if (saveReadOnlyMode || saveConflictState) {
-        renderHudSaveAlert();
-        showToast(saveConflictState
-          ? "⚠ 存在多标签页存档冲突，已拒绝轮回清档！请先处理冲突。"
-          : "⚠ 当前处于只读观览态，已拒绝轮回清档以免误删另一标签页的进度！");
-        return;
-      }
-      if (metaReadError) {
-        saveAlertDismissed = false;
-        renderHudSaveAlert();
-        showToast("⚠ 元存档损坏尚未处理，已中止轮回清档以免丢失累世功德！请先备份或重置元存档。");
-        return;
-      }
-      try {
-        const curRaw = localStorage.getItem(STORAGE_KEY);
-        if (curRaw !== null && curRaw !== "") {
-          const curRes = parseAndValidateSaveRaw(curRaw, STORAGE_KEY);
-          if (!curRes.ok) {
-            storageReadError = {
-              key: STORAGE_KEY,
-              reason: curRes.reason || "本地存档结构异常",
-              raw: curRaw,
-              rawLength: curRaw.length,
-              at: Date.now()
-            };
-            saveAlertDismissed = false;
-            renderWelcomeSaveStatusBanner();
-            renderHudSaveAlert();
-            showToast("⚠ 检测到本地主存档已损坏，已中止轮回清档并保留原数据！");
-            return;
-          }
-          if (curRes.tabId && curRes.tabId !== TAB_ID && curRes.rev > loadedSaveRev) {
-            triggerSaveConflict(curRes, true);
-            showToast("⚠ 检测到另一标签页更新了存档，已中止轮回清档！");
-            return;
-          }
-        }
-      } catch (e) {}
-      const prevMetaSnap = JSON.parse(JSON.stringify(metaState));
-      const prevLifeRecorded = !!(game && game.lifeRecorded);
-      if (game && game.status === "ascended" && game.ending && !game.lifeRecorded) {
-        recordPastLifeInHall(game, game.ending);
-      }
-      const metaSaved = saveMeta();
-      if (!metaSaved) {
-        Object.keys(metaState).forEach(k => { if (!(k in prevMetaSnap)) delete metaState[k]; });
-        Object.assign(metaState, prevMetaSnap);
-        if (game) game.lifeRecorded = prevLifeRecorded;
-        saveAlertDismissed = false;
-        renderHudSaveAlert();
-        const errMsg = metaReadError
-          ? metaReadError.reason
-          : ((metaWriteError && metaWriteError.message) ? metaWriteError.message : "元存档写入失败");
-        showToast(`⚠ 元存档保存失败（${errMsg}），已中止轮回并保留当前主存档！`);
-        return;
-      }
-      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-      clearTransientChoiceQueues();
-      game = null;
-      loadedSaveRev = 0;
-      lastSavedPayloadChecksum = null;
-      saveReadOnlyMode = false;
-      saveConflictState = null;
-      storageWriteError = null;
-      arena.stageEpoch += 1;
-      resetStageTransitionState();
-      closeModal(); closeDrawer();
-      if (metaState.ascensions >= 1) selectedPerkId = "immortal_echo";
-      renderWelcomeScreen();
-      const customDr = document.getElementById("title-custom-drawer");
-      if (customDr) customDr.classList.add("open");
-      document.getElementById("welcome-screen").style.display = "flex";
+      executeReincarnation({ source: "ascension" });
     }
   });
 
@@ -30987,7 +32073,37 @@ const ART = {
     openKarmaDilemmaModal,
     getEligibleKarmaDilemmas,
     getNextAvailableKarmaDilemma,
-    getKarmaDilemmaProgress
+    getKarmaDilemmaProgress,
+    ACTION_REALM_REQ,
+    REALM_UNLOCK_NOTICES,
+    UNLOCK_TUTORIAL_CATALOG,
+    queueNewUnlockCardsForState,
+    flushNewUnlockCard,
+    dismissActiveUnlockCard,
+    tryActiveUnlockCard,
+    getActiveUnlockCardId: () => activeUnlockCardId,
+    getPendingUnlockCardQueue: () => pendingUnlockCardQueue.slice(),
+    DROP_MAGNET_CONFIG,
+    isMeditationSafeZone,
+    getDropMagnetParams,
+    advanceLifespanMonths,
+    gainRealmXp,
+    openLifespanExhaustedModal,
+    executeReincarnation,
+    executeAlchemyQuickCraft,
+    isLifespanExhaustedDismissed: () => lifespanExhaustedPromptDismissed,
+    SPIRIT_PETS,
+    PET_FEED_COSTS,
+    PET_SKILL_TIERS,
+    PET_SKILLS_BY_ID,
+    getPetNextFeedCost,
+    canAffordPetFeed,
+    hasPetSkill,
+    getPendingPetSkillTier,
+    openPetSkillChoiceModal,
+    castPetUltimate,
+    RELICS,
+    PACT_SEALS
   };
   window.__CHENYUAN_V24__ = {
     getState: () => ({
