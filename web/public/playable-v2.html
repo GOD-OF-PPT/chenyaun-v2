@@ -2499,6 +2499,14 @@
       scroll-behavior: auto !important;
     }
   }
+  html.reduced-motion *,
+  html.reduced-motion *::before,
+  html.reduced-motion *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
   #save-status-banner {
     width: 100%;
     max-width: 540px;
@@ -4901,28 +4909,65 @@ const ART = {
     };
   }
   let metaState = createDefaultMetaState();
+  function sanitizeHallEntry(entry) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+    const rawKarma = typeof entry.karmaMode === "string" ? entry.karmaMode : "neutral";
+    const safeKarma = ["righteous", "demonic", "neutral"].includes(rawKarma) ? rawKarma : "neutral";
+    return {
+      lifeNum: Math.max(1, Math.floor(num(entry.lifeNum, 1))),
+      name: String(entry.name == null ? "顾长青" : entry.name),
+      endingId: typeof entry.endingId === "string" ? entry.endingId : "",
+      endingName: entry.endingName != null ? String(entry.endingName) : "",
+      karmaMode: safeKarma,
+      karmaLabel: entry.karmaLabel != null ? String(entry.karmaLabel) : "本真中正",
+      epithet: entry.epithet != null ? String(entry.epithet) : "",
+      poem: entry.poem != null ? String(entry.poem) : "",
+      grade: entry.grade != null ? String(entry.grade) : "B",
+      score: Math.max(0, num(entry.score, 0)),
+      towerBest: Math.max(0, Math.floor(num(entry.towerBest, 0))),
+      rushGrade: entry.rushGrade != null ? String(entry.rushGrade) : "未挑战",
+      spireBest: Math.max(0, Math.floor(num(entry.spireBest, 0))),
+      sanctumLv: Math.max(0, Math.floor(num(entry.sanctumLv, 5))),
+      codexPct: Math.max(0, Math.min(100, Math.floor(num(entry.codexPct, 0)))),
+      perkId: entry.perkId != null ? String(entry.perkId) : "sword_bone",
+      calamityTier: Math.max(0, Math.floor(num(entry.calamityTier, 0))),
+      swordAura: typeof entry.swordAura === "string" ? entry.swordAura : "azure_jade",
+      recordedAt: Math.max(0, num(entry.recordedAt, 0))
+    };
+  }
   function ensureMetaState() {
-    if (!Array.isArray(metaState.seenEnemies) || metaState.seenEnemies.length === 0) metaState.seenEnemies = ["wolf"];
-    if (!Array.isArray(metaState.seenLaws)) metaState.seenLaws = [];
-    if (!Array.isArray(metaState.unlockedEndings)) metaState.unlockedEndings = [];
-    if (!Array.isArray(metaState.hallOfLives)) metaState.hallOfLives = [];
+    metaState.seenEnemies = Array.isArray(metaState.seenEnemies)
+      ? metaState.seenEnemies.filter(v => typeof v === "string" && v)
+      : [];
+    if (metaState.seenEnemies.length === 0) metaState.seenEnemies = ["wolf"];
+    metaState.seenLaws = Array.isArray(metaState.seenLaws)
+      ? metaState.seenLaws.filter(v => typeof v === "string" && v)
+      : [];
+    metaState.unlockedEndings = Array.isArray(metaState.unlockedEndings)
+      ? metaState.unlockedEndings.filter(v => typeof v === "string" && v)
+      : [];
+    metaState.hallOfLives = Array.isArray(metaState.hallOfLives)
+      ? metaState.hallOfLives.map(sanitizeHallEntry).filter(Boolean).slice(0, 18)
+      : [];
     if (!metaState.karmaAscensions || typeof metaState.karmaAscensions !== "object" || Array.isArray(metaState.karmaAscensions)) {
       metaState.karmaAscensions = { righteous: 0, neutral: 0, demonic: 0 };
     } else {
-      metaState.karmaAscensions.righteous = Number(metaState.karmaAscensions.righteous) || 0;
-      metaState.karmaAscensions.neutral = Number(metaState.karmaAscensions.neutral) || 0;
-      metaState.karmaAscensions.demonic = Number(metaState.karmaAscensions.demonic) || 0;
+      metaState.karmaAscensions.righteous = Math.max(0, Math.floor(num(metaState.karmaAscensions.righteous, 0)));
+      metaState.karmaAscensions.neutral = Math.max(0, Math.floor(num(metaState.karmaAscensions.neutral, 0)));
+      metaState.karmaAscensions.demonic = Math.max(0, Math.floor(num(metaState.karmaAscensions.demonic, 0)));
     }
-    metaState.metaRev = Math.max(0, Math.floor(Number(metaState.metaRev) || 0));
-    metaState.ascensions = Math.max(0, Math.floor(Number(metaState.ascensions) || 0));
-    metaState.bestScore = Math.max(0, Number(metaState.bestScore) || 0);
-    metaState.bestTower = Math.max(0, Math.floor(Number(metaState.bestTower) || 0));
-    metaState.bestRushTime = Math.max(0, Number(metaState.bestRushTime) || 0);
-    metaState.bestSpireFloor = Math.max(0, Math.floor(Number(metaState.bestSpireFloor) || 0));
-    metaState.bestCalamityTier = Math.max(0, Math.floor(Number(metaState.bestCalamityTier) || 0));
-    metaState.cloudSeaClears = Math.max(0, Math.floor(Number(metaState.cloudSeaClears) || 0));
-    metaState.reincarnationPoints = Math.max(0, Math.floor(Number(metaState.reincarnationPoints) || 0));
+    metaState.metaRev = Math.max(0, Math.floor(num(metaState.metaRev, 0)));
+    metaState.ascensions = Math.max(0, Math.floor(num(metaState.ascensions, 0)));
+    metaState.bestScore = Math.max(0, num(metaState.bestScore, 0));
+    metaState.bestTower = Math.max(0, Math.floor(num(metaState.bestTower, 0)));
+    metaState.bestRushGrade = hasOwn(RUSH_GRADE_RANK, metaState.bestRushGrade) ? metaState.bestRushGrade : null;
+    metaState.bestRushTime = Math.max(0, num(metaState.bestRushTime, 0));
+    metaState.bestSpireFloor = Math.max(0, Math.floor(num(metaState.bestSpireFloor, 0)));
+    metaState.bestCalamityTier = Math.max(0, Math.floor(num(metaState.bestCalamityTier, 0)));
+    metaState.cloudSeaClears = Math.max(0, Math.floor(num(metaState.cloudSeaClears, 0)));
+    metaState.reincarnationPoints = Math.max(0, Math.floor(num(metaState.reincarnationPoints, 0)));
     metaState.taixuTrailUnlocked = Boolean(metaState.taixuTrailUnlocked);
+    metaState.lastEnding = (typeof metaState.lastEnding === "string" && metaState.lastEnding) ? metaState.lastEnding : null;
     return metaState;
   }
   function parseAndValidateMetaRaw(raw, sourceKey) {
@@ -4956,9 +5001,9 @@ const ART = {
   function mergeMetaStates(local, remote) {
     const a = (local && typeof local === "object") ? local : createDefaultMetaState();
     const b = (remote && typeof remote === "object") ? remote : {};
-    const localRev = Math.max(0, Math.floor(Number(a.metaRev) || 0));
-    const remoteRev = Math.max(0, Math.floor(Number(b.metaRev) || 0));
-    const numMax = (k) => Math.max(Number(a[k]) || 0, Number(b[k]) || 0);
+    const localRev = Math.max(0, Math.floor(num(a.metaRev, 0)));
+    const remoteRev = Math.max(0, Math.floor(num(b.metaRev, 0)));
+    const numMax = (k) => Math.max(0, num(a[k], 0), num(b[k], 0));
     const strUnion = (arrA, arrB) => {
       const out = [];
       const seen = new Set();
@@ -4969,27 +5014,31 @@ const ART = {
     };
     const seenEnemies = strUnion(a.seenEnemies, b.seenEnemies);
     if (seenEnemies.length === 0) seenEnemies.push("wolf");
-    const rA = RUSH_GRADE_RANK[a.bestRushGrade] || 0;
-    const rB = RUSH_GRADE_RANK[b.bestRushGrade] || 0;
-    const bestRushGrade = rB > rA ? b.bestRushGrade : (a.bestRushGrade || b.bestRushGrade || null);
-    const tA = Number(a.bestRushTime) || 0;
-    const tB = Number(b.bestRushTime) || 0;
+    const rA = hasOwn(RUSH_GRADE_RANK, a.bestRushGrade) ? RUSH_GRADE_RANK[a.bestRushGrade] : 0;
+    const rB = hasOwn(RUSH_GRADE_RANK, b.bestRushGrade) ? RUSH_GRADE_RANK[b.bestRushGrade] : 0;
+    const bestRushGrade = rB > rA ? b.bestRushGrade : (rA > 0 ? a.bestRushGrade : (rB > 0 ? b.bestRushGrade : null));
+    const tA = Math.max(0, num(a.bestRushTime, 0));
+    const tB = Math.max(0, num(b.bestRushTime, 0));
     const bestRushTime = (tA > 0 && tB > 0) ? Math.min(tA, tB) : Math.max(tA, tB);
     const karmaA = (a.karmaAscensions && typeof a.karmaAscensions === "object" && !Array.isArray(a.karmaAscensions)) ? a.karmaAscensions : {};
     const karmaB = (b.karmaAscensions && typeof b.karmaAscensions === "object" && !Array.isArray(b.karmaAscensions)) ? b.karmaAscensions : {};
     const karmaAscensions = { righteous: 0, neutral: 0, demonic: 0 };
     new Set(["righteous", "neutral", "demonic", ...Object.keys(karmaA), ...Object.keys(karmaB)]).forEach(k => {
-      karmaAscensions[k] = Math.max(Number(karmaA[k]) || 0, Number(karmaB[k]) || 0);
+      if (k === "__proto__" || k === "constructor" || k === "prototype") return;
+      karmaAscensions[k] = Math.max(0, Math.floor(num(karmaA[k], 0)), Math.floor(num(karmaB[k], 0)));
     });
     const hallMap = new Map();
-    [...(Array.isArray(a.hallOfLives) ? a.hallOfLives : []), ...(Array.isArray(b.hallOfLives) ? b.hallOfLives : [])].forEach(entry => {
-      if (!entry || typeof entry !== "object") return;
+    [...(Array.isArray(a.hallOfLives) ? a.hallOfLives : []), ...(Array.isArray(b.hallOfLives) ? b.hallOfLives : [])].forEach(rawEntry => {
+      const entry = sanitizeHallEntry(rawEntry);
+      if (!entry) return;
       const key = `${entry.recordedAt || 0}|${entry.lifeNum || 0}|${entry.endingId || ""}|${entry.name || ""}|${entry.score || 0}`;
       if (!hallMap.has(key)) hallMap.set(key, entry);
     });
     const hallOfLives = Array.from(hallMap.values())
-      .sort((x, y) => ((Number(y.recordedAt) || 0) - (Number(x.recordedAt) || 0)) || ((Number(y.lifeNum) || 0) - (Number(x.lifeNum) || 0)))
+      .sort((x, y) => ((num(y.recordedAt, 0)) - (num(x.recordedAt, 0))) || ((num(y.lifeNum, 0)) - (num(x.lifeNum, 0))))
       .slice(0, 18);
+    const lastA = (typeof a.lastEnding === "string" && a.lastEnding) ? a.lastEnding : null;
+    const lastB = (typeof b.lastEnding === "string" && b.lastEnding) ? b.lastEnding : null;
     return {
       metaRev: Math.max(localRev, remoteRev),
       ascensions: Math.floor(numMax("ascensions")),
@@ -5001,7 +5050,7 @@ const ART = {
       bestCalamityTier: Math.floor(numMax("bestCalamityTier")),
       cloudSeaClears: Math.floor(numMax("cloudSeaClears")),
       taixuTrailUnlocked: Boolean(a.taixuTrailUnlocked) || Boolean(b.taixuTrailUnlocked),
-      lastEnding: (remoteRev > localRev && b.lastEnding) ? b.lastEnding : (a.lastEnding || b.lastEnding || null),
+      lastEnding: (remoteRev > localRev && lastB) ? lastB : (lastA || lastB || null),
       seenEnemies,
       seenLaws: strUnion(a.seenLaws, b.seenLaws),
       unlockedEndings: strUnion(a.unlockedEndings, b.unlockedEndings),
@@ -5887,7 +5936,7 @@ const ART = {
         <button type="button" class="btn-ghost" data-modal-close="1">关闭 ×</button>
       </div>
       <div style="font-size:12px;color:var(--text-sub);display:flex;justify-content:space-between;align-items:center;">
-        <span>当前装备：<b class="txt-r${Number(eq.rarity) || 1}">${escapeHtml(eq.name)}</b>（${escapeHtml(formatGearStats(eq))}）</span>
+        <span>当前装备：<b class="txt-r${rarityNum(eq.rarity)}">${escapeHtml(eq.name)}</b>（${escapeHtml(formatGearStats(eq))}）</span>
         <span style="color:var(--gold-bright);">定向刻录消耗：35 灵石（100% 确定生效）</span>
       </div>
       <div class="affix-pick-grid">
@@ -6506,23 +6555,53 @@ const ART = {
     autoComboAssist: false,
     reducedMotion: false
   };
+  function applyReducedMotionClass() {
+    if (document && document.documentElement) {
+      document.documentElement.classList.toggle("reduced-motion", !!a11ySettings.reducedMotion);
+    }
+  }
+  function applySanitizedA11ySettings(p, { fallbackToMedia = false } = {}) {
+    const prefersReduced = !!(reducedMotionMq && reducedMotionMq.matches);
+    if (p && typeof p === "object" && !Array.isArray(p)) {
+      if (hasOwn(p, "shakeScale") && typeof p.shakeScale === "number" && Number.isFinite(p.shakeScale)) {
+        a11ySettings.shakeScale = Math.max(0, Math.min(1.5, p.shakeScale));
+      }
+      if (hasOwn(p, "hitStopScale") && typeof p.hitStopScale === "number" && Number.isFinite(p.hitStopScale)) {
+        a11ySettings.hitStopScale = Math.max(0, Math.min(1.5, p.hitStopScale));
+      }
+      if (hasOwn(p, "colorblindGlyphs") && typeof p.colorblindGlyphs === "boolean") {
+        a11ySettings.colorblindGlyphs = p.colorblindGlyphs;
+      }
+      if (hasOwn(p, "autoComboAssist") && typeof p.autoComboAssist === "boolean") {
+        a11ySettings.autoComboAssist = p.autoComboAssist;
+      }
+      if (hasOwn(p, "reducedMotion") && typeof p.reducedMotion === "boolean") {
+        a11ySettings.reducedMotion = p.reducedMotion;
+      } else if (fallbackToMedia) {
+        a11ySettings.reducedMotion = prefersReduced;
+      }
+      if (a11ySettings.reducedMotion && !(hasOwn(p, "shakeScale") && typeof p.shakeScale === "number" && Number.isFinite(p.shakeScale))) {
+        a11ySettings.shakeScale = 0;
+      }
+      if (a11ySettings.reducedMotion && !(hasOwn(p, "hitStopScale") && typeof p.hitStopScale === "number" && Number.isFinite(p.hitStopScale))) {
+        a11ySettings.hitStopScale = 0;
+      }
+    } else if (fallbackToMedia && prefersReduced) {
+      a11ySettings.reducedMotion = true;
+      a11ySettings.shakeScale = 0;
+      a11ySettings.hitStopScale = 0;
+    }
+    applyReducedMotionClass();
+  }
   function loadA11ySettings() {
     const prefersReduced = !!(reducedMotionMq && reducedMotionMq.matches);
     try {
       const raw = localStorage.getItem(A11Y_STORAGE_KEY);
       if (raw) {
         const p = JSON.parse(raw);
-        if (typeof p.shakeScale === "number") a11ySettings.shakeScale = Math.max(0, Math.min(1.5, p.shakeScale));
-        if (typeof p.hitStopScale === "number") a11ySettings.hitStopScale = Math.max(0, Math.min(1.5, p.hitStopScale));
-        if (typeof p.colorblindGlyphs === "boolean") a11ySettings.colorblindGlyphs = p.colorblindGlyphs;
-        if (typeof p.autoComboAssist === "boolean") a11ySettings.autoComboAssist = p.autoComboAssist;
-        a11ySettings.reducedMotion = (typeof p.reducedMotion === "boolean") ? p.reducedMotion : prefersReduced;
-        if (a11ySettings.reducedMotion && typeof p.shakeScale !== "number") a11ySettings.shakeScale = 0;
-        if (a11ySettings.reducedMotion && typeof p.hitStopScale !== "number") a11ySettings.hitStopScale = 0;
-      } else if (prefersReduced) {
-        a11ySettings.reducedMotion = true;
-        a11ySettings.shakeScale = 0;
-        a11ySettings.hitStopScale = 0;
+        applySanitizedA11ySettings(p, { fallbackToMedia: true });
+      } else {
+        applySanitizedA11ySettings(null, { fallbackToMedia: true });
       }
     } catch (e) {
       if (prefersReduced) {
@@ -6530,6 +6609,7 @@ const ART = {
         a11ySettings.shakeScale = 0;
         a11ySettings.hitStopScale = 0;
       }
+      applyReducedMotionClass();
     }
   }
   function saveA11ySettings() {
@@ -6543,6 +6623,7 @@ const ART = {
         a11ySettings.shakeScale = 0;
         a11ySettings.hitStopScale = 0;
       }
+      applyReducedMotionClass();
     });
   }
 
@@ -7905,18 +7986,38 @@ const ART = {
       const raw = localStorage.getItem(KEYBIND_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && parsed.binds) {
-          const usedPadBtns = new Set();
-          Object.keys(DEFAULT_KEYBINDS).forEach(act => {
-            if (parsed.binds[act]) {
-              keybinds[act] = Object.assign({}, DEFAULT_KEYBINDS[act], parsed.binds[act]);
-              // Migrate legacy Tab bind so browser focus navigation is never hijacked
-              if (keybinds[act].kb === "Tab") {
-                keybinds[act].kb = DEFAULT_KEYBINDS[act].kb;
+        if (parsed && parsed.binds && typeof parsed.binds === "object" && !Array.isArray(parsed.binds)) {
+          const acts = Object.keys(DEFAULT_KEYBINDS);
+          acts.forEach(act => {
+            const def = DEFAULT_KEYBINDS[act];
+            const next = Object.assign({}, def);
+            const saved = hasOwn(parsed.binds, act) ? parsed.binds[act] : null;
+            if (saved && typeof saved === "object" && !Array.isArray(saved)) {
+              if (typeof saved.kb === "string" && /^[A-Za-z0-9]{1,24}$/.test(saved.kb)) {
+                // Migrate legacy Tab bind so browser focus navigation is never hijacked
+                next.kb = saved.kb === "Tab" ? def.kb : saved.kb;
+              }
+              if (saved.padBtn === null) {
+                next.padBtn = null;
+                next.padGlyph = "未绑";
+              } else if (typeof saved.padBtn === "number" && Number.isInteger(saved.padBtn) && saved.padBtn >= 0 && saved.padBtn <= 31) {
+                next.padBtn = saved.padBtn;
+                next.padGlyph = PAD_GLYPH_MAP[saved.padBtn] || `B${saved.padBtn}`;
               }
             }
+            keybinds[act] = next;
+          });
+          // Deduplicate gamepad buttons: prioritize actions whose DEFAULT_KEYBINDS padBtn matches (fixes legacy qimen/swordBlink padBtn=14 migration)
+          const usedPadBtns = new Set();
+          acts.forEach(act => {
             const pb = keybinds[act].padBtn;
-            if (typeof pb === "number") {
+            if (typeof pb === "number" && pb === DEFAULT_KEYBINDS[act].padBtn && !usedPadBtns.has(pb)) {
+              usedPadBtns.add(pb);
+            }
+          });
+          acts.forEach(act => {
+            const pb = keybinds[act].padBtn;
+            if (typeof pb === "number" && pb !== DEFAULT_KEYBINDS[act].padBtn) {
               if (usedPadBtns.has(pb)) {
                 keybinds[act].padBtn = null;
                 keybinds[act].padGlyph = "未绑";
@@ -8306,7 +8407,7 @@ const ART = {
 
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:12px;color:var(--gold-bright);">☯ 自选【问道劫律】试炼词缀（当前积分倍率 ×${affMult.toFixed(2)}）：</strong>
-        <span style="font-size:11px;color:var(--jade);">${metaState.bestRushGrade ? `历史最高评级：${metaState.bestRushGrade} (${metaState.bestRushTime.toFixed(1)}s)` : "通关第6阵解锁【太虚劫光】飞剑幻化"}</span>
+        <span style="font-size:11px;color:var(--jade);">${metaState.bestRushGrade ? `历史最高评级：${escapeHtml(metaState.bestRushGrade)} (${num(metaState.bestRushTime).toFixed(1)}s)` : "通关第6阵解锁【太虚劫光】飞剑幻化"}</span>
       </div>
 
       <div class="rush-affix-grid">
@@ -9961,7 +10062,7 @@ const ART = {
         <div style="display:flex;flex-direction:column;gap:10px;text-align:center;padding:6px 0;">
           <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
             <span class="tag-chip mythic">制霸层数：9 / 9 重天</span>
-            <span class="tag-chip done">奇物总层数：${Object.values(game.spireCurios).reduce((a, b) => a + b, 0)} 层</span>
+            <span class="tag-chip done">奇物总层数：${Object.values(game.spireCurios || {}).reduce((a, b) => a + num(b), 0)} 层</span>
             <span class="tag-chip">赏赐：420 灵石 + 周天星魂点 +3</span>
           </div>
           <div style="font-size:12px;color:#9effec;">本局参悟的全部【太古天道奇物】已永久铭刻入本世命盘，可携奇物神威继续征战太古烛龙与九霄云海！</div>
@@ -10066,14 +10167,19 @@ const ART = {
 
   // ==================== V22 PRIMORDIAL FINALE MODULES ====================
   const STEMS_STORAGE_KEY = "chenyuan_stems_v22";
+  function applySanitizedAudioStems(p) {
+    if (!p || typeof p !== "object" || Array.isArray(p)) return;
+    ["guqin", "chime", "drum", "blade", "reverb"].forEach(k => {
+      if (hasOwn(p, k) && typeof p[k] === "number" && Number.isFinite(p[k])) {
+        Sound.stems[k] = Math.max(0, Math.min(1.5, p[k]));
+      }
+    });
+  }
   function loadAudioStems() {
     try {
       const raw = localStorage.getItem(STEMS_STORAGE_KEY);
       if (raw) {
-        const p = JSON.parse(raw);
-        ["guqin", "chime", "drum", "blade", "reverb"].forEach(k => {
-          if (typeof p[k] === "number") Sound.stems[k] = Math.max(0, Math.min(1.5, p[k]));
-        });
+        applySanitizedAudioStems(JSON.parse(raw));
       }
     } catch (e) {}
   }
@@ -12318,7 +12424,7 @@ const ART = {
 
   function ensureExpeditionState(g) {
     if (!g) return { assignments: {}, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 };
-    if (!g.expeditions) {
+    if (!g.expeditions || typeof g.expeditions !== "object" || Array.isArray(g.expeditions)) {
       g.expeditions = {
         assignments: {},
         bankedStones: 0,
@@ -12326,6 +12432,14 @@ const ART = {
         supportThunderCount: 0,
         tickTimer: 8.5
       };
+    } else {
+      if (!g.expeditions.assignments || typeof g.expeditions.assignments !== "object" || Array.isArray(g.expeditions.assignments)) {
+        g.expeditions.assignments = {};
+      }
+      g.expeditions.bankedStones = Math.max(0, Math.floor(num(g.expeditions.bankedStones, 0)));
+      g.expeditions.bankedStars = Math.max(0, Math.floor(num(g.expeditions.bankedStars, 0)));
+      g.expeditions.supportThunderCount = Math.max(0, Math.floor(num(g.expeditions.supportThunderCount, 0)));
+      g.expeditions.tickTimer = Math.max(0, num(g.expeditions.tickTimer, 8.5));
     }
     return g.expeditions;
   }
@@ -12400,7 +12514,7 @@ const ART = {
 
       <div class="jade-card" style="flex-direction:row;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
         <div>
-          <strong style="font-size:13px;color:#80ffea;">驻防队伍：${activeCnt} / 5 处灵脉 · 待领军资：<span style="color:#ffe28a;">${ex.bankedStones} 灵石</span> + <span style="color:#d69eff;">${ex.bankedStars} 鸿蒙星魄</span>${game.cloudSeaCleared ? ` <span class="tag-chip mythic" style="font-size:9.5px;">☁ 破云印 +15%</span>` : ""}</strong>
+          <strong style="font-size:13px;color:#80ffea;">驻防队伍：${activeCnt} / 5 处灵脉 · 待领军资：<span style="color:#ffe28a;">${num(ex.bankedStones)} 灵石</span> + <span style="color:#d69eff;">${num(ex.bankedStars)} 鸿蒙星魄</span>${game.cloudSeaCleared ? ` <span class="tag-chip mythic" style="font-size:9.5px;">☁ 破云印 +15%</span>` : ""}</strong>
           <div style="font-size:10.5px;color:var(--text-sub);">委派驻防后随战局自动产出灵石与星魄，并在秘境战斗中每 5.5 秒降下跨区【仙门护道雷援】！</div>
         </div>
         <div style="display:flex;gap:6px;">
@@ -12498,6 +12612,16 @@ const ART = {
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
   }
+  function num(v, d = 0) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : d;
+  }
+  function rarityNum(v) {
+    return Math.max(0, Math.min(5, Math.floor(num(v, 0))));
+  }
+  function hasOwn(obj, key) {
+    return !!obj && typeof key === "string" && Object.prototype.hasOwnProperty.call(obj, key);
+  }
 
   let pendingCloudImport = null;
 
@@ -12518,12 +12642,12 @@ const ART = {
       if (!parsed || typeof parsed !== "object" || !parsed.game || typeof parsed.game !== "object" || Array.isArray(parsed.game)) {
         return { ok: false, reason: "云码缺少核心存档数据" };
       }
-      if (typeof parsed.game.realm !== "string" || !REALMS[parsed.game.realm]) {
+      if (typeof parsed.game.realm !== "string" || !hasOwn(REALMS, parsed.game.realm)) {
         return { ok: false, reason: `云码境界字段非法（${String(parsed.game.realm)}）` };
       }
       const normalizedGame = normalizeLoadedGame(parsed.game);
       const impRealmSpec = REALMS[normalizedGame.realm];
-      const curRealmSpec = (game && REALMS[game.realm]) ? REALMS[game.realm] : null;
+      const curRealmSpec = (game && hasOwn(REALMS, game.realm)) ? REALMS[game.realm] : null;
       return {
         ok: true,
         parsed,
@@ -12633,10 +12757,10 @@ const ART = {
         }
       }
       if (parsedRes.parsed.a11ySettings && typeof parsedRes.parsed.a11ySettings === "object" && !Array.isArray(parsedRes.parsed.a11ySettings)) {
-        Object.assign(a11ySettings, parsedRes.parsed.a11ySettings);
+        applySanitizedA11ySettings(parsedRes.parsed.a11ySettings, { fallbackToMedia: false });
       }
       if (parsedRes.parsed.stems && typeof parsedRes.parsed.stems === "object" && !Array.isArray(parsedRes.parsed.stems)) {
-        Object.assign(Sound.stems, parsedRes.parsed.stems);
+        applySanitizedAudioStems(parsedRes.parsed.stems);
       }
       const saved = saveGame();
       if (!saved) {
@@ -12644,6 +12768,7 @@ const ART = {
         Object.keys(metaState).forEach(k => { if (!(k in prevMeta)) delete metaState[k]; });
         Object.assign(metaState, prevMeta);
         Object.assign(a11ySettings, prevA11y);
+        applyReducedMotionClass();
         Object.assign(Sound.stems, prevStems);
         if (game) updateHud();
         const reason = saveConflictState
@@ -12666,6 +12791,7 @@ const ART = {
       Object.keys(metaState).forEach(k => { if (!(k in prevMeta)) delete metaState[k]; });
       Object.assign(metaState, prevMeta);
       Object.assign(a11ySettings, prevA11y);
+      applyReducedMotionClass();
       Object.assign(Sound.stems, prevStems);
       if (game) updateHud();
       const reason = e && e.message ? e.message : "导入过程异常，已回滚";
@@ -13739,7 +13865,7 @@ const ART = {
     return sp ? sp.active(g) : false;
   }
   function currentOmen(g) { return g ? CELESTIAL_OMENS[(g.omenIndex || 0) % CELESTIAL_OMENS.length] : CELESTIAL_OMENS[0]; }
-  function escTip(t, d) { return `${String(t).replace(/"/g, "&quot;")}|${String(d).replace(/"/g, "&quot;")}`; }
+  function escTip(t, d) { return `${escapeHtml(t)}|${escapeHtml(d)}`; }
 
   function countBondedAllies(g) {
     if (!g) return 0;
@@ -13836,7 +13962,7 @@ const ART = {
 
     const g = {
       version: 11,
-      name: (playerName || "顾长青").trim().slice(0, 12) || "顾长青",
+      name: String(playerName == null ? "" : playerName).trim().slice(0, 12) || "顾长青",
       perk: effectivePerk,
       calamityTier: effCalamity,
       realm: "mortal",
@@ -13924,29 +14050,89 @@ const ART = {
     return g;
   }
 
+  function normalizeGearItem(item, fallbackSlot) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+    const slot = ["weapon", "armor", "ring"].includes(item.slot) ? item.slot : (fallbackSlot || "weapon");
+    const defArt = slot === "armor" ? "icon_heart" : slot === "ring" ? "item_jade" : "icon_blade";
+    const out = Object.assign({}, item, {
+      slot,
+      name: String(item.name == null ? "灵器" : item.name),
+      rarity: rarityNum(item.rarity),
+      lvl: Math.max(0, Math.min(10, Math.floor(num(item.lvl, 0)))),
+      atk: Math.max(0, num(item.atk, 0)),
+      hp: Math.max(0, num(item.hp, 0)),
+      dr: Math.max(0, num(item.dr, 0)),
+      crit: Math.max(0, num(item.crit, 0)),
+      spd: Math.max(0, num(item.spd, 0)),
+      bonusSword: Math.max(0, Math.floor(num(item.bonusSword, 0))),
+      sell: Math.max(0, Math.floor(num(item.sell, 15))),
+      price: Math.max(0, Math.floor(num(item.price, 25))),
+      art: hasOwn(ART, item.art) ? item.art : defArt
+    });
+    if ("power" in item) out.power = Math.max(0, num(item.power, 0));
+    return out;
+  }
+
   function normalizeLoadedGame(raw) {
     const rawCal = raw && typeof raw.calamityTier === "number" ? raw.calamityTier : 0;
-    const base = createFreshGame(raw && raw.name ? raw.name : "顾长青", raw && raw.perk ? raw.perk : "sword_bone", rawCal);
+    const base = createFreshGame(raw && raw.name != null ? raw.name : "顾长青", raw && raw.perk ? raw.perk : "sword_bone", rawCal);
     if (!raw || typeof raw !== "object") return base;
     const g = Object.assign(base, raw);
-    if (!REALMS[g.realm]) g.realm = "mortal";
-    g.calamityTier = Math.max(0, Math.min(CALAMITY_CYCLES.length - 1, Math.floor(Number(raw.calamityTier) || 0)));
+    if (typeof g.name !== "string") {
+      g.name = (typeof raw.name === "number" && Number.isFinite(raw.name)) ? String(raw.name) : "顾长青";
+    }
+    g.name = g.name.replace(/[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/g, "").trim() || "顾长青";
+    if (typeof g.realm !== "string" || !hasOwn(REALMS, g.realm)) g.realm = "mortal";
+    g.calamityTier = Math.max(0, Math.min(CALAMITY_CYCLES.length - 1, Math.floor(num(raw.calamityTier, 0))));
     g.cloudSeaCleared = !!raw.cloudSeaCleared;
     g.lifeRecorded = !!raw.lifeRecorded;
-    g.bestSpireFloor = Number(raw.bestSpireFloor) || 0;
-    g.rushBestGrade = raw.rushBestGrade || null;
-    g.inventory = Object.assign({}, base.inventory, raw.inventory || {});
-    g.loadout = Object.assign({}, base.loadout, raw.loadout || {});
-    g.equippedGear = Object.assign({ weapon: base.equippedGear.weapon, armor: null, ring: null }, raw.equippedGear || {});
+    g.rushBestGrade = hasOwn(RUSH_GRADE_RANK, raw.rushBestGrade) ? raw.rushBestGrade : null;
+    ["stones", "xp", "overflowXp", "wins", "towerBest", "bestSpireFloor", "tribShield", "bonusStarPts", "bonusSwords", "omenIndex", "jadeCuts", "immortalPills", "karmaEventsDone", "atkFlatBonus", "maxHpBonus", "retreats", "tribulationFails", "defiantBreakthroughs", "lifespanBonusMonths"].forEach(k => {
+      g[k] = Math.max(0, num(g[k], base[k] != null ? base[k] : 0));
+    });
+    g.towerFloor = Math.max(1, Math.floor(num(g.towerFloor, 1)));
+    g.elapsedMonths = Math.max(0, num(g.elapsedMonths, 0));
+    g.startAgeMonths = Math.max(12, num(g.startAgeMonths, 216));
+    g.statMultBonus = Math.max(0.5, num(g.statMultBonus, base.statMultBonus));
+    g.karmaScore = num(g.karmaScore, 0);
+    g.karmaDrBonus = Math.max(0, num(g.karmaDrBonus, 0));
+    g.inventory = Object.assign({}, base.inventory, (raw.inventory && typeof raw.inventory === "object" && !Array.isArray(raw.inventory)) ? raw.inventory : {});
+    Object.keys(g.inventory).forEach(k => {
+      g.inventory[k] = Math.max(0, Math.floor(num(g.inventory[k], 0)));
+    });
+    g.loadout = Object.assign({}, base.loadout, (raw.loadout && typeof raw.loadout === "object" && !Array.isArray(raw.loadout)) ? raw.loadout : {});
+    if (g.loadout.relic && !hasOwn(RELICS, g.loadout.relic)) g.loadout.relic = null;
+    g.equippedGear = Object.assign({ weapon: base.equippedGear.weapon, armor: null, ring: null }, (raw.equippedGear && typeof raw.equippedGear === "object" && !Array.isArray(raw.equippedGear)) ? raw.equippedGear : {});
+    ["weapon", "armor", "ring"].forEach(sl => {
+      g.equippedGear[sl] = g.equippedGear[sl] ? normalizeGearItem(g.equippedGear[sl], sl) : null;
+    });
     if (!Array.isArray(g.gearBag)) g.gearBag = [];
+    else g.gearBag = g.gearBag.map(it => normalizeGearItem(it)).filter(Boolean);
     if (!Array.isArray(g.marketStock)) g.marketStock = [];
-    g.pet = Object.assign({ id: null, level: 1 }, raw.pet || {});
-    g.aids = Object.assign({ shen: false, pei: false, lu: false, yan: false }, raw.aids || {});
-    g.dao = Object.assign({ benevolence: 6, edge: 10, serenity: 6 }, raw.dao || {});
-    g.choices = Object.assign({}, raw.choices || {});
-    g.relicStars = Object.assign({}, raw.relicStars || {});
-    g.seenCutscenes = Object.assign({}, raw.seenCutscenes || {});
-    g.foundationQuality = Object.assign({}, raw.foundationQuality || {});
+    else g.marketStock = g.marketStock.map(it => normalizeGearItem(it)).filter(Boolean);
+    g.pet = Object.assign({ id: null, level: 1 }, (raw.pet && typeof raw.pet === "object" && !Array.isArray(raw.pet)) ? raw.pet : {});
+    if (g.pet.id && !hasOwn(SPIRIT_PETS, g.pet.id)) g.pet.id = null;
+    g.pet.level = Math.max(1, Math.min(5, Math.floor(num(g.pet.level, 1))));
+    g.aids = Object.assign({ shen: false, pei: false, lu: false, yan: false }, (raw.aids && typeof raw.aids === "object" && !Array.isArray(raw.aids)) ? raw.aids : {});
+    g.dao = Object.assign({ benevolence: 6, edge: 10, serenity: 6 }, (raw.dao && typeof raw.dao === "object" && !Array.isArray(raw.dao)) ? raw.dao : {});
+    ["benevolence", "edge", "serenity"].forEach(k => {
+      g.dao[k] = Math.max(0, num(g.dao[k], base.dao[k]));
+    });
+    g.choices = Object.assign({}, (raw.choices && typeof raw.choices === "object" && !Array.isArray(raw.choices)) ? raw.choices : {});
+    g.relicStars = Object.assign({}, (raw.relicStars && typeof raw.relicStars === "object" && !Array.isArray(raw.relicStars)) ? raw.relicStars : {});
+    Object.keys(g.relicStars).forEach(k => {
+      g.relicStars[k] = Math.max(0, Math.min(5, Math.floor(num(g.relicStars[k], 1))));
+    });
+    if (g.spireCurios && typeof g.spireCurios === "object" && !Array.isArray(g.spireCurios)) {
+      Object.keys(g.spireCurios).forEach(k => {
+        g.spireCurios[k] = Math.max(0, Math.floor(num(g.spireCurios[k], 0)));
+      });
+    } else if (g.spireCurios !== undefined) {
+      g.spireCurios = {};
+    }
+    if (raw.expeditions) ensureExpeditionState(g);
+    g.seenCutscenes = Object.assign({}, (raw.seenCutscenes && typeof raw.seenCutscenes === "object" && !Array.isArray(raw.seenCutscenes)) ? raw.seenCutscenes : {});
+    g.foundationQuality = Object.assign({}, (raw.foundationQuality && typeof raw.foundationQuality === "object" && !Array.isArray(raw.foundationQuality)) ? raw.foundationQuality : {});
     if (!Array.isArray(g.laws)) g.laws = [];
     if (!Array.isArray(g.learned)) g.learned = base.learned.slice();
     base.learned.forEach(sk => { if (!g.learned.includes(sk)) g.learned.push(sk); });
@@ -13955,46 +14141,51 @@ const ART = {
     if (!Array.isArray(g.achievements)) g.achievements = [];
     if (!Array.isArray(g.claimedAchievements)) g.claimedAchievements = [];
     if (!Array.isArray(g.destinyFruits)) g.destinyFruits = [];
-    if (!g.stageStars || typeof g.stageStars !== "object") g.stageStars = {};
+    if (!g.stageStars || typeof g.stageStars !== "object" || Array.isArray(g.stageStars)) g.stageStars = {};
+    else Object.keys(g.stageStars).forEach(k => { g.stageStars[k] = Math.max(0, Math.min(3, Math.floor(num(g.stageStars[k], 0)))); });
     if (!Array.isArray(g.claimedStepIds)) g.claimedStepIds = [];
     if (!Array.isArray(g.claimedStarChests)) g.claimedStarChests = [];
-    g.bountyTiers = Object.assign({ slay: 1, tech: 1, craft: 1 }, g.bountyTiers || {});
-    g.goalStats = Object.assign({ kills: 0, techBreaks: 0, craftOrLoot: 0 }, g.goalStats || {});
+    g.bountyTiers = Object.assign({ slay: 1, tech: 1, craft: 1 }, (g.bountyTiers && typeof g.bountyTiers === "object" && !Array.isArray(g.bountyTiers)) ? g.bountyTiers : {});
+    Object.keys(g.bountyTiers).forEach(k => { g.bountyTiers[k] = Math.max(1, Math.floor(num(g.bountyTiers[k], 1))); });
+    g.goalStats = Object.assign({ kills: 0, techBreaks: 0, craftOrLoot: 0 }, (g.goalStats && typeof g.goalStats === "object" && !Array.isArray(g.goalStats)) ? g.goalStats : {});
+    Object.keys(g.goalStats).forEach(k => { g.goalStats[k] = Math.max(0, Math.floor(num(g.goalStats[k], 0))); });
     if (!Array.isArray(g.pactSeals)) g.pactSeals = [];
-    if (typeof g.karmaScore !== "number" || isNaN(g.karmaScore)) g.karmaScore = 0;
-    g.bondTiers = Object.assign({ shen: 1, pei: 0, lu: 0, yan: 0 }, raw.bondTiers || {});
-    g.gourd = Object.assign({ charges: 5, maxCharges: 5, soaks: ["iron_lotus", "samadhi_fire", "parry_brew"], parryChargeProg: 0 }, raw.gourd || {});
+    g.bondTiers = Object.assign({ shen: 1, pei: 0, lu: 0, yan: 0 }, (raw.bondTiers && typeof raw.bondTiers === "object" && !Array.isArray(raw.bondTiers)) ? raw.bondTiers : {});
+    Object.keys(g.bondTiers).forEach(k => { g.bondTiers[k] = Math.max(0, Math.floor(num(g.bondTiers[k], 0))); });
+    g.gourd = Object.assign({ charges: 5, maxCharges: 5, soaks: ["iron_lotus", "samadhi_fire", "parry_brew"], parryChargeProg: 0 }, (raw.gourd && typeof raw.gourd === "object" && !Array.isArray(raw.gourd)) ? raw.gourd : {});
+    g.gourd.charges = Math.max(0, Math.floor(num(g.gourd.charges, 5)));
+    g.gourd.maxCharges = Math.max(1, Math.floor(num(g.gourd.maxCharges, 5)));
+    g.gourd.parryChargeProg = Math.max(0, num(g.gourd.parryChargeProg, 0));
     if (!Array.isArray(g.gourd.soaks)) g.gourd.soaks = ["iron_lotus", "samadhi_fire", "parry_brew"];
-    g.cosmetics = Object.assign({ bladeSkin: "celadon", trailSkin: g.taixuTrailActive ? "taixu_prismatic" : "ink_jade", footAura: "lotus_step", swordAura: "azure_jade" }, raw.cosmetics || {});
+    g.cosmetics = Object.assign({ bladeSkin: "celadon", trailSkin: g.taixuTrailActive ? "taixu_prismatic" : "ink_jade", footAura: "lotus_step", swordAura: "azure_jade" }, (raw.cosmetics && typeof raw.cosmetics === "object" && !Array.isArray(raw.cosmetics)) ? raw.cosmetics : {});
     if (!WARDROBE_OPTIONS.swordAura.some(x => x.id === g.cosmetics.swordAura)) g.cosmetics.swordAura = "azure_jade";
     if (!Array.isArray(g.unlockedSouls) || !g.unlockedSouls.length) g.unlockedSouls = ["blood_warden"];
-    if (!g.equippedSoul || !SOUL_SPIRITS[g.equippedSoul]) g.equippedSoul = g.unlockedSouls[0];
+    if (!g.equippedSoul || !hasOwn(SOUL_SPIRITS, g.equippedSoul)) g.equippedSoul = g.unlockedSouls[0];
+    if (g.equippedMount && !hasOwn(MYTHIC_MOUNTS, g.equippedMount)) g.equippedMount = "qilin";
     if (!Array.isArray(g.litStars)) g.litStars = [];
     ensureDeterministicPity(g);
     g.unlockAllArcana = !!raw.unlockAllArcana;
-    g.retreats = Number(raw.retreats) || 0;
-    g.tribulationFails = Number(raw.tribulationFails) || 0;
-    g.defiantBreakthroughs = Number(raw.defiantBreakthroughs) || 0;
     g.sanctumLevels = Object.assign(
       { spirit_eye: 1, cauldron: 1, sword_forge: 1, scripture_hall: 1, guard_array: 1 },
-      raw.sanctumLevels && typeof raw.sanctumLevels === "object" ? raw.sanctumLevels : {}
+      raw.sanctumLevels && typeof raw.sanctumLevels === "object" && !Array.isArray(raw.sanctumLevels) ? raw.sanctumLevels : {}
     );
     Object.keys(g.sanctumLevels).forEach(k => {
-      g.sanctumLevels[k] = Math.max(1, Math.min(5, Math.floor(Number(g.sanctumLevels[k]) || 1)));
+      g.sanctumLevels[k] = Math.max(1, Math.min(5, Math.floor(num(g.sanctumLevels[k], 1))));
     });
-    g.lifespanBonusMonths = Number(raw.lifespanBonusMonths) || 0;
     g.tutorialDismissed = !!raw.tutorialDismissed;
     if (typeof raw.tutorialStep === "number" && !isNaN(raw.tutorialStep)) {
       g.tutorialStep = Math.max(0, Math.min(4, Math.floor(raw.tutorialStep)));
     } else {
       g.tutorialStep = (rankOf(g.realm) >= 1 || !!g.openingChoice) ? 4 : 0;
     }
-    g.sanctumChatStage = Object.assign({}, raw.sanctumChatStage || {});
-    g.karmaMarketBought = Object.assign({}, raw.karmaMarketBought || {});
+    g.sanctumChatStage = Object.assign({}, (raw.sanctumChatStage && typeof raw.sanctumChatStage === "object" && !Array.isArray(raw.sanctumChatStage)) ? raw.sanctumChatStage : {});
+    g.karmaMarketBought = Object.assign({}, (raw.karmaMarketBought && typeof raw.karmaMarketBought === "object" && !Array.isArray(raw.karmaMarketBought)) ? raw.karmaMarketBought : {});
     const st = getCombatStats(g);
-    if (typeof g.hp !== "number" || isNaN(g.hp) || g.hp <= 0) g.hp = st.maxHp;
+    g.hp = num(g.hp, st.maxHp);
+    if (g.hp <= 0) g.hp = st.maxHp;
     else g.hp = Math.min(st.maxHp, g.hp);
-    if (typeof g.mp !== "number" || isNaN(g.mp) || g.mp < 0) g.mp = st.maxMp;
+    g.mp = num(g.mp, st.maxMp);
+    if (g.mp < 0) g.mp = st.maxMp;
     else g.mp = Math.min(st.maxMp, g.mp);
     return g;
   }
@@ -14002,6 +14193,7 @@ const ART = {
   // ==================== M1 INDUSTRIAL-GRADE SAVE, VALIDATION & MULTI-TAB CONFLICT ENGINE ====================
   const TAB_ID = "tab_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
   let loadedSaveRev = 0;
+  let lastSavedPayloadChecksum = null;
   let storageReadError = null;
   let storageWriteError = null;
   let saveConflictState = null;
@@ -14029,6 +14221,17 @@ const ART = {
     });
   }
 
+  function computeCurrentPayloadChecksum() {
+    if (!game) return null;
+    return computeSaveChecksum(buildCanonicalSavePayload({
+      game,
+      stageIdx: arena.stageIdx,
+      stanceIdx: arena.stanceIdx,
+      towerMode: !!arena.towerMode,
+      sanctumMode: !!arena.sanctumMode
+    }));
+  }
+
   function parseAndValidateSaveRaw(raw, sourceKey) {
     if (!raw || typeof raw !== "string") {
       return { ok: false, empty: true, sourceKey };
@@ -14042,7 +14245,7 @@ const ART = {
     if (!parsed || typeof parsed !== "object" || !parsed.game || typeof parsed.game !== "object") {
       return { ok: false, empty: false, sourceKey, reason: "存档缺少核心 game 数据结构", raw };
     }
-    if (!REALMS[parsed.game.realm]) {
+    if (typeof parsed.game.realm !== "string" || !hasOwn(REALMS, parsed.game.realm)) {
       return { ok: false, empty: false, sourceKey, reason: `存档境界字段非法（${String(parsed.game.realm)}）`, raw };
     }
     if (parsed.envelopeVersion >= 2 && parsed.checksum) {
@@ -14165,7 +14368,7 @@ const ART = {
     const el = document.getElementById("hud-save-alert");
     if (!el) return;
     const onWelcome = document.getElementById("welcome-screen") && document.getElementById("welcome-screen").style.display !== "none";
-    if (onWelcome || (!storageWriteError && !saveReadOnlyMode && !saveConflictState && !storageReadError && !metaReadError)) {
+    if (onWelcome || (!storageWriteError && !saveReadOnlyMode && !saveConflictState && !storageReadError && !metaReadError && !metaWriteError)) {
       el.style.display = "none";
       el.innerHTML = "";
       el.classList.remove("readonly-mode");
@@ -14231,6 +14434,18 @@ const ART = {
         <div style="display:flex;gap:6px;flex-shrink:0;">
           ${metaReadError.raw ? `<button type="button" class="btn-ghost" style="padding:3px 9px;font-size:11px;" data-action="copy-corrupt-meta-raw">复制原文</button>` : ""}
           <button type="button" class="btn-gold" style="padding:3px 9px;font-size:11px;" data-action="prompt-reset-corrupt-meta">确认重置</button>
+        </div>
+      `;
+      return;
+    }
+    if (metaWriteError) {
+      el.classList.remove("readonly-mode");
+      el.style.display = "flex";
+      el.innerHTML = `
+        <span>⚠ <b>元存档写入失败</b>（${escapeHtml(metaWriteError.message)}）· 累世功德暂存于内存，请清理存储空间后重试。</span>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button type="button" class="btn-gold" style="padding:3px 9px;font-size:11px;" data-action="retry-meta-save">重试写入</button>
+          <button type="button" class="btn-ghost" style="padding:2px 7px;font-size:11px;" data-action="dismiss-save-alert">✕</button>
         </div>
       `;
     }
@@ -14410,17 +14625,19 @@ const ART = {
       towerMode: !!arena.towerMode,
       sanctumMode: !!arena.sanctumMode
     };
+    const payloadChecksum = computeSaveChecksum(buildCanonicalSavePayload(payloadObj));
     const envelope = Object.assign({
       envelopeVersion: 2,
       saveRev: nextRev,
       tabId: TAB_ID,
       updatedAt: Date.now(),
-      checksum: computeSaveChecksum(buildCanonicalSavePayload(payloadObj))
+      checksum: payloadChecksum
     }, payloadObj);
 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));
       loadedSaveRev = nextRev;
+      lastSavedPayloadChecksum = payloadChecksum;
       storageWriteError = null;
       storageReadError = null;
       saveConflictState = null;
@@ -14483,13 +14700,18 @@ const ART = {
     metaState.metaTabId = TAB_ID;
     try {
       localStorage.setItem(META_KEY, JSON.stringify(metaState));
+      const hadWriteErr = !!metaWriteError;
       metaWriteError = null;
+      if (hadWriteErr) renderHudSaveAlert();
       return true;
     } catch (e) {
       metaWriteError = {
         message: (e && e.name === "QuotaExceededError") ? "存储空间已满 (QuotaExceededError)" : (e && e.message ? e.message : String(e)),
         at: Date.now()
       };
+      saveAlertDismissed = false;
+      renderHudSaveAlert();
+      showToast(`⚠ 元存档写入失败：${metaWriteError.message}`);
       return false;
     }
   }
@@ -14566,6 +14788,8 @@ const ART = {
     const ws = document.getElementById("welcome-screen");
     if (ws && ws.style.display !== "none") return;
     if (saveReadOnlyMode || saveConflictState || storageReadError) return;
+    const curChecksum = computeCurrentPayloadChecksum();
+    if (lastSavedPayloadChecksum && curChecksum === lastSavedPayloadChecksum) return;
     saveGame();
   }
   window.addEventListener("pagehide", flushSaveOnLifecycle);
@@ -14810,8 +15034,11 @@ const ART = {
       return;
     }
     const slotLabels = { weapon: "佩剑", armor: "仙衣", ring: "灵佩" };
-    const curLvl = cur.lvl || 0;
-    const previewLvl = Math.max(curLvl, nw.lvl || 0);
+    const curLvl = Math.max(0, Math.floor(num(cur.lvl, 0)));
+    const nwLvl = Math.max(0, Math.floor(num(nw.lvl, 0)));
+    const previewLvl = Math.max(curLvl, nwLvl);
+    const nwRar = rarityNum(nw.rarity);
+    const curRar = rarityNum(cur.rarity);
     const dAtk = effectiveGearVal(nw, "atk", previewLvl) - effectiveGearVal(cur, "atk");
     const dHp  = effectiveGearVal(nw, "hp", previewLvl) - effectiveGearVal(cur, "hp");
     const dDr  = effectiveGearVal(nw, "dr", previewLvl) - effectiveGearVal(cur, "dr");
@@ -14831,13 +15058,13 @@ const ART = {
       </div>
       <div class="gear-cmp-grid">
         <div class="gear-cmp-col new-item">
-          <span style="font-size:9.5px;color:var(--jade);">新掉落 · ${RARITIES[nw.rarity].name}</span>
-          <strong style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${Number(nw.rarity) || 1}">${escapeHtml(nw.name)}${nw.lvl ? ` +${Number(nw.lvl) || 0}` : ""}</strong>
+          <span style="font-size:9.5px;color:var(--jade);">新掉落 · ${RARITIES[nwRar].name}</span>
+          <strong style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${nwRar}">${escapeHtml(nw.name)}${nwLvl ? ` +${nwLvl}` : ""}</strong>
           <span style="font-size:10px;color:var(--text-sub);">${escapeHtml(formatGearStats(nw))}</span>
         </div>
         <div class="gear-cmp-col">
           <span style="font-size:9.5px;color:var(--text-sub);">当前穿戴${curLvl > 0 ? ` · 淬火+${curLvl}` : ""}</span>
-          <strong style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${Number(cur.rarity) || 1}">${escapeHtml(cur.name)}${curLvl ? ` +${curLvl}` : ""}</strong>
+          <strong style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${curRar}">${escapeHtml(cur.name)}${curLvl ? ` +${curLvl}` : ""}</strong>
           <span style="font-size:10px;color:var(--text-sub);">${escapeHtml(formatGearStats(cur))}</span>
         </div>
       </div>
@@ -14847,7 +15074,7 @@ const ART = {
       <div class="gear-cmp-actions">
         ${curLvl > 0 ? `<button type="button" class="btn-jade" style="padding:4px 9px;font-size:11px;" data-action="compare-equip-transfer">换装并继承+${curLvl}</button>` : ""}
         <button type="button" class="${curLvl > 0 ? "btn-ghost" : "btn-jade"}" style="padding:4px 9px;font-size:11px;" data-action="compare-equip-direct">${curLvl > 0 ? "直接换装" : "一键换装"}</button>
-        <button type="button" class="btn-gold" style="padding:4px 9px;font-size:11px;" data-action="compare-smelt-new">熔炼+${nw.sell || 15}石</button>
+        <button type="button" class="btn-gold" style="padding:4px 9px;font-size:11px;" data-action="compare-smelt-new">熔炼+${Math.max(0, Math.floor(num(nw.sell, 15)))}石</button>
       </div>
     `;
   }
@@ -15081,8 +15308,8 @@ const ART = {
 
       <div class="sanctum-mat-bar">
         <span style="color:var(--gold-bright);font-weight:700;">行囊灵材库：</span>
-        <span class="sanctum-mat-pill" style="border-color:rgba(255,226,138,0.55);color:#ffe89e;">◆ 灵石 ${game.stones || 0}</span>
-        ${matKeys.map(mk => `<span class="sanctum-mat-pill">${ITEMS[mk].name} ×${game.inventory[mk] || 0}</span>`).join("")}
+        <span class="sanctum-mat-pill" style="border-color:rgba(255,226,138,0.55);color:#ffe89e;">◆ 灵石 ${Math.floor(num(game.stones))}</span>
+        ${matKeys.map(mk => `<span class="sanctum-mat-pill">${ITEMS[mk].name} ×${Math.floor(num(game.inventory[mk]))}</span>`).join("")}
       </div>
 
       <div class="sanctum-grid">
@@ -18486,7 +18713,7 @@ const ART = {
     const st = getCombatStats(game);
     const pillId = r.pill;
     const pillSpec = pillId ? ITEMS[pillId] : null;
-    const pillCount = pillId ? (game.inventory[pillId] || 0) : 0;
+    const pillCount = pillId ? Math.max(0, Math.floor(num(game.inventory[pillId], 0))) : 0;
     const pillRecipe = pillId ? Object.values(RECIPES).find(rc => rc.output === pillId) : null;
     const aidsTxt = [
       game.aids.shen ? "沈清禾·灵枢药阵(-25%雷伤)" : null,
@@ -18505,7 +18732,7 @@ const ART = {
               <img src="${ART[pillSpec.art]}" alt="${pillSpec.name}" style="width:36px;height:36px;object-fit:contain;" />
               <div>
                 <div style="font-family:var(--font-serif);font-size:16px;font-weight:700;color:#84ffea;">丹护渡劫 · 稳破重霄</div>
-                <span class="tag-chip ${pillCount > 0 ? "done" : ""}">持有 ${pillSpec.name} ×${pillCount}</span>
+                <span class="tag-chip ${pillCount > 0 ? "done" : ""}">持有 ${pillSpec.name} ×${num(pillCount)}</span>
               </div>
             </div>
             <p style="font-size:11.5px;color:var(--text-sub);line-height:1.5;">
@@ -18559,7 +18786,7 @@ const ART = {
         </div>
       </div>
       <div class="pity-bar-card">
-        <span>当前战力：<b>气血 ${Math.round(game.hp)}/${st.maxHp} · 攻击 ${st.atk} · 护脉丹障 ${game.tribShield || 0} 层</b></span>
+        <span>当前战力：<b>气血 ${Math.round(game.hp)}/${st.maxHp} · 攻击 ${st.atk} · 护脉丹障 ${Math.max(0, Math.floor(num(game.tribShield, 0)))} 层</b></span>
         <span style="color:var(--jade);">${aidsTxt}</span>
       </div>
       ${pathBody}
@@ -20971,7 +21198,7 @@ const ART = {
       : pr.kind === "spire_wager_altar"
         ? "主动献祭 25% 当前气血 → 本层通关奇物直升 Lv.+2 & 双倍灵石"
         : pr.kind === "cauldron" && !arena.sanctumMode
-          ? `消耗凝气草 ×2 凝练回春仙丹（当前持有 ${game.inventory.herb || 0}）`
+          ? `消耗凝气草 ×2 凝练回春仙丹（当前持有 ${Math.max(0, Math.floor(num(game.inventory.herb, 0)))}）`
           : (pr.badge || "点击或按 Enter 确认交互");
     const sig = `${pr.id || pr.kind}|${pr.name}|${subTxt}|${isDanger ? 1 : 0}`;
     if (el.dataset.propSig === sig && el.style.display === "flex") return;
@@ -20981,8 +21208,8 @@ const ART = {
     el.innerHTML = `
       <span class="prop-interact-key">Enter / 点击</span>
       <div style="display:flex;flex-direction:column;gap:1px;min-width:0;">
-        <strong style="font-size:12px;color:#fff2c4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${pr.name}</strong>
-        <span style="font-size:10.5px;color:${isDanger ? "#ffb4ae" : "var(--jade)"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${subTxt}</span>
+        <strong style="font-size:12px;color:#fff2c4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(pr.name)}</strong>
+        <span style="font-size:10.5px;color:${isDanger ? "#ffb4ae" : "var(--jade)"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(subTxt)}</span>
       </div>
       <button type="button" id="btn-prop-interact" class="${isDanger ? "btn-gold" : "btn-jade"}" style="padding:4px 11px;font-size:11px;white-space:nowrap;" data-action="interact-nearby-prop">确认</button>
     `;
@@ -21132,13 +21359,13 @@ const ART = {
     arena.paused = true;
     arena.defeatPending = { isTribulation: !!isTribulation };
     renderPropInteractHud();
-    const pills = game.inventory.healing_pill || 0;
-    const gourdCh = (game.gourd && game.gourd.charges) || 0;
+    const pills = Math.max(0, Math.floor(num(game.inventory.healing_pill, 0)));
+    const gourdCh = Math.max(0, Math.floor(num(game.gourd && game.gourd.charges, 0)));
     const revivesLeft = Math.max(0, 1 - (arena.defeatRevivesUsed || 0));
     const canPillRevive = revivesLeft > 0 && pills >= 1;
     const canGourdRevive = !isTribulation && revivesLeft > 0 && gourdCh >= 2;
     const r = REALMS[game.realm];
-    const keptXp = r && r.xpCap > 0 ? Math.round(r.xpCap * 0.75) : game.xp;
+    const keptXp = r && r.xpCap > 0 ? Math.round(r.xpCap * 0.75) : Math.max(0, Math.floor(num(game.xp, 0)));
 
     if (isTribulation) {
       openModal(`
@@ -21159,14 +21386,14 @@ const ART = {
           <button type="button" class="defeat-opt-btn" data-defeat-act="revive-trib-pill" ${canPillRevive ? "" : "disabled"}>
             <div>
               <div style="font-weight:700;color:#ffe28a;">💊 主动服回春丹 ×1 续渡天劫</div>
-              <div style="font-size:11px;color:var(--text-sub);">${canPillRevive ? `消耗回春丹 ×1（当前持有 ${pills}），恢复 50% 气血并获 1.6s 护体无敌` : revivesLeft <= 0 ? "本轮渡劫续命次数已用尽" : "行囊中无回春丹（当前 0 枚）"}</div>
+              <div style="font-size:11px;color:var(--text-sub);">${canPillRevive ? `消耗回春丹 ×1（当前持有 ${num(pills)}），恢复 50% 气血并获 1.6s 护体无敌` : revivesLeft <= 0 ? "本轮渡劫续命次数已用尽" : "行囊中无回春丹（当前 0 枚）"}</div>
             </div>
             <span class="tag-chip ${canPillRevive ? "mythic" : ""}">消耗 1 丹</span>
           </button>
           <button type="button" class="defeat-opt-btn retreat" data-defeat-act="abort-tribulation">
             <div>
               <div style="font-weight:700;color:#80ffea;">🕊 散功避劫 · 退回听雨洞府整备</div>
-              <div style="font-size:11px;color:var(--text-sub);">中止本次天劫，保留 75% 修为（${keptXp}/${r.xpCap || 0}）并携全部装备灵材安全返城</div>
+              <div style="font-size:11px;color:var(--text-sub);">中止本次天劫，保留 75% 修为（${num(keptXp)}/${num(r && r.xpCap, 0)}）并携全部装备灵材安全返城</div>
             </div>
             <span class="tag-chip done">安全撤离</span>
           </button>
@@ -21193,14 +21420,14 @@ const ART = {
         <button type="button" class="defeat-opt-btn" data-defeat-act="revive-pill" ${canPillRevive ? "" : "disabled"}>
           <div>
             <div style="font-weight:700;color:#ffe28a;">💊 主动服回春丹 ×1 重燃战意</div>
-            <div style="font-size:11px;color:var(--text-sub);">${canPillRevive ? `消耗回春丹 ×1（持有 ${pills}），恢复 55% 气血、2.0s 无敌并震退近身妖兽` : revivesLeft <= 0 ? "本场战斗续命次数已用尽" : "行囊中无回春丹（持有 0 枚）"}</div>
+            <div style="font-size:11px;color:var(--text-sub);">${canPillRevive ? `消耗回春丹 ×1（持有 ${num(pills)}），恢复 55% 气血、2.0s 无敌并震退近身妖兽` : revivesLeft <= 0 ? "本场战斗续命次数已用尽" : "行囊中无回春丹（持有 0 枚）"}</div>
           </div>
           <span class="tag-chip ${canPillRevive ? "mythic" : ""}">-1 回春丹</span>
         </button>
         <button type="button" class="defeat-opt-btn" data-defeat-act="revive-gourd" ${canGourdRevive ? "" : "disabled"}>
           <div>
             <div style="font-weight:700;color:#80ffea;">🍶 耗仙葫灵酿 ×2 强聚真元</div>
-            <div style="font-size:11px;color:var(--text-sub);">${canGourdRevive ? `消耗仙葫灵酿 ×2（余 ${gourdCh} 缕），恢复 45% 气血、1.8s 无敌并震退群妖` : revivesLeft <= 0 ? "本场战斗续命次数已用尽" : `仙葫灵酿不足 2 缕（当前 ${gourdCh}）`}</div>
+            <div style="font-size:11px;color:var(--text-sub);">${canGourdRevive ? `消耗仙葫灵酿 ×2（余 ${num(gourdCh)} 缕），恢复 45% 气血、1.8s 无敌并震退群妖` : revivesLeft <= 0 ? "本场战斗续命次数已用尽" : `仙葫灵酿不足 2 缕（当前 ${num(gourdCh)}）`}</div>
           </div>
           <span class="tag-chip ${canGourdRevive ? "done" : ""}">-2 灵酿</span>
         </button>
@@ -24048,30 +24275,31 @@ const ART = {
         icons.push(`<span class="synergy-crest-pill" data-tip="${escTip("共鸣羁绊 · " + syn.name, syn.desc)}">★ ${syn.name}</span>`);
       });
       (game.destinyFruits || []).forEach(fid => {
-        const df = DESTINY_FRUITS[fid];
+        const df = hasOwn(DESTINY_FRUITS, fid) ? DESTINY_FRUITS[fid] : null;
         if (df) icons.push(`<span class="destiny-fruit-pill" data-tip="${escTip("逆天改命 · " + df.name, df.desc)}">☯ ${df.name}</span>`);
       });
       ["weapon", "armor", "ring"].forEach(sl => {
         const gItem = game.equippedGear[sl];
-        if (gItem && gItem.rarity >= 1) {
-          icons.push(`<div class="build-mini-ico rarity-${gItem.rarity}" data-tip="${escTip(gItem.name, formatGearStats(gItem))}"><img src="${ART[gItem.art]}" alt="" /></div>`);
+        const gRar = gItem ? rarityNum(gItem.rarity) : 0;
+        if (gItem && gRar >= 1) {
+          icons.push(`<div class="build-mini-ico rarity-${gRar}" data-tip="${escTip(gItem.name, formatGearStats(gItem))}"><img src="${ART[hasOwn(ART, gItem.art) ? gItem.art : "icon_blade"]}" alt="" /></div>`);
         }
       });
       if (arena.stageElement) {
         const isF = arena.stageElement === "frost";
         icons.push(`<div class="build-mini-ico" data-tip="${escTip(isF ? "玄冥寒霜附刃" : "九霄紫电附刃", isF ? "剑气减速妖群35%" : "剑气高概率触发紫电链雷")}"><img src="${ART[isF ? "relic_frost_sword" : "relic_soul_lamp"]}" alt="" /></div>`);
       }
-      if (game.pet.id && SPIRIT_PETS[game.pet.id]) {
+      if (game.pet.id && hasOwn(SPIRIT_PETS, game.pet.id)) {
         const sp = SPIRIT_PETS[game.pet.id];
-        icons.push(`<div class="build-mini-ico" data-tip="${escTip(sp.name + " Lv." + game.pet.level, sp.desc)}"><img src="${ART[sp.art]}" alt="" /></div>`);
+        icons.push(`<div class="build-mini-ico" data-tip="${escTip(sp.name + " Lv." + Math.max(1, Math.floor(num(game.pet.level, 1))), sp.desc)}"><img src="${ART[sp.art]}" alt="" /></div>`);
       }
-      if (game.loadout.relic && RELICS[game.loadout.relic]) {
+      if (game.loadout.relic && hasOwn(RELICS, game.loadout.relic)) {
         const rl = RELICS[game.loadout.relic];
         const stars = getEquippedRelicStars(game);
         icons.push(`<div class="build-mini-ico" data-tip="${escTip(`${rl.name} ★${stars}`, rl.activeDesc)}"><img src="${ART[rl.art]}" alt="" /></div>`);
       }
       game.laws.forEach(id => {
-        const l = DAO_LAWS[id];
+        const l = hasOwn(DAO_LAWS, id) ? DAO_LAWS[id] : null;
         if (l) icons.push(`<div class="build-mini-ico" data-tip="${escTip(l.name, LAW_SHORT_BADGE[id] + " · " + l.desc)}"><img src="${ART[LAW_ICONS[id] || "icon_blade"]}" alt="" /></div>`);
       });
       strip.innerHTML = icons.join("");
@@ -24391,19 +24619,20 @@ const ART = {
     } catch (e) {}
   }
 
-  function restoreTriggerFocus(el) {
-    const canFocus = (cand) => {
-      if (!cand || !cand.isConnected || cand.disabled || typeof cand.focus !== "function") return false;
-      try {
-        const style = window.getComputedStyle(cand);
-        if (style.display === "none" || style.visibility === "hidden") return false;
-        return cand.offsetParent !== null || style.position === "fixed";
-      } catch (e) {
-        return false;
-      }
-    };
+  function isElementFocusable(cand) {
+    if (!cand || !cand.isConnected || cand.disabled || typeof cand.focus !== "function") return false;
     try {
-      if (canFocus(el)) {
+      const style = window.getComputedStyle(cand);
+      if (style.display === "none" || style.visibility === "hidden") return false;
+      return cand.offsetParent !== null || style.position === "fixed";
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function restoreTriggerFocus(el) {
+    try {
+      if (isElementFocusable(el)) {
         el.focus({ preventScroll: true });
         return;
       }
@@ -24412,7 +24641,7 @@ const ART = {
         ? [document.getElementById("btn-continue-save"), document.getElementById("btn-start-new")]
         : [document.getElementById("btn-open-settings"), document.getElementById("nav-btn-cultivate")];
       for (const fb of fallbacks) {
-        if (canFocus(fb)) {
+        if (isElementFocusable(fb)) {
           fb.focus({ preventScroll: true });
           return;
         }
@@ -24451,11 +24680,16 @@ const ART = {
     if (bd) bd.classList.remove("open");
     arena.paused = drawerOpen || cutscene.active;
     renderPropInteractHud();
+    const target = lastModalTriggerEl;
+    lastModalTriggerEl = null;
     if (wasOpen && drawerOpen) {
-      focusDialogSafely(document.getElementById("jade-panel"));
+      const panel = document.getElementById("jade-panel");
+      if (panel && target && panel.contains(target) && isElementFocusable(target)) {
+        try { target.focus({ preventScroll: true }); } catch (e) {}
+      } else {
+        focusDialogSafely(panel);
+      }
     } else if (wasOpen && !drawerOpen) {
-      const target = lastModalTriggerEl;
-      lastModalTriggerEl = null;
       restoreTriggerFocus(target);
     }
   }
@@ -24610,32 +24844,37 @@ const ART = {
             ].map( meta => {
               const eq = game.equippedGear[meta.slot];
               const enhCost = getGearEnhanceCost(game, eq);
+              const eqRar = eq ? rarityNum(eq.rarity) : 0;
+              const eqLvl = eq ? Math.max(0, Math.floor(num(eq.lvl, 0))) : 0;
               return `
-                <div class="visual-tile ${eq ? `rarity-${eq.rarity}` : ""}" style="flex-direction:column;align-items:stretch;gap:5px;padding:7px 8px;">
+                <div class="visual-tile ${eq ? `rarity-${eqRar}` : ""}" style="flex-direction:column;align-items:stretch;gap:5px;padding:7px 8px;">
                   <div style="display:flex;align-items:center;gap:7px;">
-                    <img src="${ART[eq ? eq.art : meta.emptyArt]}" alt="${meta.label}" style="width:32px;height:32px;" />
+                    <img src="${ART[eq && hasOwn(ART, eq.art) ? eq.art : meta.emptyArt]}" alt="${meta.label}" style="width:32px;height:32px;" />
                     <div style="min-width:0;flex:1;">
-                      <div style="font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="${eq ? `txt-r${Number(eq.rarity) || 1}` : ""}">${eq ? `${escapeHtml(eq.name)}${eq.lvl ? ` +${Number(eq.lvl) || 0}` : ""}` : `${meta.label}·空`}</div>
+                      <div style="font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="${eq ? `txt-r${eqRar}` : ""}">${eq ? `${escapeHtml(eq.name)}${eqLvl > 0 ? ` +${eqLvl}` : ""}` : `${meta.label}·空`}</div>
                       <div style="font-size:9.8px;color:var(--text-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${eq ? escapeHtml(formatGearStats(eq)) : "秘境斩妖掉落"}</div>
                     </div>
                   </div>
                   ${eq ? `
                     <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;">
-                      <button type="button" class="gear-action-mini" data-enhance-slot="${meta.slot}" data-tip="神兵淬火强化|消耗 ${enhCost} 灵石提升基础属性 +8%（最高+10）">${(eq.lvl || 0) >= 10 ? "已满+10" : `淬火+${(eq.lvl || 0) + 1}(${enhCost}石)`}</button>
+                      <button type="button" class="gear-action-mini" data-enhance-slot="${meta.slot}" data-tip="神兵淬火强化|消耗 ${enhCost} 灵石提升基础属性 +8%（最高+10）">${eqLvl >= 10 ? "已满+10" : `淬火+${eqLvl + 1}(${enhCost}石)`}</button>
                       ${showFoundTier ? `<button type="button" class="gear-action-mini" data-reforge-slot="${meta.slot}" data-tip="定向词条刻录|消耗 35 灵石 100% 确定自选心仪圣品神通词条">定刻(35石)</button>` : ""}
-                      ${showGoldTier ? (eq.rarity >= 5 ? `<span class="tag-chip mythic" style="font-size:9.5px;">★紫气已醒</span>` : `<button type="button" class="gear-action-mini" style="border-color:#ff9eff;color:#ffd6ff;" data-awaken-primordial="${meta.slot}" data-tip="鸿蒙紫气突破 (圣品之上)|消耗 120 灵石将神兵晋升为【紫气鸿蒙】至高品阶并觉醒专属太初本源词条！">紫气突破(120石)</button>`) : ""}
+                      ${showGoldTier ? (eqRar >= 5 ? `<span class="tag-chip mythic" style="font-size:9.5px;">★紫气已醒</span>` : `<button type="button" class="gear-action-mini" style="border-color:#ff9eff;color:#ffd6ff;" data-awaken-primordial="${meta.slot}" data-tip="鸿蒙紫气突破 (圣品之上)|消耗 120 灵石将神兵晋升为【紫气鸿蒙】至高品阶并觉醒专属太初本源词条！">紫气突破(120石)</button>`) : ""}
                     </div>
                   ` : ""}
                 </div>`;
             }).join("")}
-            ${showQiTier ? `
-            <button class="visual-tile ${game.loadout.relic ? "rarity-4" : ""}" data-tab="alchemy">
-              <img src="${ART[game.loadout.relic ? RELICS[game.loadout.relic].art : "relic_soul_lamp"]}" alt="法宝" style="width:34px;height:34px;" />
+            ${showQiTier ? (() => {
+              const relicSpec = (game.loadout.relic && hasOwn(RELICS, game.loadout.relic)) ? RELICS[game.loadout.relic] : null;
+              return `
+            <button class="visual-tile ${relicSpec ? "rarity-4" : ""}" data-tab="alchemy">
+              <img src="${ART[relicSpec ? relicSpec.art : "relic_soul_lamp"]}" alt="法宝" style="width:34px;height:34px;" />
               <div>
-                <div style="font-size:11.5px;font-weight:700;color:#ffe07d;">${game.loadout.relic ? `${RELICS[game.loadout.relic].name} ★${getEquippedRelicStars(game)}` : "镇魂法宝·空"}</div>
-                <div style="font-size:10px;color:var(--text-sub);">${game.loadout.relic ? "点击赴百工升星" : "点击赴百工铸造"}</div>
+                <div style="font-size:11.5px;font-weight:700;color:#ffe07d;">${relicSpec ? `${relicSpec.name} ★${getEquippedRelicStars(game)}` : "镇魂法宝·空"}</div>
+                <div style="font-size:10px;color:var(--text-sub);">${relicSpec ? "点击赴百工升星" : "点击赴百工铸造"}</div>
               </div>
-            </button>` : `
+            </button>`;
+            })() : `
             <div class="visual-tile" style="opacity:0.65;">
               <img src="${ART.relic_soul_lamp}" alt="法宝" style="width:32px;height:32px;" />
               <div>
@@ -24686,7 +24925,7 @@ const ART = {
         <div class="jade-card">
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <strong style="font-size:12px;color:var(--gold-bright);">🐾 随行本命灵兽（炼气期契约）</strong>
-            ${game.pet.id ? `<button class="btn-jade" style="padding:3px 9px;font-size:11px;" data-action="feed-pet">${game.pet.level >= 5 ? "已满阶 Lv.5" : `喂草升阶 Lv.${game.pet.level}`}</button>` : ""}
+            ${game.pet.id ? `<button class="btn-jade" style="padding:3px 9px;font-size:11px;" data-action="feed-pet">${num(game.pet.level, 1) >= 5 ? "已满阶 Lv.5" : `喂草升阶 Lv.${Math.max(1, Math.floor(num(game.pet.level, 1)))}`}</button>` : ""}
           </div>
           <div class="grid-2">
             ${Object.values(SPIRIT_PETS).map(sp => `
@@ -24930,7 +25169,7 @@ const ART = {
           </div>
         </div>
         <div class="jade-card" style="align-items:center;text-align:center;">
-          <strong style="font-size:15px;color:var(--gold-bright);font-family:var(--font-serif);">太虚锁妖内坛 · 第 ${game.towerFloor} 层（最高 ${Math.max(game.towerBest, metaState.bestTower)} 层）</strong>
+          <strong style="font-size:15px;color:var(--gold-bright);font-family:var(--font-serif);">太虚锁妖内坛 · 第 ${Math.max(1, Math.floor(num(game.towerFloor, 1)))} 层（最高 ${Math.max(Math.floor(num(game.towerBest, 0)), Math.floor(num(metaState.bestTower, 0)))} 层）</strong>
           <div style="display:flex;gap:8px;">
             <button class="btn-gold" data-action="challenge-tower" ${!towerUnlocked ? "disabled" : ""}>${SVG.sword} ${towerUnlocked ? "立即入坛破阵" : "炼气期开启"}</button>
             ${arena.towerMode ? `<button class="btn-ghost" data-warp-stage="0">退出锁妖塔</button>` : ""}
@@ -24998,7 +25237,7 @@ const ART = {
             <div style="display:flex;align-items:center;gap:9px;">
               <img src="${ART.item_immortal_gourd}" alt="本命九转仙葫" style="width:40px;height:44px;object-fit:contain;" />
               <div>
-                <strong style="font-family:var(--font-serif);font-size:13.5px;color:var(--gold-bright);">🍶 本命九转仙葫（灵酿 ${game.gourd.charges}/${game.gourd.maxCharges} · 已镶 ${game.gourd.soaks.length}/${getMaxGourdSoaks(game)} 槽）</strong>
+                <strong style="font-family:var(--font-serif);font-size:13.5px;color:var(--gold-bright);">🍶 本命九转仙葫（灵酿 ${Math.max(0, Math.floor(num(game.gourd.charges, 0)))}/${Math.max(1, Math.floor(num(game.gourd.maxCharges, 5)))} · 已镶 ${game.gourd.soaks.length}/${getMaxGourdSoaks(game)} 槽）</strong>
                 <div style="font-size:10.5px;color:var(--jade);">紫微丹鼎 Lv.${getSanctumLevel(game, "cauldron")} 可镶 ${getMaxGourdSoaks(game)} 味泡酒物</div>
               </div>
             </div>
@@ -25032,12 +25271,12 @@ const ART = {
               const caulLv = getSanctumLevel(game, "cauldron");
               const lockedByCaul = Boolean(rec.reqCauldronLv && caulLv < rec.reqCauldronLv);
               const matBuyCost = Object.entries(rec.inputs).reduce((sum, [k, req]) => {
-                const lack = Math.max(0, req - (game.inventory[k] || 0));
+                const lack = Math.max(0, req - Math.max(0, Math.floor(num(game.inventory[k], 0))));
                 return sum + lack * Math.round((ITEMS[k].buy || 20) * fairDisc);
               }, 0);
               const totalStoneCost = Math.round(rec.stones * fairDisc) + matBuyCost;
-              const ownedCount = game.inventory[rec.output] || 0;
-              const matSummary = Object.entries(rec.inputs).map(([k, n]) => `${ITEMS[k] ? ITEMS[k].name : k}×${n}(持${game.inventory[k] || 0})`).join(" · ");
+              const ownedCount = Math.max(0, Math.floor(num(game.inventory[rec.output], 0)));
+              const matSummary = Object.entries(rec.inputs).map(([k, n]) => `${ITEMS[k] ? ITEMS[k].name : k}×${n}(持${Math.max(0, Math.floor(num(game.inventory[k], 0)))})`).join(" · ");
               return `
                 <div class="visual-tile" style="justify-content:space-between;padding:7px;${lockedByCaul ? "opacity:0.65;" : ""}" data-tip="${escTip(rec.name, lockedByCaul ? `需先在洞府将【紫微丹鼎】升至 Lv.${rec.reqCauldronLv} 解封！` : `${out.desc}｜所需：${matSummary}`)}">
                   <div style="display:flex;align-items:center;gap:7px;min-width:0;flex:1;">
@@ -25057,16 +25296,17 @@ const ART = {
         <div class="jade-card">
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <strong style="font-size:12px;color:var(--gold-bright);">本命神兵铸造与升星淬炼（★3/★5 额外+1飞剑）</strong>
-            <span style="font-size:11px;color:var(--jade);">妖核 ×${game.inventory.core || 0}</span>
+            <span style="font-size:11px;color:var(--jade);">妖核 ×${Math.max(0, Math.floor(num(game.inventory.core, 0)))}</span>
           </div>
           <div class="grid-2">
             ${Object.values(RELICS).map(rel => {
               const owned = game.ownedRelics.includes(rel.id);
               const eq = game.loadout.relic === rel.id;
-              const stars = (game.relicStars && game.relicStars[rel.id]) || (owned ? 1 : 0);
+              const rawStars = (game.relicStars && game.relicStars[rel.id] != null) ? game.relicStars[rel.id] : (owned ? 1 : 0);
+              const stars = Math.max(0, Math.min(5, Math.floor(num(rawStars, owned ? 1 : 0))));
               const rCost = Math.round(rel.stones * fairDisc);
               const forgeDisc = getSanctumLevel(game, "sword_forge") >= 4 ? 0.85 : 1.0;
-              const temperCost = Math.max(35, Math.round((stars * 75 - ((game.inventory.core || 0) > 0 ? 30 : 0)) * forgeDisc));
+              const temperCost = Math.max(35, Math.round((stars * 75 - (Math.max(0, Math.floor(num(game.inventory.core, 0))) > 0 ? 30 : 0)) * forgeDisc));
               return `
                 <div class="visual-tile ${eq ? "equipped" : ""}" style="flex-direction:column;align-items:stretch;gap:6px;">
                   <button style="display:flex;align-items:center;gap:8px;text-align:left;" data-relic="${rel.id}" data-tip="${escTip(rel.name + " · " + rel.activeName, rel.activeDesc)}">
@@ -25136,13 +25376,14 @@ const ART = {
           </div>
           <div style="display:flex;flex-direction:column;gap:6px;">
             ${game.marketStock.map((it, idx) => {
-              const cost = Math.round(it.price * fairDisc);
+              const cost = Math.max(0, Math.round(num(it.price, 25) * fairDisc));
+              const itRar = rarityNum(it.rarity);
               return `
-                <div class="visual-tile rarity-${it.rarity}" style="justify-content:space-between;">
+                <div class="visual-tile rarity-${itRar}" style="justify-content:space-between;">
                   <div style="display:flex;align-items:center;gap:8px;">
-                    <img src="${ART[it.art]}" alt="${escapeHtml(it.name)}" style="width:34px;height:34px;" />
+                    <img src="${ART[hasOwn(ART, it.art) ? it.art : "item_jade"]}" alt="${escapeHtml(it.name)}" style="width:34px;height:34px;" />
                     <div>
-                      <div style="font-size:12px;font-weight:700;" class="txt-r${Number(it.rarity) || 1}">${escapeHtml(it.name)}</div>
+                      <div style="font-size:12px;font-weight:700;" class="txt-r${itRar}">${escapeHtml(it.name)}</div>
                       <div style="font-size:10.5px;color:var(--text-sub);">${escapeHtml(formatGearStats(it))}</div>
                     </div>
                   </div>
@@ -25161,18 +25402,21 @@ const ART = {
             <div class="grid-2">
               ${game.gearBag.slice(0, 8).map((it, idx) => {
                 const curEq = game.equippedGear[it.slot];
-                const canTransfer = Boolean(curEq && (curEq.lvl || 0) > (it.lvl || 0));
+                const curEqLvl = Math.max(0, Math.floor(num(curEq && curEq.lvl, 0)));
+                const itLvl = Math.max(0, Math.floor(num(it.lvl, 0)));
+                const itRar = rarityNum(it.rarity);
+                const canTransfer = Boolean(curEq && curEqLvl > itLvl);
                 return `
-                  <div class="visual-tile rarity-${it.rarity}" style="flex-direction:column;align-items:stretch;gap:5px;padding:7px 8px;">
+                  <div class="visual-tile rarity-${itRar}" style="flex-direction:column;align-items:stretch;gap:5px;padding:7px 8px;">
                     <div style="display:flex;align-items:center;gap:7px;">
-                      <img src="${ART[it.art]}" alt="${escapeHtml(it.name)}" style="width:32px;height:32px;" />
+                      <img src="${ART[hasOwn(ART, it.art) ? it.art : "icon_blade"]}" alt="${escapeHtml(it.name)}" style="width:32px;height:32px;" />
                       <div style="min-width:0;flex:1;">
-                        <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${Number(it.rarity) || 1}">${escapeHtml(it.name)}${it.lvl ? ` +${Number(it.lvl) || 0}` : ""}</div>
+                        <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${itRar}">${escapeHtml(it.name)}${itLvl > 0 ? ` +${itLvl}` : ""}</div>
                         <div style="font-size:10px;color:var(--text-sub);">${escapeHtml(formatGearStats(it))}</div>
                       </div>
                     </div>
                     <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;">
-                      ${canTransfer ? `<button type="button" class="gear-action-mini" style="border-color:#70ffe6;color:#9effec;" data-equip-bag-transfer="${idx}">继承+${curEq.lvl}换装</button>` : ""}
+                      ${canTransfer ? `<button type="button" class="gear-action-mini" style="border-color:#70ffe6;color:#9effec;" data-equip-bag-transfer="${idx}">继承+${curEqLvl}换装</button>` : ""}
                       <button type="button" class="gear-action-mini" data-equip-bag="${idx}">换装</button>
                     </div>
                   </div>`;
@@ -25192,7 +25436,7 @@ const ART = {
               return `
                 <button class="visual-tile" style="flex-direction:column;text-align:center;" ${usable ? `data-use-item="${it.id}"` : ""} data-tip="${escTip(it.name, it.desc)}" ${!usable ? "disabled" : ""}>
                   <img src="${ART[it.art]}" alt="${it.name}" />
-                  <span style="font-size:11.5px;font-weight:700;">${it.name}×${game.inventory[it.id]}</span>
+                  <span style="font-size:11.5px;font-weight:700;">${it.name}×${Math.max(0, Math.floor(num(game.inventory[it.id], 0)))}</span>
                   <span class="tag-chip ${usable ? "done" : ""}">${usable ? "点击服用" : "灵材"}</span>
                 </button>`;
             }).join("") : `<div style="grid-column:1/-1;text-align:center;color:var(--text-sub);padding:10px;">行囊暂无灵丹</div>`}
@@ -25293,7 +25537,7 @@ const ART = {
               <span class="cinnabar-seal">${karmaEnd.seal}</span>
               <h2 style="font-family:var(--font-serif);font-size:23px;color:var(--gold-bright);margin-top:4px;">九霄天门已开 · 抉择飞升道途</h2>
             </div>
-            <span class="tag-chip done">${ks.label} · 仁${game.dao.benevolence} 锋${game.dao.edge} 真${game.dao.serenity}</span>
+            <span class="tag-chip done">${ks.label} · 仁${Math.floor(num(game.dao.benevolence, 6))} 锋${Math.floor(num(game.dao.edge, 10))} 真${Math.floor(num(game.dao.serenity, 6))}</span>
           </div>
         </div>
         <div class="ending-karma-poem" style="width:100%;max-width:none;text-align:center;">
@@ -25340,7 +25584,7 @@ const ART = {
           <span class="tag-chip">大道法则 ×${game.laws.length}</span>
           <span class="tag-chip mythic">共鸣羁绊 ×${SYNERGIES.filter(s => s.active(game)).length}</span>
           <span class="tag-chip">故人合击 ×${countBondedAllies(game)}</span>
-          <span class="tag-chip mythic">锁妖塔 ${game.towerBest} 层</span>
+          <span class="tag-chip mythic">锁妖塔 ${Math.max(0, Math.floor(num(game.towerBest, 0)))} 层</span>
           <span class="tag-chip">图鉴 ${getCodexCompletionPct()}%</span>
         </div>
         ${metaState.ascensions >= 1 ? `
@@ -25515,7 +25759,7 @@ const ART = {
           </div>
         </div>`;
     } else {
-      const padStatus = GamepadSystem.connectedName ? `🎮 已连接手柄 (${GamepadSystem.connectedName.slice(0, 20)})` : "🎮 支持 W3C 手柄即插即用与双马达震动";
+      const padStatus = GamepadSystem.connectedName ? `🎮 已连接手柄 (${escapeHtml(String(GamepadSystem.connectedName).slice(0, 20))})` : "🎮 支持 W3C 手柄即插即用与双马达震动";
       tabBody = `
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
           <span style="font-size:11.5px;color:var(--jade);font-weight:700;">${padStatus} · 140ms 动作预输入已启用</span>
@@ -25524,7 +25768,7 @@ const ART = {
             <button type="button" class="btn-ghost" style="padding:3px 9px;font-size:11px;" data-action="reset-keybinds">↺ 恢复默认键位</button>
           </div>
         </div>
-        ${lastKeybindConflictMsg ? `<div class="kb-conflict-banner">${lastKeybindConflictMsg}</div>` : ""}
+        ${lastKeybindConflictMsg ? `<div class="kb-conflict-banner">${escapeHtml(lastKeybindConflictMsg)}</div>` : ""}
         ${(() => {
           const tiers = [
             { title: "一 · 核心动作（凡人起步 6 键）", sub: "WASD 移动 · 左/右键挥剑爆印 · 空格一闪 · Q 仙葫 · B 吐纳渡劫 · H 洞府", acts: ["slash", "recall", "dash", "pill", "meditate", "hub"] },
@@ -25537,9 +25781,9 @@ const ART = {
             const listening = rebindListeningAction === act;
             const kbTxt = cfg.mouseLabel && cfg.kb === DEFAULT_KEYBINDS[act].kb ? `${cfg.mouseLabel}/${formatKeyCodeShort(cfg.kb)}` : formatKeyCodeShort(cfg.kb);
             return `<div class="kb-row">
-              <span style="font-size:11.5px;color:#e6f4f1;">${cfg.label}</span>
+              <span style="font-size:11.5px;color:#e6f4f1;">${escapeHtml(cfg.label)}</span>
               <button type="button" class="kb-cap-btn ${listening ? "listening" : ""}" data-rebind-act="${act}">
-                ${listening ? "请按键/手柄..." : `${kbTxt} · 🎮${cfg.padGlyph || "未绑"}`}
+                ${listening ? "请按键/手柄..." : `${escapeHtml(kbTxt)} · 🎮${escapeHtml(cfg.padGlyph || "未绑")}`}
               </button>
             </div>`;
           };
@@ -26191,6 +26435,8 @@ const ART = {
       if (res.legacy) {
         saveGame({ forceOverwrite: true });
         showToast("已兼容载入旧版存档并自动升级校验封装！");
+      } else {
+        lastSavedPayloadChecksum = computeCurrentPayloadChecksum();
       }
       updateHud();
       renderHudSaveAlert();
@@ -26325,6 +26571,10 @@ const ART = {
       if (saveGame()) showToast(`本地存档已恢复写入（v${loadedSaveRev}）！`);
       return;
     }
+    if (m1Act === "retry-meta-save") {
+      if (saveMeta()) showToast(`元存档已恢复写入（v${Number(metaState.metaRev) || 1}）！`);
+      return;
+    }
     if (m1Act === "open-cloud-backup") {
       currentSysTab = "controls";
       openSettingsModal();
@@ -26357,6 +26607,7 @@ const ART = {
       closeDrawer();
       if (s.sanctumMode) enterSanctumHub();
       else initArenaStage(s.stageIdx || 0, !!s.towerMode);
+      lastSavedPayloadChecksum = computeCurrentPayloadChecksum();
       updateHud();
       renderHudSaveAlert();
       showToast(`已同步最新标签页存档（v${res.rev}）并恢复自动保存！`);
@@ -26386,6 +26637,7 @@ const ART = {
         saveGame();
       }
       game = null;
+      lastSavedPayloadChecksum = null;
       cutscene.active = false;
       arena.nearbyProp = null;
       arena.defeatPending = null;
@@ -26450,6 +26702,7 @@ const ART = {
       try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
       game = null;
       loadedSaveRev = 0;
+      lastSavedPayloadChecksum = null;
       saveReadOnlyMode = false;
       saveConflictState = null;
       storageWriteError = null;
@@ -26908,6 +27161,7 @@ const ART = {
         a11ySettings.shakeScale = 0;
         a11ySettings.hitStopScale = 0;
       }
+      applyReducedMotionClass();
       saveA11ySettings(); openSettingsModal();
       return;
     }
@@ -27772,6 +28026,12 @@ const ART = {
           : "⚠ 当前处于只读观览态，已拒绝轮回清档以免误删另一标签页的进度！");
         return;
       }
+      if (metaReadError) {
+        saveAlertDismissed = false;
+        renderHudSaveAlert();
+        showToast("⚠ 元存档损坏尚未处理，已中止轮回清档以免丢失累世功德！请先备份或重置元存档。");
+        return;
+      }
       try {
         const curRaw = localStorage.getItem(STORAGE_KEY);
         if (curRaw) {
@@ -27783,13 +28043,28 @@ const ART = {
           }
         }
       } catch (e) {}
+      const prevMetaSnap = JSON.parse(JSON.stringify(metaState));
+      const prevLifeRecorded = !!(game && game.lifeRecorded);
       if (game && game.status === "ascended" && game.ending && !game.lifeRecorded) {
         recordPastLifeInHall(game, game.ending);
       }
-      saveMeta();
+      const metaSaved = saveMeta();
+      if (!metaSaved) {
+        Object.keys(metaState).forEach(k => { if (!(k in prevMetaSnap)) delete metaState[k]; });
+        Object.assign(metaState, prevMetaSnap);
+        if (game) game.lifeRecorded = prevLifeRecorded;
+        saveAlertDismissed = false;
+        renderHudSaveAlert();
+        const errMsg = metaReadError
+          ? metaReadError.reason
+          : ((metaWriteError && metaWriteError.message) ? metaWriteError.message : "元存档写入失败");
+        showToast(`⚠ 元存档保存失败（${errMsg}），已中止轮回并保留当前主存档！`);
+        return;
+      }
       try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
       game = null;
       loadedSaveRev = 0;
+      lastSavedPayloadChecksum = null;
       saveReadOnlyMode = false;
       saveConflictState = null;
       storageWriteError = null;
