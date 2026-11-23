@@ -3091,6 +3091,21 @@
     box-shadow: 0 0 12px rgba(255, 82, 99, 0.32);
     white-space: nowrap;
   }
+  .hud-sandbox-banner {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(84, 34, 128, 0.94), rgba(38, 16, 66, 0.97));
+    border: 1.5px solid rgba(255, 214, 112, 0.85);
+    color: #fff4cf;
+    font-size: 11.5px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.65);
+    z-index: 60;
+    white-space: nowrap;
+  }
   .modal-box:has(.roadmap-tier-card),
   .modal-box:has(.hall-life-card),
   .modal-box:has(.hall-stats-row) {
@@ -3293,6 +3308,10 @@
 
     <!-- Center Stage Wave + Boss HP/Posture Banner -->
     <div class="hud-center-stack">
+      <div id="hud-sandbox-badge" class="hud-sandbox-banner" role="status" aria-live="polite" style="display:none;">
+        <span>🧪 <b>演武沙盒模式</b> · 不影响正式存档/成就/轮回殿</span>
+        <button type="button" id="btn-exit-sandbox" class="btn-gold" style="padding:2px 10px;font-size:11px;" data-action="exit-sandbox">退出沙盒</button>
+      </div>
       <div id="btn-mainline-compass" class="hud-compass stage-wave-hud" role="status" aria-live="polite"><div class="wave-title-row"><span id="stage-title"></span><span id="wave-sub-tag" class="tag-chip done"></span></div><div id="wave-dots-row" class="wave-dots"></div><span id="compass-vol-label" class="sr-only">第一幕 · 山雨初鸣</span> <span id="compass-step-label" class="sr-only">破庙拔剑：救下沈清禾</span></div>
       <button type="button" id="btn-dungeon-route" class="dungeon-route-btn" data-action="open-dungeon-map" style="display:none;" data-tip="秘境五层星图 (9)|查看本趟秘境 5 层分支路线、天候气候与奖励预览；清房后点击可择路前行！"></button>
 
@@ -3331,7 +3350,7 @@
       <button id="btn-goals-modal" class="goal-btn-pill" data-tip="九霄问道录 (T)|查看并领取五幕主线、宗门悬赏令与九州15星秘宝奖励！"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg><span>目标</span><span id="goal-hud-dot" class="goal-red-dot"></span></button>
       <button id="btn-world-map" class="map-btn-pill" data-tip="九州山海舆图 (M)|展开千里青绿山海卷：自由选择五大秘境悬赏、镇妖古塔或返回听雨洞府！"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/><path d="M9 4v14M15 6v14"/></svg><span>舆图</span></button>
       <button id="btn-sanctum-hub" class="hub-btn-pill" data-tip="听雨洞府主城 · 演武论剑坪 (H)|随时返回安全宗门洞府：休整、控火炼丹、神兵淬炼与木桩演武！"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></svg><span>洞府</span></button>
-      <button type="button" id="btn-pavilion-menu" class="pavilion-trigger-btn" data-action="toggle-pavilion" data-tip="太虚仙阁|展开问道阶梯、九世轮回殿、仙乐音效与全神通演武开关"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.2L18.5 21 12 16.8 5.5 21l2-7.8L2 9h7l3-7z"/></svg><span>仙阁 ▾</span></button>
+      <button type="button" id="btn-pavilion-menu" class="pavilion-trigger-btn" data-action="toggle-pavilion" data-tip="太虚仙阁|展开问道阶梯、九世轮回殿、仙乐音效与演武沙盒开关"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.2L18.5 21 12 16.8 5.5 21l2-7.8L2 9h7l3-7z"/></svg><span>仙阁 ▾</span></button>
       <button id="btn-speed-1" class="speed-btn active sr-only" data-speed="1">1x</button>
       <button id="btn-speed-2" class="speed-btn sr-only" data-speed="2">2x</button>
       <button id="btn-speed-4" class="speed-btn sr-only" data-speed="4">4x</button>
@@ -3357,9 +3376,9 @@
           <button type="button" id="btn-toggle-bgm" class="pavilion-item-btn active" data-tip="仙乐伴奏|开关国风古琴背景音乐"><svg class="svg-ico" style="width:13px;height:13px;color:var(--gold);" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span>古琴仙乐</span></button>
           <button type="button" id="btn-mute-audio" class="pavilion-item-btn" data-tip="音效开关|开关剑鸣鼓点等战斗音效"><svg class="svg-ico" style="width:13px;height:13px;color:var(--jade);" aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><span>战斗音效</span></button>
         </div>
-        <button type="button" id="btn-toggle-arcana-all" class="pavilion-item-btn" style="width:100%;justify-content:space-between;" data-action="toggle-arcana-all" data-tip="境界渐进解锁开关|默认随凡人→炼气→筑基→金丹→元婴→化神逐步解封全部系统与神通；开启后可一键提前演武体验全部高阶玩法！">
-          <span>全神通演武解锁</span>
-          <b id="lbl-arcana-all-state" style="color:var(--gold-bright);">随境解封</b>
+        <button type="button" id="btn-toggle-arcana-all" class="pavilion-item-btn" style="width:100%;justify-content:space-between;" data-action="toggle-arcana-all" data-tip="全神通演武沙盒开关|确认后进入独立隔离的演武沙盒体验全部系统与神通，绝不写入正式存档与元存档！">
+          <span>🧪 全神通演武沙盒</span>
+          <b id="lbl-arcana-all-state" style="color:var(--gold-bright);">开启演武沙盒</b>
         </button>
       </div>
     </div>
@@ -3727,7 +3746,7 @@
           <button type="button" class="dojo-pill-btn" data-dojo-act="open-expedition" data-eco-sys="vein_expedition" style="border-color:rgba(144,230,255,0.58);color:#c4f5ff;">九州远征</button>
           <button type="button" class="dojo-pill-btn" data-dojo-act="open-spire" data-eco-sys="celestial_spire" style="border-color:rgba(235,158,255,0.58);color:#f3d1ff;">太虚登仙台</button>
           <button type="button" class="dojo-pill-btn" data-dojo-act="open-rush" data-eco-sys="sword_tomb_rush" style="border-color:rgba(255,154,139,0.65);color:#ffe6dc;">万剑冢连战</button>
-          <button type="button" class="dojo-pill-btn" data-dojo-act="start-titan" data-eco-sys="sword_tomb_rush" style="border-color:rgba(255,196,102,0.65);color:#ffe6a3;">太古烛龙</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="start-titan" data-eco-sys="sword_tomb_rush" style="border-color:rgba(255,196,102,0.65);color:#ffe6a3;">太古烛龙(练习)</button>
           <button type="button" class="dojo-pill-btn" data-dojo-act="open-workshop" data-eco-sys="seed_workshop" style="border-color:rgba(255,220,120,0.58);color:#fff2b2;">造化工坊</button>
         </div>
       </div>
@@ -5186,6 +5205,87 @@ const ART = {
     return REALM_COMBAT_BASELINE[realmId] || REALM_COMBAT_BASELINE.mortal;
   }
 
+  // G5: Permanent Growth Caps (Total/Alchemy Stat Ceilings by Realm, Blood-Fury Quota, Spire Curio Caps)
+  const PERM_GROWTH_CAPS = {
+    totalMaxHpByRealm: { mortal: 100, qi: 180, foundation: 280, golden: 420, nascent: 580, spirit: 760, ascended: 900 },
+    totalAtkByRealm:   { mortal: 20,  qi: 40,  foundation: 70,  golden: 110, nascent: 155, spirit: 200, ascended: 240 },
+    alchemyHpByRealm:  { mortal: 40,  qi: 80,  foundation: 140, golden: 210, nascent: 290, spirit: 380, ascended: 450 },
+    alchemyAtkByRealm: { mortal: 8,   qi: 18,  foundation: 32,  golden: 50,  nascent: 72,  spirit: 96,  ascended: 120 },
+    bloodFuryPerRealm: 2,
+    spireCurioMaxStack: 3,
+    curioStoneAlchemyDmgCap: 0.40,
+    curioStoneAlchemyFloorStonePerLv: 60,
+    curioStoneAlchemyFloorStoneCap: 180,
+    curioCritSilkDmgCap: 0.54
+  };
+
+  function ensurePermGrowth(g) {
+    if (!g) return { alchemyHp: 0, alchemyAtk: 0, bloodFuryBought: {} };
+    if (!g.permGrowth || typeof g.permGrowth !== "object" || Array.isArray(g.permGrowth)) {
+      g.permGrowth = { alchemyHp: 0, alchemyAtk: 0, bloodFuryBought: {} };
+    }
+    const pg = g.permGrowth;
+    pg.alchemyHp = Math.max(0, Math.floor(num(pg.alchemyHp, 0)));
+    pg.alchemyAtk = Math.max(0, Math.floor(num(pg.alchemyAtk, 0)));
+    if (!pg.bloodFuryBought || typeof pg.bloodFuryBought !== "object" || Array.isArray(pg.bloodFuryBought)) {
+      pg.bloodFuryBought = {};
+    }
+    return pg;
+  }
+
+  function getPermGrowthCaps(g) {
+    const r = (g && typeof g.realm === "string" && hasOwn(REALMS, g.realm)) ? g.realm : "mortal";
+    return {
+      realm: r,
+      maxHpBonus: PERM_GROWTH_CAPS.totalMaxHpByRealm[r] || PERM_GROWTH_CAPS.totalMaxHpByRealm.mortal,
+      atkFlatBonus: PERM_GROWTH_CAPS.totalAtkByRealm[r] || PERM_GROWTH_CAPS.totalAtkByRealm.mortal,
+      alchemyHp: PERM_GROWTH_CAPS.alchemyHpByRealm[r] || PERM_GROWTH_CAPS.alchemyHpByRealm.mortal,
+      alchemyAtk: PERM_GROWTH_CAPS.alchemyAtkByRealm[r] || PERM_GROWTH_CAPS.alchemyAtkByRealm.mortal,
+      bloodFuryPerRealm: PERM_GROWTH_CAPS.bloodFuryPerRealm,
+      spireCurioMaxStack: PERM_GROWTH_CAPS.spireCurioMaxStack
+    };
+  }
+
+  function grantPermanentStatBonus(g, opts = {}) {
+    const caps = getPermGrowthCaps(g);
+    const pg = ensurePermGrowth(g);
+    const reqHp = Math.max(0, Math.floor(num(opts && opts.hp, 0)));
+    const reqAtk = Math.max(0, Math.floor(num(opts && opts.atk, 0)));
+    const source = (opts && opts.source) || "general";
+    if (!g) return { grantedHp: 0, grantedAtk: 0, hpCapped: reqHp > 0, atkCapped: reqAtk > 0, caps, pg };
+
+    const curHpBonus = Math.max(0, Math.floor(num(g.maxHpBonus, 0)));
+    const curAtkBonus = Math.max(0, Math.floor(num(g.atkFlatBonus, 0)));
+    let hpRoom = Math.max(0, caps.maxHpBonus - curHpBonus);
+    let atkRoom = Math.max(0, caps.atkFlatBonus - curAtkBonus);
+
+    if (source === "alchemy") {
+      hpRoom = Math.min(hpRoom, Math.max(0, caps.alchemyHp - pg.alchemyHp));
+      atkRoom = Math.min(atkRoom, Math.max(0, caps.alchemyAtk - pg.alchemyAtk));
+    }
+
+    const grantedHp = Math.min(reqHp, hpRoom);
+    const grantedAtk = Math.min(reqAtk, atkRoom);
+    g.maxHpBonus = curHpBonus + grantedHp;
+    g.atkFlatBonus = curAtkBonus + grantedAtk;
+    if (source === "alchemy") {
+      pg.alchemyHp += grantedHp;
+      pg.alchemyAtk += grantedAtk;
+    }
+
+    const hpCapped = reqHp > 0 && (grantedHp < reqHp || g.maxHpBonus >= caps.maxHpBonus || (source === "alchemy" && pg.alchemyHp >= caps.alchemyHp));
+    const atkCapped = reqAtk > 0 && (grantedAtk < reqAtk || g.atkFlatBonus >= caps.atkFlatBonus || (source === "alchemy" && pg.alchemyAtk >= caps.alchemyAtk));
+    return { grantedHp, grantedAtk, hpCapped, atkCapped, caps, pg };
+  }
+
+  function getBloodFuryQuota(g) {
+    const r = (g && typeof g.realm === "string" && hasOwn(REALMS, g.realm)) ? g.realm : "mortal";
+    const pg = ensurePermGrowth(g);
+    const max = PERM_GROWTH_CAPS.bloodFuryPerRealm;
+    const bought = Math.max(0, Math.floor(num(pg.bloodFuryBought[r], 0)));
+    return { realm: r, bought, max, remaining: Math.max(0, max - bought) };
+  }
+
   const REALM_BOSS_GATE = {
     mortal:     0, // 雾隐狼王 -> qi
     qi:         1, // 守山石卫 -> foundation
@@ -6129,15 +6229,29 @@ const ART = {
     }
     const spec = getKarmaMarketSpecials(game).find(x => x.id === specialId);
     if (!spec) return false;
+    let bfQuota = null;
+    if (spec.itemId === "blood_fury_pill") {
+      bfQuota = getBloodFuryQuota(game);
+      if (bfQuota.remaining <= 0) {
+        const rName = (REALMS[game.realm] && REALMS[game.realm].name) || "当前";
+        showToast(`🔒 【嗜血煞丹】于【${rName}期】限购 ${bfQuota.max} 枚（已购 ${bfQuota.bought}/${bfQuota.max}），破境后方可再购！`);
+        return false;
+      }
+    }
     if (game.stones < spec.cost) {
       showToast(`灵石不足（需 ${spec.cost} 灵石）`);
       return false;
     }
     game.stones -= spec.cost;
     game.karmaMarketBought[specialId] = true;
+    if (spec.itemId === "blood_fury_pill" && bfQuota) {
+      ensurePermGrowth(game).bloodFuryBought[game.realm] = bfQuota.bought + 1;
+    }
     if (spec.kind === "item") {
       game.inventory[spec.itemId] = (game.inventory[spec.itemId] || 0) + (spec.count || 1);
-      showToast(`已购得【${spec.name}】，可于下方随身灵丹服用！`);
+      showToast(bfQuota
+        ? `已购得【${spec.name}】（本境限购 ${bfQuota.bought + 1}/${bfQuota.max}），可于下方随身灵丹服用！`
+        : `已购得【${spec.name}】，可于下方随身灵丹服用！`);
     } else if (spec.kind === "bundle_right") {
       game.inventory.healing_pill = (game.inventory.healing_pill || 0) + 2;
       game.inventory.spirit_pill = (game.inventory.spirit_pill || 0) + 1;
@@ -7010,7 +7124,7 @@ const ART = {
       p.vaultPrimed = true;
       arena.parryCount = (arena.parryCount || 0) + 1;
       arena.stageTechDone = true;
-      if (game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
+      if (!isPracticeModeActive() && game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
       const luBonus = hasKeepsake(game, "lu") ? 22 : 0;
       arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + 28 + luBonus);
       if (hasKeepsake(game, "lu")) p.shieldHp = Math.max(p.shieldHp || 0, Math.round(st.maxHp * 0.15));
@@ -7171,7 +7285,11 @@ const ART = {
   }
 
   function onParryOrVaultSuccess() {
-    if (!game || !game.gourd) return;
+    if (!game) return;
+    if (arena.bossRush && arena.bossRush.active) {
+      arena.bossRush.parries = (arena.bossRush.parries || 0) + 1;
+    }
+    if (!game.gourd) return;
     if (Array.isArray(game.gourd.soaks) && game.gourd.soaks.includes("parry_brew")) {
       game.gourd.parryChargeProg = (game.gourd.parryChargeProg || 0) + 1;
       if (game.gourd.parryChargeProg >= 2) {
@@ -7252,8 +7370,9 @@ const ART = {
     const opt = side === "demon" ? kd.demonOpt : kd.rightOpt;
     game.karmaScore = Math.max(-100, Math.min(100, (game.karmaScore || 0) + opt.karma));
     game.karmaEventsDone = (game.karmaEventsDone || 0) + 1;
-    if (opt.hpBonus) game.maxHpBonus = (game.maxHpBonus || 0) + opt.hpBonus;
-    if (opt.atkBonus) game.atkFlatBonus = (game.atkFlatBonus || 0) + opt.atkBonus;
+    if (opt.hpBonus || opt.atkBonus) {
+      grantPermanentStatBonus(game, { hp: opt.hpBonus || 0, atk: opt.atkBonus || 0, source: "general" });
+    }
     if (opt.drBonus) game.karmaDrBonus = (game.karmaDrBonus || 0) + opt.drBonus;
     if (opt.stones) game.stones += opt.stones;
     if (opt.swordBonus) { game.bonusSwords = (game.bonusSwords || 0) + opt.swordBonus; syncFlyingSwords(); }
@@ -8439,10 +8558,21 @@ const ART = {
     e.wardHp = 0;
     if (arena.bossRush && arena.bossRush.active) arena.bossRush.partBreaks += 1;
 
-    // Guaranteed Sacred Heaven-Craft Material Drop (`天工神髓 · 鸿蒙妖丹`)
-    arena.drops.push({ kind: "sacred_core", x: e.x + 18, y: e.y - 6, vx: 2.2, vy: -2.0, val: 1, partName: wpSpec.shortName || wpSpec.partName });
+    // Guaranteed Sacred Heaven-Craft Material Drop (`天工神髓 · 鸿蒙妖丹`) — suppressed in Practice Mode!
+    if (!isPracticeModeActive()) {
+      arena.drops.push({ kind: "sacred_core", x: e.x + 18, y: e.y - 6, vx: 2.2, vy: -2.0, val: 1, partName: wpSpec.shortName || wpSpec.partName });
+    }
     addFloat(`💥 部位击破【${wpSpec.partName}】· ${wpSpec.severDesc}！`, e.x, e.y - e.r - 48, "#ffbe76", 21, true);
-    showToast(`★ 妖脉寸断！已永久废除${e.name}危招，爆出【天工神髓】！`);
+    showToast(isPracticeModeActive()
+      ? `★ 练习演武 · 妖脉寸断！已废除${e.name}危招（练习模式不掉落天工神髓）！`
+      : `★ 妖脉寸断！已永久废除${e.name}危招，爆出【天工神髓】！`);
+  }
+
+  function isPracticeModeActive() {
+    return Boolean(
+      (arena.bossRush && arena.bossRush.active && (arena.bossRush.practiceMode || (arena.bossRush.startBout && arena.bossRush.startBout > 1))) ||
+      (arena.celestialSpire && arena.celestialSpire.active && (arena.celestialSpire.practiceMode || (arena.celestialSpire.startFloor && arena.celestialSpire.startFloor > 1)))
+    );
   }
 
   // ==================== V17 MYRIAD SWORD GRAVEYARD BOSS RUSH & INNER DEMON MIRROR DUEL ====================
@@ -8498,17 +8628,21 @@ const ART = {
         }).join("")}
       </div>
 
+      <div style="font-size:11px;color:#ffd8a8;background:rgba(46,28,12,0.55);border:1px solid rgba(255,196,102,0.35);border-radius:8px;padding:6px 10px;">
+        🎯 规则说明：仅从第一阵完整连战可获奖励、尊号、拖尾幻化并计入评级与最佳纪录；第六/七阵直战为【练习模式】（不发奖励、不计评级与纪录）。
+      </div>
+
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid var(--border-subtle);padding-top:9px;">
         <div>
           ${trailUnlocked
             ? `<button type="button" class="btn-jade" style="padding:5px 12px;font-size:11.5px;" data-action="toggle-taixu-trail">✨ 太虚劫光飞剑拖尾：${trailOn ? "已佩带" : "已关闭"}</button>`
-            : `<span style="font-size:11px;color:var(--text-sub);">🏆 斩破终阵【太虚心魔镜像】永久解锁虹彩飞剑拖尾【太虚劫光】与【踏天剑尊】尊号</span>`}
+            : `<span style="font-size:11px;color:var(--text-sub);">🏆 完整通关七阵连战永久解锁虹彩飞剑拖尾【太虚劫光】与【踏天剑尊】尊号</span>`}
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button type="button" class="btn-ghost" style="border-color:#ffe28a;color:#fff3b0;padding:6px 11px;font-size:11.5px;" data-action="open-workshop">🛠 造化论剑码工坊</button>
           <button type="button" class="btn-ghost" style="border-color:#70ffe6;color:#9effec;padding:6px 11px;font-size:11.5px;" data-action="start-sect-defense">🛡 护山大阵·妖潮战</button>
-          <button type="button" class="btn-ghost" style="border-color:#d69eff;color:#f0dcff;padding:6px 11px;font-size:11.5px;" data-start-rush="6">⚡ 第六阵：心魔镜像</button>
-          <button type="button" class="btn-ghost" style="border-color:#ffbe5c;color:#fff0b8;padding:6px 12px;font-size:11.5px;font-weight:700;" data-start-rush="7">🐉 直讨巨神：太古烛龙法相</button>
+          <button type="button" class="btn-ghost" style="border-color:#d69eff;color:#f0dcff;padding:6px 11px;font-size:11.5px;" data-start-rush="6">⚡ 第六阵：心魔镜像（练习·无奖）</button>
+          <button type="button" class="btn-ghost" style="border-color:#ffbe5c;color:#fff0b8;padding:6px 12px;font-size:11.5px;font-weight:700;" data-start-rush="7">🐉 直讨巨神：太古烛龙（练习·无奖）</button>
           <button type="button" class="btn-gold" style="padding:6px 15px;font-size:12px;" data-start-rush="1">🔥 开启七阵封神连战</button>
         </div>
       </div>
@@ -8526,19 +8660,32 @@ const ART = {
     arena.stageEpoch += 1;
     arena.sanctumMode = false;
     arena.towerMode = false;
+    arena.celestialSpire = null;
+    arena.sectDefense = null;
+    arena.cloudFlight = null;
+    arena.customSeedRun = null;
     arena.waveTransitioning = false;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
     arena.nearbyProp = null;
     renderPropInteractHud();
+    const clampedStart = Math.max(1, Math.min(7, Math.floor(num(startBout, 1))));
+    const isPractice = clampedStart > 1;
     arena.bossRush = {
       active: true,
-      bout: Math.max(1, Math.min(7, startBout)),
+      bout: clampedStart,
       maxBouts: 7,
       elapsed: 0,
       partBreaks: 0,
-      startBout
+      parries: 0,
+      hitsTaken: 0,
+      damageTaken: 0,
+      startBout: clampedStart,
+      practiceMode: isPractice
     };
+    if (isPractice) {
+      showToast(`🎯 万剑冢练习模式（自第 ${clampedStart} 阵跳关）：本局不发奖励、不计评级与纪录！`);
+    }
     const dojoBar = document.getElementById("dojo-control-bar");
     if (dojoBar) dojoBar.classList.remove("active");
     const recapCard = document.getElementById("stage-recap-card");
@@ -8812,7 +8959,7 @@ const ART = {
       const wp = getTitanPartWorldPos(titan, pt.id);
       triggerImpactFrame(3, "#ffd166", wp.x, wp.y);
       spawnDistortionRing(wp.x, wp.y, 230, "#ffe28a");
-      spawnDrop("sacred_core", wp.x, wp.y, 1);
+      if (!isPracticeModeActive()) spawnDrop("sacred_core", wp.x, wp.y, 1);
       addFloat(`💥 巨神部位击破 · 【${pt.name}】崩解！！`, wp.x, wp.y - 36, "#fff2b2", 21, true);
 
       if (parts.left_claw.broken && parts.right_halberd.broken && !titan.titanCollapsed) {
@@ -9247,12 +9394,14 @@ const ART = {
         sd.active = false;
         arena.sectDefense = null;
         game.bonusStarPts = (game.bonusStarPts || 0) + 2;
-        game.atkFlatBonus = (game.atkFlatBonus || 0) + 16;
+        const sdAtkRes = grantPermanentStatBonus(game, { atk: 16, source: "general" });
         game.sectMerits = (game.sectMerits || 0) + 1;
         game.stones += 260;
         Sound.fanfare();
         Sound.drum(0.30);
-        showToast("🏆 护山大阵大捷！获赐【鸿蒙星魄×2（星魂点+2）】、剑攻永久+16 与 260 灵石！");
+        showToast(sdAtkRes.grantedAtk > 0
+          ? `🏆 护山大阵大捷！获赐【鸿蒙星魄×2（星魂点+2）】、剑攻永久+${sdAtkRes.grantedAtk}${sdAtkRes.atkCapped ? `（已达本境上限 ${game.atkFlatBonus}/${sdAtkRes.caps.atkFlatBonus}）` : ""} 与 260 灵石！`
+          : `🏆 护山大阵大捷！获赐【鸿蒙星魄×2（星魂点+2）】与 260 灵石（本境永久剑攻已达上限 ${game.atkFlatBonus}/${sdAtkRes.caps.atkFlatBonus}）！`);
         enterSanctumHub();
       }
     }
@@ -9274,7 +9423,7 @@ const ART = {
     return SIX_ASPECT_SPECS[`${wf}_${pos}`] || SIX_ASPECT_SPECS.sword_qinglian;
   }
 
-  // 16 Cross-System Primordial Dao Curios (`太虚登仙台 · 16种天道法则奇物`, Uncapped Tier Stacking!)
+  // 16 Cross-System Primordial Dao Curios (`太虚登仙台 · 16种天道法则奇物`, Capped at Lv.3 per Curio!)
   const SPIRE_CURIOS = [
     { id: "curio_dash_spear",      name: "惊鸿枪影佩",   badge: "闪避残影自动龙枪刺", art: "weapon_arsenal_trio",   desc: "触发一闪或滚筒侧闪时，残影自动向最近敌方刺出一记高破甲【龙胆贯虹枪芒】（每层伤害+45%）！" },
     { id: "curio_tag_soul",        name: "万妖同心印",   badge: "V键切人瞬发镇妖魂印", art: "spirit_seal_emblem",   desc: "按 V 键同心换人入场时，无消耗零冷却自动召唤当前佩带的【太虚镇妖魂印】妖王法相协击！" },
@@ -9284,19 +9433,19 @@ const ART = {
     { id: "curio_air_lotus",       name: "踏云青莲履",   badge: "御风跃起绽放水墨剑莲", art: "relic_jade_seal",      desc: "施展御风腾跃或踏剑借力时，原地绽放一朵【太虚水墨剑莲】持续聚怪绞杀！" },
     { id: "curio_gourd_soul",      name: "壶天炼妖葫",   badge: "饮仙葫刷魂印+八方剑罡", art: "item_immortal_gourd",  desc: "畅饮 Q 键九转仙葫时，立即刷新 C 键镇妖魂印冷却并向八方迸射破甲剑罡！" },
     { id: "curio_mark_nova",       name: "诛仙叠印谱",   badge: "爆印召唤九霄天罚落雷", art: "relic_frost_sword",    desc: "引爆飞剑剑印时伤害倍率提升 +40%，且每层引爆额外降下一道九霄紫雷！" },
-    { id: "curio_crit_silk",       name: "流光织锦刃",   badge: "暴击追射飞剑+回剑意", art: "icon_blade",           desc: "每次造成暴击伤害额外附带 28% 剑气追伤，并立即充能 +4% 无上剑意与同心值！" },
+    { id: "curio_crit_silk",       name: "流光织锦刃",   badge: "暴击追射飞剑+回剑意", art: "icon_blade",           desc: "每次造成暴击伤害额外附带每层 +18% 剑气追伤（最高 +54%），并立即充能 +3% 无上剑意与同心值！" },
     { id: "curio_shield_thorns",   name: "玄武反震甲",   badge: "持盾剑攻+32%·受击震退", art: "relic_cloud_mirror",   desc: "拥有护体灵盾期间剑道攻击提升 +32%，受击瞬间震裂周围敌群 40 点架势！" },
     { id: "curio_soul_double",     name: "法天双生相",   badge: "魂印伤害+55%·返还冷却", art: "spirit_seal_emblem",   desc: "施放太虚镇妖魂印时，妖王法相威能提升 +55%，并立即返还 35% 魂印冷却时间！" },
     { id: "curio_bond_surge",      name: "红尘连理枝",   badge: "同心充能翻倍·合璧留势", art: "icon_heart",           desc: "双人同心值获取效率提升 +80%，释放双人合体奥义后直接返还 35% 同心值与剑意！" },
     { id: "curio_spear_bleed",     name: "破军裂脉锋",   badge: "六象特技附最大生命真伤", art: "weapon_arsenal_trio",  desc: "六象神兵觉醒技命中首领或精英时，额外附加目标最大气血 4% 的破脉真实伤害！" },
     { id: "curio_exec_reset",      name: "斩仙嗜血令",   badge: "处决重置全机动冷却",   art: "vfx_blade_clash_sparks", desc: "触发斩仙处决或踏躯逆鳞斩瞬间，回复 18% 气血并重置一闪、缩地与魂印全部冷却！" },
-    { id: "curio_stone_alchemy",   name: "聚宝点金盘",   badge: "灵石增幅剑威·层层生金", art: "item_rough_jade",      desc: "每持有 100 灵石提升 +6% 剑道伤害（无上限），每通关一层登仙台额外获赏 +90 灵石！" },
+    { id: "curio_stone_alchemy",   name: "聚宝点金盘",   badge: "灵石增幅剑威·层层生金", art: "item_rough_jade",      desc: "每持有 100 灵石每层提升 +4% 剑道伤害（最高 +40%），每通关一层登仙台额外获赏 +60 灵石（最高 +180 石，单项上限 Lv.3）！" },
     { id: "curio_hongmeng_omni",   name: "鸿蒙太初道盘", badge: "攻速+20%·暴伤+35%·剑+3", art: "banner_star_chart",    desc: "太初道韵灌体：全武器攻速 +20%、暴击伤害 +35%，环身本命飞剑永久 +3 柄！" }
   ];
 
   function getCurioStacks(g, cid) {
     if (!g || !g.spireCurios) return 0;
-    return g.spireCurios[cid] || 0;
+    return Math.max(0, Math.min(PERM_GROWTH_CAPS.spireCurioMaxStack, Math.floor(num(g.spireCurios[cid], 0))));
   }
 
   // Zero-Overhead Radial Speed-Lines & Chromatic Glint (`径向速度线冲击环与高光琉璃色散`)
@@ -9562,6 +9711,7 @@ const ART = {
     arena.bossRush = null;
     arena.sectDefense = null;
     arena.celestialSpire = null;
+    arena.customSeedRun = null;
     arena.waveTransitioning = false;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
@@ -9883,22 +10033,27 @@ const ART = {
         const firstClear = !game.cloudSeaCleared;
         game.cloudSeaCleared = true;
         ensureMetaState();
-        metaState.cloudSeaClears = (metaState.cloudSeaClears || 0) + 1;
+        if (!sandboxMode) {
+          metaState.cloudSeaClears = (metaState.cloudSeaClears || 0) + 1;
+        }
         game.stones += 180;
+        let cloudAtkGranted = 0;
         if (firstClear) {
-          game.atkFlatBonus = (game.atkFlatBonus || 0) + 12;
+          const csAtkRes = grantPermanentStatBonus(game, { atk: 12, source: "general" });
+          cloudAtkGranted = csAtkRes.grantedAtk;
           game.bonusStarPts = (game.bonusStarPts || 0) + 1;
-          if (Array.isArray(game.journal)) game.journal.unshift("金丹御剑破开九霄云海防线，获【破云证道印】(+12攻 · 远征/登仙台收益+15%)！");
+          if (Array.isArray(game.journal)) game.journal.unshift(`金丹御剑破开九霄云海防线，获【破云证道印】(+${cloudAtkGranted}攻 · 远征/登仙台收益+15%)！`);
         }
         arena.swordIntent = 100; arena.bondSynergy = 100; arena.astralEnergy = 100;
         spawnGearDrop(w * 0.52, h * 0.52, 3);
         Sound.fanfare();
         triggerRadialChromaticBurst(1.35, "#ffe28a", w * 0.5, h * 0.5);
-        saveMeta(); saveGame();
+        if (!sandboxMode) saveMeta();
+        saveGame();
         const descendStage = rankOf(game.realm) >= 4 ? 4 : 3;
         initArenaStage(descendStage, false);
         showToast(firstClear
-          ? "☁ 九霄云海首破功成！获【破云证道印】(常驻攻+12 · 星魂+1 · 远征/登仙台收益+15% · 灵石+180)！"
+          ? `☁ 九霄云海首破功成！获【破云证道印】(常驻攻+${cloudAtkGranted} · 星魂+1 · 远征/登仙台收益+15% · 灵石+180)！`
           : `☁ 九霄云海破阵功成！已御剑俯冲降临【${STAGES[descendStage].name}】（剑意全满+180灵石）！`);
       }
     }
@@ -9934,7 +10089,7 @@ const ART = {
 
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
         <span style="font-size:11.5px;color:#b8dcd5;">连续闯荡随机生成的九重天宫秘境（妖王房/灵脉房/混沌赌局/天工秘宝），每重天三选一叠加 <b style="color:#ffe28a;">16 种跨系统天道法则奇物</b>！</span>
-        <span class="tag-chip mythic">登仙榜最高：第 ${bestFl}/9 重天 · 已叠奇物 ${curEntries.reduce((s, [, v]) => s + v, 0)} 层</span>
+        <span class="tag-chip mythic">登仙榜最高：第 ${bestFl}/9 重天 · 已叠奇物 ${curEntries.reduce((s, [cid]) => s + getCurioStacks(game, cid), 0)} 层</span>
       </div>
 
       <div class="spire-room-grid">
@@ -9948,20 +10103,25 @@ const ART = {
 
       ${curEntries.length ? `
         <div class="jade-card" style="padding:8px 10px;gap:5px;">
-          <strong style="font-size:11.5px;color:#80ffea;">☯ 当前已觉醒的太古天道奇物（跨模式常驻生效 · 支持无限叠层）：</strong>
+          <strong style="font-size:11.5px;color:#80ffea;">☯ 当前已觉醒的太古天道奇物（跨模式常驻生效 · 单项上限 Lv.${PERM_GROWTH_CAPS.spireCurioMaxStack}）：</strong>
           <div style="display:flex;gap:5px;flex-wrap:wrap;">
-            ${curEntries.map(([cid, lv]) => {
+            ${curEntries.map(([cid]) => {
               const sp = SPIRE_CURIOS.find(x => x.id === cid);
-              return sp ? `<span class="tag-chip mythic" data-tip="${escTip(sp.name, sp.desc)}">${sp.name} Lv.${lv}</span>` : "";
+              const clampedLv = getCurioStacks(game, cid);
+              return (sp && clampedLv > 0) ? `<span class="tag-chip mythic" data-tip="${escTip(sp.name, sp.desc)}">${sp.name} Lv.${clampedLv}/${PERM_GROWTH_CAPS.spireCurioMaxStack}${clampedLv >= PERM_GROWTH_CAPS.spireCurioMaxStack ? " (满)" : ""}</span>` : "";
             }).join("")}
           </div>
         </div>
       ` : ""}
 
+      <div style="font-size:11px;color:#ffd8a8;background:rgba(46,28,12,0.55);border:1px solid rgba(255,196,102,0.35);border-radius:8px;padding:6px 10px;">
+        🎯 规则说明：仅从第一重天完整登仙可铭刻奇物、领取灵石/星魂点并记入登仙榜；直登第九重为【练习模式】（不发奖励、不记纪录）。
+      </div>
+
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border-subtle);padding-top:8px;">
         <button type="button" class="btn-ghost" style="border-color:#80ecff;color:#b8f7ff;padding:6px 12px;font-size:11.5px;" data-action="start-cloud-sea">☁ 先遣破阵：九霄云海高速空战</button>
         <div style="display:flex;gap:8px;">
-          <button type="button" class="btn-ghost" style="border-color:#ff9eff;color:#f5d0ff;padding:6px 13px;font-size:11.5px;" data-start-spire="9">🌌 直登第九重：凌霄帝君殿</button>
+          <button type="button" class="btn-ghost" style="border-color:#ff9eff;color:#f5d0ff;padding:6px 13px;font-size:11.5px;" data-start-spire="9">🌌 直登第九重：凌霄帝君殿（练习·无奖）</button>
           <button type="button" class="btn-gold" style="padding:7px 18px;font-size:12.5px;" data-start-spire="1">🏯 踏入第一重天 · 开启登仙肉鸽</button>
         </div>
       </div>
@@ -9979,6 +10139,7 @@ const ART = {
     arena.bossRush = null;
     arena.sectDefense = null;
     arena.cloudFlight = null;
+    arena.customSeedRun = null;
     arena.waveTransitioning = false;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
@@ -9987,13 +10148,20 @@ const ART = {
     const dojoBar = document.getElementById("dojo-control-bar");
     if (dojoBar) dojoBar.classList.remove("active");
 
+    const clampedStart = Math.max(1, Math.min(9, Math.floor(num(startFloor, 1))));
+    const isPractice = clampedStart > 1;
     arena.celestialSpire = {
       active: true,
-      floor: Math.max(1, Math.min(9, startFloor)),
+      floor: clampedStart,
+      startFloor: clampedStart,
       maxFloors: 9,
       roomType: "elite_trial",
-      wagerDouble: false
+      wagerDouble: false,
+      practiceMode: isPractice
     };
+    if (isPractice) {
+      showToast(`🎯 登仙台练习模式（自第 ${clampedStart} 重天跳关）：本局不发奇物与奖励，不计入登仙榜纪录！`);
+    }
     spawnCelestialSpireFloor();
   }
 
@@ -10090,12 +10258,58 @@ const ART = {
     updateHud();
   }
 
+  function completeSpirePracticeFloor() {
+    const sp = arena.celestialSpire;
+    if (!game || !sp) return;
+    const startFl = Math.max(2, Math.min(9, Math.floor(num(sp.startFloor, sp.floor || 9))));
+    if (sp.floor >= 9) {
+      sp.active = false;
+      arena.celestialSpire = null;
+      arena.paused = true;
+      updateHud();
+      openModal(`
+        <div class="drawer-mural-banner" style="height:94px;">
+          <img src="${ART.banner_celestial_spire}" alt="练习演武完成" />
+          <div class="drawer-mural-overlay">
+            <div>
+              <span class="cinnabar-seal">练习模式 · 演武完成</span>
+              <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">登仙台跳关演武完成（自第 ${startFl} 重天起）</h2>
+            </div>
+            <button type="button" class="btn-ghost" data-modal-close="1">收卷 ✕</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;text-align:center;padding:6px 0;">
+          <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
+            <span class="tag-chip">练习模式（无奖不记榜）</span>
+            <span class="tag-chip">未发放奇物 / 灵石 / 星魂点</span>
+            <span class="tag-chip">未改动登仙榜纪录</span>
+          </div>
+          <div style="font-size:12px;color:#d6eee8;">若要铭刻天道奇物、领取灵石/星魂点并记入登仙榜纪录，请从【第一重天】开启完整登仙挑战！</div>
+          <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+            <button type="button" class="btn-gold" data-start-spire="1">🏯 从第一重天完整挑战</button>
+            <button type="button" class="btn-jade" data-start-spire="${startFl}">再练第 ${startFl} 重天</button>
+            <button type="button" class="btn-ghost" data-action="enter-sanctum">返回听雨洞府</button>
+          </div>
+        </div>
+      `, true);
+      return;
+    }
+    sp.floor += 1;
+    showToast(`🎯 练习模式破阵 · 进入第 ${sp.floor}/9 重天（无奇物与奖励）`);
+    spawnCelestialSpireFloor();
+  }
+
   function openSpireCurioDraftModal() {
     const sp = arena.celestialSpire;
     if (!game || !sp) return;
+    if (isPracticeModeActive() || sp.practiceMode || (sp.startFloor && sp.startFloor > 1)) {
+      completeSpirePracticeFloor();
+      return;
+    }
     arena.paused = true;
-    // Pick 3 distinct Curios!
-    const pool = SPIRE_CURIOS.slice().sort(() => Math.random() - 0.5).slice(0, 3);
+    const maxLv = PERM_GROWTH_CAPS.spireCurioMaxStack;
+    const uncapped = SPIRE_CURIOS.filter(c => getCurioStacks(game, c.id) < maxLv);
+    const pool = uncapped.slice().sort(() => Math.random() - 0.5).slice(0, 3);
     const gainLv = (sp.wagerDouble || sp.roomType === "curio_vault") ? 2 : 1;
 
     openModal(`
@@ -10106,36 +10320,58 @@ const ART = {
             <span class="cinnabar-seal">第 ${sp.floor}/9 重天破阵赐宝</span>
             <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:4px;">三选一 · 参悟太古天道奇物（本次直叠 +${gainLv} 层）</h2>
           </div>
-          <span class="tag-chip mythic">无上限跨系统化学反应</span>
+          <span class="tag-chip mythic">单项上限 Lv.${maxLv} · 跨系统共鸣</span>
         </div>
       </div>
       <div class="spire-curio-grid">
-        ${pool.map(c => {
+        ${pool.length > 0 ? pool.map(c => {
           const curLv = getCurioStacks(game, c.id);
+          const nextLv = Math.min(maxLv, curLv + gainLv);
           return `
             <button type="button" class="spire-curio-card" data-pick-curio="${c.id}" data-curio-gain="${gainLv}">
               <div style="display:flex;align-items:center;gap:8px;">
                 <img src="${ART[c.art] || ART.icon_blade}" alt="${c.name}" style="width:42px;height:42px;border-radius:10px;object-fit:contain;border:1px solid rgba(216,179,106,0.5);" />
                 <div>
                   <strong style="font-family:var(--font-serif);font-size:15px;color:#fff3c4;">${c.name}</strong>
-                  <div><span class="tag-chip mythic" style="font-size:10px;">${curLv > 0 ? `Lv.${curLv} → Lv.${curLv + gainLv}` : `新觉醒 Lv.${gainLv}`}</span></div>
+                  <div><span class="tag-chip mythic" style="font-size:10px;">${curLv > 0 ? `Lv.${curLv}/${maxLv} → Lv.${nextLv}/${maxLv}` : `新觉醒 Lv.${nextLv}/${maxLv}`}</span></div>
                 </div>
               </div>
               <div style="font-size:11px;color:#70ffe6;font-weight:700;">★ ${c.badge}</div>
               <div style="font-size:10.5px;color:#c8e2dc;line-height:1.42;">${c.desc}</div>
             </button>
           `;
-        }).join("")}
+        }).join("") : `
+          <button type="button" class="spire-curio-card" style="grid-column:1/-1;" data-pick-curio="__all_capped__" data-curio-gain="0">
+            <strong style="font-family:var(--font-serif);font-size:16px;color:#fff3c4;">全部天道奇物已圆满 (Lv.${maxLv}/${maxLv})</strong>
+            <div style="font-size:11.5px;color:#70ffe6;">全部 16 件太古奇物皆已叠满至上限 Lv.${maxLv}，点击领取 120 灵石并继续登仙！</div>
+          </button>
+        `}
       </div>
     `, false);
   }
 
   function selectSpireCurioAndAdvance(curioId, gainLv = 1) {
     if (!game) return;
+    const spCheck = arena.celestialSpire;
+    if (isPracticeModeActive() || (spCheck && (spCheck.practiceMode || (spCheck.startFloor && spCheck.startFloor > 1)))) {
+      closeModal();
+      completeSpirePracticeFloor();
+      return;
+    }
     if (!game.spireCurios) game.spireCurios = {};
-    game.spireCurios[curioId] = (game.spireCurios[curioId] || 0) + gainLv;
+    const maxLv = PERM_GROWTH_CAPS.spireCurioMaxStack;
     const spec = SPIRE_CURIOS.find(x => x.id === curioId);
-    const stoneBonus = getCurioStacks(game, "curio_stone_alchemy") * 90;
+    if (curioId === "__all_capped__") {
+      game.stones += 120;
+    } else if (spec) {
+      const prev = getCurioStacks(game, curioId);
+      const step = Math.max(1, Math.floor(num(gainLv, 1)));
+      game.spireCurios[curioId] = Math.min(maxLv, prev + step);
+    }
+    const stoneBonus = Math.min(
+      PERM_GROWTH_CAPS.curioStoneAlchemyFloorStoneCap,
+      getCurioStacks(game, "curio_stone_alchemy") * PERM_GROWTH_CAPS.curioStoneAlchemyFloorStonePerLv
+    );
     game.stones += 75 + stoneBonus;
     syncFlyingSwords();
     Sound.fanfare();
@@ -10147,8 +10383,10 @@ const ART = {
       return;
     }
     game.bestSpireFloor = Math.max(game.bestSpireFloor || 0, sp.floor);
-    metaState.bestSpireFloor = Math.max(metaState.bestSpireFloor || 0, sp.floor);
-    saveMeta();
+    if (!sandboxMode) {
+      metaState.bestSpireFloor = Math.max(metaState.bestSpireFloor || 0, sp.floor);
+      saveMeta();
+    }
 
     if (sp.floor >= 9) {
       sp.active = false;
@@ -10170,10 +10408,10 @@ const ART = {
         <div style="display:flex;flex-direction:column;gap:10px;text-align:center;padding:6px 0;">
           <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
             <span class="tag-chip mythic">制霸层数：9 / 9 重天</span>
-            <span class="tag-chip done">奇物总层数：${Object.values(game.spireCurios || {}).reduce((a, b) => a + num(b), 0)} 层</span>
+            <span class="tag-chip done">奇物总层数：${Object.values(game.spireCurios || {}).reduce((a, b) => a + Math.min(maxLv, num(b, 0)), 0)} 层</span>
             <span class="tag-chip">赏赐：420 灵石 + 周天星魂点 +3</span>
           </div>
-          <div style="font-size:12px;color:#9effec;">本局参悟的全部【太古天道奇物】已永久铭刻入本世命盘，可携奇物神威继续征战太古烛龙与九霄云海！</div>
+          <div style="font-size:12px;color:#9effec;">本局参悟的全部【太古天道奇物】已永久铭刻入本世命盘（单项上限 Lv.${maxLv}），可携奇物神威继续征战太古烛龙与九霄云海！</div>
           <div style="display:flex;justify-content:center;gap:10px;">
             <button type="button" class="btn-gold" data-start-spire="1">🏯 再登九重天叠奇物</button>
             <button type="button" class="btn-ghost" data-action="enter-sanctum">返回听雨洞府</button>
@@ -10184,7 +10422,9 @@ const ART = {
     }
 
     sp.floor += 1;
-    showToast(`☯ 已铭刻奇物【${spec ? spec.name : curioId} Lv.${game.spireCurios[curioId]}】· 踏入第 ${sp.floor}/9 重天！`);
+    showToast(curioId === "__all_capped__"
+      ? `☯ 奇物皆已圆满 · 获赐 120 灵石，踏入第 ${sp.floor}/9 重天！`
+      : `☯ 已铭刻奇物【${spec ? spec.name : curioId} Lv.${getCurioStacks(game, curioId)}/${maxLv}】· 踏入第 ${sp.floor}/9 重天！`);
     spawnCelestialSpireFloor();
     saveGame();
   }
@@ -11039,6 +11279,7 @@ const ART = {
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.celestialSpire = null;
+    arena.waveTransitioning = false;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
     arena.nearbyProp = null;
@@ -11056,7 +11297,7 @@ const ART = {
     if (workshopState.curioIdx > 0 && SPIRE_CURIOS[workshopState.curioIdx - 1]) {
       if (!game.spireCurios) game.spireCurios = {};
       const cid = SPIRE_CURIOS[workshopState.curioIdx - 1].id;
-      game.spireCurios[cid] = Math.max(game.spireCurios[cid] || 0, 2);
+      game.spireCurios[cid] = Math.min(PERM_GROWTH_CAPS.spireCurioMaxStack, Math.max(getCurioStacks(game, cid), 2));
     }
 
     arena.enemies = [];
@@ -11578,6 +11819,8 @@ const ART = {
       ? "文武控火：待游标掠过中央【鸿蒙紫金鼎盛温区】点击凝丹或按空格（3次收丹）！"
       : "星火淬剑：待外圈星环收缩重合【金芒星火靶心】点击落锤或按空格（3锤定剑魄）！";
     const pc = ensurePrimordialCrafts(game);
+    const permCaps = getPermGrowthCaps(game);
+    const pg = ensurePermGrowth(game);
 
     openModal(`
       <div class="drawer-mural-banner" style="height:84px;">
@@ -11596,10 +11839,16 @@ const ART = {
           <button type="button" id="tab-craft-alchemy" class="btn-ghost ${craftMinigame.mode === "alchemy" ? "active-pill" : ""}" data-craft-mode="alchemy">🔥 八卦丹炉 · 文武控火炼丹</button>
           <button type="button" id="tab-craft-forge" class="btn-ghost ${craftMinigame.mode === "forge" ? "active-pill" : ""}" data-craft-mode="forge">🔨 天工剑炉 · 星火落锤锻打</button>
         </div>
-        <div style="display:flex;gap:6px;font-size:11px;">
+        <div style="display:flex;gap:6px;font-size:11px;flex-wrap:wrap;">
           <span class="tag-chip ${pc.goldenAcolyte ? "mythic" : ""}">${pc.goldenAcolyte ? "★ 已铸词缀：金甲丹童护法" : "待炼成：金甲丹童护法"}</span>
           <span class="tag-chip ${pc.voidSwordRift ? "mythic" : ""}">${pc.voidSwordRift ? "★ 已铸词缀：3秒太初裂空剑痕" : "待锻成：3秒太初裂空剑痕"}</span>
         </div>
+      </div>
+
+      <div id="craft-perm-cap-row" style="display:flex;gap:6px;flex-wrap:wrap;font-size:10.5px;">
+        <span class="tag-chip ${pg.alchemyHp >= permCaps.alchemyHp ? "done" : ""}">丹道气血 ${pg.alchemyHp}/${permCaps.alchemyHp}${pg.alchemyHp >= permCaps.alchemyHp ? " (已达上限)" : ""}</span>
+        <span class="tag-chip ${pg.alchemyAtk >= permCaps.alchemyAtk ? "done" : ""}">百工剑攻 ${pg.alchemyAtk}/${permCaps.alchemyAtk}${pg.alchemyAtk >= permCaps.alchemyAtk ? " (已达上限)" : ""}</span>
+        <span class="tag-chip ${(game.maxHpBonus >= permCaps.maxHpBonus && game.atkFlatBonus >= permCaps.atkFlatBonus) ? "done" : ""}">本境总加成 血${Math.floor(num(game.maxHpBonus, 0))}/${permCaps.maxHpBonus} · 攻${Math.floor(num(game.atkFlatBonus, 0))}/${permCaps.atkFlatBonus}</span>
       </div>
 
       <div class="craft-stage-wrap">
@@ -11658,36 +11907,47 @@ const ART = {
       climaxTriggered = craftMinigame.perfectCount >= 2;
       if (craftMinigame.mode === "alchemy") {
         pc.pillBatches += 1;
-        game.maxHpBonus = (game.maxHpBonus || 0) + (climaxTriggered ? 45 : 20);
+        const hpRes = grantPermanentStatBonus(game, { hp: climaxTriggered ? 45 : 20, source: "alchemy" });
+        const capNote = hpRes.hpCapped
+          ? `（本境丹道永久属性已达上限 ${hpRes.pg.alchemyHp}/${hpRes.caps.alchemyHp}，破境后提升上限）`
+          : "";
         refillImmortalGourd();
         if (climaxTriggered) {
           pc.goldenAcolyte = true;
           Sound.fanfare();
           arena.skyBolts.push({ x: arena.player.x, y: arena.player.y, t: 0, color: "#ffe28a" });
-          craftMinigame.lastJudge = "⚡【极品九色丹雷降世】！仙葫已永久铭刻太初神工词缀【金甲丹童护法】（按 Q 饮酒即召金甲丹童协战 14s）！";
-          showToast("⚡ 极品丹雷异象！已永久觉醒仙葫太初词缀【金甲丹童护法】（按 Q 饮酒召唤金甲丹童）！");
+          craftMinigame.lastJudge = `⚡【极品九色丹雷降世】！气血上限 +${hpRes.grantedHp}${capNote}，仙葫已永久铭刻太初神工词缀【金甲丹童护法】（按 Q 饮酒即召金甲丹童协战 14s）！`;
+          showToast(`⚡ 极品丹雷异象！气血上限 +${hpRes.grantedHp}${capNote}，已永久觉醒【金甲丹童护法】！`);
           captureBattleHighlightFrame("九色丹雷", "八卦控火·极品金甲丹童", 45, 3);
         } else {
-          craftMinigame.lastJudge = "丹成出炉：气血上限 +20，仙葫已满酿（达成 ≥2 次鼎盛判定可引动极品丹雷）！";
+          craftMinigame.lastJudge = `丹成出炉：气血上限 +${hpRes.grantedHp}${capNote}，仙葫已满酿（达成 ≥2 次鼎盛判定可引动极品丹雷）！`;
         }
       } else {
         pc.forgedBlades += 1;
-        game.atkFlatBonus = (game.atkFlatBonus || 0) + (climaxTriggered ? 26 : 12);
+        const atkRes = grantPermanentStatBonus(game, { atk: climaxTriggered ? 26 : 12, source: "alchemy" });
+        const capNote = atkRes.atkCapped
+          ? `（本境百工剑攻已达上限 ${atkRes.pg.alchemyAtk}/${atkRes.caps.alchemyAtk}，破境后提升上限）`
+          : "";
         if (climaxTriggered) {
           pc.voidSwordRift = true;
+          let weaponBoosted = false;
           if (game.equippedGear && game.equippedGear.weapon) {
-            game.equippedGear.weapon.rarity = 4;
-            game.equippedGear.weapon.atk = (game.equippedGear.weapon.atk || 20) + 18;
+            game.equippedGear.weapon.rarity = Math.max(4, rarityNum(game.equippedGear.weapon.rarity));
+            if (!game.equippedGear.weapon.taixuForged) {
+              game.equippedGear.weapon.atk = (game.equippedGear.weapon.atk || 20) + 18;
+              game.equippedGear.weapon.taixuForged = true;
+              weaponBoosted = true;
+            }
             if (!game.equippedGear.weapon.name.startsWith("鸿蒙·")) {
               game.equippedGear.weapon.name = "鸿蒙·" + game.equippedGear.weapon.name.replace(/^[^·]+·/, "");
             }
           }
           Sound.fanfare();
-          craftMinigame.lastJudge = "🗡【神工天成·万剑铮鸣】！神兵已永久锻入太初神工词缀【太初裂空剑痕】（重斩/六象撕裂空间留存 3 秒剑痕裂缝）！";
-          showToast("🗡 神工天成异象！神兵已永久锻入【太初裂空剑痕】（刀光撕裂空间留存 3 秒剑痕持续割裂）！");
+          craftMinigame.lastJudge = `🗡【神工天成·万剑铮鸣】！剑攻 +${atkRes.grantedAtk}${weaponBoosted ? "（本命佩剑首锻 +18 攻）" : ""}${capNote}，神兵已永久锻入【太初裂空剑痕】！`;
+          showToast(`🗡 神工天成异象！剑攻 +${atkRes.grantedAtk}${capNote}，已永久锻入【太初裂空剑痕】！`);
           captureBattleHighlightFrame("神工天成", "天工星火·太初裂空剑痕", 26, 3);
         } else {
-          craftMinigame.lastJudge = "淬火礼成：攻击力 +12（达成 ≥2 次星火靶心判定可锻入太初裂空剑痕）！";
+          craftMinigame.lastJudge = `淬火礼成：攻击力 +${atkRes.grantedAtk}${capNote}（达成 ≥2 次星火靶心判定可锻入太初裂空剑痕）！`;
         }
       }
       saveGame();
@@ -11702,8 +11962,18 @@ const ART = {
 
     const pEl = document.getElementById("lbl-craft-progress");
     const jEl = document.getElementById("lbl-craft-judge");
+    const capRow = document.getElementById("craft-perm-cap-row");
     if (pEl) pEl.textContent = `进度：第 ${craftMinigame.strikes} / ${craftMinigame.maxStrikes} 手 · 鼎盛极品 ${craftMinigame.perfectCount} 次`;
     if (jEl) jEl.textContent = craftMinigame.lastJudge;
+    if (capRow && game) {
+      const capsNow = getPermGrowthCaps(game);
+      const pgNow = ensurePermGrowth(game);
+      capRow.innerHTML = `
+        <span class="tag-chip ${pgNow.alchemyHp >= capsNow.alchemyHp ? "done" : ""}">丹道气血 ${pgNow.alchemyHp}/${capsNow.alchemyHp}${pgNow.alchemyHp >= capsNow.alchemyHp ? " (已达上限)" : ""}</span>
+        <span class="tag-chip ${pgNow.alchemyAtk >= capsNow.alchemyAtk ? "done" : ""}">百工剑攻 ${pgNow.alchemyAtk}/${capsNow.alchemyAtk}${pgNow.alchemyAtk >= capsNow.alchemyAtk ? " (已达上限)" : ""}</span>
+        <span class="tag-chip ${(game.maxHpBonus >= capsNow.maxHpBonus && game.atkFlatBonus >= capsNow.atkFlatBonus) ? "done" : ""}">本境总加成 血${Math.floor(num(game.maxHpBonus, 0))}/${capsNow.maxHpBonus} · 攻${Math.floor(num(game.atkFlatBonus, 0))}/${capsNow.atkFlatBonus}</span>
+      `;
+    }
     renderCraftMinigameCanvas(0.016);
     return { isPerfect, strikes: craftMinigame.strikes, climaxTriggered, crafts: pc };
   }
@@ -12538,6 +12808,8 @@ const ART = {
     { id: "suoyao_altar",  name: "锁妖古塔灵枢", art: "arena_tower",   stoneRate: 42, starChance: 0.60, desc: "每轮产出灵石+42 · 高概率凝结鸿蒙星魄" },
     { id: "jiuxiao_sky",   name: "九霄星河天脉", art: "arena_terrace", stoneRate: 56, starChance: 0.85, desc: "每轮产出灵石+56 · 必凝鸿蒙星魄与紫霄神雷" }
   ];
+  const EXPEDITION_BANKED_STONES_CAP = 600;
+  const EXPEDITION_BANKED_STARS_CAP = 5;
 
   const GARRISON_ROSTER = [
     { id: "shen",    name: "沈清禾",   role: "青莲药仙" },
@@ -12547,30 +12819,74 @@ const ART = {
     { id: "acolyte", name: "金甲丹童", role: "护法仙童" }
   ];
 
+  function isGarrisonHeroUnlocked(g, heroId) {
+    if (!g || !heroId) return false;
+    if (hasOwn(NPC_META, heroId)) return getCompanionBondTier(g, heroId) >= 1;
+    if (heroId === "acolyte") return !!ensurePrimordialCrafts(g).goldenAcolyte;
+    return false;
+  }
+
+  function getGarrisonHeroLockReason(g, heroId) {
+    if (heroId === "acolyte") return "需先于【丹剑微操】炼成金甲丹童";
+    return "尚未结缘（需羁绊 ≥ 1 阶）";
+  }
+
   function ensureExpeditionState(g) {
     if (!g) return { assignments: {}, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 };
     const rawEx = (g.expeditions && typeof g.expeditions === "object" && !Array.isArray(g.expeditions)) ? g.expeditions : null;
     const exHasUnsafeKey = !!(rawEx && (hasOwn(rawEx, "__proto__") || hasOwn(rawEx, "constructor") || hasOwn(rawEx, "prototype")));
+    let ex;
     if (!rawEx || Object.getPrototypeOf(rawEx) !== Object.prototype || exHasUnsafeKey) {
-      const cleanEx = safeAssignPlain({ assignments: {}, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 }, rawEx);
-      cleanEx.assignments = safeAssignPlain({}, cleanEx.assignments);
-      cleanEx.bankedStones = Math.max(0, Math.floor(num(cleanEx.bankedStones, 0)));
-      cleanEx.bankedStars = Math.max(0, Math.floor(num(cleanEx.bankedStars, 0)));
-      cleanEx.supportThunderCount = Math.max(0, Math.floor(num(cleanEx.supportThunderCount, 0)));
-      cleanEx.tickTimer = Math.max(0, num(cleanEx.tickTimer, 8.5));
-      g.expeditions = cleanEx;
+      ex = safeAssignPlain({ assignments: {}, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 }, rawEx);
+      g.expeditions = ex;
     } else {
-      const asgn = rawEx.assignments;
-      const asgnUnsafe = !!(asgn && typeof asgn === "object" && (hasOwn(asgn, "__proto__") || hasOwn(asgn, "constructor") || hasOwn(asgn, "prototype")));
-      if (!asgn || typeof asgn !== "object" || Array.isArray(asgn) || Object.getPrototypeOf(asgn) !== Object.prototype || asgnUnsafe) {
-        rawEx.assignments = safeAssignPlain({}, asgn);
-      }
-      rawEx.bankedStones = Math.max(0, Math.floor(num(rawEx.bankedStones, 0)));
-      rawEx.bankedStars = Math.max(0, Math.floor(num(rawEx.bankedStars, 0)));
-      rawEx.supportThunderCount = Math.max(0, Math.floor(num(rawEx.supportThunderCount, 0)));
-      rawEx.tickTimer = Math.max(0, num(rawEx.tickTimer, 8.5));
+      ex = rawEx;
     }
-    return g.expeditions;
+    const rawAsgn = (ex.assignments && typeof ex.assignments === "object" && !Array.isArray(ex.assignments)) ? ex.assignments : {};
+    const validHeroes = new Set(GARRISON_ROSTER.map(h => h.id));
+    const cleanAsgn = {};
+    const usedHeroes = new Set();
+    EXPEDITION_NODES.forEach(nd => {
+      const hid = hasOwn(rawAsgn, nd.id) && typeof rawAsgn[nd.id] === "string" ? rawAsgn[nd.id] : "";
+      if (hid && validHeroes.has(hid) && isGarrisonHeroUnlocked(g, hid) && !usedHeroes.has(hid)) {
+        cleanAsgn[nd.id] = hid;
+        usedHeroes.add(hid);
+      }
+    });
+    ex.assignments = cleanAsgn;
+    ex.bankedStones = Math.min(EXPEDITION_BANKED_STONES_CAP, Math.max(0, Math.floor(num(ex.bankedStones, 0))));
+    ex.bankedStars = Math.min(EXPEDITION_BANKED_STARS_CAP, Math.max(0, Math.floor(num(ex.bankedStars, 0))));
+    ex.supportThunderCount = Math.max(0, Math.floor(num(ex.supportThunderCount, 0)));
+    ex.tickTimer = Math.max(0, num(ex.tickTimer, 8.5));
+    return ex;
+  }
+
+  function assignExpeditionNode(g, nodeId, heroId) {
+    if (!g) return { ok: false, reason: "no_game" };
+    const node = EXPEDITION_NODES.find(n => n.id === nodeId);
+    if (!node) return { ok: false, reason: "invalid_node" };
+    const ex = ensureExpeditionState(g);
+    if (!heroId) {
+      delete ex.assignments[nodeId];
+      saveGame();
+      showToast(`已撤回【${node.name}】驻防`);
+      return { ok: true, action: "recalled" };
+    }
+    const hero = GARRISON_ROSTER.find(h => h.id === heroId);
+    if (!hero) return { ok: false, reason: "invalid_hero" };
+    if (!isGarrisonHeroUnlocked(g, heroId)) {
+      showToast(`🔒 【${hero.name}】${getGarrisonHeroLockReason(g, heroId)}，无法派遣驻防！`);
+      return { ok: false, reason: "unbonded" };
+    }
+    const conflictNode = EXPEDITION_NODES.find(n => n.id !== nodeId && ex.assignments[n.id] === heroId);
+    if (conflictNode) {
+      showToast(`⚠ 【${hero.name}】正驻防于【${conflictNode.name}】，每位故人限驻守 1 处灵脉，请先撤防再改派！`);
+      return { ok: false, reason: "already_assigned", existingNodeId: conflictNode.id };
+    }
+    ex.assignments[nodeId] = heroId;
+    saveGame();
+    showToast(`⛵ 已委派【${hero.name}】驻防【${node.name}】！`);
+    return { ok: true, action: "assigned" };
   }
 
   function triggerWarshipOrbitalStrike() {
@@ -12628,6 +12944,8 @@ const ART = {
     arena.paused = true;
     const ex = ensureExpeditionState(game);
     const activeCnt = Object.values(ex.assignments || {}).filter(Boolean).length;
+    const vaultEmpty = ex.bankedStones <= 0 && ex.bankedStars <= 0;
+    const vaultFull = ex.bankedStones >= EXPEDITION_BANKED_STONES_CAP;
 
     openModal(`
       <div class="drawer-mural-banner" style="height:86px;">
@@ -12643,11 +12961,11 @@ const ART = {
 
       <div class="jade-card" style="flex-direction:row;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
         <div>
-          <strong style="font-size:13px;color:#80ffea;">驻防队伍：${activeCnt} / 5 处灵脉 · 待领军资：<span style="color:#ffe28a;">${num(ex.bankedStones)} 灵石</span> + <span style="color:#d69eff;">${num(ex.bankedStars)} 鸿蒙星魄</span>${game.cloudSeaCleared ? ` <span class="tag-chip mythic" style="font-size:9.5px;">☁ 破云印 +15%</span>` : ""}</strong>
-          <div style="font-size:10.5px;color:var(--text-sub);">委派驻防后随战局自动产出灵石与星魄，并在秘境战斗中每 5.5 秒降下跨区【仙门护道雷援】！</div>
+          <strong style="font-size:13px;color:#80ffea;">驻防队伍：${activeCnt} / 5 处灵脉 · 待领军资：<span style="color:#ffe28a;">${num(ex.bankedStones)} / ${EXPEDITION_BANKED_STONES_CAP} 灵石</span> + <span style="color:#d69eff;">${num(ex.bankedStars)} / ${EXPEDITION_BANKED_STARS_CAP} 鸿蒙星魄</span>${vaultFull ? ` <span class="tag-chip done" style="font-size:9.5px;">已满仓</span>` : ""}${game.cloudSeaCleared ? ` <span class="tag-chip mythic" style="font-size:9.5px;">☁ 破云印 +15%</span>` : ""}</strong>
+          <div style="font-size:10.5px;color:var(--text-sub);">仅在非洞府秘境战斗中累积产出（仓库上限 ${EXPEDITION_BANKED_STONES_CAP} 灵石 / ${EXPEDITION_BANKED_STARS_CAP} 星魄）；仅可派遣已结缘故人，每位故人限驻守 1 处灵脉，并在战中每 8.5 秒降下【仙门护道雷援】。</div>
         </div>
         <div style="display:flex;gap:6px;">
-          <button type="button" id="btn-claim-expedition" class="btn-gold" style="padding:6px 13px;font-size:11.5px;" data-action="claim-expedition">🎁 一键征收远征军资</button>
+          <button type="button" id="btn-claim-expedition" class="btn-gold" style="padding:6px 13px;font-size:11.5px;" data-action="claim-expedition" ${vaultEmpty ? "disabled" : ""}>🎁 一键征收远征军资</button>
           <button type="button" class="btn-jade" style="padding:6px 12px;font-size:11.5px;" data-action="cast-warship-from-modal">⛵ 呼叫仙舟轰炸</button>
         </div>
       </div>
@@ -12664,11 +12982,24 @@ const ART = {
                   <div style="font-size:9.8px;color:#9effec;">${nd.desc}</div>
                 </div>
               </div>
-              <span class="tag-chip ${curHero ? "done" : ""}">${curHero ? "驻防中" : "空闲"}</span>
+              <div style="display:flex;align-items:center;gap:4px;">
+                ${curHero ? `<button type="button" class="btn-ghost" style="padding:2px 8px;font-size:10.5px;" data-recall-exp-node="${nd.id}">撤防</button>` : ""}
+                <span class="tag-chip ${curHero ? "done" : ""}">${curHero ? "驻防中" : "空闲"}</span>
+              </div>
             </div>
             <select class="workshop-select" data-exp-node="${nd.id}">
               <option value="" ${!curHero ? "selected" : ""}>— 未委派驻守弟子 —</option>
-              ${GARRISON_ROSTER.map(h => `<option value="${h.id}" ${curHero === h.id ? "selected" : ""}>驻守：${h.name}（${h.role}）</option>`).join("")}
+              ${GARRISON_ROSTER.map(h => {
+                const unlocked = isGarrisonHeroUnlocked(game, h.id);
+                const stationedElsewhere = EXPEDITION_NODES.find(other => other.id !== nd.id && ex.assignments[other.id] === h.id);
+                const optDisabled = (!unlocked || !!stationedElsewhere) && curHero !== h.id;
+                const label = !unlocked
+                  ? `🔒 ${h.name}（${getGarrisonHeroLockReason(game, h.id)}）`
+                  : stationedElsewhere
+                    ? `${h.name}（已驻防：${stationedElsewhere.name}）`
+                    : `驻守：${h.name}（${h.role}）`;
+                return `<option value="${h.id}" ${curHero === h.id ? "selected" : ""} ${optDisabled ? "disabled" : ""}>${label}</option>`;
+              }).join("")}
             </select>
           </div>`;
         }).join("")}
@@ -12680,15 +13011,18 @@ const ART = {
     if (!game) return null;
     const ex = ensureExpeditionState(game);
     const activeNodes = EXPEDITION_NODES.filter(nd => ex.assignments && ex.assignments[nd.id]);
-    const sb = getSanctumBonuses(game);
-    // Ensure immediate meaningful harvest if active garrisons are deployed
-    if (ex.bankedStones <= 0 && activeNodes.length > 0) {
-      ex.bankedStones = activeNodes.reduce((s, n) => s + n.stoneRate, 0);
-      ex.bankedStars = Math.max(1, Math.floor(activeNodes.length / 2));
+    const bankedSt = Math.min(EXPEDITION_BANKED_STONES_CAP, Math.max(0, Math.floor(num(ex.bankedStones, 0))));
+    const bankedSr = Math.min(EXPEDITION_BANKED_STARS_CAP, Math.max(0, Math.floor(num(ex.bankedStars, 0))));
+    if (bankedSt <= 0 && bankedSr <= 0) {
+      showToast(activeNodes.length > 0
+        ? "远征军资库当前为空，请前往非洞府秘境战斗累积产出后再征收！"
+        : "请先派遣已结缘故人驻防灵脉，并于秘境战斗中累积军资！");
+      return { gainedStones: 0, gainedStars: 0 };
     }
+    const sb = getSanctumBonuses(game);
     const cloudMult = game.cloudSeaCleared ? 1.15 : 1.0;
-    const gainedStones = Math.round((ex.bankedStones || 0) * sb.expMult * cloudMult);
-    const gainedStars = Math.round((ex.bankedStars || 0) * (sb.expMult >= 1.4 ? 1.5 : 1));
+    const gainedStones = Math.round(bankedSt * sb.expMult * cloudMult);
+    const gainedStars = Math.round(bankedSr * (sb.expMult >= 1.4 ? 1.5 : 1));
     game.stones = (game.stones || 0) + gainedStones;
     game.bonusStarPts = (game.bonusStarPts || 0) + gainedStars;
     ex.bankedStones = 0;
@@ -12718,7 +13052,7 @@ const ART = {
   }
 
   function exportFullCloudSaveCode() {
-    if (!game) return "";
+    if (!game || sandboxMode) return "";
     const payload = {
       v: 24,
       game,
@@ -12840,6 +13174,10 @@ const ART = {
   }
 
   function openCloudImportConfirmModal(parsedRes) {
+    if (sandboxMode) {
+      showToast("🧪 演武沙盒模式已禁用云码导出与导入（请先退出沙盒）");
+      return;
+    }
     if (!parsedRes || !parsedRes.ok || !parsedRes.preview) return;
     pendingCloudImport = parsedRes;
     const imp = parsedRes.preview.imported;
@@ -12888,6 +13226,10 @@ const ART = {
   }
 
   function commitCloudSaveImport(parsedRes) {
+    if (sandboxMode) {
+      showToast("🧪 演武沙盒模式中不可导入正式存档，请先点击【退出沙盒】！");
+      return { ok: false, reason: "演武沙盒模式中不可导入正式存档，请先退出沙盒" };
+    }
     if (!parsedRes || !parsedRes.ok || !parsedRes.parsed || !parsedRes.parsed.game) {
       return { ok: false, reason: "待导入的云码数据无效" };
     }
@@ -13074,18 +13416,27 @@ const ART = {
       }
     }
 
-    // D. Step Jiuzhou Expedition Garrison Passive Yield & Cross-Region Sect Thunder Support (ONLY once unlocked at Golden Core!)
-    if (game && !arena.paused && isEcosystemSystemUnlocked(game, "vein_expedition")) {
+    // D. Step Jiuzhou Expedition Garrison Passive Yield & Cross-Region Sect Thunder Support (Active non-sanctum non-practice combat only, strictly capped!)
+    const hasActiveExpeditionCombat = Boolean(
+      game && !arena.paused && !arena.sanctumMode
+      && !isPracticeModeActive()
+      && isEcosystemSystemUnlocked(game, "vein_expedition")
+      && arena.enemies.some(e => e.hp > 0 && !e.isDummy && !e.isTreasure)
+    );
+    if (hasActiveExpeditionCombat) {
       const ex = ensureExpeditionState(game);
-      const activeNodes = EXPEDITION_NODES.filter(nd => ex.assignments && ex.assignments[nd.id]);
+      const activeNodes = EXPEDITION_NODES.filter(nd => ex.assignments && ex.assignments[nd.id] && isGarrisonHeroUnlocked(game, ex.assignments[nd.id]));
       if (activeNodes.length > 0) {
         ex.tickTimer = (ex.tickTimer || 8.5) - dt;
         if (ex.tickTimer <= 0) {
           ex.tickTimer = 8.5;
-          ex.bankedStones = (ex.bankedStones || 0) + activeNodes.reduce((s, n) => s + Math.round(n.stoneRate * 0.35), 0);
-          if (Math.random() < 0.25) ex.bankedStars = (ex.bankedStars || 0) + 1;
-          const foe = arena.enemies.find(e => e.hp > 0 && !e.isTreasure);
-          if (foe && !arena.sanctumMode) {
+          const tickStones = activeNodes.reduce((s, n) => s + Math.round(n.stoneRate * 0.35), 0);
+          ex.bankedStones = Math.min(EXPEDITION_BANKED_STONES_CAP, (ex.bankedStones || 0) + tickStones);
+          if (Math.random() < 0.25) {
+            ex.bankedStars = Math.min(EXPEDITION_BANKED_STARS_CAP, (ex.bankedStars || 0) + 1);
+          }
+          const foe = arena.enemies.find(e => e.hp > 0 && !e.isDummy && !e.isTreasure);
+          if (foe) {
             ex.supportThunderCount = (ex.supportThunderCount || 0) + 1;
             arena.skyBolts.push({ x: foe.x, y: foe.y, t: 0, color: "#80ffea" });
             damageEnemy(foe, Math.round(st.atk * (0.52 + activeNodes.length * 0.12)), false, 10, 0, 2, false);
@@ -13147,35 +13498,111 @@ const ART = {
     }
   }
 
+  function computeBossRushScoreAndGrade(br, affMult = 1.0, playerMaxHp = 325, revivesUsed = 0) {
+    const elapsed = Math.max(0, num(br && br.elapsed, 210));
+    const partBreaks = Math.max(0, Math.floor(num(br && br.partBreaks, 0)));
+    const parries = Math.max(0, Math.floor(num(br && br.parries, 0)));
+    const hitsTaken = Math.max(0, Math.floor(num(br && br.hitsTaken, 0)));
+    const damageTaken = Math.max(0, num(br && br.damageTaken, 0));
+    const mult = Math.max(1.0, num(affMult, 1.0));
+    const maxHpSafe = Math.max(1, num(playerMaxHp, 325));
+    const revives = Math.max(0, Math.floor(num(revivesUsed, 0)));
+
+    const basePts = 1200;
+    const timePts = Math.round(Math.max(-350, Math.min(450, (210 - elapsed) * 3.75)));
+    const techPts = Math.min(450, partBreaks * 65) + Math.min(450, parries * 45);
+    const hpRatioLost = damageTaken / maxHpSafe;
+    const noHitBonus = hitsTaken === 0 ? 300 : (hitsTaken <= 2 ? 150 : 0);
+    const hitPenalty = Math.min(500, hitsTaken * 30 + Math.round(hpRatioLost * 90) + revives * 200);
+    const survivePts = noHitBonus - hitPenalty;
+
+    const rawPts = Math.max(0, Math.round((basePts + timePts + techPts + survivePts) * mult));
+    let shortGrade = "C", title = "初涉剑冢";
+    if (rawPts >= 2800)      { shortGrade = "S+"; title = "万古剑尊"; }
+    else if (rawPts >= 2100) { shortGrade = "SS"; title = "踏天剑圣"; }
+    else if (rawPts >= 1550) { shortGrade = "S";  title = "破妄真人"; }
+    else if (rawPts >= 1000) { shortGrade = "A";  title = "斩魔剑修"; }
+    else if (rawPts >= 650)  { shortGrade = "B";  title = "问道剑客"; }
+
+    return {
+      rawPts, shortGrade, grade: `${shortGrade} ${title}`,
+      breakdown: { basePts, timePts, techPts, survivePts, affMult: mult, elapsed, partBreaks, parries, hitsTaken, damageTaken, revives }
+    };
+  }
+
   function openBossRushVictoryModal() {
-    const br = arena.bossRush || { elapsed: 38.5, partBreaks: 2, startBout: 1 };
+    const stNow = game ? getCombatStats(game) : { maxHp: 325 };
+    const br = arena.bossRush || {
+      elapsed: 210, partBreaks: 2, parries: 2, hitsTaken: 5,
+      damageTaken: Math.round(stNow.maxHp || 325), startBout: 1, practiceMode: false
+    };
+    const isPractice = Boolean(isPracticeModeActive() || br.practiceMode || (br.startBout && br.startBout > 1));
     arena.bossRush = null;
     arena.paused = true;
+
+    if (isPractice) {
+      updateHud();
+      openModal(`
+        <div class="drawer-mural-banner" style="height:92px;">
+          <img src="${ART.arena_wanjian_tomb}" alt="练习演武完成" />
+          <div class="drawer-mural-overlay">
+            <div>
+              <span class="cinnabar-seal">练习模式 · 不计评级</span>
+              <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">万剑冢跳关演武完成（自第 ${Math.max(2, Math.floor(num(br.startBout, 6)))} 阵起）</h2>
+            </div>
+            <button type="button" class="btn-ghost" data-modal-close="1">收卷 ✕</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;text-align:center;padding:4px 0;">
+          <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
+            <span class="tag-chip">练习模式（不计评级）</span>
+            <span class="tag-chip done">演武耗时：${num(br.elapsed, 0).toFixed(1)}s</span>
+            <span class="tag-chip">部位碎核：${Math.floor(num(br.partBreaks, 0))} 次</span>
+            <span class="tag-chip">识破破招：${Math.floor(num(br.parries, 0))} 次</span>
+            <span class="tag-chip">受击：${Math.floor(num(br.hitsTaken, 0))} 次</span>
+          </div>
+          <div class="jade-card" style="padding:10px 14px;text-align:left;gap:4px;">
+            <strong style="color:#ffd8a8;font-size:13px;">🎯 练习模式说明：</strong>
+            <div style="font-size:12px;color:#d6eee8;">本次从第 ${Math.max(2, Math.floor(num(br.startBout, 6)))} 阵跳关演武，未发放灵石、鸿蒙神兵、尊号与【太虚劫光】拖尾，亦未改写正式评级与历史最佳纪录。</div>
+            <div style="font-size:11.5px;color:#80ffea;">若要领取全额封神奖励并冲击 S/SS/S+ 正式评级，请从【第一阵】完整挑战七阵连战！</div>
+          </div>
+          <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+            <button type="button" class="btn-gold" data-start-rush="1">🔥 从第一阵完整挑战</button>
+            <button type="button" class="btn-jade" data-start-rush="${Math.max(2, Math.min(7, Math.floor(num(br.startBout, 6))))}">再练第 ${Math.max(2, Math.min(7, Math.floor(num(br.startBout, 6))))} 阵</button>
+            <button type="button" class="btn-ghost" data-action="return-hub-after-rush">返回听雨洞府</button>
+          </div>
+        </div>
+      `, true);
+      return;
+    }
+
     const affMult = 1 + arena.rushAffixes.reduce((s, id) => {
       const sp = RUSH_AFFIX_SPECS.find(x => x.id === id);
       return s + (sp ? sp.mult : 0);
     }, 0);
-    const rawPts = Math.round((2600 + (br.partBreaks || 0) * 320 + (arena.parryCount || 0) * 180 - Math.min(900, br.elapsed * 8)) * affMult);
-    const grade = rawPts >= 3200 ? "S+ 万古剑尊" : rawPts >= 2400 ? "SS 踏天剑圣" : rawPts >= 1800 ? "S 破妄真人" : "A 斩魔剑修";
+    const evalRes = computeBossRushScoreAndGrade(br, affMult, stNow.maxHp, arena.defeatRevivesUsed || 0);
+    const { rawPts, shortGrade, grade } = evalRes;
 
     game.taixuTrailUnlocked = true;
     game.taixuTrailActive = true;
     game.titleUnlocked = "踏天破妄剑尊";
-    const shortGrade = grade.split(" ")[0];
-    game.rushBestGrade = shortGrade;
-    metaState.taixuTrailUnlocked = true;
-    metaState.bestRushGrade = shortGrade;
-    if (!metaState.bestRushTime || br.elapsed < metaState.bestRushTime) metaState.bestRushTime = br.elapsed;
+    const newRank = RUSH_GRADE_RANK[shortGrade] || 0;
+    if (newRank > (RUSH_GRADE_RANK[game.rushBestGrade] || 0)) game.rushBestGrade = shortGrade;
+    if (!sandboxMode) {
+      metaState.taixuTrailUnlocked = true;
+      if (newRank > (RUSH_GRADE_RANK[metaState.bestRushGrade] || 0)) metaState.bestRushGrade = shortGrade;
+      if (!metaState.bestRushTime || br.elapsed < metaState.bestRushTime) metaState.bestRushTime = br.elapsed;
+      saveMeta();
+    }
     game.stones += 500;
-    acquireGearItem(rollGearItem(4, 4, "weapon"));
-    saveMeta(); saveGame(); updateHud();
+    saveGame(); updateHud();
 
     openModal(`
       <div class="drawer-mural-banner" style="height:92px;">
         <img src="${ART.arena_wanjian_tomb}" alt="踏天证道" />
         <div class="drawer-mural-overlay">
           <div>
-            <span class="cinnabar-seal">${grade.split(" ")[0]} 至高评定</span>
+            <span class="cinnabar-seal">${shortGrade} 剑冢评定</span>
             <h2 style="font-family:var(--font-serif);font-size:22px;color:var(--gold-bright);margin-top:4px;">万剑冢七阵封神 · 斩破心魔与太古烛龙法相！</h2>
           </div>
           <button type="button" class="btn-ghost" data-modal-close="1">收卷 ✕</button>
@@ -13184,8 +13611,10 @@ const ART = {
       <div style="display:flex;flex-direction:column;gap:10px;text-align:center;padding:4px 0;">
         <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
           <span class="tag-chip mythic">评定：${grade} (${rawPts}分)</span>
-          <span class="tag-chip done">通关耗时：${br.elapsed.toFixed(1)}s</span>
-          <span class="tag-chip">部位碎核：${br.partBreaks || 0} 次</span>
+          <span class="tag-chip done">通关耗时：${num(br.elapsed, 0).toFixed(1)}s</span>
+          <span class="tag-chip">部位碎核：${Math.floor(num(br.partBreaks, 0))} 次</span>
+          <span class="tag-chip">识破破招：${Math.floor(num(br.parries, 0))} 次</span>
+          <span class="tag-chip">受击：${Math.floor(num(br.hitsTaken, 0))} 次</span>
           <span class="tag-chip">劫律倍率：×${affMult.toFixed(2)}</span>
         </div>
         <div class="jade-card" style="padding:10px 14px;text-align:left;gap:4px;">
@@ -13200,6 +13629,7 @@ const ART = {
         </div>
       </div>
     `, true);
+    acquireGearItem(rollGearItem(4, 4, "weapon"));
   }
 
   const ACTION_REALM_REQ = {
@@ -13218,7 +13648,7 @@ const ART = {
 
   function isActionUnlockedByRealm(g, act) {
     if (!g) return false;
-    if (g.unlockAllArcana) return true;
+    if (sandboxMode || g.unlockAllArcana) return true;
     const req = ACTION_REALM_REQ[act] !== undefined ? ACTION_REALM_REQ[act] : 0;
     if (req <= 0) return true;
     if (act === "ally" && countBondedAllies(g) > 0) return true;
@@ -13233,7 +13663,7 @@ const ART = {
     const reqRealmId = REALM_ORDER[reqRank] || "qi";
     const reqName = (REALMS[reqRealmId] && REALMS[reqRealmId].name) || "高阶";
     const actName = ACTION_DISPLAY_NAME[act] || act;
-    showToast(`🔒 【${actName}】将于【${reqName}期】解封（或在右上【仙阁】开启全神通演武）`);
+    showToast(`🔒 【${actName}】将于【${reqName}期】解封（或在右上【仙阁】开启演武沙盒）`);
     return false;
   }
 
@@ -13497,15 +13927,19 @@ const ART = {
       Sound.fanfare();
       spawnDistortionRing(pr.x, pr.y, 210, "#ffe28a");
       addRipple(pr.x, pr.y + 14, 185, "#70ffe6");
-      spawnGearDrop(pr.x - 18, pr.y + 10, Math.min(4, 2 + Math.floor(arena.stageIdx / 2)));
-      for (let k = 0; k < 4; k++) spawnDrop("stone", pr.x + (k - 1.5) * 20, pr.y + 8, 30);
+      if (!isPracticeModeActive()) {
+        spawnGearDrop(pr.x - 18, pr.y + 10, Math.min(4, 2 + Math.floor(arena.stageIdx / 2)));
+        for (let k = 0; k < 4; k++) spawnDrop("stone", pr.x + (k - 1.5) * 20, pr.y + 8, 30);
+      }
       arena.props.push({
         id: "immortal_spring_" + Date.now(),
         kind: "immortal_spring", destructible: false, art: "prop_bagua_secret_gate",
-        name: "上古秘窟 · 太初满灵泉", badge: "点击/Enter 全满气血/仙葫/剑意 · 永久剑攻+8！",
+        name: "上古秘窟 · 太初满灵泉", badge: isPracticeModeActive() ? "点击/Enter 全满气血/仙葫/剑意（练习模式）" : "点击/Enter 全满气血/仙葫/剑意 · 永久剑攻+8！",
         x: pr.x, y: pr.y, r: 46, progress: 0
       });
-      showToast("☯ 八卦封壁击破！上古仙人藏宝秘窟洞开，爆出仙装与【太初满灵泉】！");
+      showToast(isPracticeModeActive()
+        ? "☯ 八卦封壁击破！上古秘窟【太初满灵泉】现世（练习模式不掉落仙装与灵石）！"
+        : "☯ 八卦封壁击破！上古仙人藏宝秘窟洞开，爆出仙装与【太初满灵泉】！");
       addFloat("☯ 八卦破壁 · 上古藏宝秘窟洞开！！", pr.x, pr.y - 52, "#ffe89e", 20, true);
     } else if (pr.kind === "frost_crystal") {
       Sound.bianzhong(783.99, 0.10);
@@ -13537,7 +13971,7 @@ const ART = {
           pierced: new Set(), color: "#ffe28a"
         });
       }
-      spawnDrop("stone", pr.x + 12, pr.y, 28);
+      if (!isPracticeModeActive()) spawnDrop("stone", pr.x + 12, pr.y, 28);
     } else if (pr.kind === "fire_brazier") {
       Sound.drum(0.26);
       addDecal(pr.x, pr.y + 12, 0, 68, "scorch");
@@ -14215,6 +14649,8 @@ const ART = {
       customComboSeq: { enabled: false, slots: DEFAULT_COMBO_SEQ_SLOTS.slice(), morphCount: 0 },
       expeditions: { assignments: {}, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 },
       primordialCrafts: { goldenAcolyte: false, voidSwordRift: false, pillBatches: 0, forgedBlades: 0 },
+      permGrowth: { alchemyHp: 0, alchemyAtk: 0, bloodFuryBought: {} },
+      spireCurios: {},
       journal: [effCalamity > 0 ? `第 ${(metaState.ascensions || 0) + 1} 世重入红尘，主动点燃【${calSpec.name}】劫火试炼！` : "十八岁山雨倾盆，仗剑踏入青岚破庙。"]
     };
     const st = getCombatStats(g);
@@ -14246,6 +14682,7 @@ const ART = {
     if (hasOwn(out, "uid") && typeof out.uid !== "string") out.uid = safeText(out.uid, "");
     if (hasOwn(out, "affix") && typeof out.affix !== "string") out.affix = null;
     if (hasOwn(out, "awakenedAffix") && typeof out.awakenedAffix !== "string") out.awakenedAffix = null;
+    if (hasOwn(item, "taixuForged")) out.taixuForged = Boolean(item.taixuForged);
     return out;
   }
 
@@ -14265,6 +14702,22 @@ const ART = {
     ["stones", "xp", "overflowXp", "wins", "towerBest", "bestSpireFloor", "tribShield", "bonusStarPts", "bonusSwords", "omenIndex", "jadeCuts", "immortalPills", "karmaEventsDone", "atkFlatBonus", "maxHpBonus", "retreats", "tribulationFails", "defiantBreakthroughs", "lifespanBonusMonths"].forEach(k => {
       g[k] = Math.max(0, Math.floor(num(g[k], base[k] != null ? base[k] : 0)));
     });
+    const permCaps = getPermGrowthCaps(g);
+    g.maxHpBonus = Math.min(permCaps.maxHpBonus, g.maxHpBonus);
+    g.atkFlatBonus = Math.min(permCaps.atkFlatBonus, g.atkFlatBonus);
+    const rawPg = (raw.permGrowth && typeof raw.permGrowth === "object" && !Array.isArray(raw.permGrowth)) ? raw.permGrowth : {};
+    const rawBf = safeAssignPlain({}, rawPg.bloodFuryBought);
+    const cleanBf = {};
+    Object.keys(rawBf).forEach(rk => {
+      if (hasOwn(REALMS, rk)) {
+        cleanBf[rk] = Math.max(0, Math.min(PERM_GROWTH_CAPS.bloodFuryPerRealm, Math.floor(num(rawBf[rk], 0))));
+      }
+    });
+    g.permGrowth = {
+      alchemyHp: Math.max(0, Math.min(permCaps.alchemyHp, Math.floor(num(rawPg.alchemyHp, 0)))),
+      alchemyAtk: Math.max(0, Math.min(permCaps.alchemyAtk, Math.floor(num(rawPg.alchemyAtk, 0)))),
+      bloodFuryBought: cleanBf
+    };
     g.omenIndex = g.omenIndex % CELESTIAL_OMENS.length;
     g.towerFloor = Math.max(1, Math.floor(num(g.towerFloor, 1)));
     g.elapsedMonths = Math.max(0, Math.floor(num(g.elapsedMonths, 0)));
@@ -14302,15 +14755,16 @@ const ART = {
     if (raw.spireCurios !== undefined) {
       g.spireCurios = safeAssignPlain({}, raw.spireCurios);
       Object.keys(g.spireCurios).forEach(k => {
-        g.spireCurios[k] = Math.max(0, Math.floor(num(g.spireCurios[k], 0)));
+        g.spireCurios[k] = Math.max(0, Math.min(PERM_GROWTH_CAPS.spireCurioMaxStack, Math.floor(num(g.spireCurios[k], 0))));
       });
+    } else {
+      g.spireCurios = {};
     }
-    g.expeditions = safeAssignPlain({ assignments: {}, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 }, raw.expeditions);
-    g.expeditions.assignments = safeAssignPlain({}, g.expeditions.assignments);
-    ensureExpeditionState(g);
     g.seenCutscenes = safeAssignPlain({}, raw.seenCutscenes);
     g.foundationQuality = safeAssignPlain({}, raw.foundationQuality);
-    if (!Array.isArray(g.laws)) g.laws = [];
+    g.laws = Array.isArray(g.laws)
+      ? Array.from(new Set(g.laws.filter(id => hasOwn(DAO_LAWS, id))))
+      : [];
     if (!Array.isArray(g.learned)) g.learned = base.learned.slice();
     base.learned.forEach(sk => { if (!g.learned.includes(sk)) g.learned.push(sk); });
     if (!Array.isArray(g.ownedRelics)) g.ownedRelics = [];
@@ -14372,7 +14826,11 @@ const ART = {
     ensureDeterministicPity(g);
     ensureCustomComboSeq(g);
     ensurePrimordialCrafts(g);
-    g.unlockAllArcana = !!raw.unlockAllArcana;
+    // G1: Normalize expeditions AFTER bondTiers and primordialCrafts so bonded heroes & goldenAcolyte are preserved accurately!
+    g.expeditions = safeAssignPlain({ assignments: {}, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 }, raw.expeditions);
+    g.expeditions.assignments = safeAssignPlain({}, g.expeditions.assignments);
+    ensureExpeditionState(g);
+    g.unlockAllArcana = false; // G6: 全神通演武已沙盒化，正式存档一律随境渐进解封
     g.sanctumLevels = safeAssignPlain(
       { spirit_eye: 1, cauldron: 1, sword_forge: 1, scripture_hall: 1, guard_array: 1 },
       raw.sanctumLevels
@@ -14411,6 +14869,149 @@ const ART = {
   let saveAlertDismissed = false;
   let lastModalTriggerEl = null;
   let lastDrawerTriggerEl = null;
+
+  // G6: Sandbox Isolation Runtime State (NEVER persisted to STORAGE_KEY / META_KEY)
+  let sandboxMode = false;
+  let preSandboxSnapshot = null;
+  let pendingSandboxEntry = null;
+
+  function openSandboxConfirmModal(source = "pavilion", preset = null) {
+    if (!game && !preset) return;
+    pendingSandboxEntry = { source, preset };
+    const presetLabels = {
+      judge_showcase: "诛仙双羁绊卷（金丹·11剑三轮）",
+      golden: "巨阙斩妖王卷（筑基·巨阙破阵）",
+      tribulation: "九霄叩天门卷（化神·15剑渡劫）"
+    };
+    const presetSub = (preset && presetLabels[preset]) ? ` · 载入【${presetLabels[preset]}】` : "";
+    openModal(`
+      <div class="drawer-mural-banner" style="height:88px;">
+        <img src="${ART.arena_cloud_sea_sky}" alt="演武沙盒模式" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">隔离演示沙盒</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:3px;">开启【演武沙盒模式】${escapeHtml(presetSub)}</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-modal-close="1">取消 ✕</button>
+        </div>
+      </div>
+      <div class="jade-card" style="gap:6px;border-color:rgba(255,214,112,0.55);">
+        <div style="font-size:12px;color:#fff3cf;font-weight:700;">🧪 进入演武沙盒模式须知：</div>
+        <div style="font-size:11.5px;color:#d6eee8;line-height:1.55;">
+          1. 立即进入隔离沙盒，全神通、太虚秘匣与十四大终局玩法全面解封供自由演武；<br/>
+          2. 沙盒期间<b>绝不写入正式存档</b>（<code>chenyuan_wendao_v11_save</code>）与<b>元存档</b>（<code>chenyuan_wendao_v11_meta</code>），<b>不解锁正式成就、不记录历世道果殿堂与轮回飞升</b>；<br/>
+          3. 可随时点击顶部常驻标识中的【退出沙盒】按钮，无损恢复进入前的正式进度（刷新页面也会自动回到正式存档）。
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button type="button" class="btn-ghost" data-modal-close="1">取消返回</button>
+        <button type="button" id="btn-confirm-enter-sandbox" class="btn-gold" data-action="confirm-enter-sandbox">确认进入演武沙盒</button>
+      </div>
+    `, true);
+  }
+
+  function enterSandboxMode(opts = {}) {
+    if (!game && !(opts && opts.preset)) return false;
+    if (!sandboxMode) {
+      if (game && !saveReadOnlyMode && !saveConflictState && !storageReadError) {
+        saveGame();
+      }
+      preSandboxSnapshot = {
+        game: game ? JSON.parse(JSON.stringify(game)) : null,
+        meta: JSON.parse(JSON.stringify(ensureMetaState())),
+        arenaSnap: {
+          stageIdx: arena.stageIdx,
+          stanceIdx: arena.stanceIdx,
+          towerMode: !!arena.towerMode,
+          sanctumMode: !!arena.sanctumMode
+        },
+        loadedSaveRev,
+        lastSavedPayloadChecksum
+      };
+      game = game ? JSON.parse(JSON.stringify(game)) : createFreshGame("顾长青", "sword_bone");
+      sandboxMode = true;
+      game.unlockAllArcana = true;
+    }
+    closeModal();
+    if (opts && opts.preset) {
+      applyStagePreset(opts.preset, { insideSandbox: true });
+    } else {
+      Sound.clang(1.25, 0.10);
+      updateHud(true);
+      renderHudSaveAlert();
+      if (drawerOpen) renderDrawerContent();
+      showToast("🧪 已进入【演武沙盒模式】：全神通开放，不写入正式存档与元存档！");
+      if (opts && opts.source === "roadmap") {
+        openAscensionRoadmapModal();
+      }
+    }
+    return true;
+  }
+
+  function exitSandboxMode() {
+    if (!sandboxMode) return false;
+    sandboxMode = false;
+    arena.stageEpoch += 1;
+    arena.waveTransitioning = false;
+    clearTransientChoiceQueues();
+    closeModal();
+    closeDrawer();
+    arena.bossRush = null;
+    arena.celestialSpire = null;
+    arena.sectDefense = null;
+    arena.cloudFlight = null;
+    arena.customSeedRun = null;
+
+    if (preSandboxSnapshot && preSandboxSnapshot.meta) {
+      Object.keys(metaState).forEach(k => { if (!(k in preSandboxSnapshot.meta)) delete metaState[k]; });
+      safeAssignPlain(metaState, preSandboxSnapshot.meta);
+      ensureMetaState();
+    }
+    inspectMetaState({ applyToMemory: true });
+
+    let restoredStageIdx = 0;
+    let restoredStanceIdx = 0;
+    let restoredTower = false;
+    let restoredSanctum = false;
+    const res = inspectSavedBundle();
+    if (res.ok && res.bundle && res.bundle.game && !saveReadOnlyMode && !saveConflictState && !storageWriteError) {
+      const s = res.bundle;
+      game = normalizeLoadedGame(s.game);
+      loadedSaveRev = res.rev;
+      restoredStageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(s.stageIdx, 0))));
+      restoredStanceIdx = ((Math.floor(num(s.stanceIdx, 0)) % SWORD_STANCES.length) + SWORD_STANCES.length) % SWORD_STANCES.length;
+      restoredTower = !!s.towerMode;
+      restoredSanctum = !!s.sanctumMode;
+    } else if (preSandboxSnapshot && preSandboxSnapshot.game) {
+      game = normalizeLoadedGame(preSandboxSnapshot.game);
+      loadedSaveRev = preSandboxSnapshot.loadedSaveRev;
+      const snap = preSandboxSnapshot.arenaSnap || {};
+      restoredStageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(snap.stageIdx, 0))));
+      restoredStanceIdx = ((Math.floor(num(snap.stanceIdx, 0)) % SWORD_STANCES.length) + SWORD_STANCES.length) % SWORD_STANCES.length;
+      restoredTower = !!snap.towerMode;
+      restoredSanctum = !!snap.sanctumMode;
+    }
+    if (game) game.unlockAllArcana = false;
+    preSandboxSnapshot = null;
+
+    const sbBadge = document.getElementById("hud-sandbox-badge");
+    if (sbBadge) sbBadge.style.display = "none";
+
+    if (game) {
+      arena.stanceIdx = restoredStanceIdx;
+      arena.stageIdx = restoredStageIdx;
+      if (restoredSanctum) enterSanctumHub({ skipSave: true });
+      else initArenaStage(restoredStageIdx, restoredTower);
+      lastSavedPayloadChecksum = computeCurrentPayloadChecksum();
+      updateHud(true);
+      renderHudSaveAlert();
+    } else {
+      document.getElementById("welcome-screen").style.display = "flex";
+      renderWelcomeScreen();
+    }
+    showToast("已退出【演武沙盒模式】，已恢复正式存档进度！");
+    return true;
+  }
 
   function computeSaveChecksum(str) {
     let h = 2166136261 >>> 0;
@@ -14809,7 +15410,7 @@ const ART = {
   }
 
   function saveGame(opts = {}) {
-    if (!game) return false;
+    if (!game || sandboxMode) return false;
     const force = !!(opts && opts.forceOverwrite);
     if (saveReadOnlyMode && !force) {
       renderHudSaveAlert();
@@ -14905,6 +15506,7 @@ const ART = {
   }
 
   function saveMeta(opts = {}) {
+    if (sandboxMode) return false;
     const force = !!(opts && opts.forceReset);
     if (metaReadError && !force) return false;
     if (saveReadOnlyMode && !force) return false;
@@ -14958,6 +15560,7 @@ const ART = {
   }
 
   window.addEventListener("storage", (ev) => {
+    if (sandboxMode) return;
     if (ev.key === null) {
       if (!game) renderWelcomeScreen();
       return;
@@ -15025,7 +15628,7 @@ const ART = {
   });
 
   function flushSaveOnLifecycle() {
-    if (!game) return;
+    if (!game || sandboxMode) return;
     const ws = document.getElementById("welcome-screen");
     if (ws && ws.style.display !== "none") return;
     if (saveReadOnlyMode || saveConflictState || storageReadError) return;
@@ -15069,7 +15672,7 @@ const ART = {
     const towerPts = Math.min(20, Math.max(0, Math.floor(num(g.towerBest, 0)))) * 65
                    + Math.min(9, Math.max(0, Math.floor(num(g.bestSpireFloor, 0)))) * 45;
     const winPts = Math.min(400, Math.max(0, Math.floor(num(g.wins, 0))) * 8);
-    const rushMap = { "S+": 360, "SS": 300, "S": 220, "A": 140, "B": 80 };
+    const rushMap = { "S+": 360, "SS": 300, "S": 220, "A": 140, "B": 80, "C": 40 };
     const rushPts = hasOwn(rushMap, g.rushBestGrade) ? rushMap[g.rushBestGrade] : 0;
     const defiantPts = Math.min(5, Math.max(0, Math.floor(num(g.defiantBreakthroughs, 0)))) * 60;
     const pactMult = 1 + getActivePactCount(g) * 0.12;
@@ -15110,7 +15713,7 @@ const ART = {
   }
 
   function unlockAchievement(id) {
-    if (!game || game.achievements.includes(id)) return;
+    if (!game || sandboxMode || isPracticeModeActive() || game.achievements.includes(id)) return;
     const spec = ACHIEVEMENTS.find(a => a.id === id);
     if (!spec) return;
     game.achievements.push(id);
@@ -15272,6 +15875,107 @@ const ART = {
     return it[key] || 0;
   }
 
+  const GEAR_BAG_LIMIT = 24;
+  const pendingGearOverflowQueue = [];
+  let activeGearOverflowItem = null;
+  const pendingSoulUnlockQueue = [];
+  let activeSoulUnlockId = null;
+  let pendingAlchemyCraft = null;
+  let pendingSoulRefineId = null;
+  let temperUseCoreDiscount = false;
+
+  function clearTransientChoiceQueues() {
+    pendingGearOverflowQueue.length = 0;
+    activeGearOverflowItem = null;
+    pendingSoulUnlockQueue.length = 0;
+    activeSoulUnlockId = null;
+    pendingSandboxEntry = null;
+    pendingAlchemyCraft = null;
+    pendingSoulRefineId = null;
+    pendingCompareGear = null;
+    temperUseCoreDiscount = false;
+    renderGearCompareCard();
+  }
+
+  function openGearBagFullModal(newItem) {
+    if (!game || !newItem) {
+      activeGearOverflowItem = null;
+      return;
+    }
+    const nwRar = rarityNum(newItem.rarity);
+    const nwLvl = Math.max(0, Math.floor(num(newItem.lvl, 0)));
+    const smeltVal = Math.max(1, Math.floor(num(newItem.sell, 15)));
+    const remQueue = pendingGearOverflowQueue.length;
+    openModal(`
+      <div class="drawer-mural-banner" style="height:82px;">
+        <img src="${ART.banner_archive}" alt="行囊已满" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">显式处置 · 不自动熔炼</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:3px;">仙装行囊已满 (${game.gearBag.length}/${GEAR_BAG_LIMIT})</h2>
+          </div>
+          ${remQueue > 0 ? `<span class="tag-chip mythic">后续尚有 ${remQueue} 件待处理</span>` : `<span class="tag-chip">请择一处置新获仙装</span>`}
+        </div>
+      </div>
+
+      <div class="jade-card" style="gap:7px;border-color:rgba(255,214,112,0.65);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+            <img src="${ART[hasOwn(ART, newItem.art) ? newItem.art : "icon_blade"]}" alt="${escapeHtml(newItem.name)}" style="width:38px;height:38px;flex-shrink:0;" />
+            <div style="min-width:0;">
+              <div style="font-size:13px;font-weight:700;" class="txt-r${nwRar}">新获仙装：${escapeHtml(newItem.name)}${nwLvl > 0 ? ` +${nwLvl}` : ""}</div>
+              <div style="font-size:11px;color:var(--jade);">${escapeHtml(formatGearStats(newItem))}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;">
+            <button type="button" id="btn-overflow-smelt-new" class="btn-gold" data-action="overflow-smelt-new">熔炼新物 (+${smeltVal} 灵石)</button>
+            <button type="button" id="btn-overflow-discard-new" class="btn-ghost" data-action="overflow-discard-new">放弃新物</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="jade-card" style="gap:6px;">
+        <div style="font-size:12px;color:#ffe89e;font-weight:700;">或择一件行囊旧物替换并熔炼：</div>
+        <div style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;padding-right:4px;">
+          ${game.gearBag.map((old, idx) => {
+            const oRar = rarityNum(old.rarity);
+            const oLvl = Math.max(0, Math.floor(num(old.lvl, 0)));
+            const oSell = Math.max(1, Math.floor(num(old.sell, 15)));
+            return `
+              <div class="visual-tile rarity-${oRar}" style="justify-content:space-between;padding:6px 8px;gap:8px;">
+                <div style="display:flex;align-items:center;gap:7px;min-width:0;flex:1;">
+                  <img src="${ART[hasOwn(ART, old.art) ? old.art : "icon_blade"]}" alt="${escapeHtml(old.name)}" style="width:30px;height:30px;flex-shrink:0;" />
+                  <div style="min-width:0;">
+                    <div style="font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${oRar}">${escapeHtml(old.name)}${oLvl > 0 ? ` +${oLvl}` : ""}</div>
+                    <div style="font-size:10px;color:var(--text-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(formatGearStats(old))}</div>
+                  </div>
+                </div>
+                <button type="button" class="btn-jade" style="padding:4px 9px;font-size:10.5px;white-space:nowrap;" data-overflow-replace-idx="${idx}">替换并熔炼旧物 (+${oSell}石)</button>
+              </div>`;
+          }).join("")}
+        </div>
+      </div>
+    `, false, { kind: "gear_overflow" });
+  }
+
+  function flushDeferredChoiceModals() {
+    if (!game) return;
+    const ws = document.getElementById("welcome-screen");
+    if (ws && ws.style.display !== "none") return;
+    if (activeGearOverflowItem || activeSoulUnlockId) return;
+    const bd = document.getElementById("modal-backdrop");
+    if (bd && bd.classList.contains("open")) return;
+    if (pendingGearOverflowQueue.length > 0) {
+      activeGearOverflowItem = pendingGearOverflowQueue.shift();
+      openGearBagFullModal(activeGearOverflowItem.item);
+      return;
+    }
+    if (pendingSoulUnlockQueue.length > 0) {
+      activeSoulUnlockId = pendingSoulUnlockQueue.shift();
+      openSoulSealUnlockChoiceModal(activeSoulUnlockId);
+    }
+  }
+
   function equipGearWithOptionalTransfer(item, transferQuench = false) {
     if (!game || !item) return null;
     const bagIdx = game.gearBag.indexOf(item);
@@ -15286,11 +15990,11 @@ const ART = {
         prev.lvl = 0;
         transferredLvl = prevLvl;
       }
-      game.gearBag.unshift(prev);
-      while (game.gearBag.length > 24) {
-        const dropIdx = game.gearBag.findLastIndex(x => (x.lvl || 0) === 0);
-        const rm = game.gearBag.splice(dropIdx >= 0 ? dropIdx : game.gearBag.length - 1, 1)[0];
-        if (rm) game.stones += (rm.sell || 12);
+      if (game.gearBag.length < GEAR_BAG_LIMIT) {
+        game.gearBag.unshift(prev);
+      } else {
+        pendingGearOverflowQueue.push({ item: prev, opts: { silentToast: true } });
+        flushDeferredChoiceModals();
       }
     }
     game.equippedGear[item.slot] = item;
@@ -15378,20 +16082,22 @@ const ART = {
       syncFlyingSwords();
       addFloat(`佩装【${item.name}】↑`, arena.player.x, arena.player.y - 62, RARITIES[item.rarity].color, 18, true);
       showToast(`★ 穿戴仙装【${item.name}】（${formatGearStats(item)}）`);
-    } else {
+    } else if (game.gearBag.length < GEAR_BAG_LIMIT) {
       // Never silently overwrite an occupied or enhanced slot! Store safely & show non-blocking compare card.
       game.gearBag.unshift(item);
-      while (game.gearBag.length > 24) {
-        const dropIdx = game.gearBag.findLastIndex(x => x !== item && (x.lvl || 0) === 0);
-        const rm = game.gearBag.splice(dropIdx >= 0 ? dropIdx : game.gearBag.length - 1, 1)[0];
-        if (rm) game.stones += (rm.sell || 12);
-      }
       pendingCompareGear = item;
       renderGearCompareCard();
       addFloat(`✦ 拾获【${item.name}】· 可对比换装`, arena.player.x, arena.player.y - 54, RARITIES[item.rarity].color, 16, true);
       if (!opts.silentToast) {
         showToast(`✦ 拾获【${item.name}】已收入行囊，可在右下对比卡一键换装或无损继承淬火！`);
       }
+    } else {
+      // G9-1: Full bag (24/24) — NEVER auto-smelt! Queue explicit player disposal choice modal.
+      pendingGearOverflowQueue.push({ item, opts });
+      if (!opts.silentToast) {
+        showToast(`行囊已满 (${GEAR_BAG_LIMIT}/${GEAR_BAG_LIMIT})，请处置新获仙装【${item.name}】！`);
+      }
+      flushDeferredChoiceModals();
     }
     saveGame();
     updateHud();
@@ -15965,7 +16671,7 @@ const ART = {
     const asc = metaState.ascensions || 0;
     if (asc >= spec.reqAsc) return true;
     if (asc >= 1 && (metaState.bestCalamityTier || 0) >= spec.tier - 1) return true;
-    if (game && game.unlockAllArcana) return true;
+    if (sandboxMode || (game && game.unlockAllArcana)) return true;
     return false;
   }
 
@@ -15979,7 +16685,7 @@ const ART = {
 
   function isEcosystemSystemUnlocked(g, sysId) {
     if (!g) return false;
-    if (g.unlockAllArcana) return true;
+    if (sandboxMode || g.unlockAllArcana) return true;
     const spec = getEcosystemSystemSpec(sysId);
     if (!spec) return true;
     return rankOf(g.realm) >= rankOf(spec.min);
@@ -15991,12 +16697,12 @@ const ART = {
     const spec = getEcosystemSystemSpec(sysId);
     const reqName = spec && REALMS[spec.min] ? REALMS[spec.min].name : "更高境界";
     const sysName = spec ? spec.name : "高阶试炼";
-    showToast(`🔒 【${sysName}】将于【${reqName}期】随主线解封；亦可于右上【仙阁 → 全神通演武】一键提前演武！`);
+    showToast(`🔒 【${sysName}】将于【${reqName}期】随主线解封；亦可于右上【仙阁 → 开启演武沙盒】隔离体验！`);
     return false;
   }
 
   function recordPastLifeInHall(g, endId) {
-    if (!g || g.lifeRecorded) return null;
+    if (!g || g.lifeRecorded || sandboxMode) return null;
     ensureMetaState();
     const score = computeCompetitionScore(g);
     const gradeInfo = getScoreGrade(score, g);
@@ -16069,7 +16775,7 @@ const ART = {
     closeDrawer();
     arena.paused = true;
     const curRank = rankOf(game.realm);
-    const fullOpen = !!game.unlockAllArcana;
+    const fullOpen = Boolean(sandboxMode || game.unlockAllArcana);
     const totalSys = SYSTEM_ECOSYSTEM_LADDER.reduce((s, t) => s + t.systems.length, 0);
     const unlockedSys = SYSTEM_ECOSYSTEM_LADDER.reduce((s, t) => s + t.systems.filter(x => isEcosystemSystemUnlocked(game, x.id)).length, 0);
 
@@ -16082,7 +16788,7 @@ const ART = {
             <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:3px;">问道阶梯 · 高阶系统随境解封图谱（${unlockedSys}/${totalSys}）</h2>
           </div>
           <div style="display:flex;gap:6px;align-items:center;">
-            <button type="button" class="btn-jade" style="padding:5px 11px;font-size:11px;" data-action="toggle-arcana-all-roadmap">${fullOpen ? "★ 全神通演武：已开启" : "⚡ 开启全神通演武"}</button>
+            <button type="button" class="btn-jade" style="padding:5px 11px;font-size:11px;" data-action="toggle-arcana-all-roadmap">${sandboxMode ? "🧪 退出演武沙盒" : "🧪 开启全神通演武沙盒"}</button>
             <button type="button" class="btn-ghost" data-modal-close="1">返回道场 ✕</button>
           </div>
         </div>
@@ -16250,7 +16956,7 @@ const ART = {
     if (hasLaw(g, "age_might")) rawPassivePct += Math.min(0.30, Math.floor(Math.max(0, years - 18) / 10) * 0.06);
     if (hasLaw(g, "karma_resonance")) rawPassivePct += Math.min(0.28, Object.keys(g.choices || {}).length * 0.05);
     if (hasLaw(g, "wealth_power")) rawPassivePct += Math.min(0.36, Math.floor((g.stones || 0) / 100) * 0.04);
-    if (stoneCurioLv > 0) rawPassivePct += Math.min(0.40, Math.floor((g.stones || 0) / 100) * 0.04 * stoneCurioLv);
+    if (stoneCurioLv > 0) rawPassivePct += Math.min(PERM_GROWTH_CAPS.curioStoneAlchemyDmgCap, Math.floor((g.stones || 0) / 100) * 0.04 * stoneCurioLv);
     if (shieldThornLv > 0 && arena && arena.player && (arena.player.shieldHp || 0) > 0) rawPassivePct += Math.min(0.45, 0.20 * shieldThornLv);
     if (setB && setB.atkMult) rawPassivePct += setB.atkMult;
     rawPassivePct += ks.mode === "demonic" ? 0.18 : ks.mode === "righteous" ? 0.06 : 0;
@@ -17070,6 +17776,7 @@ const ART = {
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.celestialSpire = null;
+    arena.customSeedRun = null;
     arena.props.push({
       id: "hub_sect_defense", kind: "sect_defense_trigger", art: "prop_guardian_sword_pylon",
       name: `护山大阵 · Lv.${lvMap.guard_array}`, badge: `常驻减伤+${(lvMap.guard_array - 1) * 4} · 点击开启守卫战`,
@@ -17106,6 +17813,7 @@ const ART = {
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.celestialSpire = null;
+    arena.customSeedRun = null;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
     arena.nearbyProp = null;
@@ -17777,6 +18485,7 @@ const ART = {
   }
 
   function spawnGearDrop(x, y, minRarity = 1) {
+    if (isPracticeModeActive()) return;
     const canvas = document.getElementById("fx-canvas");
     const pos = clampToPlaza(x, y, canvas.width || 1440, canvas.height || 900);
     const gear = rollGearItem(arena.stageIdx, minRarity);
@@ -17838,7 +18547,7 @@ const ART = {
 
   function spawnSingleEnemy(id, x, y, mult = 1.0, isBoss = false, customName = null) {
     const spec = ENEMIES[id] || ENEMIES.wolf;
-    if (!metaState.seenEnemies.includes(id)) {
+    if (!sandboxMode && !isPracticeModeActive() && !metaState.seenEnemies.includes(id)) {
       metaState.seenEnemies.push(id);
       saveMeta();
     }
@@ -17904,6 +18613,7 @@ const ART = {
   }
 
   function spawnDrop(kind, x, y, val = 1) {
+    if (isPracticeModeActive() && kind !== "essence") return;
     const canvas = document.getElementById("fx-canvas");
     const pos = clampToPlaza(x, y, canvas.width || 1440, canvas.height || 900);
     arena.drops.push({
@@ -18515,7 +19225,7 @@ const ART = {
       if (marks > 0) {
         totalExplosions += marks;
         arena.stageTechDone = true;
-        if (marks >= 2 && game && game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
+        if (!isPracticeModeActive() && marks >= 2 && game && game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
         e.swordMarks = keepOneMark ? 1 : 0;
         addDecal(e.x, e.y + 18, Math.random() * 3, 52, marks >= 3 ? "spider_crack" : "scorch");
         if (isWanJianBuild(game) || getCurioStacks(game, "curio_mark_nova") > 0) {
@@ -18669,7 +19379,7 @@ const ART = {
       registerStyleAction("deflect", 155);
       pushTelemetryInput("✦识破剑反!", false);
       arena.stageTechDone = true;
-      if (game && game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
+      if (!isPracticeModeActive() && game && game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
       unlockAchievement("ach_break");
       unlockAchievement("ach_combo");
       bumpCombo(5);
@@ -18682,7 +19392,7 @@ const ART = {
       addDecal(p.x + dx * 45, p.y + dy * 45, Math.atan2(dy, dx), 78, "spider_crack");
       pushBladeArc(p.x + dx * 36, p.y + dy * 24, Math.atan2(dy, dx), 156, "#fff3be", 1, true);
       addFloat("当！！识破 · 剑反碎势！", p.x, p.y - 58, "#fff3be", 23, true);
-      game.stones += 12;
+      if (!isPracticeModeActive()) game.stones += 12;
       game.mp = Math.min(st.maxMp, (game.mp || 0) + 16);
       if (isThunderBuild(game)) {
         arena.thunderOrbs.push({ x: startX, y: startY, life: 5.0, tickCd: 0.1 });
@@ -18695,7 +19405,7 @@ const ART = {
       GamepadSystem.rumble(0.75, 0.82, 190);
       pushTelemetryInput("☯太虚凝时!", false);
       arena.stageTechDone = true;
-      if (game && game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
+      if (!isPracticeModeActive() && game && game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
       arena.witchTime = 1.55 + (hasKeepsake(game, "yan") ? 0.45 : 0);
       arena.camZoom = 1.06;
       Sound.bianzhong(659.25, 0.10);
@@ -18949,9 +19659,8 @@ const ART = {
     } else {
       game.inventory.healing_pill -= 1;
     }
-    if (hasDestinyFruit(game, "glutton_pill")) {
-      game.atkFlatBonus = (game.atkFlatBonus || 0) + 6;
-      game.maxHpBonus = (game.maxHpBonus || 0) + 18;
+    if (!isPracticeModeActive() && hasDestinyFruit(game, "glutton_pill")) {
+      grantPermanentStatBonus(game, { atk: 6, hp: 18, source: "alchemy" });
     }
     const daoHealAmp = st.daoBonuses ? st.daoBonuses.healMult : 1.0;
     const daoShieldAmp = st.daoBonuses ? st.daoBonuses.shieldMult : 1.0;
@@ -19034,7 +19743,7 @@ const ART = {
         }
       });
     }
-    saveGame();
+    if (!isPracticeModeActive()) saveGame();
     updateHud();
   }
 
@@ -19065,30 +19774,37 @@ const ART = {
     if (itemId === "longevity_pill") {
       game.inventory.longevity_pill -= 1;
       game.lifespanBonusMonths = (game.lifespanBonusMonths || 0) + 360;
-      game.maxHpBonus = (game.maxHpBonus || 0) + 15;
+      const hpRes = grantPermanentStatBonus(game, { hp: 15, source: "alchemy" });
       const stNew = getCombatStats(game);
-      game.hp = Math.min(stNew.maxHp, game.hp + 15);
+      if (hpRes.grantedHp > 0) game.hp = Math.min(stNew.maxHp, game.hp + hpRes.grantedHp);
       const lf = getLifespanInfo(game);
       if (Array.isArray(game.journal)) game.journal.unshift(`服下【延寿青莲丹】，寿元延至 ${lf.maxYears} 载！`);
       Sound.fanfare();
       addRipple(arena.player.x, arena.player.y + 18, 120, "#70ffe6");
       addFloat("🌿 延寿青莲丹 · 寿元 +30 载！", arena.player.x, arena.player.y - 54, "#70ffe6", 18, true);
-      showToast(`🌿 服下【延寿青莲丹】· 寿元永久 +30 载（${lf.curYears}/${lf.maxYears} 载）且气血上限 +15！`);
+      showToast(hpRes.grantedHp > 0
+        ? `🌿 服下【延寿青莲丹】· 寿元永久 +30 载（${lf.curYears}/${lf.maxYears} 载）且气血上限 +${hpRes.grantedHp}${hpRes.hpCapped ? `（丹道气血已达上限 ${hpRes.pg.alchemyHp}/${hpRes.caps.alchemyHp}）` : ""}！`
+        : `🌿 服下【延寿青莲丹】· 寿元永久 +30 载（${lf.curYears}/${lf.maxYears} 载，本境丹道永久气血已达上限 ${hpRes.pg.alchemyHp}/${hpRes.caps.alchemyHp}）！`);
       saveGame(); updateHud();
       if (drawerOpen) renderDrawerContent();
       return;
     }
     if (itemId === "blood_fury_pill") {
+      const caps = getPermGrowthCaps(game);
+      if ((game.atkFlatBonus || 0) >= caps.atkFlatBonus) {
+        showToast(`本境永久剑攻已达上限（${game.atkFlatBonus}/${caps.atkFlatBonus}），破境后再服【嗜血煞丹】以免白损寿元！`);
+        return;
+      }
       game.inventory.blood_fury_pill -= 1;
-      game.atkFlatBonus = (game.atkFlatBonus || 0) + 10;
+      const atkRes = grantPermanentStatBonus(game, { atk: 10, source: "general" });
       game.karmaScore = Math.max(-100, Math.min(100, (game.karmaScore || 0) - 15));
       game.elapsedMonths = (game.elapsedMonths || 0) + 24;
       const lf = getLifespanInfo(game);
-      if (Array.isArray(game.journal)) game.journal.unshift(`吞服黑市【嗜血煞丹】，剑攻永久+10，折损2载寿元。`);
+      if (Array.isArray(game.journal)) game.journal.unshift(`吞服黑市【嗜血煞丹】，剑攻永久+${atkRes.grantedAtk}，折损2载寿元。`);
       Sound.clang(0.95, 0.14);
       addRipple(arena.player.x, arena.player.y + 18, 120, "#ff5263");
-      addFloat("🔥 嗜血煞丹 · 剑攻+10 / 魔心-15！", arena.player.x, arena.player.y - 54, "#ff7888", 18, true);
-      showToast(`🔥 吞服【嗜血煞丹】· 剑攻永久 +10、魔心 -15、骨龄 +2 载（当前 ${lf.curYears}/${lf.maxYears} 载）！`);
+      addFloat(`🔥 嗜血煞丹 · 剑攻+${atkRes.grantedAtk} / 魔心-15！`, arena.player.x, arena.player.y - 54, "#ff7888", 18, true);
+      showToast(`🔥 吞服【嗜血煞丹】· 剑攻永久 +${atkRes.grantedAtk}${atkRes.atkCapped ? `（已达本境上限 ${game.atkFlatBonus}/${caps.atkFlatBonus}）` : ""}、魔心 -15、骨龄 +2 载（当前 ${lf.curYears}/${lf.maxYears} 载）！`);
       saveGame(); updateHud();
       if (drawerOpen) renderDrawerContent();
       return;
@@ -19101,8 +19817,10 @@ const ART = {
         gainRealmXp(Math.ceil(r.xpCap * 0.60));
         showToast(`服下【${it.name}】· 修为暴涨60%并凝2层护脉丹障！`);
       } else {
-        game.maxHpBonus = (game.maxHpBonus || 0) + 18;
-        showToast(`服下【${it.name}】· 渡劫护脉丹障+2，气血上限+18！`);
+        const hpRes = grantPermanentStatBonus(game, { hp: 18, source: "alchemy" });
+        showToast(hpRes.grantedHp > 0
+          ? `服下【${it.name}】· 渡劫护脉丹障+2，气血上限+${hpRes.grantedHp}${hpRes.hpCapped ? `（丹道气血已达上限 ${hpRes.pg.alchemyHp}/${hpRes.caps.alchemyHp}）` : ""}！`
+          : `服下【${it.name}】· 渡劫护脉丹障+2（本境丹道永久气血已达上限 ${hpRes.pg.alchemyHp}/${hpRes.caps.alchemyHp}）！`);
       }
       Sound.fanfare();
       saveGame(); updateHud();
@@ -19374,9 +20092,12 @@ const ART = {
 
     if (game.realm === "ascended") {
       game.status = "ascended";
-      metaState.ascensions = (metaState.ascensions || 0) + 1;
-      unlockAchievement("ach_ascend");
-      saveMeta(); saveGame(); updateHud();
+      if (!sandboxMode) {
+        metaState.ascensions = (metaState.ascensions || 0) + 1;
+        unlockAchievement("ach_ascend");
+        saveMeta();
+      }
+      saveGame(); updateHud();
       openEndingModal();
       return;
     }
@@ -19464,7 +20185,7 @@ const ART = {
           <button type="button" class="btn-ghost ${cloudOk ? "" : "eco-locked-btn"}" style="border-color:#80ecff;color:#b8f7ff;padding:4px 9px;font-size:11px;" data-action="start-cloud-sea" data-eco-lock-tag="金丹启">${cloudOk ? "☁ 九霄云海空战" : "🔒 九霄空战"}</button>
           <button type="button" class="btn-ghost ${spireOk ? "" : "eco-locked-btn"}" style="border-color:#ff9eff;color:#f5d0ff;padding:4px 9px;font-size:11px;" data-action="open-celestial-spire" data-eco-lock-tag="金丹启">${spireOk ? "🏯 太虚登仙台(肉鸽)" : "🔒 登仙台"}</button>
           <button type="button" class="btn-ghost ${defOk ? "" : "eco-locked-btn"}" style="border-color:#70ffe6;color:#9effec;padding:4px 9px;font-size:11px;" data-action="start-sect-defense" data-eco-lock-tag="筑基启">${defOk ? "🛡 护山守卫战" : "🔒 护山战"}</button>
-          <button type="button" class="btn-gold ${rushOk ? "" : "eco-locked-btn"}" style="padding:4px 10px;font-size:11px;" data-start-rush="7" data-eco-lock-tag="元婴启">${rushOk ? "🐉 太古烛龙巨神" : "🔒 太古烛龙"}</button>
+          <button type="button" class="btn-gold ${rushOk ? "" : "eco-locked-btn"}" style="padding:4px 10px;font-size:11px;" data-start-rush="7" data-eco-lock-tag="元婴启">${rushOk ? "🐉 太古烛龙(练习)" : "🔒 太古烛龙"}</button>
           <button class="btn-ghost" data-modal-close="1">收起舆图 ×</button>
         </div>
       </div>
@@ -19486,7 +20207,7 @@ const ART = {
               class="kyushu-node-btn ${isCur ? "current-loc" : ""} ${nd.kind === "hub" ? "hub-loc" : ""}"
               style="left:${nd.x}%;top:${nd.y}%;"
               data-map-node="${nd.id}"
-              data-tip="${escTip(nd.name + " · " + nd.sub, `特产：${nd.drop}（${unlocked ? "点击立即御剑前往" : "需晋升" + REALMS[nd.min].name + "解锁，或于仙阁开启全神通演武"}）`)}"
+              data-tip="${escTip(nd.name + " · " + nd.sub, `特产：${nd.drop}（${unlocked ? "点击立即御剑前往" : "需晋升" + REALMS[nd.min].name + "解锁，或于仙阁开启演武沙盒"}）`)}"
               ${!unlocked ? "disabled" : ""}>
               <span class="kyushu-node-title">${nd.name}</span>
               <span class="kyushu-node-sub">${unlocked ? nd.sub : `🔒 ${REALMS[nd.min].name}开启`}</span>
@@ -19552,9 +20273,15 @@ const ART = {
     `, false);
   }
 
-  function openIconicUpgradeDraft(titleText, isReroll = false) {
+  function isAllDaoLawsCollected(g) {
+    if (!g || !Array.isArray(g.laws)) return false;
+    return Object.keys(DAO_LAWS).every(id => g.laws.includes(id));
+  }
+
+  function openIconicUpgradeDraft(titleText, isReroll = false, opts = {}) {
     if (!game) return;
-    if (!isReroll) { activeDraftRerolls = 1 + getSanctumBonuses(game).bonusLawRerolls; activeDraftMeta = { titleText, lastIds: [] }; }
+    const draftSource = (opts && opts.source) || (isReroll && activeDraftMeta && activeDraftMeta.source) || "default";
+    if (!isReroll) { activeDraftRerolls = 1 + getSanctumBonuses(game).bonusLawRerolls; activeDraftMeta = { titleText, lastIds: [], source: draftSource }; }
     arena.paused = true;
     const petCandidates = [];
     if (!game.pet.id) {
@@ -19589,12 +20316,14 @@ const ART = {
       if (picks.length >= 3) break;
       if (!picks.some(p => p.id === c.id)) picks.push(c);
     }
-    activeDraftMeta = { titleText, lastIds: picks.map(c => c.id) };
+    activeDraftMeta = { titleText, lastIds: picks.map(c => c.id), source: draftSource };
 
     if (picks.length === 0) {
       arena.paused = drawerOpen;
-      game.stones += 120;
-      showToast("诸法皆通 · 获赐 120 灵石！");
+      const fallbackStones = (activeDraftMeta && activeDraftMeta.source === "jade_wager") ? 30 : 120;
+      game.stones += fallbackStones;
+      showToast(`诸法皆通 · 获赐 ${fallbackStones} 灵石！`);
+      saveGame();
       updateHud();
       return;
     }
@@ -19741,7 +20470,7 @@ const ART = {
       const isAerialExec = (pEx.z || 0) > 12 || pEx.plunging;
       const isHeavyExec = !isAerialExec && arena.weaponPosture === "xuanzhong";
       arena.stageTechDone = true;
-      if (game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
+      if (!isPracticeModeActive() && game.goalStats) game.goalStats.techBreaks = (game.goalStats.techBreaks || 0) + 1;
       game.mp = Math.min(st.maxMp, (game.mp || 0) + 22);
       Sound.triggerDucking(340, 0.22, 1250);
       GamepadSystem.rumble(1.0, 0.95, 290);
@@ -19852,7 +20581,8 @@ const ART = {
     const aerialBoonMult = (hasRunBoon("aerial_reign") && ((arena.player.z || 0) > 10 || arena.player.plunging)) ? 1.45 : 1.0;
     let dmg = Math.max(1, Math.round(rawDmg * hexGuardMult * aerialBoonMult * brokenMult * (isCrit ? effCritMult : 1.0)));
     if (isCrit && getCurioStacks(game, "curio_crit_silk") > 0) {
-      dmg = Math.round(dmg * (1 + 0.18 * getCurioStacks(game, "curio_crit_silk")));
+      const critSilkBonus = Math.min(PERM_GROWTH_CAPS.curioCritSilkDmgCap, 0.18 * getCurioStacks(game, "curio_crit_silk"));
+      dmg = Math.round(dmg * (1 + critSilkBonus));
       arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + 3);
       arena.bondSynergy = Math.min(100, (arena.bondSynergy || 0) + 3);
     }
@@ -20026,8 +20756,11 @@ const ART = {
     const idx = arena.enemies.indexOf(e);
     if (idx < 0) return;
     arena.enemies.splice(idx, 1);
-    game.wins += 1;
-    if (game.goalStats) game.goalStats.kills = (game.goalStats.kills || 0) + 1;
+    const inPractice = isPracticeModeActive();
+    if (!inPractice) {
+      game.wins += 1;
+      if (game.goalStats) game.goalStats.kills = (game.goalStats.kills || 0) + 1;
+    }
     if (getKarmaState(game).mode === "demonic") {
       const stKill = getCombatStats(game);
       const vamp = Math.max(4, Math.round(stKill.maxHp * (e.isBoss ? 0.16 : 0.06)));
@@ -20039,21 +20772,26 @@ const ART = {
     }
     if (e.isBoss) {
       triggerKillCamStamp((e.isTitan && e.climbExecuted) ? "踏躯逆鳞斩" : "一剑诛邪");
-      const isStarNight = getCurrentCelestialPhase().id === "star_night";
-      game.bonusStarPts = (game.bonusStarPts || 0) + (isStarNight ? 2 : 1);
-      if (isStarNight) {
-        addFloat("🌌 极夜星河赐福 · 额外掉落稀有【鸿蒙星魄 +1】！", e.x, e.y - 68, "#b8c8ff", 20, true);
-      }
       captureBattleHighlightFrame("一剑诛邪", `斩灭首领·${e.name}`, e.maxHp, 4);
-      const unlockMap = { warden: "blood_warden", serpent: "frost_phoenix", puppet: "sword_fiend", sentinel: "thunder_lord", trial_gate: "taixu_demon", shadow: "taixu_demon" };
-      const sKey = e.isInnerDemon ? "taixu_demon" : unlockMap[e.id];
-      if (sKey && Array.isArray(game.unlockedSouls) && !game.unlockedSouls.includes(sKey)) {
-        game.unlockedSouls.push(sKey);
-        game.equippedSoul = sKey;
-        showToast(`👹 炼化妖王本源！已解锁并佩带镇妖魂印【${SOUL_SPIRITS[sKey].name}】（按 C / RB 施放）！`);
+      if (!inPractice) {
+        const isStarNight = getCurrentCelestialPhase().id === "star_night";
+        game.bonusStarPts = (game.bonusStarPts || 0) + (isStarNight ? 2 : 1);
+        if (isStarNight) {
+          addFloat("🌌 极夜星河赐福 · 额外掉落稀有【鸿蒙星魄 +1】！", e.x, e.y - 68, "#b8c8ff", 20, true);
+        }
+        const unlockMap = { warden: "blood_warden", serpent: "frost_phoenix", puppet: "sword_fiend", sentinel: "thunder_lord", trial_gate: "taixu_demon", shadow: "taixu_demon" };
+        const sKey = e.isInnerDemon ? "taixu_demon" : unlockMap[e.id];
+        if (sKey && Array.isArray(game.unlockedSouls) && !game.unlockedSouls.includes(sKey)) {
+          game.unlockedSouls.push(sKey);
+          showToast(`👹 炼化妖王本源！已解锁镇妖魂印【${SOUL_SPIRITS[sKey].name}】！`);
+          if (!pendingSoulUnlockQueue.includes(sKey) && activeSoulUnlockId !== sKey) {
+            pendingSoulUnlockQueue.push(sKey);
+          }
+          flushDeferredChoiceModals();
+        }
       }
     }
-    if (hasGearAffix(game, "greed_wolf") || getActivePactCount(game) > 0) {
+    if (!inPractice && (hasGearAffix(game, "greed_wolf") || getActivePactCount(game) > 0)) {
       game.stones += Math.round((e.isBoss ? 18 : 4) * (1 + getActivePactCount(game) * 0.25));
     }
     addDecal(e.x, e.y + 14, cutAng, e.isBoss ? 54 : 32, "slash");
@@ -20066,21 +20804,24 @@ const ART = {
       ang: cutAng, t: 0, isBoss: e.isBoss
     });
 
-    // Equipment Loot Drops with Sky-Piercing Beams!
+    // Equipment Loot Drops with Sky-Piercing Beams! (Suppressed in Practice Mode!)
     const calDrop = getCalamityCycleSpec(game);
     if (e.isBoss) {
       Sound.drum(0.28);
       arena.hitStop = 0.08;
       arena.shake = 12;
-      spawnDrop("core", e.x - 10, e.y - 10, 1);
-      spawnGearDrop(e.x + 16, e.y + 6, Math.min(4, 2 + Math.floor(arena.stageIdx / 2) + (calDrop.dropBonus || 0)));
-    } else if (e.guaranteedGearRarity !== undefined) {
+      if (!inPractice) {
+        spawnDrop("core", e.x - 10, e.y - 10, 1);
+        spawnGearDrop(e.x + 16, e.y + 6, Math.min(4, 2 + Math.floor(arena.stageIdx / 2) + (calDrop.dropBonus || 0)));
+      }
+    } else if (!inPractice && e.guaranteedGearRarity !== undefined) {
       spawnGearDrop(e.x, e.y, Math.min(4, e.guaranteedGearRarity + (calDrop.dropBonus || 0)));
-    } else if (!e.isTreasure && Math.random() < (0.24 + (calDrop.tier > 0 ? 0.08 : 0))) {
+    } else if (!inPractice && !e.isTreasure && Math.random() < (0.24 + (calDrop.tier > 0 ? 0.08 : 0))) {
       spawnGearDrop(e.x, e.y, Math.min(3, calDrop.dropBonus || 0));
     }
 
     if (e.isTreasure) {
+      if (inPractice) return;
       Sound.fanfare();
       for (let k = 0; k < 5; k++) spawnDrop("stone", e.x + (Math.random() - 0.5) * 32, e.y + (Math.random() - 0.5) * 32, 25);
       spawnGearDrop(e.x, e.y, 2);
@@ -20113,42 +20854,44 @@ const ART = {
       game.mp = Math.min(stV.maxMp, (game.mp || 0) + 12);
       addFloat(`✦ 噬灵归元 +${vHeal}血`, arena.player.x, arena.player.y - 44, "#70ffe6", 14);
     }
-    const specD = ENEMIES[e.id] || ENEMIES.wolf;
-    const playerRank = rankOf(game.realm);
-    const stageDelta = playerRank - arena.stageIdx;
-    const realmPenalty = stageDelta <= 0 ? 1.0 : stageDelta === 1 ? 0.55 : stageDelta === 2 ? 0.28 : 0.12;
-    const isPrologueWave = arena.stageIdx === 0 && !arena.towerMode && !game.openingChoice;
-    const baseEnemyXp = (specD.xp || 14) * (1 + arena.stageIdx * 0.25);
-    const roomXpMult = e.isBoss ? 3.2 : (curNodeD && curNodeD.type === "vanguard_clash" ? 1.4 : (curNodeD && curNodeD.type === "elite_loot" ? 1.3 : 1.0));
-    const capShare = (r.xpCap || 60) * (e.isBoss ? 0.18 : 0.036) * realmPenalty;
-    const rawXpOrb = isPrologueWave
-      ? 7
-      : (stageDelta >= 2
-          ? Math.max(2, Math.round(baseEnemyXp * roomXpMult * realmPenalty))
-          : Math.max(Math.min(baseEnemyXp * roomXpMult, capShare * 1.45), capShare));
-    const xpOrbVal = Math.max(2, Math.round(rawXpOrb * calDrop.rewardMult));
-    const daoDropB = getDaoBonuses(game);
-    const wolfStarMult = (currentOmen(game).id === "wolf_star" ? 1.4 : 1.0) * (hasRunBoon("gold_alchemist") ? 1.45 : 1.0) * calDrop.rewardMult * daoDropB.stoneMult;
-    spawnDrop("qi", e.x, e.y, xpOrbVal);
-    spawnDrop("stone", e.x + 12, e.y - 8, Math.round((e.isBoss ? 48 + arena.stageIdx * 24 : 10 + arena.stageIdx * 5) * wolfStarMult));
+    if (!inPractice) {
+      const specD = ENEMIES[e.id] || ENEMIES.wolf;
+      const playerRank = rankOf(game.realm);
+      const stageDelta = playerRank - arena.stageIdx;
+      const realmPenalty = stageDelta <= 0 ? 1.0 : stageDelta === 1 ? 0.55 : stageDelta === 2 ? 0.28 : 0.12;
+      const isPrologueWave = arena.stageIdx === 0 && !arena.towerMode && !game.openingChoice;
+      const baseEnemyXp = (specD.xp || 14) * (1 + arena.stageIdx * 0.25);
+      const roomXpMult = e.isBoss ? 3.2 : (curNodeD && curNodeD.type === "vanguard_clash" ? 1.4 : (curNodeD && curNodeD.type === "elite_loot" ? 1.3 : 1.0));
+      const capShare = (r.xpCap || 60) * (e.isBoss ? 0.18 : 0.036) * realmPenalty;
+      const rawXpOrb = isPrologueWave
+        ? 7
+        : (stageDelta >= 2
+            ? Math.max(2, Math.round(baseEnemyXp * roomXpMult * realmPenalty))
+            : Math.max(Math.min(baseEnemyXp * roomXpMult, capShare * 1.45), capShare));
+      const xpOrbVal = Math.max(2, Math.round(rawXpOrb * calDrop.rewardMult));
+      const daoDropB = getDaoBonuses(game);
+      const wolfStarMult = (currentOmen(game).id === "wolf_star" ? 1.4 : 1.0) * (hasRunBoon("gold_alchemist") ? 1.45 : 1.0) * calDrop.rewardMult * daoDropB.stoneMult;
+      spawnDrop("qi", e.x, e.y, xpOrbVal);
+      spawnDrop("stone", e.x + 12, e.y - 8, Math.round((e.isBoss ? 48 + arena.stageIdx * 24 : 10 + arena.stageIdx * 5) * wolfStarMult));
 
-    // Real 7-material combat drops wired from ENEMIES[id].loot + CAMPAIGN_ACTS[stageIdx]
-    const matMult = ((climD && climD.id === "spirit_mist") || (curNodeD && curNodeD.type === "elemental_vault")) ? 2 : 1;
-    const actSpec = CAMPAIGN_ACTS[arena.stageIdx] || CAMPAIGN_ACTS[0];
-    const lootEntries = Object.entries(specD.loot || {});
-    if (e.isBoss) {
-      const bossMatSet = new Set([...(actSpec.bossMats || []), ...lootEntries.map(([k]) => k)]);
-      let offsetIdx = 0;
-      bossMatSet.forEach(matKey => {
-        if (ITEMS[matKey]) {
-          spawnDrop(matKey, e.x - 18 + offsetIdx * 16, e.y + 10, matMult);
-          offsetIdx += 1;
-        }
-      });
-    } else if (Math.random() < 0.56) {
-      const matPool = [...(actSpec.matDrops || ["herb"]), ...lootEntries.map(([k]) => k)].filter(k => ITEMS[k]);
-      const chosenMat = matPool.length ? matPool[Math.floor(Math.random() * matPool.length)] : "herb";
-      for (let hb = 0; hb < matMult; hb++) spawnDrop(chosenMat, e.x - 14 + hb * 12, e.y + 8, 1);
+      // Real 7-material combat drops wired from ENEMIES[id].loot + CAMPAIGN_ACTS[stageIdx]
+      const matMult = ((climD && climD.id === "spirit_mist") || (curNodeD && curNodeD.type === "elemental_vault")) ? 2 : 1;
+      const actSpec = CAMPAIGN_ACTS[arena.stageIdx] || CAMPAIGN_ACTS[0];
+      const lootEntries = Object.entries(specD.loot || {});
+      if (e.isBoss) {
+        const bossMatSet = new Set([...(actSpec.bossMats || []), ...lootEntries.map(([k]) => k)]);
+        let offsetIdx = 0;
+        bossMatSet.forEach(matKey => {
+          if (ITEMS[matKey]) {
+            spawnDrop(matKey, e.x - 18 + offsetIdx * 16, e.y + 10, matMult);
+            offsetIdx += 1;
+          }
+        });
+      } else if (Math.random() < 0.56) {
+        const matPool = [...(actSpec.matDrops || ["herb"]), ...lootEntries.map(([k]) => k)].filter(k => ITEMS[k]);
+        const chosenMat = matPool.length ? matPool[Math.floor(Math.random() * matPool.length)] : "herb";
+        for (let hb = 0; hb < matMult; hb++) spawnDrop(chosenMat, e.x - 14 + hb * 12, e.y + 8, 1);
+      }
     }
     if (climD && climD.id === "spirit_mist") {
       const stM = getCombatStats(game);
@@ -20164,16 +20907,24 @@ const ART = {
         Sound.fanfare();
         const sEpoch = arena.stageEpoch;
         setTimeout(() => {
-          if (!game || arena.stageEpoch !== sEpoch || !arena.celestialSpire) return;
+          if (!game || arena.stageEpoch !== sEpoch || !arena.celestialSpire || !arena.celestialSpire.active) return;
           arena.waveTransitioning = false;
-          openSpireCurioDraftModal();
+          if (isPracticeModeActive() || arena.celestialSpire.practiceMode || (arena.celestialSpire.startFloor && arena.celestialSpire.startFloor > 1)) {
+            completeSpirePracticeFloor();
+          } else {
+            openSpireCurioDraftModal();
+          }
         }, 420);
       } else if (arena.bossRush && arena.bossRush.active) {
         arena.waveTransitioning = true;
         if (arena.bossRush.bout >= 7) {
-          arena.waveTransitioning = false;
           Sound.fanfare();
-          setTimeout(() => openBossRushVictoryModal(), 450);
+          const rEpoch = arena.stageEpoch;
+          setTimeout(() => {
+            if (!game || arena.stageEpoch !== rEpoch || !arena.bossRush || !arena.bossRush.active) return;
+            arena.waveTransitioning = false;
+            openBossRushVictoryModal();
+          }, 450);
         } else {
           arena.bossRush.bout += 1;
           const stR = getCombatStats(game);
@@ -20184,7 +20935,7 @@ const ART = {
           showToast(`★ 连战破阵！气血回补30%，即将迎战【${nextSpec.title}】！`);
           const rEpoch = arena.stageEpoch;
           setTimeout(() => {
-            if (!game || arena.stageEpoch !== rEpoch || !arena.bossRush) return;
+            if (!game || arena.stageEpoch !== rEpoch || !arena.bossRush || !arena.bossRush.active) return;
             arena.waveTransitioning = false;
             spawnBossRushBout();
           }, 750);
@@ -20673,10 +21424,12 @@ const ART = {
             if (pr.destructible && pr.hp > 0 && Math.hypot(pr.x - gs.x, pr.y - gs.y) < 120) { damageBattleProp(pr, slamDmg); }
             else if (pr.kind === "rough_jade" && pr.hp > 0 && Math.hypot(pr.x - gs.x, pr.y - gs.y) < 110) {
               pr.hp = 0;
-              unlockAchievement("ach_jade");
-              spawnDrop("stone", pr.x, pr.y, 55 + arena.stageIdx * 22);
-              spawnGearDrop(pr.x - 12, pr.y, 1);
-              addFloat("巨阙开石 · 爆出灵器！", pr.x, pr.y - 34, "#ffe28a", 19, true);
+              if (!isPracticeModeActive()) {
+                unlockAchievement("ach_jade");
+                spawnDrop("stone", pr.x, pr.y, 55 + arena.stageIdx * 22);
+                spawnGearDrop(pr.x - 12, pr.y, 1);
+                addFloat("巨阙开石 · 爆出灵器！", pr.x, pr.y - 34, "#ffe28a", 19, true);
+              }
               arena.props = arena.props.filter(x => x !== pr);
             }
           });
@@ -20808,10 +21561,12 @@ const ART = {
                 Sound.clang(1.3, 0.05);
                 spawnSparks(tgt.x, tgt.y, 6, 0, 3.14, "#70ffe6");
                 if (tgt.hp <= 0) {
-                  unlockAchievement("ach_jade");
-                  spawnDrop("stone", tgt.x, tgt.y, 52 + arena.stageIdx * 22);
-                  spawnGearDrop(tgt.x - 10, tgt.y, 1);
-                  addFloat("原石爆裂 · 出灵器！", tgt.x, tgt.y - 34, "#4ad2b8", 18, true);
+                  if (!isPracticeModeActive()) {
+                    unlockAchievement("ach_jade");
+                    spawnDrop("stone", tgt.x, tgt.y, 52 + arena.stageIdx * 22);
+                    spawnGearDrop(tgt.x - 10, tgt.y, 1);
+                    addFloat("原石爆裂 · 出灵器！", tgt.x, tgt.y - 34, "#4ad2b8", 18, true);
+                  }
                   arena.props = arena.props.filter(x => x !== tgt);
                 }
               } else {
@@ -21482,6 +22237,10 @@ const ART = {
       if (dist < (d.kind === "gear" ? 115 : pullRadius)) { d.x += (dx / dist) * pullSpd; d.y += (dy / dist) * pullSpd; }
       else { d.x += d.vx; d.y += d.vy; }
       if (dist < 36) {
+        if (isPracticeModeActive() && d.kind !== "essence") {
+          arena.drops.splice(i, 1);
+          continue;
+        }
         const mult = (hasLaw(game, "destiny_eye") || currentOmen(game).id === "harvest") ? 2 : 1;
         if (d.kind === "gear" && d.gear) {
           Sound.fanfare();
@@ -21501,12 +22260,14 @@ const ART = {
           Sound.pluck(d.kind === "dao" || d.kind === "soul" ? 783.99 : 659.25, 0.12, 0.045, "triangle");
           addFloat(`+${matSpec ? matSpec.name : d.kind}${gainAmt > 1 ? " ×" + gainAmt : ""}`, p.x, p.y - 36, matColors[d.kind] || "#ffe28a", 15);
         } else if (d.kind === "sacred_core") {
-          game.atkFlatBonus = (game.atkFlatBonus || 0) + 14;
+          const atkRes = grantPermanentStatBonus(game, { atk: 14, source: "general" });
           game.stones += 85;
           game.inventory.core = (game.inventory.core || 0) + 1;
           arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + 35);
           Sound.fanfare();
-          addFloat(`★ 拾取【天工神髓】永久剑攻+14 · 灵石+85！`, p.x, p.y - 54, "#ffd86b", 19, true);
+          addFloat(atkRes.grantedAtk > 0
+            ? `★ 拾取【天工神髓】永久剑攻+${atkRes.grantedAtk} · 灵石+85！`
+            : `★ 拾取【天工神髓】灵石+85 · 妖核+1（剑攻已达本境上限）！`, p.x, p.y - 54, "#ffd86b", 19, true);
         } else if (d.kind === "essence") {
           arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + d.val);
           game.mp = Math.min(st.maxMp, (game.mp || 0) + 18);
@@ -21746,24 +22507,34 @@ const ART = {
       }
       game.hp = Math.max(10, game.hp - costHp);
       if (arena.celestialSpire) arena.celestialSpire.wagerDouble = true;
+      const inPractice = isPracticeModeActive();
       const bonusSt = 80 + ((arena.celestialSpire && arena.celestialSpire.floor) || 1) * 20;
-      game.stones += bonusSt;
+      if (!inPractice) game.stones += bonusSt;
       Sound.fanfare();
       arena.flash = 0.28; arena.flashColor = "#ff78c4";
-      addFloat(`🎲 燃血赌约成！-${costHp}血 · 奇物双倍直升 & +${bonusSt}灵石！`, pr.x, pr.y - 46, "#ff9eff", 19, true);
+      addFloat(inPractice
+        ? `🎲 练习模式燃血演武！-${costHp}血（不发灵石与奇物）`
+        : `🎲 燃血赌约成！-${costHp}血 · 奇物双倍直升 & +${bonusSt}灵石！`, pr.x, pr.y - 46, "#ff9eff", 19, true);
       arena.props.splice(idx, 1);
-      saveGame();
+      if (!inPractice) saveGame();
       updateHud();
     } else if (pr.kind === "immortal_spring") {
       game.hp = st.maxHp; game.mp = st.maxMp;
       refillImmortalGourd();
       arena.swordIntent = 100;
-      game.atkFlatBonus = (game.atkFlatBonus || 0) + 8;
+      const inPractice = isPracticeModeActive();
+      let springMsg = "✨ 沐浴太初满灵泉 · 状态全满、剑意100%！";
+      if (!inPractice) {
+        const atkRes = grantPermanentStatBonus(game, { atk: 8, source: "general" });
+        springMsg = atkRes.grantedAtk > 0
+          ? `✨ 沐浴太初满灵泉 · 状态全满、剑意100%且永久剑攻+${atkRes.grantedAtk}！`
+          : `✨ 沐浴太初满灵泉 · 状态全满、剑意100%（本境永久剑攻已达上限）！`;
+      }
       Sound.fanfare();
       addRipple(pr.x, pr.y + 16, 150, "#70ffe6");
-      addFloat("✨ 沐浴太初满灵泉 · 状态全满、剑意100%且永久剑攻+8！", pr.x, pr.y - 48, "#80ffea", 19, true);
+      addFloat(springMsg, pr.x, pr.y - 48, "#80ffea", 19, true);
       arena.props.splice(idx, 1);
-      saveGame();
+      if (!inPractice) saveGame();
       updateHud();
     } else if (pr.kind === "ravine_zipline") {
       triggerSwordGlideRavineDash(pr);
@@ -21774,11 +22545,13 @@ const ART = {
         game.inventory.herb -= 2;
         const count = (hasLaw(game, "nine_pill") || currentOmen(game).id === "alchemy_star") ? 2 : 1;
         game.inventory.healing_pill = (game.inventory.healing_pill || 0) + count;
-        game.maxHpBonus = (game.maxHpBonus || 0) + 12;
+        const hpRes = grantPermanentStatBonus(game, { hp: 12, source: "alchemy" });
         game.immortalPills += 1;
         unlockAchievement("ach_pill");
         Sound.fanfare();
-        addFloat(`九转成丹！生命上限+12 · 丹+${count}`, pr.x, pr.y - 42, "#f8e3ac", 17, true);
+        addFloat(hpRes.grantedHp > 0
+          ? `九转成丹！生命上限+${hpRes.grantedHp} · 丹+${count}`
+          : `九转成丹！丹+${count}（本境丹道气血已达上限）`, pr.x, pr.y - 42, "#f8e3ac", 17, true);
         saveGame();
         updateHud();
       } else {
@@ -22034,6 +22807,10 @@ const ART = {
     }
 
     game.hp = Math.max(0, game.hp - dmg);
+    if (arena.bossRush && arena.bossRush.active) {
+      arena.bossRush.hitsTaken = (arena.bossRush.hitsTaken || 0) + 1;
+      arena.bossRush.damageTaken = (arena.bossRush.damageTaken || 0) + dmg;
+    }
     p.invuln = 0.42;
     arena.comboCount = Math.floor(arena.comboCount * 0.5);
     arena.shake = 7;
@@ -24588,8 +25365,11 @@ const ART = {
       bossBanner.style.display = "flex";
       if (titanHud) titanHud.classList.remove("active");
       if (climbBtn) climbBtn.classList.remove("active");
-      document.getElementById("boss-banner-name").textContent = `🏯 太虚登仙台 · 第 ${sp.floor}/9 重天【${rMeta.name}】`;
-      document.getElementById("boss-banner-state").textContent = `奇物×${Object.values(game.spireCurios || {}).reduce((a, b) => a + b, 0)}层 · 镇守余 ${rem}`;
+      const spPractice = Boolean(sp.practiceMode || (sp.startFloor && sp.startFloor > 1));
+      document.getElementById("boss-banner-name").textContent = `${spPractice ? "【练习模式】" : ""}🏯 太虚登仙台 · 第 ${sp.floor}/9 重天【${rMeta.name}】`;
+      document.getElementById("boss-banner-state").textContent = spPractice
+        ? `练习模式（无奖不记榜）· 镇守余 ${rem}`
+        : `奇物×${Object.values(game.spireCurios || {}).reduce((a, b) => a + Math.min(PERM_GROWTH_CAPS.spireCurioMaxStack, num(b, 0)), 0)}层 · 镇守余 ${rem}`;
       document.getElementById("boss-hp-fill").style.width = `${Math.round((sp.floor / 9) * 100)}%`;
       document.getElementById("boss-posture-fill").style.width = "100%";
       return;
@@ -24632,7 +25412,8 @@ const ART = {
         climbBtn.classList.toggle("active", !!(boss.isTitan && boss.titanCollapsed && !boss.climbExecuted && !boss.climbInProgress));
       }
       bossBanner.style.display = "flex"; const rcc = document.getElementById("region-cinema-card"); if (rcc) rcc.classList.remove("active");
-      document.getElementById("boss-banner-name").textContent = boss.name;
+      const brPracticePrefix = (arena.bossRush && arena.bossRush.active && (arena.bossRush.practiceMode || (arena.bossRush.startBout && arena.bossRush.startBout > 1))) ? "【练习·无奖】" : "";
+      document.getElementById("boss-banner-name").textContent = `${brPracticePrefix}${boss.name}`;
       const hasPylon = arena.props.some(p => p.kind === "ward_pylon" && p.hp > 0);
       const wpSpecB = BOSS_WEAKPOINTS[boss.id];
       document.getElementById("boss-banner-state").textContent = hasPylon ? "🛡 阵眼金身护体 (先斩镇妖阵眼柱!)" : (arena.reversedDomainTimer || 0) > 0 ? "☯ 天象已逆转 (剑威+30%!)" : boss.partSevered ? "💥 妖脉已寸断 (危招废除!)" : boss.state === "stun" ? "★ 破势绞杀中 (200%暴伤)" : (wpSpecB && !boss.partSevered) ? `◎ 弱点:${wpSpecB.shortName} ${Math.ceil((boss.partHp / Math.max(1, boss.maxPartHp)) * 100)}%` : boss.state === "stun"
@@ -24783,9 +25564,9 @@ const ART = {
       : (arena.cloudFlight && arena.cloudFlight.active)
         ? "九霄云海 · 破阵凌霄"
         : (arena.celestialSpire && arena.celestialSpire.active)
-          ? `太虚登仙台 · 第 ${arena.celestialSpire.floor}/9 重天`
+          ? `${(arena.celestialSpire.practiceMode || (arena.celestialSpire.startFloor && arena.celestialSpire.startFloor > 1)) ? "【练习模式】" : ""}太虚登仙台 · 第 ${arena.celestialSpire.floor}/9 重天`
           : (arena.bossRush && arena.bossRush.active)
-            ? `万剑冢连战 · 第 ${arena.bossRush.bout}/${arena.bossRush.maxBouts || 7} 阵`
+            ? `${(arena.bossRush.practiceMode || (arena.bossRush.startBout && arena.bossRush.startBout > 1)) ? "【练习模式】" : ""}万剑冢连战 · 第 ${arena.bossRush.bout}/${arena.bossRush.maxBouts || 7} 阵`
         : arena.towerMode ? `太虚锁妖塔 · 第 ${game.towerFloor} 层` : stg.name;
 
     const subTag = document.getElementById("wave-sub-tag");
@@ -24795,8 +25576,8 @@ const ART = {
     const curRoomSpec = curNodeHud ? DUNGEON_ROOM_TYPES[curNodeHud.type] : null;
     const selectableHud = getSelectableNextNodeIds();
     if (arena.cloudFlight && arena.cloudFlight.active) subTag.textContent = "御剑空战";
-    else if (arena.celestialSpire && arena.celestialSpire.active) subTag.textContent = "奇物深渊";
-    else if (arena.bossRush && arena.bossRush.active) subTag.textContent = `⏱ ${arena.bossRush.elapsed.toFixed(1)}s · 碎核×${arena.bossRush.partBreaks}`;
+    else if (arena.celestialSpire && arena.celestialSpire.active) subTag.textContent = (arena.celestialSpire.practiceMode || (arena.celestialSpire.startFloor && arena.celestialSpire.startFloor > 1)) ? "练习模式（无奖不记榜）" : "奇物深渊";
+    else if (arena.bossRush && arena.bossRush.active) subTag.textContent = (arena.bossRush.practiceMode || (arena.bossRush.startBout && arena.bossRush.startBout > 1)) ? `练习模式（无奖不计分）· ⏱ ${arena.bossRush.elapsed.toFixed(1)}s` : `⏱ ${arena.bossRush.elapsed.toFixed(1)}s · 碎核×${arena.bossRush.partBreaks}`;
     else if (arena.tribulation) subTag.textContent = `⚡ 天劫余 ${arena.tribulation.boltsLeft + arena.tribulation.strikes.length} 道`;
     else if (arena.sanctumMode) subTag.textContent = "安全休整 · 聚灵养剑";
     else if (arena.domain) subTag.textContent = `☯ 太虚剑域 ${arena.domain.life.toFixed(1)}s`;
@@ -24925,7 +25706,7 @@ const ART = {
   function syncProgressiveSkillVisibility(animateNew = false) {
     if (!game) return;
     const curRank = rankOf(game.realm);
-    const fullOpen = !!game.unlockAllArcana;
+    const fullOpen = Boolean(sandboxMode || game.unlockAllArcana);
     const hasAlly = countBondedAllies(game) > 0;
     const hasPet = !!(game.pet && game.pet.id);
     const pastPrologue = !!game.openingChoice || curRank >= 1 || fullOpen;
@@ -24988,8 +25769,12 @@ const ART = {
     const allToggleBtn = document.getElementById("btn-toggle-arcana-all");
     const allToggleLbl = document.getElementById("lbl-arcana-all-state");
     if (allToggleBtn && allToggleLbl) {
-      allToggleBtn.classList.toggle("active-toggle", fullOpen);
-      allToggleLbl.textContent = fullOpen ? "已全开" : "随境解封";
+      allToggleBtn.classList.toggle("active-toggle", sandboxMode);
+      allToggleLbl.textContent = sandboxMode ? "沙盒中·点此退出" : "开启演武沙盒";
+    }
+    const sandboxBadge = document.getElementById("hud-sandbox-badge");
+    if (sandboxBadge) {
+      sandboxBadge.style.display = sandboxMode ? "flex" : "none";
     }
 
     document.querySelectorAll("[data-eco-sys]").forEach(btn => {
@@ -25128,7 +25913,18 @@ const ART = {
     } catch (e) {}
   }
 
-  function openModal(html, closeable = true) {
+  function openModal(html, closeable = true, opts = {}) {
+    const modalKind = (opts && opts.kind) || "";
+    if (activeGearOverflowItem && modalKind !== "gear_overflow") {
+      pendingGearOverflowQueue.unshift(activeGearOverflowItem);
+      activeGearOverflowItem = null;
+    }
+    if (activeSoulUnlockId && modalKind !== "soul_unlock") {
+      if (!pendingSoulUnlockQueue.includes(activeSoulUnlockId)) {
+        pendingSoulUnlockQueue.unshift(activeSoulUnlockId);
+      }
+      activeSoulUnlockId = null;
+    }
     clearTransientInputs();
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
@@ -25152,6 +25948,14 @@ const ART = {
     clearTransientInputs();
     rebindListeningAction = null;
     pendingCloudImport = null;
+    pendingSandboxEntry = null;
+    pendingAlchemyCraft = null;
+    pendingSoulRefineId = null;
+    if (activeGearOverflowItem) {
+      pendingGearOverflowQueue.unshift(activeGearOverflowItem);
+      activeGearOverflowItem = null;
+    }
+    activeSoulUnlockId = null;
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
     const bd = document.getElementById("modal-backdrop");
@@ -25171,6 +25975,7 @@ const ART = {
     } else if (wasOpen && !drawerOpen) {
       restoreTriggerFocus(target);
     }
+    setTimeout(flushDeferredChoiceModals, 0);
   }
 
   function toggleDrawer(tab) {
@@ -25236,7 +26041,7 @@ const ART = {
 
     if (currentTab === "cultivate") {
       const curRank = rankOf(game.realm);
-      const fullOpen = !!game.unlockAllArcana;
+      const fullOpen = Boolean(sandboxMode || game.unlockAllArcana);
       const showQiTier = fullOpen || curRank >= 1;
       const showFoundTier = fullOpen || curRank >= 2;
       const showGoldTier = fullOpen || curRank >= 3;
@@ -25688,10 +26493,15 @@ const ART = {
       `;
     } else if (currentTab === "alchemy") {
       const curRank = rankOf(game.realm);
-      const fullOpen = !!game.unlockAllArcana;
+      const fullOpen = Boolean(sandboxMode || game.unlockAllArcana);
       const showQiCraft = fullOpen || curRank >= 1;
       const fairDisc = currentOmen(game).id === "fair" ? 0.8 : 1.0;
       const jadeCost = Math.round(60 * fairDisc);
+      const allLawsDone = isAllDaoLawsCollected(game);
+      const permCaps = getPermGrowthCaps(game);
+      const pg = ensurePermGrowth(game);
+      const coreCount = Math.max(0, Math.floor(num(game.inventory && game.inventory.core, 0)));
+      if (coreCount <= 0 && temperUseCoreDiscount) temperUseCoreDiscount = false;
       body.innerHTML = `
         ${muralHeader("banner_alchemy", "紫微丹器百工台", "稳炼成丹 · 八卦控火 · 本命法宝")}
         <div class="jade-card" style="border-color:rgba(255,218,120,0.62);gap:7px;">
@@ -25708,6 +26518,11 @@ const ART = {
               <button type="button" class="btn-gold" style="padding:5px 10px;font-size:11px;" data-craft-open="alchemy">🔥 八卦炼丹</button>
               <button type="button" class="btn-jade" style="padding:5px 10px;font-size:11px;" data-craft-open="forge">🔨 星火锻剑</button>
             </div>
+          </div>
+          <div id="alchemy-perm-cap-row" style="display:flex;gap:6px;flex-wrap:wrap;padding-top:5px;border-top:1px solid rgba(132,208,194,0.18);font-size:10.5px;">
+            <span class="tag-chip ${pg.alchemyHp >= permCaps.alchemyHp ? "done" : ""}">丹道气血 ${pg.alchemyHp}/${permCaps.alchemyHp}${pg.alchemyHp >= permCaps.alchemyHp ? " (已达上限)" : ""}</span>
+            <span class="tag-chip ${pg.alchemyAtk >= permCaps.alchemyAtk ? "done" : ""}">百工剑攻 ${pg.alchemyAtk}/${permCaps.alchemyAtk}${pg.alchemyAtk >= permCaps.alchemyAtk ? " (已达上限)" : ""}</span>
+            <span class="tag-chip ${(game.maxHpBonus >= permCaps.maxHpBonus && game.atkFlatBonus >= permCaps.atkFlatBonus) ? "done" : ""}">本境总加成 血${Math.floor(num(game.maxHpBonus, 0))}/${permCaps.maxHpBonus} · 攻${Math.floor(num(game.atkFlatBonus, 0))}/${permCaps.atkFlatBonus}</span>
           </div>
         </div>
 
@@ -25740,32 +26555,38 @@ const ART = {
         </div>
 
         <div class="jade-card" style="gap:6px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
             <strong style="font-size:12px;color:var(--gold-bright);">💊 丹方列表（稳炼成丹 / 八卦控火冲仙品）</strong>
-            <span style="font-size:10.5px;color:var(--text-sub);">秘境掉落灵材自动抵扣灵石</span>
+            <span style="font-size:10.5px;color:var(--text-sub);">缺料明细公开展示，需二次确认方可灵石补购</span>
           </div>
           <div class="grid-2">
             ${Object.values(RECIPES).map(rec => {
               const out = ITEMS[rec.output];
               const caulLv = getSanctumLevel(game, "cauldron");
               const lockedByCaul = Boolean(rec.reqCauldronLv && caulLv < rec.reqCauldronLv);
-              const matBuyCost = Object.entries(rec.inputs).reduce((sum, [k, req]) => {
-                const lack = Math.max(0, req - Math.max(0, Math.floor(num(game.inventory[k], 0))));
-                return sum + lack * Math.round((ITEMS[k].buy || 20) * fairDisc);
-              }, 0);
-              const totalStoneCost = Math.round(rec.stones * fairDisc) + matBuyCost;
+              const bd = computeRecipeCostBreakdown(game, rec);
               const ownedCount = Math.max(0, Math.floor(num(game.inventory[rec.output], 0)));
               const matSummary = Object.entries(rec.inputs).map(([k, n]) => `${ITEMS[k] ? ITEMS[k].name : k}×${n}(持${Math.max(0, Math.floor(num(game.inventory[k], 0)))})`).join(" · ");
+              const missSummary = bd.missingItems.map(m => `${m.name}×${m.lack}`).join("、");
               return `
-                <div class="visual-tile" style="justify-content:space-between;padding:7px;${lockedByCaul ? "opacity:0.65;" : ""}" data-tip="${escTip(rec.name, lockedByCaul ? `需先在洞府将【紫微丹鼎】升至 Lv.${rec.reqCauldronLv} 解封！` : `${out.desc}｜所需：${matSummary}`)}">
+                <div class="visual-tile" style="justify-content:space-between;padding:7px;gap:6px;${lockedByCaul ? "opacity:0.65;" : ""}" data-tip="${escTip(rec.name, lockedByCaul ? `需先在洞府将【紫微丹鼎】升至 Lv.${rec.reqCauldronLv} 解封！` : `${out.desc}｜所需：${matSummary}`)}">
                   <div style="display:flex;align-items:center;gap:7px;min-width:0;flex:1;">
-                    <img src="${ART[out.art]}" alt="${out.name}" style="width:32px;height:32px;flex-shrink:0;" />
+                    <img src="${ART[out.art]}" alt="${escapeHtml(out.name)}" style="width:32px;height:32px;flex-shrink:0;" />
                     <div style="min-width:0;">
-                      <div style="font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${out.name} ${ownedCount > 0 ? `(${ownedCount})` : ""}</div>
-                      <span class="tag-chip">${lockedByCaul ? `丹鼎Lv.${rec.reqCauldronLv}解封` : `${totalStoneCost}石`}</span>
+                      <div style="font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(out.name)} ${ownedCount > 0 ? `(${ownedCount})` : ""}</div>
+                      ${lockedByCaul
+                        ? `<span class="tag-chip">丹鼎Lv.${rec.reqCauldronLv}解封</span>`
+                        : bd.hasMissing
+                          ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;">
+                              <span class="tag-chip" style="font-size:9.5px;">丹火 ${bd.baseStones}石</span>
+                              <span class="tag-chip mythic" style="font-size:9.5px;">购入缺料 ${bd.matBuyCost} 灵石</span>
+                              <span class="tag-chip" style="font-size:9.5px;">共 ${bd.totalStoneCost}石</span>
+                            </div>
+                            <div style="font-size:9.5px;color:#ffd8a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">缺 ${escapeHtml(missSummary)}</div>`
+                          : `<span class="tag-chip done" style="font-size:9.8px;">灵材齐备 · 丹火 ${bd.baseStones}石</span>`}
                     </div>
                   </div>
-                  <button type="button" class="btn-jade" style="padding:4px 8px;font-size:10.5px;white-space:nowrap;" data-quick-craft="${rec.id}" ${(lockedByCaul || game.stones < totalStoneCost) ? "disabled" : ""}>${lockedByCaul ? "未封" : "稳炼"}</button>
+                  <button type="button" class="btn-jade" style="padding:4px 8px;font-size:10.5px;white-space:nowrap;" data-quick-craft="${rec.id}" ${(lockedByCaul || game.stones < bd.totalStoneCost) ? "disabled" : ""}>${lockedByCaul ? "未封" : bd.hasMissing ? "补料稳炼" : "稳炼"}</button>
                 </div>`;
             }).join("")}
           </div>
@@ -25773,10 +26594,14 @@ const ART = {
 
         ${showQiCraft ? `
         <div class="jade-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
             <strong style="font-size:12px;color:var(--gold-bright);">本命神兵铸造与升星淬炼（★3/★5 额外+1飞剑）</strong>
-            <span style="font-size:11px;color:var(--jade);">妖核 ×${Math.max(0, Math.floor(num(game.inventory.core, 0)))}</span>
+            <span style="font-size:11px;color:var(--jade);">妖核 ×${coreCount}</span>
           </div>
+          <label class="temper-core-toggle" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:${coreCount > 0 ? "var(--jade)" : "var(--text-sub)"};cursor:${coreCount > 0 ? "pointer" : "not-allowed"};">
+            <input type="checkbox" id="chk-temper-use-core" data-temper-core-toggle="1" ${temperUseCoreDiscount && coreCount > 0 ? "checked" : ""} ${coreCount <= 0 ? "disabled" : ""} />
+            <span>使用妖核抵扣（消耗 1 妖核，减免约 30 灵石 · 持有 ${coreCount}）</span>
+          </label>
           <div class="grid-2">
             ${Object.values(RELICS).map(rel => {
               const owned = game.ownedRelics.includes(rel.id);
@@ -25784,8 +26609,7 @@ const ART = {
               const rawStars = (game.relicStars && game.relicStars[rel.id] != null) ? game.relicStars[rel.id] : (owned ? 1 : 0);
               const stars = Math.max(0, Math.min(5, Math.floor(num(rawStars, owned ? 1 : 0))));
               const rCost = Math.round(rel.stones * fairDisc);
-              const forgeDisc = getSanctumLevel(game, "sword_forge") >= 4 ? 0.85 : 1.0;
-              const temperCost = Math.max(35, Math.round((stars * 75 - (Math.max(0, Math.floor(num(game.inventory.core, 0))) > 0 ? 30 : 0)) * forgeDisc));
+              const tc = getRelicTemperCost(game, stars, temperUseCoreDiscount);
               return `
                 <div class="visual-tile ${eq ? "equipped" : ""}" style="flex-direction:column;align-items:stretch;gap:6px;">
                   <button style="display:flex;align-items:center;gap:8px;text-align:left;" data-relic="${rel.id}" data-tip="${escTip(rel.name + " · " + rel.activeName, rel.activeDesc)}">
@@ -25795,7 +26619,7 @@ const ART = {
                       <span class="tag-chip mythic">${eq ? "已佩本命" : owned ? "点击佩带" : `${rCost}石铸造`}</span>
                     </div>
                   </button>
-                  ${owned && stars < 5 ? `<button class="btn-jade" style="padding:3px 8px;font-size:10.5px;" data-temper-relic="${rel.id}" ${game.stones < temperCost ? "disabled" : ""}>淬炼升 ★${stars + 1} (${temperCost}石)</button>` : ""}
+                  ${owned && stars < 5 ? `<button type="button" class="btn-jade" style="padding:3px 8px;font-size:10.5px;" data-temper-relic="${rel.id}" ${game.stones < tc.finalStones ? "disabled" : ""}>${tc.applyCore ? `淬炼升 ★${stars + 1} (${tc.finalStones}石 + 1妖核)` : `淬炼升 ★${stars + 1} (${tc.finalStones}石)`}</button>` : ""}
                 </div>`;
             }).join("")}
           </div>
@@ -25804,9 +26628,12 @@ const ART = {
         <div class="jade-card" style="flex-direction:row;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:8px;">
             <img src="${ART.item_rough_jade}" alt="原石" style="width:36px;height:36px;" />
-            <div><strong style="color:var(--gold-bright);font-size:12.5px;">一剑切鸿蒙原石</strong><div style="font-size:10.5px;color:var(--jade);">直接抽取三选一神通法则</div></div>
+            <div>
+              <strong style="color:var(--gold-bright);font-size:12.5px;">一剑切鸿蒙原石</strong>
+              <div style="font-size:10.5px;color:${allLawsDone ? "var(--text-sub)" : "var(--jade)"};">${allLawsDone ? `全部 ${Object.keys(DAO_LAWS).length} 道神通法则已尽数参悟` : "直接抽取三选一神通法则"}</div>
+            </div>
           </div>
-          <button class="btn-gold" data-action="gamble-jade" ${game.stones < jadeCost ? "disabled" : ""}>切玉(${jadeCost})</button>
+          <button type="button" class="btn-gold" data-action="gamble-jade" ${(allLawsDone || game.stones < jadeCost) ? "disabled" : ""}>${allLawsDone ? "法则已尽数参悟" : `切玉(${jadeCost})`}</button>
         </div>` : `
         <div class="jade-card" style="font-size:11px;color:var(--text-sub);">
           🔒 <strong style="color:var(--gold-bright);">炼气期解封</strong>：本命法宝铸造升星与鸿蒙切玉法则参悟。
@@ -25834,16 +26661,26 @@ const ART = {
           </div>
           ${karmaSpecials.map(sp => {
             const bought = !!(game.karmaMarketBought && game.karmaMarketBought[sp.id]);
+            const bfQuota = sp.itemId === "blood_fury_pill" ? getBloodFuryQuota(game) : null;
+            const quotaExhausted = Boolean(bfQuota && bfQuota.remaining <= 0);
+            const btnLabel = quotaExhausted
+              ? `本境已满 (${bfQuota.bought}/${bfQuota.max})`
+              : bought
+                ? "已购罄"
+                : `${sp.cost}石购`;
             return `
               <div class="visual-tile" style="justify-content:space-between;padding:6px 8px;">
                 <div style="display:flex;align-items:center;gap:8px;min-width:0;">
                   <img src="${ART[sp.art]}" alt="${sp.name}" style="width:32px;height:32px;flex-shrink:0;" />
                   <div style="min-width:0;">
-                    <div style="font-size:11.5px;font-weight:700;color:#fff2c6;">${sp.name}</div>
+                    <div style="font-size:11.5px;font-weight:700;color:#fff2c6;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                      <span>${sp.name}</span>
+                      ${bfQuota ? `<span class="tag-chip ${quotaExhausted ? "done" : ""}" style="font-size:9.5px;">本境限购 ${bfQuota.bought}/${bfQuota.max}</span>` : ""}
+                    </div>
                     <div style="font-size:10px;color:var(--text-sub);">${sp.desc}</div>
                   </div>
                 </div>
-                <button type="button" class="${ks.mode === "demonic" ? "btn-gold" : "btn-jade"}" style="padding:4px 10px;font-size:11px;white-space:nowrap;" data-buy-karma-item="${sp.id}" ${(bought || game.stones < sp.cost) ? "disabled" : ""}>${bought ? "已购罄" : `${sp.cost}石购`}</button>
+                <button type="button" class="${ks.mode === "demonic" ? "btn-gold" : "btn-jade"}" style="padding:4px 10px;font-size:11px;white-space:nowrap;" data-buy-karma-item="${sp.id}" ${(quotaExhausted || bought || game.stones < sp.cost) ? "disabled" : ""}>${btnLabel}</button>
               </div>`;
           }).join("")}
         </div>
@@ -25875,7 +26712,7 @@ const ART = {
         ${game.gearBag.length > 0 ? `
           <div class="jade-card">
             <div style="display:flex;justify-content:space-between;align-items:center;">
-              <strong style="font-size:12px;color:var(--gold-bright);">闲置仙装袋 (${game.gearBag.length})</strong>
+              <strong style="font-size:12px;color:var(--gold-bright);">闲置仙装袋 (${game.gearBag.length}/${GEAR_BAG_LIMIT})</strong>
               <button class="btn-jade" style="padding:3px 9px;font-size:11px;" data-action="smelt-all-gear">一键熔炼化灵石</button>
             </div>
             <div class="grid-2">
@@ -25928,7 +26765,216 @@ const ART = {
     }
   }
 
-  function startFurnaceMinigame(recId) {
+  function computeRecipeCostBreakdown(g, rec) {
+    const fairDisc = (g && currentOmen(g).id === "fair") ? 0.8 : 1.0;
+    const baseStones = Math.max(0, Math.round(num(rec && rec.stones, 0) * fairDisc));
+    const missingItems = [];
+    let matBuyCost = 0;
+    const inv = (g && g.inventory) || {};
+    Object.entries((rec && rec.inputs) || {}).forEach(([k, req]) => {
+      const reqAmt = Math.max(0, Math.floor(num(req, 0)));
+      const haveAmt = Math.max(0, Math.floor(num(inv[k], 0)));
+      const lack = Math.max(0, reqAmt - haveAmt);
+      if (lack > 0) {
+        const spec = ITEMS[k];
+        const unitPrice = Math.round(num(spec && spec.buy, 20) * fairDisc);
+        const subCost = lack * unitPrice;
+        matBuyCost += subCost;
+        missingItems.push({
+          id: k,
+          name: (spec && spec.name) || k,
+          req: reqAmt,
+          have: haveAmt,
+          lack,
+          unitPrice,
+          subCost
+        });
+      }
+    });
+    return {
+      fairDisc,
+      baseStones,
+      missingItems,
+      matBuyCost,
+      totalStoneCost: baseStones + matBuyCost,
+      hasMissing: missingItems.length > 0 && matBuyCost > 0
+    };
+  }
+
+  function getRelicTemperCost(g, stars, useCore = false) {
+    const safeStars = Math.max(1, Math.min(5, Math.floor(num(stars, 1))));
+    const forgeDisc = (g && getSanctumLevel(g, "sword_forge") >= 4) ? 0.85 : 1.0;
+    const coreCount = g && g.inventory ? Math.max(0, Math.floor(num(g.inventory.core, 0))) : 0;
+    const hasCore = coreCount > 0;
+    const applyCore = Boolean(useCore && hasCore);
+    const baseStones = Math.max(35, Math.round(safeStars * 75 * forgeDisc));
+    const discStones = Math.max(35, Math.round((safeStars * 75 - 30) * forgeDisc));
+    const finalStones = applyCore ? discStones : baseStones;
+    return {
+      baseStones,
+      discStones,
+      finalStones,
+      savedStones: Math.max(0, baseStones - discStones),
+      hasCore,
+      applyCore
+    };
+  }
+
+  function executeAlchemyQuickCraft(recId) {
+    if (!game) return false;
+    const rec = RECIPES[recId];
+    if (!rec) return false;
+    const bd = computeRecipeCostBreakdown(game, rec);
+    if (game.stones < bd.totalStoneCost) {
+      showToast(`灵石不足（共需 ${bd.totalStoneCost} 灵石）`);
+      return false;
+    }
+    game.stones -= bd.totalStoneCost;
+    Object.entries(rec.inputs).forEach(([k, req]) => {
+      game.inventory[k] = Math.max(0, (game.inventory[k] || 0) - req);
+    });
+    const count = (hasLaw(game, "nine_pill") || currentOmen(game).id === "alchemy_star") ? 2 : 1;
+    game.inventory[rec.output] = (game.inventory[rec.output] || 0) + count;
+    if (getSanctumLevel(game, "cauldron") >= 4) {
+      game.inventory.healing_pill = (game.inventory.healing_pill || 0) + 1;
+    }
+    game.immortalPills = (game.immortalPills || 0) + 1;
+    unlockAchievement("ach_pill");
+    Sound.qiOrb(4);
+    const outSpec = ITEMS[rec.output];
+    showToast(`速炼成丹 ×${count} · 【${outSpec.name}】${bd.hasMissing ? `（含购入缺料 ${bd.matBuyCost} 灵石，共耗 ${bd.totalStoneCost} 石）` : `（消耗 ${bd.baseStones} 石）`}`);
+    saveGame(); updateHud();
+    if (drawerOpen) renderDrawerContent();
+    return true;
+  }
+
+  function openAlchemyBuyConfirmModal(recId, mode = "quick") {
+    if (!game || !RECIPES[recId]) return;
+    const rec = RECIPES[recId];
+    const out = ITEMS[rec.output];
+    const bd = computeRecipeCostBreakdown(game, rec);
+    pendingAlchemyCraft = { recId, mode };
+    openModal(`
+      <div class="drawer-mural-banner" style="height:84px;">
+        <img src="${ART.banner_alchemy}" alt="炼丹补料确认" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">显式消费确认</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:3px;">确认以灵石补购缺料并炼制【${escapeHtml(out.name)}】？</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-modal-close="1">取消 ✕</button>
+        </div>
+      </div>
+      <div class="jade-card" style="gap:6px;">
+        <div style="font-size:12px;color:#ffe89e;font-weight:700;">缺失灵材补购明细：</div>
+        ${bd.missingItems.map(m => `
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;padding:4px 8px;border-radius:7px;background:rgba(10,24,30,0.68);">
+            <span>${escapeHtml(m.name)}（需 ${m.req} / 持 ${m.have} / <b style="color:#ffb4ae;">缺 ${m.lack}</b>）</span>
+            <span style="color:#ffe28a;">${m.unitPrice} 石/份 = <b>${m.subCost} 灵石</b></span>
+          </div>
+        `).join("")}
+        <div style="border-top:1px solid var(--border-subtle);padding-top:6px;display:flex;flex-direction:column;gap:3px;font-size:12px;">
+          <div style="display:flex;justify-content:space-between;"><span>基础丹火费：</span><b>${bd.baseStones} 灵石</b></div>
+          <div style="display:flex;justify-content:space-between;color:#ffd8a8;"><span>购入缺料：</span><b>购入缺料 ${bd.matBuyCost} 灵石</b></div>
+          <div style="display:flex;justify-content:space-between;color:var(--gold-bright);font-size:13px;"><span>总计扣除：</span><b>${bd.totalStoneCost} 灵石（当前持有 ${Math.floor(num(game.stones, 0))}）</b></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button type="button" class="btn-ghost" data-modal-close="1">取消</button>
+        <button type="button" id="btn-confirm-alchemy-buy" class="btn-gold" data-action="confirm-alchemy-buy" ${game.stones < bd.totalStoneCost ? "disabled" : ""}>确认购入缺料 (${bd.totalStoneCost}石) 并炼制</button>
+      </div>
+    `, true);
+  }
+
+  function openSoulSealUnlockChoiceModal(newSoulId) {
+    if (!game || !hasOwn(SOUL_SPIRITS, newSoulId)) {
+      activeSoulUnlockId = null;
+      return;
+    }
+    const nw = SOUL_SPIRITS[newSoulId];
+    const curId = hasOwn(SOUL_SPIRITS, game.equippedSoul) ? game.equippedSoul : "blood_warden";
+    const cur = SOUL_SPIRITS[curId];
+    openModal(`
+      <div class="drawer-mural-banner" style="height:86px;">
+        <img src="${ART.spirit_seal_emblem}" alt="镇妖魂印抉择" style="object-fit:contain;background:radial-gradient(circle,#18353f,#071319);" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">新魂印觉醒 · 自主择佩</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:3px;">解锁镇妖魂印【${escapeHtml(nw.name)}】</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-soul-choice="keep" data-soul-id="${escapeHtml(newSoulId)}">保留当前 ✕</button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#b8dcd5;">已将【${escapeHtml(nw.name)}】铭刻入魂印图谱；请选择是否立即替换当前佩带的镇妖魂印：</div>
+      <div class="grid-2">
+        <div class="jade-card" style="gap:6px;">
+          <span class="tag-chip">当前佩带魂印</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <img src="${ART[hasOwn(ART, cur.art) ? cur.art : "spirit_seal_emblem"]}" alt="${escapeHtml(cur.name)}" style="width:40px;height:40px;border-radius:50%;" />
+            <div>
+              <strong style="font-size:13.5px;color:#e6f7f4;">${escapeHtml(cur.name)}</strong>
+              <div style="font-size:10.5px;color:var(--jade);">冷却 ${num(cur.cd, 10)}s</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text-sub);line-height:1.45;">${escapeHtml(cur.desc)}</div>
+        </div>
+        <div class="jade-card" style="gap:6px;border-color:rgba(255,214,112,0.72);">
+          <span class="tag-chip mythic">新解锁魂印</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <img src="${ART[hasOwn(ART, nw.art) ? nw.art : "spirit_seal_emblem"]}" alt="${escapeHtml(nw.name)}" style="width:40px;height:40px;border-radius:50%;" />
+            <div>
+              <strong style="font-size:13.5px;color:var(--gold-bright);">${escapeHtml(nw.name)}</strong>
+              <div style="font-size:10.5px;color:#ffe28a;">冷却 ${num(nw.cd, 10)}s</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#d6eee8;line-height:1.45;">${escapeHtml(nw.desc)}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button type="button" id="btn-soul-keep-current" class="btn-ghost" data-soul-choice="keep" data-soul-id="${escapeHtml(newSoulId)}">保留当前</button>
+        <button type="button" id="btn-soul-equip-new" class="btn-gold" data-soul-choice="equip" data-soul-id="${escapeHtml(newSoulId)}">装备新魂印</button>
+      </div>
+    `, true, { kind: "soul_unlock" });
+  }
+
+  function openSoulSealRefineConfirmModal(sid) {
+    if (!game || !hasOwn(SOUL_SPIRITS, sid)) return;
+    const nw = SOUL_SPIRITS[sid];
+    const curId = hasOwn(SOUL_SPIRITS, game.equippedSoul) ? game.equippedSoul : "blood_warden";
+    const cur = SOUL_SPIRITS[curId];
+    pendingSoulRefineId = sid;
+    openModal(`
+      <div class="drawer-mural-banner" style="height:84px;">
+        <img src="${ART.spirit_seal_emblem}" alt="魂印炼化确认" style="object-fit:contain;background:radial-gradient(circle,#18353f,#071319);" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">显式消费确认</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:3px;">消耗 80 灵石炼化【${escapeHtml(nw.name)}】？</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-modal-close="1">取消 ✕</button>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="jade-card" style="gap:5px;">
+          <span class="tag-chip">当前佩带魂印</span>
+          <strong style="font-size:13px;color:#e6f7f4;">${escapeHtml(cur.name)}（冷却 ${num(cur.cd, 10)}s）</strong>
+          <div style="font-size:11px;color:var(--text-sub);">${escapeHtml(cur.desc)}</div>
+        </div>
+        <div class="jade-card" style="gap:5px;border-color:rgba(255,214,112,0.72);">
+          <span class="tag-chip mythic">待炼化新魂印 · 80 灵石</span>
+          <strong style="font-size:13px;color:var(--gold-bright);">${escapeHtml(nw.name)}（冷却 ${num(nw.cd, 10)}s）</strong>
+          <div style="font-size:11px;color:#d6eee8;">${escapeHtml(nw.desc)}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="btn-ghost" data-modal-close="1">取消</button>
+        <button type="button" id="btn-soul-refine-keep" class="btn-jade" data-soul-refine="keep" data-soul-id="${escapeHtml(sid)}">仅炼化保留当前 (80石)</button>
+        <button type="button" id="btn-soul-refine-equip" class="btn-gold" data-soul-refine="equip" data-soul-id="${escapeHtml(sid)}">炼化并装备新魂印 (80石)</button>
+      </div>
+    `, true);
+  }
+
+  function startFurnaceMinigame(recId, opts = {}) {
     if (!game) return;
     const rec = RECIPES[recId];
     if (!rec) return;
@@ -25936,17 +26982,16 @@ const ART = {
       showToast(`需先在洞府将【紫微丹鼎】升至 Lv.${rec.reqCauldronLv} 方可炼制【${ITEMS[rec.output].name}】！`);
       return;
     }
-    const fairDisc = currentOmen(game).id === "fair" ? 0.8 : 1.0;
-    const matBuyCost = Object.entries(rec.inputs).reduce((sum, [k, req]) => {
-      const lack = Math.max(0, req - (game.inventory[k] || 0));
-      return sum + lack * Math.round((ITEMS[k].buy || 20) * fairDisc);
-    }, 0);
-    const totalStoneCost = Math.round(rec.stones * fairDisc) + matBuyCost;
-    if (game.stones < totalStoneCost) {
-      showToast(`灵石不足（需 ${totalStoneCost} 灵石）`);
+    const bd = computeRecipeCostBreakdown(game, rec);
+    if (game.stones < bd.totalStoneCost) {
+      showToast(`灵石不足（共需 ${bd.totalStoneCost} 灵石${bd.hasMissing ? `，含购入缺料 ${bd.matBuyCost} 灵石` : ""}）`);
       return;
     }
-    game.stones -= totalStoneCost;
+    if (bd.hasMissing && !(opts && opts.confirmedMissingBuy)) {
+      openAlchemyBuyConfirmModal(recId, "furnace");
+      return;
+    }
+    game.stones -= bd.totalStoneCost;
     Object.entries(rec.inputs).forEach(([k, req]) => {
       game.inventory[k] = Math.max(0, (game.inventory[k] || 0) - req);
     });
@@ -25982,16 +27027,21 @@ const ART = {
     unlockAchievement("ach_pill");
 
     if (inSweet) {
-      game.maxHpBonus = (game.maxHpBonus || 0) + 20;
-      game.atkFlatBonus = (game.atkFlatBonus || 0) + 4;
+      const bRes = grantPermanentStatBonus(game, { hp: 20, atk: 4, source: "alchemy" });
       Sound.fanfare();
       Sound.clang(1.2, 0.14);
-      furnaceGame.lastResult = `★ 九转仙品云纹丹 ×${count}！（气血上限+20 · 攻击+4）`;
+      const capMsg = (bRes.hpCapped || bRes.atkCapped)
+        ? `（本境丹道上限 血${bRes.pg.alchemyHp}/${bRes.caps.alchemyHp} · 攻${bRes.pg.alchemyAtk}/${bRes.caps.alchemyAtk}，破境后提升）`
+        : "";
+      furnaceGame.lastResult = `★ 九转仙品云纹丹 ×${count}！（气血+${bRes.grantedHp} · 攻击+${bRes.grantedAtk}）${capMsg}`;
       showToast(furnaceGame.lastResult);
     } else {
       Sound.qiOrb(4);
-      game.maxHpBonus = (game.maxHpBonus || 0) + 6;
-      furnaceGame.lastResult = `成丹 ×${count} · ${outSpec.name}（气血上限+6）`;
+      const bRes = grantPermanentStatBonus(game, { hp: 6, source: "alchemy" });
+      const capMsg = bRes.hpCapped
+        ? `（本境丹道气血已达上限 ${bRes.pg.alchemyHp}/${bRes.caps.alchemyHp}，破境后提升上限）`
+        : "";
+      furnaceGame.lastResult = `成丹 ×${count} · ${outSpec.name}（气血+${bRes.grantedHp}）${capMsg}`;
       showToast(furnaceGame.lastResult);
     }
     saveGame();
@@ -26272,15 +27322,15 @@ const ART = {
             <div class="keybind-grid">${tr.acts.map(renderRow).join("")}</div>
           `).join("")}</div>`;
         })()}
-        <div class="jade-card" style="padding:7px 10px;gap:5px;margin-top:4px;border-color:rgba(128,255,234,0.45);">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <strong style="font-size:11.5px;color:#80ffea;">☁ 太虚大道云码（全存档 Base64 一键导出备份与跨端导入恢复）：</strong>
-            <span id="lbl-cloud-save-status" style="font-size:10px;color:var(--gold-bright);">校验就绪 ✓</span>
+        <div class="jade-card" style="padding:7px 10px;gap:5px;margin-top:4px;border-color:${sandboxMode ? "rgba(255,190,92,0.55)" : "rgba(128,255,234,0.45)"};">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
+            <strong style="font-size:11.5px;color:${sandboxMode ? "#ffd8a8" : "#80ffea"};">☁ 太虚大道云码（全存档 Base64 一键导出备份与跨端导入恢复）：</strong>
+            <span id="lbl-cloud-save-status" style="font-size:10px;color:${sandboxMode ? "#ffd8a8" : "var(--gold-bright)"};">${sandboxMode ? "🧪 演武沙盒模式已禁用云码导出与导入（请先退出沙盒）" : "校验就绪 ✓"}</span>
           </div>
           <div style="display:flex;gap:6px;align-items:center;">
-            <input id="inp-cloud-save-code" class="cloud-code-box" type="text" value="${exportFullCloudSaveCode()}" aria-label="太虚大道云码" />
-            <button type="button" id="btn-export-cloud-save" class="btn-ghost" style="padding:5px 10px;font-size:11px;white-space:nowrap;" data-action="copy-cloud-save">📋 复制云码</button>
-            <button type="button" id="btn-import-cloud-save" class="btn-gold" style="padding:5px 12px;font-size:11px;white-space:nowrap;" data-action="import-cloud-save">📥 导入恢复</button>
+            <input id="inp-cloud-save-code" class="cloud-code-box" type="text" value="${sandboxMode ? "" : exportFullCloudSaveCode()}" placeholder="${sandboxMode ? "演武沙盒模式已禁用云码导出与导入（请先退出沙盒）" : ""}" aria-label="太虚大道云码" ${sandboxMode ? "disabled" : ""} />
+            <button type="button" id="btn-export-cloud-save" class="btn-ghost" style="padding:5px 10px;font-size:11px;white-space:nowrap;" data-action="copy-cloud-save" ${sandboxMode ? "disabled" : ""}>📋 复制云码</button>
+            <button type="button" id="btn-import-cloud-save" class="btn-gold" style="padding:5px 12px;font-size:11px;white-space:nowrap;" data-action="import-cloud-save" ${sandboxMode ? "disabled" : ""}>📥 导入恢复</button>
           </div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-top:4px;">
@@ -26314,7 +27364,7 @@ const ART = {
       ${tabBody}
 
       <div style="border-top:1px solid var(--border-subtle);padding-top:8px;">
-        <div style="font-size:11px;color:var(--text-sub);margin-bottom:5px;">演武试剑台（快速切入高阶境界检验流派构筑）：</div>
+        <div style="font-size:11px;color:var(--text-sub);margin-bottom:5px;">演武试剑台（点击后确认进入隔离【演武沙盒模式】，不污染正式存档）：</div>
         <div class="grid-3">
           <button class="visual-tile" style="padding:7px;" data-preset="judge_showcase">
             <img src="${ART.arena_secret}" alt="诛仙剑阵" style="object-fit:cover;width:36px;height:36px;" />
@@ -26334,8 +27384,13 @@ const ART = {
     if (currentSysTab === 'compendium') setTimeout(() => startCodexLiveLoop(), 30);
   }
 
-  function applyStagePreset(preset) {
+  function applyStagePreset(preset, opts = {}) {
+    if (!sandboxMode && !(opts && opts.insideSandbox)) {
+      openSandboxConfirmModal("preset", preset);
+      return;
+    }
     if (!game) game = createFreshGame("顾长青", "sword_bone");
+    game.unlockAllArcana = true;
     cutscene.active = false;
     document.getElementById("story-dialogue-bar").classList.remove("open");
     closeModal();
@@ -26377,7 +27432,7 @@ const ART = {
       const st = getCombatStats(game); game.hp = st.maxHp; game.mp = st.maxMp;
       arena.stanceIdx = 0;
       initArenaStage(2, false);
-      showToast("已激活【诛仙剑阵 + 九天雷帝】双羁绊与仙品神装！按 H 可体验听雨洞府主城");
+      showToast("🧪 演武沙盒已载入【诛仙双羁绊卷】预设（不影响正式存档）！");
     } else if (preset === "golden") {
       game.realm = "foundation";
       game.status = "active";
@@ -26395,6 +27450,7 @@ const ART = {
       arena.enemies = [];
       arena.waveIdx = 3;
       spawnCurrentWave();
+      showToast("🧪 演武沙盒已载入【巨阙斩妖王卷】预设（不影响正式存档）！");
     } else if (preset === "tribulation") {
       game.realm = "spirit";
       game.status = "active";
@@ -26417,8 +27473,10 @@ const ART = {
       const st = getCombatStats(game); game.hp = st.maxHp; game.mp = st.maxMp;
       arena.stanceIdx = 1;
       initArenaStage(4, false);
+      showToast("🧪 演武沙盒已载入【九霄叩天门卷】预设（不影响正式存档）！");
     }
-    saveGame();
+    updateHud(true);
+    renderHudSaveAlert();
   }
 
   function renderWelcomeScreen() {
@@ -26837,11 +27895,151 @@ const ART = {
     }
     if (m4QuickAct === "toggle-arcana-all-roadmap") {
       if (!game) return;
-      game.unlockAllArcana = !game.unlockAllArcana;
-      Sound.clang(1.25, 0.10);
-      showToast(game.unlockAllArcana ? "★ 已开启【全神通演武】：全部高阶系统与神通已提前解封！" : "已恢复【随境解封】：按炼气→筑基→金丹→元婴→化神渐进成长");
-      saveGame(); updateHud(true);
-      openAscensionRoadmapModal();
+      if (sandboxMode) {
+        exitSandboxMode();
+      } else {
+        openSandboxConfirmModal("roadmap", null);
+      }
+      return;
+    }
+    if (m4QuickAct === "confirm-enter-sandbox") {
+      const entry = pendingSandboxEntry || { source: "pavilion", preset: null };
+      pendingSandboxEntry = null;
+      enterSandboxMode(entry);
+      return;
+    }
+    if (m4QuickAct === "exit-sandbox") {
+      exitSandboxMode();
+      return;
+    }
+    if (m4QuickAct === "overflow-smelt-new") {
+      if (!game || !activeGearOverflowItem) { closeModal(); return; }
+      const item = activeGearOverflowItem.item;
+      const smeltVal = Math.max(1, Math.floor(num(item && item.sell, 15)));
+      game.stones = (game.stones || 0) + smeltVal;
+      activeGearOverflowItem = null;
+      Sound.qiOrb(3);
+      showToast(`🔥 已熔炼新物【${item.name}】· 获灵石 +${smeltVal}！`);
+      saveGame();
+      updateHud();
+      if (drawerOpen) renderDrawerContent();
+      closeModal();
+      return;
+    }
+    if (m4QuickAct === "overflow-discard-new") {
+      if (!game || !activeGearOverflowItem) { closeModal(); return; }
+      const item = activeGearOverflowItem.item;
+      activeGearOverflowItem = null;
+      showToast(`已放弃新物【${item.name}】，行囊维持不变。`);
+      saveGame();
+      updateHud();
+      if (drawerOpen) renderDrawerContent();
+      closeModal();
+      return;
+    }
+    if (t.hasAttribute("data-overflow-replace-idx")) {
+      if (!game || !activeGearOverflowItem) { closeModal(); return; }
+      const idx = Math.floor(num(t.getAttribute("data-overflow-replace-idx"), -1));
+      if (idx < 0 || idx >= game.gearBag.length) return;
+      const newItem = activeGearOverflowItem.item;
+      const oldItem = game.gearBag[idx];
+      const oldSell = Math.max(1, Math.floor(num(oldItem && oldItem.sell, 15)));
+      game.gearBag[idx] = newItem;
+      game.stones = (game.stones || 0) + oldSell;
+      activeGearOverflowItem = null;
+      pendingCompareGear = newItem;
+      renderGearCompareCard();
+      Sound.fanfare();
+      showToast(`✦ 已将【${newItem.name}】替换入袋，熔炼旧物【${oldItem.name}】获 +${oldSell} 灵石！`);
+      saveGame();
+      updateHud();
+      if (drawerOpen) renderDrawerContent();
+      closeModal();
+      return;
+    }
+    if (m4QuickAct === "confirm-alchemy-buy") {
+      const req = pendingAlchemyCraft;
+      pendingAlchemyCraft = null;
+      if (!game || !req || !RECIPES[req.recId]) { closeModal(); return; }
+      const rec = RECIPES[req.recId];
+      const bd = computeRecipeCostBreakdown(game, rec);
+      if (game.stones < bd.totalStoneCost) {
+        showToast(`灵石不足（共需 ${bd.totalStoneCost} 灵石）`);
+        closeModal();
+        return;
+      }
+      if (req.mode === "furnace") {
+        closeModal();
+        startFurnaceMinigame(req.recId, { confirmedMissingBuy: true });
+      } else {
+        executeAlchemyQuickCraft(req.recId);
+        const panel = document.getElementById("jade-panel");
+        if (drawerOpen && panel) {
+          const refreshedTrigger = panel.querySelector(`[data-quick-craft="${req.recId}"]`);
+          if (refreshedTrigger && isElementFocusable(refreshedTrigger)) {
+            lastModalTriggerEl = refreshedTrigger;
+          }
+        }
+        closeModal();
+      }
+      return;
+    }
+    if (t.hasAttribute("data-soul-choice")) {
+      const choice = t.getAttribute("data-soul-choice");
+      const sid = t.getAttribute("data-soul-id") || activeSoulUnlockId;
+      const sp = (sid && hasOwn(SOUL_SPIRITS, sid)) ? SOUL_SPIRITS[sid] : null;
+      activeSoulUnlockId = null;
+      if (game && sp) {
+        if (choice === "equip") {
+          game.equippedSoul = sid;
+          Sound.soulManifestRoar();
+          showToast(`👹 已装备新镇妖魂印【${sp.name}】（按 C / RB 施放）！`);
+        } else {
+          const curSp = hasOwn(SOUL_SPIRITS, game.equippedSoul) ? SOUL_SPIRITS[game.equippedSoul] : SOUL_SPIRITS.blood_warden;
+          showToast(`已保留当前魂印【${curSp.name}】，新魂印【${sp.name}】可随时于修行抽屉切换。`);
+        }
+        saveGame();
+        updateHud();
+        if (drawerOpen) renderDrawerContent();
+      }
+      closeModal();
+      return;
+    }
+    if (t.hasAttribute("data-soul-refine")) {
+      const mode = t.getAttribute("data-soul-refine");
+      const sid = pendingSoulRefineId || t.getAttribute("data-soul-id");
+      pendingSoulRefineId = null;
+      const sp = (sid && hasOwn(SOUL_SPIRITS, sid)) ? SOUL_SPIRITS[sid] : null;
+      if (!game || !sp) { closeModal(); return; }
+      if (!Array.isArray(game.unlockedSouls)) game.unlockedSouls = ["blood_warden"];
+      if (!game.unlockedSouls.includes(sid)) {
+        if (game.stones < 80) {
+          showToast(`灵石不足（炼化【${sp.shortLbl}】需 80 灵石）`);
+          closeModal();
+          return;
+        }
+        game.stones -= 80;
+        game.unlockedSouls.push(sid);
+      }
+      if (mode === "equip") {
+        game.equippedSoul = sid;
+        Sound.soulManifestRoar();
+        showToast(`👹 已耗 80 灵石炼化并装备镇妖魂印【${sp.name}】！`);
+      } else {
+        Sound.fanfare();
+        showToast(`✦ 已耗 80 灵石炼化【${sp.name}】并保留当前佩带魂印！`);
+      }
+      saveGame();
+      updateHud();
+      if (drawerOpen) renderDrawerContent();
+      const panel = document.getElementById("jade-panel");
+      if (drawerOpen && panel) {
+        const refreshedTrigger = panel.querySelector(`[data-equip-soul="${sid}"]`);
+        if (refreshedTrigger && isElementFocusable(refreshedTrigger)) {
+          lastModalTriggerEl = refreshedTrigger;
+        }
+      }
+      closeModal();
       return;
     }
     if (t.hasAttribute("data-roadmap-sys")) {
@@ -26872,6 +28070,9 @@ const ART = {
     }
 
     function startFreshGameSession(forceOverwriteCorrupt = false) {
+      clearTransientChoiceQueues();
+      sandboxMode = false;
+      preSandboxSnapshot = null;
       if (forceOverwriteCorrupt) storageReadError = null;
       saveReadOnlyMode = false;
       saveConflictState = null;
@@ -26906,7 +28107,11 @@ const ART = {
         showToast("存档读取失败，系统已保留原数据，请查看主界面提示！");
         return;
       }
+      clearTransientChoiceQueues();
+      sandboxMode = false;
+      preSandboxSnapshot = null;
       const s = res.bundle;
+      const hadLegacyUnlockAll = Boolean(s.game && s.game.unlockAllArcana === true);
       loadedSaveRev = res.rev;
       saveReadOnlyMode = false;
       saveConflictState = null;
@@ -26926,6 +28131,9 @@ const ART = {
         }
       } else {
         lastSavedPayloadChecksum = computeCurrentPayloadChecksum();
+      }
+      if (hadLegacyUnlockAll) {
+        showToast("旧档中的【全神通演武】已升级为独立沙盒模式，可在右上【仙阁】随时开启！");
       }
       updateHud();
       renderHudSaveAlert();
@@ -27107,6 +28315,9 @@ const ART = {
         renderHudSaveAlert();
         return;
       }
+      clearTransientChoiceQueues();
+      sandboxMode = false;
+      preSandboxSnapshot = null;
       const s = res.bundle;
       loadedSaveRev = res.rev;
       saveReadOnlyMode = false;
@@ -27136,6 +28347,10 @@ const ART = {
       return;
     }
     if (m1Act === "overwrite-with-current-save") {
+      if (sandboxMode) {
+        showToast("🧪 演武沙盒模式禁止覆盖正式存档，请先点击【退出沙盒】！");
+        return;
+      }
       saveReadOnlyMode = false;
       saveConflictState = null;
       saveAlertDismissed = false;
@@ -27146,7 +28361,17 @@ const ART = {
       return;
     }
     if (m1Act === "return-title-safe") {
-      if (game && !saveReadOnlyMode && !saveConflictState) {
+      clearTransientChoiceQueues();
+      const wasSandbox = sandboxMode;
+      if (wasSandbox) {
+        if (preSandboxSnapshot && preSandboxSnapshot.meta) {
+          Object.keys(metaState).forEach(k => { if (!(k in preSandboxSnapshot.meta)) delete metaState[k]; });
+          safeAssignPlain(metaState, preSandboxSnapshot.meta);
+          ensureMetaState();
+        }
+        sandboxMode = false;
+        preSandboxSnapshot = null;
+      } else if (game && !saveReadOnlyMode && !saveConflictState) {
         saveGame();
       }
       game = null;
@@ -27155,14 +28380,20 @@ const ART = {
       arena.nearbyProp = null;
       arena.defeatPending = null;
       document.getElementById("story-dialogue-bar").classList.remove("open");
+      const sbBadge = document.getElementById("hud-sandbox-badge");
+      if (sbBadge) sbBadge.style.display = "none";
       closeModal();
       closeDrawer();
       document.getElementById("welcome-screen").style.display = "flex";
       renderWelcomeScreen();
-      showToast("已保全当前进度并返回标题主菜单！");
+      showToast(wasSandbox ? "已退出演武沙盒并返回标题主菜单（正式存档未受影响）！" : "已保全当前进度并返回标题主菜单！");
       return;
     }
     if (m1Act === "confirm-reset-save") {
+      if (sandboxMode) {
+        showToast("🧪 演武沙盒模式中不可清空正式存档，请先点击【退出沙盒】！");
+        return;
+      }
       if (storageReadError) {
         saveAlertDismissed = false;
         renderWelcomeSaveStatusBanner();
@@ -27219,6 +28450,11 @@ const ART = {
       return;
     }
     if (m1Act === "execute-reset-save") {
+      if (sandboxMode) {
+        closeModal();
+        showToast("🧪 演武沙盒模式中不可清空正式存档，请先点击【退出沙盒】！");
+        return;
+      }
       if (storageReadError) {
         closeModal();
         saveAlertDismissed = false;
@@ -27263,6 +28499,7 @@ const ART = {
         }
       } catch (e) {}
       try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      clearTransientChoiceQueues();
       game = null;
       loadedSaveRev = 0;
       lastSavedPayloadChecksum = null;
@@ -27382,6 +28619,7 @@ const ART = {
     }
 
     if (t.id === "btn-sanctum-hub" || t.getAttribute("data-action") === "enter-sanctum") {
+      closeModal();
       closeDrawer();
       if (arena.sanctumMode) initArenaStage(arena.stageIdx, false);
       else enterSanctumHub();
@@ -27441,9 +28679,12 @@ const ART = {
       const count = game.gearBag.length;
       game.gearBag = [];
       game.stones += gained;
-      game.atkFlatBonus = (game.atkFlatBonus || 0) + Math.max(1, Math.floor(count / 2));
+      const wantAtk = Math.max(1, Math.floor(count / 2));
+      const bonusRes = grantPermanentStatBonus(game, { atk: wantAtk, source: "general" });
       Sound.fanfare();
-      showToast(`熔炼 ${count} 件闲置仙装 · 获 ${gained} 灵石并淬炼剑威！`);
+      showToast(bonusRes.grantedAtk > 0
+        ? `熔炼 ${count} 件闲置仙装 · 获 ${gained} 灵石，剑攻永久 +${bonusRes.grantedAtk}${bonusRes.atkCapped ? `（已达本境上限 ${game.atkFlatBonus}/${bonusRes.caps.atkFlatBonus}）` : ""}！`
+        : `熔炼 ${count} 件闲置仙装 · 获 ${gained} 灵石（本境永久剑攻已达上限 ${game.atkFlatBonus}/${bonusRes.caps.atkFlatBonus}）！`);
       saveGame(); updateHud(); renderDrawerContent();
       return;
     }
@@ -27506,11 +28747,22 @@ const ART = {
       openExpeditionSandboxModal();
       return;
     }
+    if (t.hasAttribute("data-recall-exp-node")) {
+      if (game) {
+        assignExpeditionNode(game, t.getAttribute("data-recall-exp-node"), "");
+        openExpeditionSandboxModal();
+      }
+      return;
+    }
     if (t.id === "btn-claim-expedition" || t.getAttribute("data-action") === "claim-expedition") {
       claimExpeditionRewards();
       return;
     }
     if (t.id === "btn-export-cloud-save" || t.getAttribute("data-action") === "copy-cloud-save") {
+      if (sandboxMode) {
+        showToast("🧪 演武沙盒模式已禁用云码导出与导入（请先退出沙盒）");
+        return;
+      }
       const inp = document.getElementById("inp-cloud-save-code");
       if (inp) {
         inp.value = exportFullCloudSaveCode();
@@ -27523,6 +28775,10 @@ const ART = {
       return;
     }
     if (t.id === "btn-import-cloud-save" || t.getAttribute("data-action") === "import-cloud-save") {
+      if (sandboxMode) {
+        showToast("🧪 演武沙盒模式已禁用云码导出与导入（请先退出沙盒）");
+        return;
+      }
       const inp = document.getElementById("inp-cloud-save-code");
       const parsedRes = parseCloudSaveCode(inp ? inp.value : "");
       const stEl = document.getElementById("lbl-cloud-save-status");
@@ -27771,8 +29027,8 @@ const ART = {
       if (!Array.isArray(game.unlockedSouls)) game.unlockedSouls = ["blood_warden"];
       if (!game.unlockedSouls.includes(sid)) {
         if (game.stones < 80) { showToast(`需击败对应妖王或消耗 80 灵石炼化【${sp.shortLbl}】`); return; }
-        game.stones -= 80;
-        game.unlockedSouls.push(sid);
+        openSoulSealRefineConfirmModal(sid);
+        return;
       }
       game.equippedSoul = sid;
       Sound.soulManifestRoar();
@@ -27939,9 +29195,9 @@ const ART = {
       const tipEl = document.getElementById("ling-tooltip");
       if (tipEl) tipEl.style.display = "none";
       if (!game) return;
-      const unlocked = !!game.unlockAllArcana || rankOf(game.realm) >= 3;
+      const unlocked = Boolean(sandboxMode || game.unlockAllArcana) || rankOf(game.realm) >= 3;
       if (!unlocked) {
-        showToast("太虚秘匣将于【金丹期】解封；也可于右上【仙阁】开启全神通演武提前体验！");
+        showToast("太虚秘匣将于【金丹期】解封；也可于右上【仙阁】开启演武沙盒提前体验！");
         return;
       }
       const wrap = document.getElementById("arcana-vault-wrap");
@@ -27952,12 +29208,14 @@ const ART = {
       return;
     }
     if (dActVal === "toggle-arcana-all") {
+      const pav = document.getElementById("pavilion-popover"); if (pav) pav.classList.remove("open");
+      const pavBtn = document.getElementById("btn-pavilion-menu"); if (pavBtn) pavBtn.classList.remove("open");
       if (!game) return;
-      game.unlockAllArcana = !game.unlockAllArcana;
-      Sound.clang(1.25, 0.10);
-      showToast(game.unlockAllArcana ? "★ 已开启【全神通演武】：全部招式与太虚秘匣提前解封！" : "已恢复【随境解封】：按凡人→炼气→筑基→金丹渐进成长");
-      saveGame();
-      updateHud(true);
+      if (sandboxMode) {
+        exitSandboxMode();
+      } else {
+        openSandboxConfirmModal("pavilion", null);
+      }
       return;
     }
     if (dActVal === "toggle-dojo-drawer") {
@@ -28100,16 +29358,18 @@ const ART = {
       const rid = t.getAttribute("data-temper-relic");
       const curStars = (game.relicStars && game.relicStars[rid]) || 1;
       if (curStars >= 5) return;
-      const forgeDisc = getSanctumLevel(game, "sword_forge") >= 4 ? 0.85 : 1.0;
-      const temperCost = Math.max(35, Math.round((curStars * 75 - ((game.inventory.core || 0) > 0 ? 30 : 0)) * forgeDisc));
-      if (game.stones < temperCost) { showToast(`需 ${temperCost} 灵石`); return; }
-      game.stones -= temperCost;
-      if ((game.inventory.core || 0) > 0) game.inventory.core -= 1;
+      const tc = getRelicTemperCost(game, curStars, temperUseCoreDiscount);
+      if (game.stones < tc.finalStones) { showToast(`淬炼需 ${tc.finalStones} 灵石${tc.applyCore ? " + 1 妖核" : ""}`); return; }
+      game.stones -= tc.finalStones;
+      if (tc.applyCore) {
+        game.inventory.core = Math.max(0, Math.floor(num(game.inventory.core, 0)) - 1);
+        if (game.inventory.core <= 0) temperUseCoreDiscount = false;
+      }
       game.relicStars[rid] = curStars + 1;
       syncFlyingSwords();
       Sound.clang(1.3, 0.14);
       Sound.fanfare();
-      showToast(`★ 【${RELICS[rid].name}】淬炼晋升 ★${curStars + 1}！`);
+      showToast(`★ 【${RELICS[rid].name}】淬炼晋升 ★${curStars + 1}（消耗 ${tc.finalStones} 灵石${tc.applyCore ? " + 1 妖核" : ""}）！`);
       saveGame(); updateHud(); renderDrawerContent();
       return;
     }
@@ -28124,10 +29384,13 @@ const ART = {
     if (t.hasAttribute("data-choose-ending")) {
       const endId = t.getAttribute("data-choose-ending");
       game.ending = endId;
-      metaState.lastEnding = endId;
-      recordPastLifeInHall(game, endId);
+      if (!sandboxMode) {
+        metaState.lastEnding = endId;
+        recordPastLifeInHall(game, endId);
+        saveMeta();
+      }
       Sound.fanfare();
-      saveMeta(); saveGame(); updateHud();
+      saveGame(); updateHud();
       openEndingModal();
       return;
     }
@@ -28139,7 +29402,7 @@ const ART = {
       else if (DAO_LAWS[did] && !game.laws.includes(did)) {
         const beforeSyn = SYNERGIES.filter(s => s.active(game)).map(s => s.id);
         game.laws.push(did);
-        if (!metaState.seenLaws.includes(did)) metaState.seenLaws.push(did);
+        if (!sandboxMode && !metaState.seenLaws.includes(did)) metaState.seenLaws.push(did);
         if (game.laws.length >= 5) unlockAchievement("ach_laws5");
         const newSyn = SYNERGIES.find(s => !beforeSyn.includes(s.id) && s.active(game));
         if (newSyn) showToast(`★ 大道共鸣！激活神话羁绊【${newSyn.name}】！`);
@@ -28157,7 +29420,15 @@ const ART = {
     if (t.hasAttribute("data-close-drawer")) { closeDrawer(); return; }
     if (t.hasAttribute("data-modal-close")) { closeModal(); return; }
     if (t.hasAttribute("data-tab")) { toggleDrawer(t.getAttribute("data-tab")); return; }
-    if (t.hasAttribute("data-preset")) { applyStagePreset(t.getAttribute("data-preset")); return; }
+    if (t.hasAttribute("data-preset")) {
+      const presetName = t.getAttribute("data-preset");
+      if (sandboxMode) {
+        applyStagePreset(presetName, { insideSandbox: true });
+      } else {
+        openSandboxConfirmModal("preset", presetName);
+      }
+      return;
+    }
 
     if (t.hasAttribute("data-enhance-slot")) {
       const sl = t.getAttribute("data-enhance-slot");
@@ -28345,7 +29616,11 @@ const ART = {
         if (kOpt.karma) game.karmaScore = Math.max(-100, Math.min(100, (game.karmaScore || 0) + kOpt.karma));
         if (kOpt.dao) Object.entries(kOpt.dao).forEach(([dk, dv]) => { game.dao[dk] = (game.dao[dk] || 0) + dv; });
         if (kOpt.drBonus) game.karmaDrBonus = (game.karmaDrBonus || 0) + kOpt.drBonus;
-        if (kOpt.atkBonus) game.atkFlatBonus = (game.atkFlatBonus || 0) + kOpt.atkBonus;
+        let kCapNote = "";
+        if (kOpt.atkBonus) {
+          const atkRes = grantPermanentStatBonus(game, { atk: kOpt.atkBonus, source: "general" });
+          if (atkRes.atkCapped) kCapNote = `（本境永久剑攻 ${game.atkFlatBonus}/${atkRes.caps.atkFlatBonus}）`;
+        }
         if (kOpt.stones) game.stones += kOpt.stones;
         if (kOpt.bonusSword) { game.bonusSwords = (game.bonusSwords || 0) + kOpt.bonusSword; syncFlyingSwords(); }
         if (kOpt.longevityPill) game.inventory.longevity_pill = (game.inventory.longevity_pill || 0) + kOpt.longevityPill;
@@ -28361,7 +29636,7 @@ const ART = {
         }
         if (kOpt.gearSlot) acquireGearItem(rollGearItem(Math.max(2, arena.stageIdx + 1), kOpt.gearRarity || 3, kOpt.gearSlot));
         Sound.fanfare();
-        showToast(`✦ ${kOpt.label} 功成！`);
+        showToast(`✦ ${kOpt.label} 功成！${kCapNote}`);
         closeModal();
         saveGame();
         updateHud();
@@ -28385,10 +29660,12 @@ const ART = {
           game.stones += 85;
           showToast("★ 剑髓入体！修为大涨且获 85 灵石！");
         } else if (oid === "bathe_spring") {
-          game.maxHpBonus = (game.maxHpBonus || 0) + 36;
+          const hpRes = grantPermanentStatBonus(game, { hp: 36, source: "general" });
           const st2 = getCombatStats(game);
           game.hp = st2.maxHp; game.mp = st2.maxMp;
-          showToast("★ 太清洗髓！气血全满且气血上限永久 +36！");
+          showToast(hpRes.grantedHp > 0
+            ? `★ 太清洗髓！气血全满且气血上限永久 +${hpRes.grantedHp}${hpRes.hpCapped ? `（已达本境上限 ${game.maxHpBonus}/${hpRes.caps.maxHpBonus}）` : ""}！`
+            : `★ 太清洗髓！气血全满（本境永久气血上限已满 ${game.maxHpBonus}/${hpRes.caps.maxHpBonus}）！`);
         } else if (oid === "gather_lotus") {
           game.inventory.healing_pill = (game.inventory.healing_pill || 0) + 3;
           game.inventory.herb = (game.inventory.herb || 0) + 4;
@@ -28396,13 +29673,15 @@ const ART = {
           showToast("★ 采得千年寒莲！回春丹+3 · 凝气草+4 · 灵石+65！");
         } else if (oid === "condense_frost") {
           arena.stageElement = "frost";
-          game.atkFlatBonus = (game.atkFlatBonus || 0) + 10;
-          showToast("★ 玄冥寒霜入刃！剑道攻击永久 +10！");
+          const atkRes = grantPermanentStatBonus(game, { atk: 10, source: "general" });
+          showToast(atkRes.grantedAtk > 0
+            ? `★ 玄冥寒霜入刃！剑道攻击永久 +${atkRes.grantedAtk}${atkRes.atkCapped ? `（已达本境上限 ${game.atkFlatBonus}/${atkRes.caps.atkFlatBonus}）` : ""}！`
+            : `★ 玄冥寒霜入刃！（本境永久剑攻已达上限 ${game.atkFlatBonus}/${atkRes.caps.atkFlatBonus}）`);
         } else if (oid === "swallow_gold") {
           gainRealmXp(Math.max(55, Math.round((REALMS[game.realm].xpCap || 200) * 0.60)));
-          game.atkFlatBonus = (game.atkFlatBonus || 0) + 14;
+          const atkRes = grantPermanentStatBonus(game, { atk: 14, source: "general" });
           game.tribShield = (game.tribShield || 0) + 2;
-          showToast("★ 古丹化境！修为+60% · 攻击+14 · 护脉丹障+2！");
+          showToast(`★ 古丹化境！修为+60% · 攻击+${atkRes.grantedAtk}${atkRes.atkCapped ? `（已达上限 ${game.atkFlatBonus}/${atkRes.caps.atkFlatBonus}）` : ""} · 护脉丹障+2！`);
         } else if (oid === "inspect_furnace") {
           game.inventory.core = (game.inventory.core || 0) + 2;
           game.stones += 95;
@@ -28514,37 +29793,23 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-quick-craft")) {
-      const rec = RECIPES[t.getAttribute("data-quick-craft")];
+      const recId = t.getAttribute("data-quick-craft");
+      const rec = RECIPES[recId];
       if (!rec) return;
       if (rec.reqCauldronLv && getSanctumLevel(game, "cauldron") < rec.reqCauldronLv) {
         showToast(`需将洞府【紫微丹鼎】升至 Lv.${rec.reqCauldronLv} 方可炼制！`);
         return;
       }
-      const fairDisc = currentOmen(game).id === "fair" ? 0.8 : 1.0;
-      const matBuyCost = Object.entries(rec.inputs).reduce((sum, [k, req]) => {
-        const lack = Math.max(0, req - (game.inventory[k] || 0));
-        return sum + lack * Math.round((ITEMS[k].buy || 20) * fairDisc);
-      }, 0);
-      const totalStoneCost = Math.round(rec.stones * fairDisc) + matBuyCost;
-      if (game.stones < totalStoneCost) {
-        showToast(`灵石不足（需 ${totalStoneCost} 灵石）`);
+      const bd = computeRecipeCostBreakdown(game, rec);
+      if (game.stones < bd.totalStoneCost) {
+        showToast(`灵石不足（共需 ${bd.totalStoneCost} 灵石${bd.hasMissing ? `，含购入缺料 ${bd.matBuyCost} 灵石` : ""}）`);
         return;
       }
-      game.stones -= totalStoneCost;
-      Object.entries(rec.inputs).forEach(([k, req]) => {
-        game.inventory[k] = Math.max(0, (game.inventory[k] || 0) - req);
-      });
-      const count = (hasLaw(game, "nine_pill") || currentOmen(game).id === "alchemy_star") ? 2 : 1;
-      game.inventory[rec.output] = (game.inventory[rec.output] || 0) + count;
-      if (getSanctumLevel(game, "cauldron") >= 4) {
-        game.inventory.healing_pill = (game.inventory.healing_pill || 0) + 1;
+      if (bd.hasMissing) {
+        openAlchemyBuyConfirmModal(rec.id, "quick");
+        return;
       }
-      game.immortalPills = (game.immortalPills || 0) + 1;
-      unlockAchievement("ach_pill");
-      Sound.qiOrb(4);
-      const outSpec = ITEMS[rec.output];
-      showToast(`速炼成丹 ×${count} · 【${outSpec.name}】`);
-      saveGame(); updateHud(); renderDrawerContent();
+      executeAlchemyQuickCraft(rec.id);
       return;
     }
     if (t.hasAttribute("data-relic")) {
@@ -28578,17 +29843,28 @@ const ART = {
         Sound.fanfare(); saveGame(); updateHud(); renderDrawerContent();
       } else showToast("需凝气草 ×2");
     } else if (act === "gamble-jade") {
+      if (isAllDaoLawsCollected(game)) {
+        showToast("诸天大道法则已尽数参悟，无需再行切玉赌注！");
+        if (drawerOpen) renderDrawerContent();
+        return;
+      }
       const cost = currentOmen(game).id === "fair" ? 48 : 60;
       if (game.stones >= cost) {
         game.stones -= cost; game.jadeCuts += 1;
         unlockAchievement("ach_jade");
         closeDrawer();
         saveGame(); updateHud();
-        openIconicUpgradeDraft("一剑切出鸿蒙仙髓！");
+        openIconicUpgradeDraft("一剑切出鸿蒙仙髓！", false, { source: "jade_wager" });
+      } else {
+        showToast(`灵石不足（切玉需 ${cost} 灵石）`);
       }
     } else if (act === "show-verdict") {
       closeDrawer(); openEndingModal();
     } else if (act === "reincarnate-now") {
+      if (sandboxMode) {
+        showToast("🧪 演武沙盒模式不记录轮回飞升，请先点击【退出沙盒】！");
+        return;
+      }
       if (storageReadError) {
         saveAlertDismissed = false;
         renderWelcomeSaveStatusBanner();
@@ -28653,6 +29929,7 @@ const ART = {
         return;
       }
       try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      clearTransientChoiceQueues();
       game = null;
       loadedSaveRev = 0;
       lastSavedPayloadChecksum = null;
@@ -28752,11 +30029,18 @@ const ART = {
       }
       return;
     }
+    if (t.hasAttribute && t.hasAttribute("data-temper-core-toggle") && game) {
+      temperUseCoreDiscount = !!t.checked && Math.max(0, Math.floor(num(game.inventory && game.inventory.core, 0))) > 0;
+      if (drawerOpen) renderDrawerContent();
+      const chk = document.getElementById("chk-temper-use-core");
+      if (chk && !chk.disabled) {
+        try { chk.focus({ preventScroll: true }); } catch (e) {}
+      }
+      return;
+    }
     if (t.hasAttribute && t.hasAttribute("data-exp-node") && game) {
       const nid = t.getAttribute("data-exp-node");
-      const ex = ensureExpeditionState(game);
-      ex.assignments[nid] = t.value || "";
-      saveGame();
+      assignExpeditionNode(game, nid, t.value || "");
       openExpeditionSandboxModal();
       return;
     }
@@ -28928,7 +30212,33 @@ const ART = {
     SINGLE_HIT_CAP_RATIO,
     REALM_COMBAT_BASELINE,
     getRealmCombatBaseline,
-    BOSS_RUSH_ROSTER
+    BOSS_RUSH_ROSTER,
+    EXPEDITION_BANKED_STONES_CAP,
+    EXPEDITION_BANKED_STARS_CAP,
+    EXPEDITION_NODES,
+    GARRISON_ROSTER,
+    isGarrisonHeroUnlocked,
+    assignExpeditionNode,
+    claimExpeditionRewards,
+    isAllDaoLawsCollected,
+    isPracticeModeActive,
+    startBossRushGauntlet,
+    openBossRushVictoryModal,
+    computeBossRushScoreAndGrade,
+    startCelestialSpireRun,
+    PERM_GROWTH_CAPS,
+    GEAR_BAG_LIMIT,
+    getPermGrowthCaps,
+    getBloodFuryQuota,
+    getCurioStacks,
+    computeRecipeCostBreakdown,
+    getRelicTemperCost,
+    isSandboxMode: () => sandboxMode,
+    enterSandboxMode,
+    exitSandboxMode,
+    getTemperUseCoreDiscount: () => temperUseCoreDiscount,
+    getPendingOverflowCount: () => (activeGearOverflowItem ? 1 : 0) + pendingGearOverflowQueue.length,
+    getPendingSoulUnlockCount: () => (activeSoulUnlockId ? 1 : 0) + pendingSoulUnlockQueue.length
   };
   window.__CHENYUAN_V24__ = {
     getState: () => ({
