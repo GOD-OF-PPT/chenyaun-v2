@@ -101,7 +101,7 @@
 | M2 | 存档与输入安全 | T1–T7 | `codex/save-input-safety` | none | DONE (PR #13, `4b1fc00`) |
 | M3 | 主线进阶完整性与难度曲线 | S1, S2, S5, S6, G3 | `codex/mainline-progression` | M2 已合并 | DONE (`codex/mainline-progression`) |
 | M4 | 经济完整性与显式消费 | G1, G2, G4, G5, G6, G9, G11a | `codex/economy-integrity` | M3 已合并 | DONE (`codex/economy-integrity`) |
-| M5 | 叙事内容：前提、卷终、故人线 | S3, S4, S7, S8, S9, S10 | `codex/narrative-content` | M4 已合并 | PLANNED |
+| M5 | 叙事内容：前提、卷终、故人线 | S3, S4, S7, S8, S9, S10 | `codex/narrative-content` | M4 已合并 | DONE (`codex/narrative-content`) |
 | M6 | 系统节奏与深度 | S11+G7, G8, G10, G11b, G12 | `codex/systems-pacing` | M5 已合并 | PLANNED |
 | E2E | E2E 测试轨道 | E1 → 发布 `TEST_READY.md` | `codex/e2e-suite` | M1（package.json），否则自带运行器 | PAUSED (WIP on `codex/e2e-suite`; deferred to M7 per user directive) |
 | M7 | 最终里程碑：通过 E2E 并对抗加固 | E2：Tier 1→2→3→4 按顺序闸门，然后 Tier 5 | `codex/e2e-pass`、`codex/adversarial-hardening` | M1–M6 + TEST_READY.md | PLANNED |
@@ -182,3 +182,9 @@
   1. `R2-7d` Case 2（`G-T6a` L3406–3439）：洞府挂机下远征 `tickTimer` 按 G1 设计暂停（不再递减），需改为验证洞府内 `tickTimer === 8.5` 且 `saveRev` 不变，并将 `tickTimer < 8.5` 探针迁移至非洞府活敌战斗场景；
   2. `M4-1`（L910–927）：问道阶梯点击 `[data-action="toggle-arcana-all-roadmap"]` 后需点击 `#btn-confirm-enter-sandbox` 确认进入演武沙盒（验证 `#hud-sandbox-badge` 可见且正式存档未改动），并通过 `#btn-exit-sandbox` 退出沙盒；
   3. 新增 `R4-*` 回归套件（`R4-1` G1 远征与旧档5场景、`R4-2` G2 灵玉赌注、`R4-3` G4 练习模式零泄露、`R4-4` G5 永久成长上限与旧档5场景、`R4-5` G6 沙盒隔离与旧档迁移、`R4-6` G9 四项显式消费与焦点返回/XSS、`R4-7` G11a Boss Rush 评级校准）。
+- 2026-11-23 — M5（`codex/narrative-content`）完成全部 6 项功能改动（S3 全界面章节单位统一为「卷」与「六卷」/右侧导航 `#nav-btn-story` 更名「故人」且主线唯一入口为目标追踪器与 `T` 键/同步 `docs/v2-overhaul-notes.md`、S4 四位故人与全部首领/妖兽规范名号头衔统一/7项主线步骤 ID 对齐并通过 `LEGACY_STEP_ID_MAP` 在 `normalizeLoadedGame` 无损迁移及修复 `claimMainlineStepReward` `pillQty`、S7 普通战役 Boss 战败后立即落盘→`clear_stage0..4` 演出→「第N卷·终」回顾卡→合卷后方启传送阵/非战役模式隔离与 `#story-dialogue-bar` 焦点陷阱安全返回及延迟弹窗防撞、S8 新开局 5 句 `opening_scroll` 开场前提与天门道影残片/砚尘石碑贯穿主线/`boss_pre_stage0..4` 战前战后台词/6 卷 `CHAPTERS[].desc` 渲染、S9 11 段 `STORIES` 挂钩 `chapter` 与规范 `STORY_LOCATIONS` 全四端及问道录展示/可选故人线不阻塞主线/`enter_*` 按 `game.choices` 切分初见重逢并消除 `enter_terrace` 与 `yan_gate` 重复、S10 `KARMA_DILEMMAS` 扩容至 9 段分卷不重复困境与 `completedKarmaIds` 迁移回填/幂等去重/`openEncounterModal` 回落与抽屉/HUD 状态反馈，以及 `window.__CHENYUAN_V25__` 增量导出）；已完成内联 `<script>` `node --check` + `vm.Script` 静态语法检查与全量只读静态合规核验（按 2026-11-23 用户指令，未运行任何浏览器/自动化回归或 E2E 测试，统一延后至 M7）；以下 `scripts/verify-playable-v2.mjs` 回归适配与 `R5-*` 新增套件延后至 M7 统一更新执行：
+  1. S8 开场卷轴（`#btn-start-new` 现会开启 5 句 `opening_scroll` 并置 `arena.paused = true`）：共享辅助 `startCleanGamePage`（L153–155）以及直接点击 `#btn-start-new` 的 `M1-7`（L520）、`M4-2`（L1112）、`R2-1`（L1853）、`R2-5`（L2337）、`R2-6`（L2454）、`R2-7a`（L2629/L2643）、`R2-7c`（L3197）、`R2-7d`（L3267/L3377/L3413）在测试开场后实机操作或 `Escape` 关抽屉前需先通过 `#btn-dlg-skip` / `Escape` 结束开场卷轴；
+  2. S4 步骤 ID 对齐：`P5-1`（L1693、L1711–1712）需将 `st.id === "s4_npc"` 更新为 `"s4_puppet"`；
+  3. S7 卷终演出与回顾卡门控传送门：`M2-1`（L575–612）与 `P5-1`（L1737–1760）在击杀战役首领或触发 `waveIdx = 5; spawnCurrentWave()` 后需先完成/跳过 `boss_pre_stage*`、`clear_stage*` 演出并点击 `#btn-volume-recap-confirm`（同时可断言回顾卡开启期间传送门尚未生成），再校验 `portal_next` / `ascend_gate`；
+  4. 保持兼容无破坏项：`#nav-btn-story` ID、`#btn-goals-modal`、`M3-2`、`M3-3`、`P2-1`（`STAGES[4]`）、`P4-1`（`CHAPTER_CUTSCENES.enter_secret` / `enter_sword_mound` 数组与关键词）、`R2-7d` N3（`karmaEventsDone: 1.5`）均保持兼容；
+  5. 新增 `R5-*` 回归套件：`R5-1` S3 术语与导航改名、`R5-2` S4 规范设定名与 `LEGACY_STEP_ID_MAP` 5 场景旧档迁移、`R5-3` S7 卷终先落盘→演出→回顾卡→传送门与非战役模式隔离/焦点返回/XSS、`R5-4` S8 开场卷轴（逐句/跳过/焦点返回/续玩不重播）与战前战后首领台词及 `CHAPTERS[].desc` 渲染、`R5-5` S9 11 段故人线卷次/地点/追踪器可选行/不阻塞主线与 `enter_*` 动态台词及零重复、`R5-6` S10 9 段分卷因果不重复/幂等性/耗尽提示/古碑回落与 `completedKarmaIds` 5 场景存档迁移。
