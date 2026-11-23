@@ -2491,6 +2491,14 @@
     outline: 2px solid #ffe28a !important;
     outline-offset: 2px;
   }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
   #save-status-banner {
     width: 100%;
     max-width: 540px;
@@ -3362,7 +3370,7 @@
       </div>
     </section>
 
-    <section id="jade-panel">
+    <section id="jade-panel" role="dialog" aria-modal="true" aria-label="修行与卷宗抽屉" tabindex="-1">
       <div id="panel-scroll-body"></div>
     </section>
     <div id="combo-rank-seal">
@@ -3387,12 +3395,12 @@
     <span id="karma-hud-icon">☯</span>
     <strong id="karma-hud-title" style="font-family:var(--font-serif);">本真中正 · 0</strong>
   </button>
-  <button type="button" id="posture-switch-badge" data-unlock-rank="2" data-arena-skill="posture" data-tip="双剑意姿态切换 · 太虚易剑斩 (Tab / LB)|实时切换【青莲疾剑式(高频迅捷)】与【玄重巨阙式(霸体破盾碎核)】；在收招或闪避瞬间按下立即触发突进破势【太虚易剑斩】！">
+  <button type="button" id="posture-switch-badge" data-unlock-rank="2" data-arena-skill="posture" data-tip="双剑意姿态切换 · 太虚易剑斩 (` / LB)|实时切换【青莲疾剑式(高频迅捷)】与【玄重巨阙式(霸体破盾碎核)】；在收招或闪避瞬间按下立即触发突进破势【太虚易剑斩】！">
     <img id="posture-emblem-img" class="posture-emblem-ico" alt="姿态" />
     <div style="display:flex;flex-direction:column;gap:2px;flex:1;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
         <strong id="posture-name-txt" style="font-family:var(--font-serif);font-size:13.5px;color:#70ffe6;">青莲疾剑式</strong>
-        <span class="posture-key-pill" data-bind-cap="posture">Tab</span>
+        <span class="posture-key-pill" data-bind-cap="posture">`</span>
       </div>
       <span id="posture-sub-txt" style="font-size:10px;color:#b8dcd5;">攻速+28% · 迅捷叠印游身</span>
     </div>
@@ -4556,7 +4564,7 @@ const ART = {
     serpent:       { id: "serpent", name: "寒潭玄蛇", min: "foundation", location: "secret", art: "enemy_serpent", hp: 680, attack: 21, heavy: 44, stones: 56, xp: 75, loot: { jade: 2, core: 1 }, mech: null, mechDesc: "盘踞古境寒潭并喷吐冰池弹幕：按【Y键切剑轮阵】斩碎弹幕，切手重击快速破势。" },
     puppet:        { id: "puppet", name: "古境剑傀", min: "golden", location: "secret", art: "enemy_puppet", hp: 960, attack: 25, heavy: 54, stones: 90, xp: 155, loot: { lotus: 2, jade: 1 }, mech: "reflection", mechDesc: "【镜照反震】展开铜镜架势时反弹轻剑伤害，宜用【空格一闪】或【右键爆剑】强破镜阵！" },
     shadow:        { id: "shadow", name: "照影心魇", min: "nascent", location: "secret", art: "enemy_shadow", hp: 1240, attack: 28, heavy: 64, stones: 140, xp: 310, loot: { soul: 2, lotus: 1 }, mech: "drain", mechDesc: "【噬血魔影】瞬步绕后突袭并吸血，看准金芒识破剑反或开【Y键剑轮阵】压制。" },
-    sentinel:      { id: "sentinel", name: "云台守灵", min: "spirit", location: "terrace", art: "enemy_sentinel", hp: 1520, attack: 32, heavy: 72, stones: 195, xp: 520, loot: { dao: 2, soul: 1 }, mech: "ward", mechDesc: "【护山灵阵】护阵期大幅减伤，切【Tab玄重巨阙式】重劈或右键爆剑崩碎其金盾！" },
+    sentinel:      { id: "sentinel", name: "云台守灵", min: "spirit", location: "terrace", art: "enemy_sentinel", hp: 1520, attack: 32, heavy: 72, stones: 195, xp: 520, loot: { dao: 2, soul: 1 }, mech: "ward", mechDesc: "【护山灵阵】护阵期大幅减伤，切【`玄重巨阙式】重劈或右键爆剑崩碎其金盾！" },
     trial_heart:   { id: "trial_heart", name: "第一劫 · 往昔心魔", min: "spirit", location: "terrace", art: "enemy_trial_heart", hp: 1380, attack: 30, heavy: 66, stones: 0, xp: 0, loot: {}, trial: true, mech: "drain", mechDesc: "九霄第一劫：幻化执念噬血攻心，识破其蓄势方见真我。" },
     trial_thunder: { id: "trial_thunder", name: "第二劫 · 九霄雷劫", min: "spirit", location: "terrace", art: "enemy_trial_thunder", hp: 1620, attack: 33, heavy: 76, stones: 0, xp: 0, loot: {}, trial: true, mech: null, mechDesc: "九霄第二劫：沈清禾【灵枢药阵】与裴照【剑痕】将在此劫显化护持！" },
     trial_gate:    { id: "trial_gate", name: "第三劫 · 天门道影", min: "spirit", location: "terrace", art: "enemy_trial_gate", hp: 1820, attack: 36, heavy: 84, stones: 0, xp: 0, loot: {}, trial: true, mech: "ward", mechDesc: "九霄终劫：倾尽双姿态连携、法宝剑域、灵兽与故人合击斩开仙门！" },
@@ -4830,7 +4838,7 @@ const ART = {
     {
       tierId: "foundation", realm: "foundation", title: "二重仙阶 · 筑基铸道", subtitle: "双姿易剑 · 化妖破招与护宗守阵",
       systems: [
-        { id: "dual_stance",  min: "foundation", name: "双剑意姿态",   short: "双姿态", keyHint: "Tab 键",   action: "cycle_posture",     desc: "青莲疾剑式与玄重巨阙式瞬切，触发太虚易剑斩。" },
+        { id: "dual_stance",  min: "foundation", name: "双剑意姿态",   short: "双姿态", keyHint: "` 键",     action: "cycle_posture",     desc: "青莲疾剑式与玄重巨阙式瞬切，触发太虚易剑斩。" },
         { id: "soul_seal",    min: "foundation", name: "镇妖魂印",     short: "魂印",   keyHint: "C 键",     action: "open_drawer_cultivate", desc: "炼化妖王精魄化妖破招，联动五行场地核爆。" },
         { id: "sect_defense", min: "foundation", name: "护山大阵守卫", short: "护山战", keyHint: "洞府/舆图", action: "start_sect_defense", desc: "御剑守护听雨洞府灵核与护山灵塔（Lv.3增北辰塔）。" },
         { id: "tag_team",     min: "foundation", name: "道侣瞬切换人", short: "换人",   keyHint: "V 键",     action: "trigger_tag_switch", desc: "无缝切换操控沈清禾/裴照等道侣并释放合璧奥义。" }
@@ -4868,45 +4876,199 @@ const ART = {
     });
   }
 
-  let metaState = {
-    ascensions: 0,
-    bestScore: 0,
-    bestTower: 0,
-    bestRushGrade: null,
-    bestRushTime: 0,
-    bestSpireFloor: 0,
-    bestCalamityTier: 0,
-    cloudSeaClears: 0,
-    taixuTrailUnlocked: false,
-    lastEnding: null,
-    seenEnemies: ["wolf"],
-    seenLaws: [],
-    unlockedEndings: [],
-    karmaAscensions: { righteous: 0, neutral: 0, demonic: 0 },
-    reincarnationPoints: 0,
-    hallOfLives: []
-  };
+  let metaReadError = null;
+  let metaWriteError = null;
+  const RUSH_GRADE_RANK = { "S+": 6, "SS": 5, "S": 4, "A": 3, "B": 2, "C": 1 };
+  function createDefaultMetaState() {
+    return {
+      metaRev: 0,
+      ascensions: 0,
+      bestScore: 0,
+      bestTower: 0,
+      bestRushGrade: null,
+      bestRushTime: 0,
+      bestSpireFloor: 0,
+      bestCalamityTier: 0,
+      cloudSeaClears: 0,
+      taixuTrailUnlocked: false,
+      lastEnding: null,
+      seenEnemies: ["wolf"],
+      seenLaws: [],
+      unlockedEndings: [],
+      karmaAscensions: { righteous: 0, neutral: 0, demonic: 0 },
+      reincarnationPoints: 0,
+      hallOfLives: []
+    };
+  }
+  let metaState = createDefaultMetaState();
   function ensureMetaState() {
-    if (!Array.isArray(metaState.seenEnemies)) metaState.seenEnemies = ["wolf"];
+    if (!Array.isArray(metaState.seenEnemies) || metaState.seenEnemies.length === 0) metaState.seenEnemies = ["wolf"];
     if (!Array.isArray(metaState.seenLaws)) metaState.seenLaws = [];
     if (!Array.isArray(metaState.unlockedEndings)) metaState.unlockedEndings = [];
     if (!Array.isArray(metaState.hallOfLives)) metaState.hallOfLives = [];
-    if (!metaState.karmaAscensions || typeof metaState.karmaAscensions !== "object") {
+    if (!metaState.karmaAscensions || typeof metaState.karmaAscensions !== "object" || Array.isArray(metaState.karmaAscensions)) {
       metaState.karmaAscensions = { righteous: 0, neutral: 0, demonic: 0 };
+    } else {
+      metaState.karmaAscensions.righteous = Number(metaState.karmaAscensions.righteous) || 0;
+      metaState.karmaAscensions.neutral = Number(metaState.karmaAscensions.neutral) || 0;
+      metaState.karmaAscensions.demonic = Number(metaState.karmaAscensions.demonic) || 0;
     }
-    metaState.bestSpireFloor = Number(metaState.bestSpireFloor) || 0;
-    metaState.bestCalamityTier = Number(metaState.bestCalamityTier) || 0;
-    metaState.cloudSeaClears = Number(metaState.cloudSeaClears) || 0;
-    metaState.reincarnationPoints = Number(metaState.reincarnationPoints) || 0;
+    metaState.metaRev = Math.max(0, Math.floor(Number(metaState.metaRev) || 0));
+    metaState.ascensions = Math.max(0, Math.floor(Number(metaState.ascensions) || 0));
+    metaState.bestScore = Math.max(0, Number(metaState.bestScore) || 0);
+    metaState.bestTower = Math.max(0, Math.floor(Number(metaState.bestTower) || 0));
+    metaState.bestRushTime = Math.max(0, Number(metaState.bestRushTime) || 0);
+    metaState.bestSpireFloor = Math.max(0, Math.floor(Number(metaState.bestSpireFloor) || 0));
+    metaState.bestCalamityTier = Math.max(0, Math.floor(Number(metaState.bestCalamityTier) || 0));
+    metaState.cloudSeaClears = Math.max(0, Math.floor(Number(metaState.cloudSeaClears) || 0));
+    metaState.reincarnationPoints = Math.max(0, Math.floor(Number(metaState.reincarnationPoints) || 0));
+    metaState.taixuTrailUnlocked = Boolean(metaState.taixuTrailUnlocked);
     return metaState;
   }
-  try {
-    const rawMeta = localStorage.getItem(META_KEY) || localStorage.getItem("chenyuan_wendao_v10_meta") || localStorage.getItem("chenyuan_wendao_v9_meta");
-    if (rawMeta) {
-      const pm = JSON.parse(rawMeta);
-      metaState = Object.assign(metaState, pm);
+  function parseAndValidateMetaRaw(raw, sourceKey) {
+    if (!raw || typeof raw !== "string") {
+      return { ok: false, empty: true, sourceKey };
     }
-  } catch (e) {}
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      return { ok: false, empty: false, sourceKey, reason: `JSON 解析失败（${e && e.message ? e.message : "格式损坏"}）`, raw };
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { ok: false, empty: false, sourceKey, reason: "元存档根结构非法（非对象）", raw };
+    }
+    if (parsed.metaRev !== undefined && (!Number.isFinite(Number(parsed.metaRev)) || Number(parsed.metaRev) < 0)) {
+      return { ok: false, empty: false, sourceKey, reason: "元存档版本号字段非法", raw };
+    }
+    if (parsed.ascensions !== undefined && (!Number.isFinite(Number(parsed.ascensions)) || Number(parsed.ascensions) < 0)) {
+      return { ok: false, empty: false, sourceKey, reason: "元存档飞升世数字段非法", raw };
+    }
+    return {
+      ok: true,
+      empty: false,
+      sourceKey,
+      meta: parsed,
+      metaRev: Math.max(0, Math.floor(Number(parsed.metaRev) || 0)),
+      legacy: sourceKey !== META_KEY
+    };
+  }
+  function mergeMetaStates(local, remote) {
+    const a = (local && typeof local === "object") ? local : createDefaultMetaState();
+    const b = (remote && typeof remote === "object") ? remote : {};
+    const localRev = Math.max(0, Math.floor(Number(a.metaRev) || 0));
+    const remoteRev = Math.max(0, Math.floor(Number(b.metaRev) || 0));
+    const numMax = (k) => Math.max(Number(a[k]) || 0, Number(b[k]) || 0);
+    const strUnion = (arrA, arrB) => {
+      const out = [];
+      const seen = new Set();
+      [...(Array.isArray(arrA) ? arrA : []), ...(Array.isArray(arrB) ? arrB : [])].forEach(v => {
+        if (typeof v === "string" && v && !seen.has(v)) { seen.add(v); out.push(v); }
+      });
+      return out;
+    };
+    const seenEnemies = strUnion(a.seenEnemies, b.seenEnemies);
+    if (seenEnemies.length === 0) seenEnemies.push("wolf");
+    const rA = RUSH_GRADE_RANK[a.bestRushGrade] || 0;
+    const rB = RUSH_GRADE_RANK[b.bestRushGrade] || 0;
+    const bestRushGrade = rB > rA ? b.bestRushGrade : (a.bestRushGrade || b.bestRushGrade || null);
+    const tA = Number(a.bestRushTime) || 0;
+    const tB = Number(b.bestRushTime) || 0;
+    const bestRushTime = (tA > 0 && tB > 0) ? Math.min(tA, tB) : Math.max(tA, tB);
+    const karmaA = (a.karmaAscensions && typeof a.karmaAscensions === "object" && !Array.isArray(a.karmaAscensions)) ? a.karmaAscensions : {};
+    const karmaB = (b.karmaAscensions && typeof b.karmaAscensions === "object" && !Array.isArray(b.karmaAscensions)) ? b.karmaAscensions : {};
+    const karmaAscensions = { righteous: 0, neutral: 0, demonic: 0 };
+    new Set(["righteous", "neutral", "demonic", ...Object.keys(karmaA), ...Object.keys(karmaB)]).forEach(k => {
+      karmaAscensions[k] = Math.max(Number(karmaA[k]) || 0, Number(karmaB[k]) || 0);
+    });
+    const hallMap = new Map();
+    [...(Array.isArray(a.hallOfLives) ? a.hallOfLives : []), ...(Array.isArray(b.hallOfLives) ? b.hallOfLives : [])].forEach(entry => {
+      if (!entry || typeof entry !== "object") return;
+      const key = `${entry.recordedAt || 0}|${entry.lifeNum || 0}|${entry.endingId || ""}|${entry.name || ""}|${entry.score || 0}`;
+      if (!hallMap.has(key)) hallMap.set(key, entry);
+    });
+    const hallOfLives = Array.from(hallMap.values())
+      .sort((x, y) => ((Number(y.recordedAt) || 0) - (Number(x.recordedAt) || 0)) || ((Number(y.lifeNum) || 0) - (Number(x.lifeNum) || 0)))
+      .slice(0, 18);
+    return {
+      metaRev: Math.max(localRev, remoteRev),
+      ascensions: Math.floor(numMax("ascensions")),
+      bestScore: numMax("bestScore"),
+      bestTower: Math.floor(numMax("bestTower")),
+      bestRushGrade,
+      bestRushTime,
+      bestSpireFloor: Math.floor(numMax("bestSpireFloor")),
+      bestCalamityTier: Math.floor(numMax("bestCalamityTier")),
+      cloudSeaClears: Math.floor(numMax("cloudSeaClears")),
+      taixuTrailUnlocked: Boolean(a.taixuTrailUnlocked) || Boolean(b.taixuTrailUnlocked),
+      lastEnding: (remoteRev > localRev && b.lastEnding) ? b.lastEnding : (a.lastEnding || b.lastEnding || null),
+      seenEnemies,
+      seenLaws: strUnion(a.seenLaws, b.seenLaws),
+      unlockedEndings: strUnion(a.unlockedEndings, b.unlockedEndings),
+      karmaAscensions,
+      reincarnationPoints: Math.floor(numMax("reincarnationPoints")),
+      hallOfLives
+    };
+  }
+  function inspectMetaState({ applyToMemory = true } = {}) {
+    let primaryRaw = null;
+    try {
+      primaryRaw = localStorage.getItem(META_KEY);
+    } catch (e) {
+      metaReadError = {
+        key: META_KEY,
+        reason: `无法访问本地存储（${e && e.message ? e.message : String(e)}）`,
+        raw: null,
+        at: Date.now()
+      };
+      return { ok: false, empty: false, error: metaReadError };
+    }
+    if (primaryRaw !== null && primaryRaw !== "") {
+      const res = parseAndValidateMetaRaw(primaryRaw, META_KEY);
+      if (res.ok) {
+        metaReadError = null;
+        if (applyToMemory) {
+          Object.assign(metaState, mergeMetaStates(metaState, res.meta));
+          ensureMetaState();
+        }
+        return res;
+      }
+      metaReadError = {
+        key: META_KEY,
+        reason: res.reason || "元存档结构异常",
+        raw: primaryRaw,
+        rawLength: primaryRaw.length,
+        at: Date.now()
+      };
+      return { ok: false, empty: false, error: metaReadError };
+    }
+    for (const legacyKey of ["chenyuan_wendao_v10_meta", "chenyuan_wendao_v9_meta"]) {
+      let raw = null;
+      try { raw = localStorage.getItem(legacyKey); } catch (e) { continue; }
+      if (raw !== null && raw !== "") {
+        const res = parseAndValidateMetaRaw(raw, legacyKey);
+        if (res.ok) {
+          metaReadError = null;
+          if (applyToMemory) {
+            Object.assign(metaState, mergeMetaStates(metaState, res.meta));
+            ensureMetaState();
+          }
+          return res;
+        }
+        metaReadError = {
+          key: legacyKey,
+          reason: `旧版元存档 ${legacyKey} 读取失败：${res.reason || "格式损坏"}`,
+          raw,
+          rawLength: raw.length,
+          at: Date.now()
+        };
+        return { ok: false, empty: false, error: metaReadError };
+      }
+    }
+    metaReadError = null;
+    return { ok: false, empty: true, error: null };
+  }
+  inspectMetaState({ applyToMemory: true });
   ensureMetaState();
 
   let selectedPerkId = "sword_bone";
@@ -5725,7 +5887,7 @@ const ART = {
         <button type="button" class="btn-ghost" data-modal-close="1">关闭 ×</button>
       </div>
       <div style="font-size:12px;color:var(--text-sub);display:flex;justify-content:space-between;align-items:center;">
-        <span>当前装备：<b class="txt-r${eq.rarity}">${eq.name}</b>（${formatGearStats(eq)}）</span>
+        <span>当前装备：<b class="txt-r${Number(eq.rarity) || 1}">${escapeHtml(eq.name)}</b>（${escapeHtml(formatGearStats(eq))}）</span>
         <span style="color:var(--gold-bright);">定向刻录消耗：35 灵石（100% 确定生效）</span>
       </div>
       <div class="affix-pick-grid">
@@ -6336,13 +6498,16 @@ const ART = {
 
   // ==================== V20 20TH-GENERATION GODHOOD MILESTONE DATA & ACCESSIBILITY STATE ====================
   const A11Y_STORAGE_KEY = "chenyuan_a11y_v20";
+  const reducedMotionMq = (typeof window.matchMedia === "function") ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
   const a11ySettings = {
     shakeScale: 1.0,      // 0.0 (0%) ~ 1.5 (150%)
     hitStopScale: 1.0,    // 0.0 (0%) ~ 1.5 (150%)
     colorblindGlyphs: true,
-    autoComboAssist: false
+    autoComboAssist: false,
+    reducedMotion: false
   };
   function loadA11ySettings() {
+    const prefersReduced = !!(reducedMotionMq && reducedMotionMq.matches);
     try {
       const raw = localStorage.getItem(A11Y_STORAGE_KEY);
       if (raw) {
@@ -6351,13 +6516,35 @@ const ART = {
         if (typeof p.hitStopScale === "number") a11ySettings.hitStopScale = Math.max(0, Math.min(1.5, p.hitStopScale));
         if (typeof p.colorblindGlyphs === "boolean") a11ySettings.colorblindGlyphs = p.colorblindGlyphs;
         if (typeof p.autoComboAssist === "boolean") a11ySettings.autoComboAssist = p.autoComboAssist;
+        a11ySettings.reducedMotion = (typeof p.reducedMotion === "boolean") ? p.reducedMotion : prefersReduced;
+        if (a11ySettings.reducedMotion && typeof p.shakeScale !== "number") a11ySettings.shakeScale = 0;
+        if (a11ySettings.reducedMotion && typeof p.hitStopScale !== "number") a11ySettings.hitStopScale = 0;
+      } else if (prefersReduced) {
+        a11ySettings.reducedMotion = true;
+        a11ySettings.shakeScale = 0;
+        a11ySettings.hitStopScale = 0;
       }
-    } catch (e) {}
+    } catch (e) {
+      if (prefersReduced) {
+        a11ySettings.reducedMotion = true;
+        a11ySettings.shakeScale = 0;
+        a11ySettings.hitStopScale = 0;
+      }
+    }
   }
   function saveA11ySettings() {
     try { localStorage.setItem(A11Y_STORAGE_KEY, JSON.stringify(a11ySettings)); } catch (e) {}
   }
   loadA11ySettings();
+  if (reducedMotionMq && typeof reducedMotionMq.addEventListener === "function") {
+    reducedMotionMq.addEventListener("change", (ev) => {
+      if (ev.matches) {
+        a11ySettings.reducedMotion = true;
+        a11ySettings.shakeScale = 0;
+        a11ySettings.hitStopScale = 0;
+      }
+    });
+  }
 
   const WEAPON_ARSENAL_SPECS = {
     sword: {
@@ -7686,27 +7873,27 @@ const ART = {
   // ==================== V16+V17 CONSOLE INPUT BUFFER, GAMEPAD RUMBLE, KEYBINDS, ELEMENTAL PROPS, DOJO & ULTIMATES ====================
   const KEYBIND_STORAGE_KEY = "chenyuan_keybinds_v22";
   const DEFAULT_KEYBINDS = {
-    posture:   { label: "双姿态易剑斩", kb: "Tab",   mouseLabel: null,   padBtn: 4,  padGlyph: "LB" },
-    soul:      { label: "太虚镇妖魂印", kb: "KeyC",  mouseLabel: null,   padBtn: 5,  padGlyph: "RB" },
-    slash:     { label: "四段轻剑连招", kb: "KeyI",  mouseLabel: "左键", padBtn: 2,  padGlyph: "X" },
-    astral:    { label: "法天象地真身", kb: "KeyO",  mouseLabel: null,   padBtn: 11, padGlyph: "R3" },
-    mount:     { label: "山海神兽灵骑", kb: "KeyJ",  mouseLabel: null,   padBtn: 8,  padGlyph: "View" },
-    qimen:     { label: "奇门八门阵盘", kb: "KeyU",  mouseLabel: null,   padBtn: 14, padGlyph: "←" },
-    recall:    { label: "切手重击/爆剑", kb: "KeyK",  mouseLabel: "右键", padBtn: 3,  padGlyph: "Y" },
-    dash:      { label: "识破剑反/一闪", kb: "Space", mouseLabel: null,   padBtn: 0,  padGlyph: "A" },
-    stance:    { label: "三才剑阵切换", kb: "KeyY",  mouseLabel: null,   padBtn: 1,  padGlyph: "B" },
-    ult:       { label: "本命法宝剑域", kb: "KeyE",  mouseLabel: null,   padBtn: 13, padGlyph: "↓" },
-    finisher:  { label: "流派终极奥义", kb: "KeyX",  mouseLabel: null,   padBtn: 7,  padGlyph: "RT" },
-    tagSwitch: { label: "道侣同心瞬切", kb: "KeyV",  mouseLabel: null,   padBtn: 15, padGlyph: "→" },
-    ally:      { label: "故人真身助阵", kb: "KeyR",  mouseLabel: null,   padBtn: 16, padGlyph: "Guide" },
-    pet:       { label: "灵宠觉醒绝技", kb: "KeyG",  mouseLabel: null,   padBtn: 6,  padGlyph: "LT" },
-    meditate:  { label: "周天吐纳聚气", kb: "KeyB",  mouseLabel: null,   padBtn: 9,  padGlyph: "Menu" },
-    pill:      { label: "瞬服回春灵丹", kb: "KeyQ",  mouseLabel: null,   padBtn: 12, padGlyph: "↑" },
-    jump:      { label: "御风腾跃/踏剑", kb: "KeyZ",  mouseLabel: null,   padBtn: 10, padGlyph: "L3" },
-    swordBlink:{ label: "飞剑缩地瞬身", kb: "KeyF",  mouseLabel: "中键", padBtn: 14, padGlyph: "←" },
-    photo:     { label: "太虚摄影模式", kb: "KeyP",  mouseLabel: null,   padBtn: 11, padGlyph: "R3" },
-    hub:       { label: "往返听雨洞府", kb: "KeyH",  mouseLabel: null,   padBtn: 8,  padGlyph: "View" },
-    telemetry: { label: "3A动作遥测窗", kb: "F3",    mouseLabel: null,   padBtn: 9,  padGlyph: "Menu" }
+    posture:   { label: "双姿态易剑斩", kb: "Backquote", mouseLabel: null,   padBtn: 4,    padGlyph: "LB" },
+    soul:      { label: "太虚镇妖魂印", kb: "KeyC",      mouseLabel: null,   padBtn: 5,    padGlyph: "RB" },
+    slash:     { label: "四段轻剑连招", kb: "KeyI",      mouseLabel: "左键", padBtn: 2,    padGlyph: "X" },
+    astral:    { label: "法天象地真身", kb: "KeyO",      mouseLabel: null,   padBtn: 11,   padGlyph: "R3" },
+    mount:     { label: "山海神兽灵骑", kb: "KeyJ",      mouseLabel: null,   padBtn: 8,    padGlyph: "View" },
+    qimen:     { label: "奇门八门阵盘", kb: "KeyU",      mouseLabel: null,   padBtn: null, padGlyph: "未绑" },
+    recall:    { label: "切手重击/爆剑", kb: "KeyK",     mouseLabel: "右键", padBtn: 3,    padGlyph: "Y" },
+    dash:      { label: "识破剑反/一闪", kb: "Space",    mouseLabel: null,   padBtn: 0,    padGlyph: "A" },
+    stance:    { label: "三才剑阵切换", kb: "KeyY",      mouseLabel: null,   padBtn: 1,    padGlyph: "B" },
+    ult:       { label: "本命法宝剑域", kb: "KeyE",      mouseLabel: null,   padBtn: 13,   padGlyph: "↓" },
+    finisher:  { label: "流派终极奥义", kb: "KeyX",      mouseLabel: null,   padBtn: 7,    padGlyph: "RT" },
+    tagSwitch: { label: "道侣同心瞬切", kb: "KeyV",      mouseLabel: null,   padBtn: 15,   padGlyph: "→" },
+    ally:      { label: "故人真身助阵", kb: "KeyR",      mouseLabel: null,   padBtn: 16,   padGlyph: "Guide" },
+    pet:       { label: "灵宠觉醒绝技", kb: "KeyG",      mouseLabel: null,   padBtn: 6,    padGlyph: "LT" },
+    meditate:  { label: "周天吐纳聚气", kb: "KeyB",      mouseLabel: null,   padBtn: 9,    padGlyph: "Menu" },
+    pill:      { label: "瞬服回春灵丹", kb: "KeyQ",      mouseLabel: null,   padBtn: 12,   padGlyph: "↑" },
+    jump:      { label: "御风腾跃/踏剑", kb: "KeyZ",     mouseLabel: null,   padBtn: 10,   padGlyph: "L3" },
+    swordBlink:{ label: "飞剑缩地瞬身", kb: "KeyF",      mouseLabel: "中键", padBtn: 14,   padGlyph: "←" },
+    photo:     { label: "太虚摄影模式", kb: "KeyP",      mouseLabel: null,   padBtn: null, padGlyph: "未绑" },
+    hub:       { label: "往返听雨洞府", kb: "KeyH",      mouseLabel: null,   padBtn: null, padGlyph: "未绑" },
+    telemetry: { label: "3A动作遥测窗", kb: "F3",        mouseLabel: null,   padBtn: null, padGlyph: "未绑" }
   };
   let keybinds = JSON.parse(JSON.stringify(DEFAULT_KEYBINDS));
   let rumbleEnabled = true;
@@ -7719,9 +7906,23 @@ const ART = {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && parsed.binds) {
+          const usedPadBtns = new Set();
           Object.keys(DEFAULT_KEYBINDS).forEach(act => {
             if (parsed.binds[act]) {
               keybinds[act] = Object.assign({}, DEFAULT_KEYBINDS[act], parsed.binds[act]);
+              // Migrate legacy Tab bind so browser focus navigation is never hijacked
+              if (keybinds[act].kb === "Tab") {
+                keybinds[act].kb = DEFAULT_KEYBINDS[act].kb;
+              }
+            }
+            const pb = keybinds[act].padBtn;
+            if (typeof pb === "number") {
+              if (usedPadBtns.has(pb)) {
+                keybinds[act].padBtn = null;
+                keybinds[act].padGlyph = "未绑";
+              } else {
+                usedPadBtns.add(pb);
+              }
             }
           });
         }
@@ -7737,6 +7938,8 @@ const ART = {
   function formatKeyCodeShort(code) {
     if (!code) return "-";
     if (code === "Space") return "空格";
+    if (code === "Backquote") return "`";
+    if (code === "Backslash") return "\\";
     if (code.startsWith("Key")) return code.slice(3);
     if (code.startsWith("Digit")) return code.slice(5);
     if (code.startsWith("Arrow")) return ({ ArrowUp: "↑", ArrowDown: "↓", ArrowLeft: "←", ArrowRight: "→" })[code] || code;
@@ -7749,14 +7952,14 @@ const ART = {
       const cfg = keybinds[act];
       if (!cfg) return;
       if (isPad) {
-        el.textContent = cfg.padGlyph || `B${cfg.padBtn}`;
+        el.textContent = cfg.padGlyph || (cfg.padBtn != null ? `B${cfg.padBtn}` : "未绑");
       } else {
         el.textContent = (cfg.mouseLabel && cfg.kb === DEFAULT_KEYBINDS[act].kb) ? cfg.mouseLabel : formatKeyCodeShort(cfg.kb);
       }
     });
   }
   function applyKeybindRemap(targetAct, newCode) {
-    const reserved = ["Escape", "KeyW", "KeyA", "KeyS", "KeyD"];
+    const reserved = ["Escape", "Tab", "KeyW", "KeyA", "KeyS", "KeyD"];
     if (reserved.includes(newCode)) {
       lastKeybindConflictMsg = `⚠ 【${formatKeyCodeShort(newCode)}】为移动或系统保留键，请换用其他按键！`;
       showToast(lastKeybindConflictMsg);
@@ -7791,7 +7994,7 @@ const ART = {
   }
 
   // W3C Gamepad API + Dual-Rumble Haptic Feedback Engine
-  const PAD_GLYPH_MAP = { 0: "A", 1: "B", 2: "X", 3: "Y", 4: "LB", 5: "RB", 6: "LT", 7: "RT", 8: "View", 9: "Menu", 12: "↑", 13: "↓", 14: "←", 15: "→" };
+  const PAD_GLYPH_MAP = { 0: "A", 1: "B", 2: "X", 3: "Y", 4: "LB", 5: "RB", 6: "LT", 7: "RT", 8: "View", 9: "Menu", 10: "L3", 11: "R3", 12: "↑", 13: "↓", 14: "←", 15: "→", 16: "Guide" };
   const GamepadSystem = {
     inputMode: "kb",
     connectedName: null,
@@ -7853,6 +8056,14 @@ const ART = {
         if (pressed && !was) {
           this.setMode("pad");
           if (rebindListeningAction) {
+            const prevPadBtn = keybinds[rebindListeningAction].padBtn;
+            const prevPadGlyph = keybinds[rebindListeningAction].padGlyph;
+            Object.keys(keybinds).forEach(otherAct => {
+              if (otherAct !== rebindListeningAction && keybinds[otherAct].padBtn === bIdx) {
+                keybinds[otherAct].padBtn = prevPadBtn;
+                keybinds[otherAct].padGlyph = prevPadBtn != null ? (PAD_GLYPH_MAP[prevPadBtn] || prevPadGlyph || `B${prevPadBtn}`) : "未绑";
+              }
+            });
             keybinds[rebindListeningAction].padBtn = bIdx;
             keybinds[rebindListeningAction].padGlyph = PAD_GLYPH_MAP[bIdx] || `B${bIdx}`;
             lastKeybindConflictMsg = `🎮 已将【${keybinds[rebindListeningAction].label}】手柄键设为 [${keybinds[rebindListeningAction].padGlyph}]`;
@@ -7942,7 +8153,7 @@ const ART = {
     nameEl.textContent = isHeavy ? "玄重巨阙式" : "青莲疾剑式";
     nameEl.style.color = isHeavy ? "#ffcc66" : "#70ffe6";
     subEl.innerHTML = inMorphWin
-      ? `<strong style="color:#fff3b0;">⚡ 按Tab/LB触发【太虚易剑斩】!</strong>`
+      ? `<strong style="color:#fff3b0;">⚡ 按\`/LB触发【太虚易剑斩】!</strong>`
       : (isHeavy ? "剑威+46% · 霸体崩盾 · 2.4x破弱点" : "攻速+28% · 迅捷游身 · 高频叠印");
   }
 
@@ -8280,7 +8491,7 @@ const ART = {
         spawned.maxPartHp = spawned.partHp;
         spawned.weakpointExposed = true;
       }
-      showBossCutIn(spec.art, spec.title, `暴露【${(BOSS_WEAKPOINTS[spec.id] || {}).shortName || "本命妖丹"}】时切 Tab 玄重巨阙式碎核破招！`);
+      showBossCutIn(spec.art, spec.title, `暴露【${(BOSS_WEAKPOINTS[spec.id] || {}).shortName || "本命妖丹"}】时切 \` 玄重巨阙式碎核破招！`);
     }
     updateHud();
   }
@@ -8886,7 +9097,7 @@ const ART = {
     { id: "curio_tag_soul",        name: "万妖同心印",   badge: "V键切人瞬发镇妖魂印", art: "spirit_seal_emblem",   desc: "按 V 键同心换人入场时，无消耗零冷却自动召唤当前佩带的【太虚镇妖魂印】妖王法相协击！" },
     { id: "curio_chakram_thunder", name: "紫电乾坤轮",   badge: "剑轮聚怪引爆紫霄雷链", art: "relic_soul_lamp",      desc: "回旋剑轮切割吸附敌群时，每跳自动引爆【紫霄连锁闪电】并直接触发水洼感电麻痹！" },
     { id: "curio_parry_meteor",    name: "陨星剑反镜",   badge: "识破/弹反天降陨星劈", art: "vfx_sky_meteor_plunge", desc: "触发识破剑反或太虚剑盾弹反法球时，立即在目标头顶轰落一记【陨星千钧裂地劈】！" },
-    { id: "curio_posture_twin",    name: "阴阳双生匣",   badge: "易剑斩附带日月引力轮", art: "vfx_switch_yin_yang",  desc: "按 Tab 触发【太虚易剑斩】时，额外在落点生成【日月引力双轮】并充能 +30% 双人同心值！" },
+    { id: "curio_posture_twin",    name: "阴阳双生匣",   badge: "易剑斩附带日月引力轮", art: "vfx_switch_yin_yang",  desc: "按 ` 触发【太虚易剑斩】时，额外在落点生成【日月引力双轮】并充能 +30% 双人同心值！" },
     { id: "curio_air_lotus",       name: "踏云青莲履",   badge: "御风跃起绽放水墨剑莲", art: "relic_jade_seal",      desc: "施展御风腾跃或踏剑借力时，原地绽放一朵【太虚水墨剑莲】持续聚怪绞杀！" },
     { id: "curio_gourd_soul",      name: "壶天炼妖葫",   badge: "饮仙葫刷魂印+八方剑罡", art: "item_immortal_gourd",  desc: "畅饮 Q 键九转仙葫时，立即刷新 C 键镇妖魂印冷却并向八方迸射破甲剑罡！" },
     { id: "curio_mark_nova",       name: "诛仙叠印谱",   badge: "爆印召唤九霄天罚落雷", art: "relic_frost_sword",    desc: "引爆飞剑剑印时伤害倍率提升 +40%，且每层引爆额外降下一道九霄紫雷！" },
@@ -9774,7 +9985,7 @@ const ART = {
     { id: "zhulong",  cat: "首领", name: "太古烛龙·法相", art: "boss_zhulong_titan",    color: "#ffae33", moveName: "眉心竖眼·灭世横扫 & 覆海拍击", guide: "破招拆解：切 2 键【龙胆裂空剑枪】或玄重巨阙先破左右双臂护甲，趁其瘫痪伏地触发【御剑登天·踏躯逆鳞斩】贯碎天眼！" },
     { id: "sky_roc",  cat: "首领", name: "巡天雷鹏神将", art: "enemy_roc_sky_general", color: "#80ecff", moveName: "天雷激光网 & 紫电七星弹幕",     guide: "破招拆解：九霄云海空战中按空格【滚筒侧闪】无伤穿过激光网，按右键开启【太虚剑盾】将漫天雷球 2.4 倍速原路震回！" },
     { id: "demon",    cat: "首领", name: "太虚心魔镜像", art: "actor_inner_demon",     color: "#d69eff", moveName: "双姿态易剑斩 & 暗金【擒】投技", guide: "破招拆解：见暗金【⬢擒】字蓄力时切勿后退，直接出重击/易剑斩正面触发 1.2s【剑罡拼刀角力】崩碎其百点架势！" },
-    { id: "player",   cat: "可控", name: "顾长青·六象剑主", art: "actor_player_battle", color: "#4ad2b8", moveName: "三器×双姿·六象神兵觉醒技",     guide: "操控精要：1/2/3 秒切飞剑/龙胆枪/回旋轮，配合 Tab 疾剑/巨阙双姿派生【游龙刺/巨阙开天/百鸟朝凤/破军挑山/日月旋涡/乾坤重锯】！" },
+    { id: "player",   cat: "可控", name: "顾长青·六象剑主", art: "actor_player_battle", color: "#4ad2b8", moveName: "三器×双姿·六象神兵觉醒技",     guide: "操控精要：1/2/3 秒切飞剑/龙胆枪/回旋轮，配合 ` 疾剑/巨阙双姿派生【游龙刺/巨阙开天/百鸟朝凤/破军挑山/日月旋涡/乾坤重锯】！" },
     { id: "shen",     cat: "可控", name: "沈清禾·青莲剑", art: "actor_shen",           color: "#70ffe6", moveName: "青莲净世剑澜 & 双人合璧阵",     guide: "操控精要：残血时按 V 瞬切沈清禾立即触发净厄护心盾，同心满 100% 点【💞合璧】释放双立绘全屏【青莲万剑净世阵】！" },
     { id: "pei",      cat: "可控", name: "裴照·惊鸿重枪", art: "actor_pei",            color: "#80ecff", moveName: "惊鸿破军龙枪 & 十字诛神合璧",   guide: "操控精要：裴照普攻与入场技自带超高削韧，双人合璧【惊鸿破界诛神枪】可直接清零全场妖王架势条进入处决态！" }
   ];
@@ -12279,34 +12490,194 @@ const ART = {
     return `CY24SAVE-${chk}-${utf8ToBase64(jsonStr)}`;
   }
 
-  function importFullCloudSaveCode(codeStr) {
-    if (!codeStr || typeof codeStr !== "string") return false;
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  let pendingCloudImport = null;
+
+  function parseCloudSaveCode(codeStr) {
+    if (!codeStr || typeof codeStr !== "string") {
+      return { ok: false, reason: "请输入太虚大道云码" };
+    }
     try {
       const trimmed = codeStr.trim();
       const m = trimmed.match(/^CY24SAVE-([0-9A-F]{4})-(.+)$/);
-      if (!m) return false;
+      if (!m) return { ok: false, reason: "云码格式无效（需以 CY24SAVE- 开头）" };
       const jsonStr = base64ToUtf8(m[2]);
       let sum = 0x24;
       for (let i = 0; i < jsonStr.length; i++) sum = (sum * 31 + jsonStr.charCodeAt(i)) & 0xFFFF;
       const chk = sum.toString(16).toUpperCase().padStart(4, "0");
-      if (chk !== m[1]) return false;
+      if (chk !== m[1]) return { ok: false, reason: "云码校验位不匹配，可能已截断或被篡改" };
       const parsed = JSON.parse(jsonStr);
-      if (!parsed || !parsed.game || !parsed.game.realm) return false;
-      game = parsed.game;
-      if (parsed.metaState) Object.assign(metaState, parsed.metaState);
-      if (parsed.a11ySettings) Object.assign(a11ySettings, parsed.a11ySettings);
-      if (parsed.stems) Object.assign(Sound.stems, parsed.stems);
-      saveGame();
+      if (!parsed || typeof parsed !== "object" || !parsed.game || typeof parsed.game !== "object" || Array.isArray(parsed.game)) {
+        return { ok: false, reason: "云码缺少核心存档数据" };
+      }
+      if (typeof parsed.game.realm !== "string" || !REALMS[parsed.game.realm]) {
+        return { ok: false, reason: `云码境界字段非法（${String(parsed.game.realm)}）` };
+      }
+      const normalizedGame = normalizeLoadedGame(parsed.game);
+      const impRealmSpec = REALMS[normalizedGame.realm];
+      const curRealmSpec = (game && REALMS[game.realm]) ? REALMS[game.realm] : null;
+      return {
+        ok: true,
+        parsed,
+        normalizedGame,
+        preview: {
+          imported: {
+            name: normalizedGame.name || "顾长青",
+            realm: normalizedGame.realm,
+            realmName: impRealmSpec ? impRealmSpec.name : normalizedGame.realm,
+            stones: Math.floor(Number(normalizedGame.stones) || 0),
+            calamityTier: Number(normalizedGame.calamityTier) || 0,
+            towerBest: Number(normalizedGame.towerBest) || 0
+          },
+          current: game ? {
+            name: game.name || "顾长青",
+            realm: game.realm,
+            realmName: curRealmSpec ? curRealmSpec.name : game.realm,
+            stones: Math.floor(Number(game.stones) || 0),
+            calamityTier: Number(game.calamityTier) || 0,
+            towerBest: Number(game.towerBest) || 0
+          } : null
+        }
+      };
+    } catch (e) {
+      return { ok: false, reason: "云码解码或 JSON 解析失败" };
+    }
+  }
+
+  function openCloudImportConfirmModal(parsedRes) {
+    if (!parsedRes || !parsedRes.ok || !parsedRes.preview) return;
+    pendingCloudImport = parsedRes;
+    const imp = parsedRes.preview.imported;
+    const cur = parsedRes.preview.current;
+    const blockedReason = saveReadOnlyMode
+      ? "当前处于只读保护态（禁止覆盖另一标签页进度），此时无法完成云码写入"
+      : saveConflictState
+        ? "当前存在未解决的多标签页存档冲突，请先处理冲突后再导入"
+        : storageReadError
+          ? "本地存在未处理的受损主存档，请先备份或确认覆盖后再导入"
+          : null;
+    openModal(`
+      <div class="drawer-mural-banner" style="height:82px;">
+        <img src="${ART.banner_archive}" alt="云码导入确认" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">云码导入确认</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:4px;">请核对云码进度并确认覆盖</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-modal-close="1">取消 ✕</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+        <div class="jade-card" style="padding:10px 12px;border-color:rgba(216,179,106,0.38);">
+          <div style="font-size:11px;color:var(--text-sub);margin-bottom:4px;">当前本地进度</div>
+          ${cur ? `
+            <div style="font-size:13px;color:#e6f4f1;font-weight:700;">道号：${escapeHtml(cur.name)}</div>
+            <div style="font-size:12px;color:#ffe28a;margin-top:3px;">境界：${escapeHtml(cur.realmName)}</div>
+            <div style="font-size:12px;color:#80ffea;margin-top:2px;">灵石：${cur.stones}</div>
+          ` : `<div style="font-size:12px;color:var(--text-sub);">暂无活跃对局</div>`}
+        </div>
+        <div class="jade-card" style="padding:10px 12px;border-color:rgba(128,255,234,0.58);">
+          <div style="font-size:11px;color:#80ffea;margin-bottom:4px;">即将导入的云码进度</div>
+          <div style="font-size:13px;color:#ffffff;font-weight:700;">道号：${escapeHtml(imp.name)}</div>
+          <div style="font-size:12px;color:#ffe28a;margin-top:3px;">境界：${escapeHtml(imp.realmName)}</div>
+          <div style="font-size:12px;color:#80ffea;margin-top:2px;">灵石：${imp.stones}</div>
+        </div>
+      </div>
+      ${blockedReason ? `<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.75);border:1px solid rgba(255,120,112,0.65);color:#ffd5d0;font-size:11.5px;">⚠ ${escapeHtml(blockedReason)}</div>` : ""}
+      <div id="cloud-import-error-msg" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.85);border:1px solid rgba(255,120,112,0.75);color:#ffd5d0;font-size:11.5px;"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;">
+        <button type="button" class="btn-ghost" data-action="cancel-cloud-import">取消返回</button>
+        <button type="button" id="btn-confirm-cloud-import" class="btn-gold" data-action="confirm-cloud-import">确认覆盖并导入</button>
+      </div>
+    `, true);
+  }
+
+  function commitCloudSaveImport(parsedRes) {
+    if (!parsedRes || !parsedRes.ok || !parsedRes.parsed || !parsedRes.parsed.game) {
+      return { ok: false, reason: "待导入的云码数据无效" };
+    }
+    if (saveReadOnlyMode) {
+      renderHudSaveAlert();
+      showToast("⚠ 当前处于只读保护态，云码导入已中止（未修改本地存档）");
+      return { ok: false, reason: "当前处于只读保护态，禁止写入存档" };
+    }
+    if (saveConflictState) {
+      renderHudSaveAlert();
+      showToast("⚠ 检测到多标签页存档冲突，请先处理冲突后再导入云码");
+      return { ok: false, reason: "存在未解决的多标签页存档冲突" };
+    }
+    if (storageReadError) {
+      renderWelcomeSaveStatusBanner();
+      renderHudSaveAlert();
+      showToast("⚠ 本地存在未处理的受损主存档，已中止云码导入");
+      return { ok: false, reason: "本地存在未处理的受损主存档" };
+    }
+    const prevGame = game;
+    const prevMeta = JSON.parse(JSON.stringify(metaState));
+    const prevA11y = Object.assign({}, a11ySettings);
+    const prevStems = Object.assign({}, Sound.stems);
+    try {
+      game = normalizeLoadedGame(parsedRes.parsed.game);
+      if (parsedRes.parsed.metaState && typeof parsedRes.parsed.metaState === "object" && !Array.isArray(parsedRes.parsed.metaState)) {
+        if (!metaReadError) {
+          Object.assign(metaState, mergeMetaStates(metaState, parsedRes.parsed.metaState));
+          ensureMetaState();
+        }
+      }
+      if (parsedRes.parsed.a11ySettings && typeof parsedRes.parsed.a11ySettings === "object" && !Array.isArray(parsedRes.parsed.a11ySettings)) {
+        Object.assign(a11ySettings, parsedRes.parsed.a11ySettings);
+      }
+      if (parsedRes.parsed.stems && typeof parsedRes.parsed.stems === "object" && !Array.isArray(parsedRes.parsed.stems)) {
+        Object.assign(Sound.stems, parsedRes.parsed.stems);
+      }
+      const saved = saveGame();
+      if (!saved) {
+        game = prevGame;
+        Object.keys(metaState).forEach(k => { if (!(k in prevMeta)) delete metaState[k]; });
+        Object.assign(metaState, prevMeta);
+        Object.assign(a11ySettings, prevA11y);
+        Object.assign(Sound.stems, prevStems);
+        if (game) updateHud();
+        const reason = saveConflictState
+          ? "检测到多标签页冲突，导入已回滚"
+          : (storageWriteError ? storageWriteError.message : "存档写入失败，导入已回滚");
+        showToast(`⚠ 云码导入失败：${reason}`);
+        return { ok: false, reason };
+      }
+      saveA11ySettings();
+      try { localStorage.setItem(STEMS_STORAGE_KEY, JSON.stringify(Sound.stems)); } catch (e) {}
       syncFlyingSwords();
       syncTagTeamHud();
       syncV22TacticalDock();
       updateHud();
       Sound.fanfare();
       showToast(`☁ 太虚大道云码导入成功！已恢复道号【${game.name}】（${REALMS[game.realm].name} · ${game.stones} 灵石）！`);
-      return true;
+      return { ok: true };
     } catch (e) {
-      return false;
+      game = prevGame;
+      Object.keys(metaState).forEach(k => { if (!(k in prevMeta)) delete metaState[k]; });
+      Object.assign(metaState, prevMeta);
+      Object.assign(a11ySettings, prevA11y);
+      Object.assign(Sound.stems, prevStems);
+      if (game) updateHud();
+      const reason = e && e.message ? e.message : "导入过程异常，已回滚";
+      showToast(`⚠ 云码导入失败：${reason}`);
+      return { ok: false, reason };
     }
+  }
+
+  function importFullCloudSaveCode(codeStr) {
+    const parsedRes = parseCloudSaveCode(codeStr);
+    if (!parsedRes.ok) return false;
+    return commitCloudSaveImport(parsedRes).ok;
   }
 
   function stepSanqingAndGenesisSystems(dt, st, w, h) {
@@ -12549,7 +12920,7 @@ const ART = {
   };
   const ACTION_DISPLAY_NAME = {
     stance: "三才剑阵 (Y)", jump: "御风腾跃 (Z)", ult: "法宝剑域 (E)", ally: "故人助阵 (R)", pet: "灵宠绝技 (G)",
-    posture: "双剑意姿态 (Tab)", soul: "镇妖魂印 (C)", swordBlink: "缩地瞬身 (F)", finisher: "流派奥义 (X)",
+    posture: "双剑意姿态 (`)", soul: "镇妖魂印 (C)", swordBlink: "缩地瞬身 (F)", finisher: "流派奥义 (X)",
     tagSwitch: "道侣瞬切 (V)", weapon_form: "太虚剑匣 (1/2/3)",
     astral: "法天象地 (O)", mount: "山海灵骑 (J)", qimen: "奇门八门阵 (U)",
     sanqing: "一气化三清 (4)", shanhe: "山河社稷图 (5)", warship: "凌霄仙舟 (6)", sequencer: "自创剑谱 (7)"
@@ -13076,7 +13447,7 @@ const ART = {
           e.grabWindup = false;
           addRipple(e.x, e.y + 12, 95, "#ffae33");
           if (Math.hypot(arena.player.x - e.x, arena.player.y - e.y) < e.r + 90) {
-            addFloat("未拼刀！（试在【擒】字亮起时按右键/Tab/C迎击）", arena.player.x, arena.player.y - 46, "#ffae33", 13);
+            addFloat("未拼刀！（试在【擒】字亮起时按右键/`/C迎击）", arena.player.x, arena.player.y - 46, "#ffae33", 13);
           }
         } else if (e.lowSweepWindup) {
           e.lowSweepWindup = false;
@@ -13756,35 +14127,51 @@ const ART = {
   function renderWelcomeSaveStatusBanner() {
     const el = document.getElementById("save-status-banner");
     if (!el) return;
-    if (!storageReadError) {
+    if (!storageReadError && !metaReadError) {
       el.style.display = "none";
       el.innerHTML = "";
       return;
     }
+    const sections = [];
+    if (storageReadError) {
+      sections.push(`
+        <div>
+          <strong style="color:#ff9e98;">⚠ 旧存档读取失败 · 已为您原样保留原数据</strong>
+          <div style="font-size:11px;color:#ffd5d0;margin-top:2px;">原因：${escapeHtml(storageReadError.reason)}（原数据未删除、未覆盖）</div>
+          <div class="save-banner-actions" style="margin-top:6px;">
+            ${storageReadError.raw ? `<button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;" data-action="copy-corrupt-save-raw">复制受损原文备份</button>` : ""}
+            <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;border-color:rgba(255,130,118,0.65);color:#ffd0ca;" data-action="prompt-overwrite-corrupt">覆盖并开启新卷</button>
+          </div>
+        </div>
+      `);
+    }
+    if (metaReadError) {
+      sections.push(`
+        <div${sections.length ? ' style="border-top:1px solid rgba(255,130,118,0.32);padding-top:7px;"' : ""}>
+          <strong style="color:#ff9e98;">⚠ 元存档损坏 · 累世功德与纪录读取失败，已原样保留原数据</strong>
+          <div style="font-size:11px;color:#ffd5d0;margin-top:2px;">原因：${escapeHtml(metaReadError.reason)}（原数据未删除、未覆盖，确认重置前不会覆写）</div>
+          <div class="save-banner-actions" style="margin-top:6px;">
+            ${metaReadError.raw ? `<button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;" data-action="copy-corrupt-meta-raw">复制原文</button>` : ""}
+            <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;border-color:rgba(255,130,118,0.65);color:#ffd0ca;" data-action="prompt-reset-corrupt-meta">确认重置</button>
+          </div>
+        </div>
+      `);
+    }
     el.style.display = "flex";
-    el.innerHTML = `
-      <div>
-        <strong style="color:#ff9e98;">⚠ 旧存档读取失败 · 已为您原样保留原数据</strong>
-        <div style="font-size:11px;color:#ffd5d0;margin-top:2px;">原因：${storageReadError.reason}（原数据未删除、未覆盖）</div>
-      </div>
-      <div class="save-banner-actions">
-        ${storageReadError.raw ? `<button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;" data-action="copy-corrupt-save-raw">复制受损原文备份</button>` : ""}
-        <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;border-color:rgba(255,130,118,0.65);color:#ffd0ca;" data-action="prompt-overwrite-corrupt">覆盖并开启新卷</button>
-      </div>
-    `;
+    el.innerHTML = sections.join("");
   }
 
   function renderHudSaveAlert() {
     const el = document.getElementById("hud-save-alert");
     if (!el) return;
     const onWelcome = document.getElementById("welcome-screen") && document.getElementById("welcome-screen").style.display !== "none";
-    if (onWelcome || (!storageWriteError && !saveReadOnlyMode && !saveConflictState)) {
+    if (onWelcome || (!storageWriteError && !saveReadOnlyMode && !saveConflictState && !storageReadError && !metaReadError)) {
       el.style.display = "none";
       el.innerHTML = "";
       el.classList.remove("readonly-mode");
       return;
     }
-    if (saveAlertDismissed && !saveConflictState) {
+    if (saveAlertDismissed && !saveConflictState && !storageReadError && !metaReadError) {
       el.style.display = "none";
       return;
     }
@@ -13792,7 +14179,7 @@ const ART = {
       el.classList.remove("readonly-mode");
       el.style.display = "flex";
       el.innerHTML = `
-        <span>⚠ <b>检测到另一标签页更新了存档</b>（${saveConflictState.externalName} · ${saveConflictState.externalRealm}，v${saveConflictState.externalRev}），已暂停自动覆盖。</span>
+        <span>⚠ <b>检测到另一标签页更新了存档</b>（${escapeHtml(saveConflictState.externalName)} · ${escapeHtml(saveConflictState.externalRealm)}，v${saveConflictState.externalRev}），已暂停自动覆盖。</span>
         <div style="display:flex;gap:6px;flex-shrink:0;">
           <button type="button" class="btn-jade" style="padding:3px 9px;font-size:11px;" data-action="open-save-conflict">处理冲突</button>
         </div>
@@ -13803,11 +14190,23 @@ const ART = {
       el.classList.remove("readonly-mode");
       el.style.display = "flex";
       el.innerHTML = `
-        <span>⚠ <b>本地存档写入失败</b>（${storageWriteError.message}）· 当前进度仅暂存内存，请备份云码。</span>
+        <span>⚠ <b>本地存档写入失败</b>（${escapeHtml(storageWriteError.message)}）· 当前进度仅暂存内存，请备份云码。</span>
         <div style="display:flex;gap:6px;flex-shrink:0;">
           <button type="button" class="btn-gold" style="padding:3px 9px;font-size:11px;" data-action="retry-save-now">重试保存</button>
           <button type="button" class="btn-ghost" style="padding:3px 9px;font-size:11px;" data-action="open-cloud-backup">备份云码</button>
           <button type="button" class="btn-ghost" style="padding:2px 7px;font-size:11px;" data-action="dismiss-save-alert">✕</button>
+        </div>
+      `;
+      return;
+    }
+    if (storageReadError) {
+      el.classList.remove("readonly-mode");
+      el.style.display = "flex";
+      el.innerHTML = `
+        <span>⚠ <b>检测到本地存档异常</b>（${escapeHtml(storageReadError.reason)}）· 已暂停自动保存并保留原数据。</span>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          ${storageReadError.raw ? `<button type="button" class="btn-ghost" style="padding:3px 9px;font-size:11px;" data-action="copy-corrupt-save-raw">复制受损原文</button>` : ""}
+          <button type="button" class="btn-gold" style="padding:3px 9px;font-size:11px;" data-action="overwrite-with-current-save">以本页覆盖</button>
         </div>
       `;
       return;
@@ -13820,6 +14219,18 @@ const ART = {
         <div style="display:flex;gap:6px;flex-shrink:0;">
           <button type="button" class="btn-jade" style="padding:3px 9px;font-size:11px;" data-action="load-latest-save">载入最新档</button>
           <button type="button" class="btn-gold" style="padding:3px 9px;font-size:11px;" data-action="overwrite-with-current-save">以本页覆盖</button>
+        </div>
+      `;
+      return;
+    }
+    if (metaReadError) {
+      el.classList.remove("readonly-mode");
+      el.style.display = "flex";
+      el.innerHTML = `
+        <span>⚠ <b>元存档损坏</b>（${escapeHtml(metaReadError.reason)}）· 已保留原数据并暂停元存档覆写。</span>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          ${metaReadError.raw ? `<button type="button" class="btn-ghost" style="padding:3px 9px;font-size:11px;" data-action="copy-corrupt-meta-raw">复制原文</button>` : ""}
+          <button type="button" class="btn-gold" style="padding:3px 9px;font-size:11px;" data-action="prompt-reset-corrupt-meta">确认重置</button>
         </div>
       `;
     }
@@ -13839,7 +14250,7 @@ const ART = {
         </div>
       </div>
       <div style="font-size:12.5px;color:#ffe6e2;line-height:1.6;padding:4px 2px;">
-        检测到本地存档 <code style="color:#ffe28a;">${storageReadError.key}</code> 读取失败：<b>${storageReadError.reason}</b>。<br/>
+        检测到本地存档 <code style="color:#ffe28a;">${escapeHtml(storageReadError.key)}</code> 读取失败：<b>${escapeHtml(storageReadError.reason)}</b>。<br/>
         系统已原样保留受损存档数据，<b>不会静默删除或覆盖</b>。您可先复制受损原文留存，或显式确认覆盖并开启新卷。
       </div>
       <div class="defeat-decision-grid">
@@ -13850,6 +14261,36 @@ const ART = {
         <button type="button" class="defeat-opt-btn" style="border-color:rgba(255,112,102,0.68);" data-action="confirm-overwrite-corrupt-new">
           <div><div style="font-weight:700;color:#ffb4ae;">⚠ 确认覆盖原损坏存档并开启新卷</div><div style="font-size:11px;color:var(--text-sub);">此操作会以新开局替换受损数据，仅在您主动确认后执行</div></div>
           <span class="tag-chip" style="border-color:#ff7870;color:#ffb4ae;">显式覆盖</span>
+        </button>
+      </div>
+    `, true);
+  }
+
+  function openCorruptedMetaResetConfirmModal() {
+    if (!metaReadError) return;
+    openModal(`
+      <div class="drawer-mural-banner" style="height:82px;">
+        <img src="${ART.banner_archive}" alt="元存档损坏保护" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">元存档保护</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:#ffd0ca;margin-top:4px;">元存档损坏 · 请确认重置操作</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-modal-close="1">取消 ✕</button>
+        </div>
+      </div>
+      <div style="font-size:12.5px;color:#ffe6e2;line-height:1.6;padding:4px 2px;">
+        检测到元存档 <code style="color:#ffe28a;">${escapeHtml(metaReadError.key)}</code> 读取失败：<b>${escapeHtml(metaReadError.reason)}</b>。<br/>
+        系统已原样保留受损元存档数据，在您显式确认重置之前<b>绝不会覆写</b>。建议先复制原文留存。
+      </div>
+      <div class="defeat-decision-grid">
+        ${metaReadError.raw ? `<button type="button" class="defeat-opt-btn retreat" data-action="copy-corrupt-meta-raw">
+          <div><div style="font-weight:700;color:#80ffea;">📋 复制原文（保留原档）</div><div style="font-size:11px;color:var(--text-sub);">将受损元存档原文复制到剪贴板，原本地数据保持不变</div></div>
+          <span class="tag-chip done">备份</span>
+        </button>` : ""}
+        <button type="button" class="defeat-opt-btn" style="border-color:rgba(255,112,102,0.68);" data-action="confirm-reset-corrupt-meta">
+          <div><div style="font-weight:700;color:#ffb4ae;">⚠ 确认重置元存档</div><div style="font-size:11px;color:var(--text-sub);">清空受损元存档并初始化新的累世功德记录</div></div>
+          <span class="tag-chip" style="border-color:#ff7870;color:#ffb4ae;">确认重置</span>
         </button>
       </div>
     `, true);
@@ -13870,7 +14311,7 @@ const ART = {
         </div>
       </div>
       <div style="font-size:12.5px;color:var(--text-main);line-height:1.6;">
-        另一标签页于 <b>${tsStr}</b> 保存了更新进度（道号 <b>${info.externalName}</b> · <b>${info.externalRealm}</b>，灵石 ${info.externalStones}，本页原为 v${loadedSaveRev}）。<br/>
+        另一标签页于 <b>${tsStr}</b> 保存了更新进度（道号 <b>${escapeHtml(info.externalName)}</b> · <b>${escapeHtml(info.externalRealm)}</b>，灵石 ${escapeHtml(String(info.externalStones))}，本页原为 v${loadedSaveRev}）。<br/>
         为防止误覆盖较新进度，本页已暂停自动写入，请选择处理方式：
       </div>
       <div class="defeat-decision-grid">
@@ -13930,11 +14371,25 @@ const ART = {
         const curRaw = localStorage.getItem(STORAGE_KEY);
         if (curRaw) {
           const curRes = parseAndValidateSaveRaw(curRaw, STORAGE_KEY);
-          if (curRes.ok && curRes.tabId && curRes.tabId !== TAB_ID && curRes.rev > loadedSaveRev) {
+          if (!curRes.ok) {
+            storageReadError = {
+              key: STORAGE_KEY,
+              reason: curRes.reason || "本地存档结构异常",
+              raw: curRaw,
+              rawLength: curRaw.length,
+              at: Date.now()
+            };
+            saveAlertDismissed = false;
+            renderWelcomeSaveStatusBanner();
+            renderHudSaveAlert();
+            showToast("⚠ 本地存档已被异常修改，已暂停自动覆盖并保留原数据！");
+            return false;
+          }
+          if (curRes.tabId && curRes.tabId !== TAB_ID && curRes.rev > loadedSaveRev) {
             triggerSaveConflict(curRes, true);
             return false;
           }
-          if (curRes.ok) externalMaxRev = Math.max(externalMaxRev, curRes.rev);
+          externalMaxRev = Math.max(externalMaxRev, curRes.rev);
         }
       } catch (e) {}
     } else {
@@ -13946,14 +14401,6 @@ const ART = {
         }
       } catch (e) {}
     }
-
-    game.laws.forEach(lid => {
-      if (!metaState.seenLaws.includes(lid)) metaState.seenLaws.push(lid);
-    });
-    const sc = computeCompetitionScore(game);
-    if (sc > metaState.bestScore) metaState.bestScore = sc;
-    if (game.towerBest > metaState.bestTower) metaState.bestTower = game.towerBest;
-    saveMeta();
 
     const nextRev = Math.max(loadedSaveRev, externalMaxRev) + 1;
     const payloadObj = {
@@ -13978,6 +14425,13 @@ const ART = {
       storageReadError = null;
       saveConflictState = null;
       if (force) saveReadOnlyMode = false;
+      game.laws.forEach(lid => {
+        if (!metaState.seenLaws.includes(lid)) metaState.seenLaws.push(lid);
+      });
+      const sc = computeCompetitionScore(game);
+      if (sc > metaState.bestScore) metaState.bestScore = sc;
+      if (game.towerBest > metaState.bestTower) metaState.bestTower = game.towerBest;
+      saveMeta();
       renderHudSaveAlert();
       return true;
     } catch (e) {
@@ -13992,18 +14446,110 @@ const ART = {
     }
   }
 
-  function saveMeta() {
-    try { localStorage.setItem(META_KEY, JSON.stringify(metaState)); } catch (e) {}
+  function saveMeta(opts = {}) {
+    const force = !!(opts && opts.forceReset);
+    if (metaReadError && !force) return false;
+    if (saveReadOnlyMode && !force) return false;
+    ensureMetaState();
+    let nextMetaRev = (Number(metaState.metaRev) || 0) + 1;
+    if (!force) {
+      try {
+        const curRaw = localStorage.getItem(META_KEY);
+        if (curRaw !== null && curRaw !== "") {
+          const curRes = parseAndValidateMetaRaw(curRaw, META_KEY);
+          if (!curRes.ok) {
+            metaReadError = {
+              key: META_KEY,
+              reason: curRes.reason || "元存档结构异常",
+              raw: curRaw,
+              rawLength: curRaw.length,
+              at: Date.now()
+            };
+            saveAlertDismissed = false;
+            renderWelcomeSaveStatusBanner();
+            renderHudSaveAlert();
+            return false;
+          }
+          const merged = mergeMetaStates(metaState, curRes.meta);
+          Object.assign(metaState, merged);
+          nextMetaRev = Math.max(Number(metaState.metaRev) || 0, curRes.metaRev) + 1;
+        }
+      } catch (e) {}
+    } else {
+      nextMetaRev = 1;
+    }
+    metaState.metaRev = nextMetaRev;
+    metaState.metaUpdatedAt = Date.now();
+    metaState.metaTabId = TAB_ID;
+    try {
+      localStorage.setItem(META_KEY, JSON.stringify(metaState));
+      metaWriteError = null;
+      return true;
+    } catch (e) {
+      metaWriteError = {
+        message: (e && e.name === "QuotaExceededError") ? "存储空间已满 (QuotaExceededError)" : (e && e.message ? e.message : String(e)),
+        at: Date.now()
+      };
+      return false;
+    }
   }
 
   window.addEventListener("storage", (ev) => {
+    if (ev.key === null) {
+      if (!game) renderWelcomeScreen();
+      return;
+    }
+    if (ev.key === META_KEY) {
+      if (!ev.newValue) return;
+      const res = parseAndValidateMetaRaw(ev.newValue, META_KEY);
+      if (!res.ok) {
+        metaReadError = {
+          key: META_KEY,
+          reason: res.reason || "另一标签页写入了异常元存档",
+          raw: ev.newValue,
+          rawLength: ev.newValue.length,
+          at: Date.now()
+        };
+        saveAlertDismissed = false;
+        renderWelcomeSaveStatusBanner();
+        renderHudSaveAlert();
+        showToast("⚠ 检测到另一标签页写入了异常元存档，已保留原数据并暂停覆写！");
+        return;
+      }
+      if (res.meta.metaTabId && res.meta.metaTabId === TAB_ID) return;
+      Object.assign(metaState, mergeMetaStates(metaState, res.meta));
+      metaState.metaRev = Math.max(Number(metaState.metaRev) || 0, res.metaRev);
+      metaReadError = null;
+      ensureMetaState();
+      const ws = document.getElementById("welcome-screen");
+      if (!game || (ws && ws.style.display !== "none")) {
+        renderWelcomeScreen();
+      } else {
+        renderHudSaveAlert();
+        updateHud();
+      }
+      return;
+    }
     if (ev.key !== STORAGE_KEY) return;
     if (!ev.newValue) {
       if (!game) renderWelcomeScreen();
       return;
     }
     const res = parseAndValidateSaveRaw(ev.newValue, STORAGE_KEY);
-    if (!res.ok) return;
+    if (!res.ok) {
+      storageReadError = {
+        key: STORAGE_KEY,
+        reason: res.reason || "另一标签页写入了异常存档数据",
+        raw: ev.newValue,
+        rawLength: ev.newValue.length,
+        at: Date.now()
+      };
+      saveAlertDismissed = false;
+      renderWelcomeSaveStatusBanner();
+      renderHudSaveAlert();
+      showToast("⚠ 检测到另一标签页写入了异常存档，已暂停自动保存并保留原数据！");
+      return;
+    }
     if (res.tabId && res.tabId === TAB_ID) return;
     if (!game || document.getElementById("welcome-screen").style.display !== "none") {
       loadedSaveRev = res.rev;
@@ -14013,6 +14559,18 @@ const ART = {
     if (res.rev > loadedSaveRev) {
       triggerSaveConflict(res, true);
     }
+  });
+
+  function flushSaveOnLifecycle() {
+    if (!game) return;
+    const ws = document.getElementById("welcome-screen");
+    if (ws && ws.style.display !== "none") return;
+    if (saveReadOnlyMode || saveConflictState || storageReadError) return;
+    saveGame();
+  }
+  window.addEventListener("pagehide", flushSaveOnLifecycle);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushSaveOnLifecycle();
   });
 
   function computeCompetitionScore(g) {
@@ -14274,13 +14832,13 @@ const ART = {
       <div class="gear-cmp-grid">
         <div class="gear-cmp-col new-item">
           <span style="font-size:9.5px;color:var(--jade);">新掉落 · ${RARITIES[nw.rarity].name}</span>
-          <strong style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${nw.rarity}">${nw.name}${nw.lvl ? ` +${nw.lvl}` : ""}</strong>
-          <span style="font-size:10px;color:var(--text-sub);">${formatGearStats(nw)}</span>
+          <strong style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${Number(nw.rarity) || 1}">${escapeHtml(nw.name)}${nw.lvl ? ` +${Number(nw.lvl) || 0}` : ""}</strong>
+          <span style="font-size:10px;color:var(--text-sub);">${escapeHtml(formatGearStats(nw))}</span>
         </div>
         <div class="gear-cmp-col">
           <span style="font-size:9.5px;color:var(--text-sub);">当前穿戴${curLvl > 0 ? ` · 淬火+${curLvl}` : ""}</span>
-          <strong style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${cur.rarity}">${cur.name}${curLvl ? ` +${curLvl}` : ""}</strong>
-          <span style="font-size:10px;color:var(--text-sub);">${formatGearStats(cur)}</span>
+          <strong style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${Number(cur.rarity) || 1}">${escapeHtml(cur.name)}${curLvl ? ` +${curLvl}` : ""}</strong>
+          <span style="font-size:10px;color:var(--text-sub);">${escapeHtml(formatGearStats(cur))}</span>
         </div>
       </div>
       <div class="gear-delta-row">
@@ -15030,10 +15588,10 @@ const ART = {
       </div>
 
       <div class="hall-stats-row">
-        <div class="hall-stat-pill"><small>累计飞升世数</small><strong>第 ${(metaState.ascensions || 0) + 1} 世（已证 ${metaState.ascensions || 0} 世）</strong></div>
-        <div class="hall-stat-pill"><small>最高锁妖塔 / 登仙台</small><strong>${metaState.bestTower || 0} 层 / ${metaState.bestSpireFloor || 0} 重</strong></div>
-        <div class="hall-stat-pill"><small>万剑冢最高 / 图鉴完成</small><strong>${metaState.bestRushGrade || "未定"} / ${codexPct}%</strong></div>
-        <div class="hall-stat-pill"><small>最高劫火周目 / 仙榜</small><strong>劫火×${metaState.bestCalamityTier || 0} · ${metaState.bestScore || 0}</strong></div>
+        <div class="hall-stat-pill"><small>累计飞升世数</small><strong>第 ${(Number(metaState.ascensions) || 0) + 1} 世（已证 ${Number(metaState.ascensions) || 0} 世）</strong></div>
+        <div class="hall-stat-pill"><small>最高锁妖塔 / 登仙台</small><strong>${Number(metaState.bestTower) || 0} 层 / ${Number(metaState.bestSpireFloor) || 0} 重</strong></div>
+        <div class="hall-stat-pill"><small>万剑冢最高 / 图鉴完成</small><strong>${escapeHtml(metaState.bestRushGrade || "未定")} / ${codexPct}%</strong></div>
+        <div class="hall-stat-pill"><small>最高劫火周目 / 仙榜</small><strong>劫火×${Number(metaState.bestCalamityTier) || 0} · ${Number(metaState.bestScore) || 0}</strong></div>
       </div>
 
       <div class="jade-card" style="gap:6px;padding:9px 11px;">
@@ -15053,7 +15611,7 @@ const ART = {
       <div class="jade-card" style="gap:6px;padding:9px 11px;">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
           <strong style="font-size:12.5px;color:#80ffea;">☯ 轮回先天命格解锁进度（${PERKS.filter(p => isPerkUnlocked(p)).length}/${PERKS.length}）</strong>
-          <span style="font-size:10.5px;color:var(--text-sub);">轮回道果点：${metaState.reincarnationPoints || 0}</span>
+          <span style="font-size:10.5px;color:var(--text-sub);">轮回道果点：${Number(metaState.reincarnationPoints) || 0}</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;">
           ${PERKS.filter(p => (p.unlock || 0) > 0).map(p => {
@@ -15072,24 +15630,26 @@ const ART = {
           ? `<div class="hall-life-card" style="text-align:center;color:var(--text-sub);font-size:12px;padding:16px;">尚未有白日飞升之世记入玉碑。破开九霄天门完成首世飞升，即可永久铭刻道果并开启【劫火周目】与轮回先天命格！</div>`
           : lives.map(lf => {
               const pSpec = PERKS.find(x => x.id === lf.perkId);
+              const safeKarmaMode = ["righteous", "demonic", "neutral"].includes(lf.karmaMode) ? lf.karmaMode : "neutral";
+              const safeCalTier = Number(lf.calamityTier) || 0;
               return `
-                <div class="hall-life-card ${lf.karmaMode || "neutral"}">
+                <div class="hall-life-card ${safeKarmaMode}">
                   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
                     <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-                      <span class="cinnabar-seal" style="font-size:10px;">第 ${lf.lifeNum} 世</span>
-                      <strong style="font-family:var(--font-serif);font-size:14px;color:var(--gold-bright);">${lf.name} · 【${lf.epithet}】</strong>
-                      ${lf.calamityTier > 0 ? `<span class="hud-calamity-pill">🔥 劫火×${lf.calamityTier}</span>` : ""}
+                      <span class="cinnabar-seal" style="font-size:10px;">第 ${escapeHtml(lf.lifeNum)} 世</span>
+                      <strong style="font-family:var(--font-serif);font-size:14px;color:var(--gold-bright);">${escapeHtml(lf.name)} · 【${escapeHtml(lf.epithet)}】</strong>
+                      ${safeCalTier > 0 ? `<span class="hud-calamity-pill">🔥 劫火×${safeCalTier}</span>` : ""}
                     </div>
-                    <span class="tag-chip mythic">${lf.grade} 级 · ${lf.score} 分</span>
+                    <span class="tag-chip mythic">${escapeHtml(lf.grade)} 级 · ${escapeHtml(lf.score)} 分</span>
                   </div>
-                  <div style="font-family:var(--font-serif);font-size:11.5px;color:#f4e6c2;white-space:pre-line;line-height:1.45;">${lf.poem || ""}</div>
+                  <div style="font-family:var(--font-serif);font-size:11.5px;color:#f4e6c2;white-space:pre-line;line-height:1.45;">${escapeHtml(lf.poem || "")}</div>
                   <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:10px;">
-                    <span class="tag-chip done">${lf.karmaLabel || "本真中正"}</span>
-                    <span class="tag-chip">命格：${pSpec ? pSpec.name : lf.perkId}</span>
-                    <span class="tag-chip">锁妖塔 ${lf.towerBest || 0}层</span>
-                    <span class="tag-chip">万剑冢 ${lf.rushGrade || "未挑战"}</span>
-                    <span class="tag-chip">洞府 ${lf.sanctumLv || 5}/25</span>
-                    <span class="tag-chip">图鉴 ${lf.codexPct || 0}%</span>
+                    <span class="tag-chip done">${escapeHtml(lf.karmaLabel || "本真中正")}</span>
+                    <span class="tag-chip">命格：${escapeHtml(pSpec ? pSpec.name : (lf.perkId || ""))}</span>
+                    <span class="tag-chip">锁妖塔 ${escapeHtml(lf.towerBest || 0)}层</span>
+                    <span class="tag-chip">万剑冢 ${escapeHtml(lf.rushGrade || "未挑战")}</span>
+                    <span class="tag-chip">洞府 ${escapeHtml(lf.sanctumLv || 5)}/25</span>
+                    <span class="tag-chip">图鉴 ${escapeHtml(lf.codexPct || 0)}%</span>
                   </div>
                 </div>
               `;
@@ -17907,7 +18467,7 @@ const ART = {
 
   const REALM_UNLOCK_NOTICES = {
     qi: "新境解封：本命灵宠、八卦丹剑微操、太虚锁妖古塔，以及三才剑阵 (Y) / 御风腾跃 (Z) / 法宝剑域 (E) / 故人助阵 (R)",
-    foundation: "新境解封：双剑意姿态 (Tab)、镇妖魂印 (C)、道侣瞬切换人 (V)、护山大阵守卫战、流派奥义 (X) 与红尘因果问心",
+    foundation: "新境解封：双剑意姿态 (`)、镇妖魂印 (C)、道侣瞬切换人 (V)、护山大阵守卫战、流派奥义 (X) 与红尘因果问心",
     golden: "新境解封：【九霄云海御剑空战】高潮过渡关、太虚周天星图 (N)、九州灵脉远征 (8)、太虚登仙台肉鸽 (L) 与太虚秘匣神通",
     nascent: "新境解封：【万剑冢七阵连战】（含心魔镜像与太古烛龙三部位讨伐）与【天道劫印】巅峰难度契约",
     spirit: "新境解封：【太虚造化种子工坊】（自定义双王共斗与 CY22 种子码），已可直指九霄天门白日飞升！"
@@ -18404,7 +18964,7 @@ const ART = {
         e.demonParryTimer = 0.2;
         Sound.deflectClang();
         spawnSparks(e.x, e.y - 12, 12, hitAng || 0, 2.4, "#d69eff");
-        addFloat("⚡ 心魔识破弹反！切Tab玄重巨阙破架势！", e.x, e.y - 74, "#e2b8ff", 15, true);
+        addFloat("⚡ 心魔识破弹反！切`玄重巨阙破架势！", e.x, e.y - 74, "#e2b8ff", 15, true);
         return;
       }
     }
@@ -18417,7 +18977,7 @@ const ART = {
       if (hitFront && !isHeavyBreak) {
         Sound.clang(1.48, 0.10);
         spawnSparks(e.x + Math.cos(atkFromAng) * 24, e.y - 8, 8, atkFromAng, 1.8, "#ffe28a");
-        addFloat("🛡 正面玄盾格挡! 按Tab切巨阙破盾或绕背!", e.x, e.y - e.r - 22, "#ffe28a", 13.5, true);
+        addFloat("🛡 正面玄盾格挡! 按`切巨阙破盾或绕背!", e.x, e.y - e.r - 22, "#ffe28a", 13.5, true);
         rawDmg = Math.max(1, Math.round(rawDmg * 0.22));
         postureDmg = 2;
         knockImpulse = 0.5;
@@ -19065,7 +19625,7 @@ const ART = {
     if (stepTitanClimbCinematic(dt)) { updateBossBannerAndRecallOrb(); updateComboRankSeal(); return; }
     if (stepRavineGlide(dt)) { updateComboRankSeal(); return; }
     if (arena.hitStop > 0) {
-      if (a11ySettings.hitStopScale <= 0.02) arena.hitStop = 0;
+      if (a11ySettings.reducedMotion || a11ySettings.hitStopScale <= 0.02) arena.hitStop = 0;
       else { arena.hitStop -= dt / a11ySettings.hitStopScale; if (arena.hitStop > 0) return; }
     }
 
@@ -21347,13 +21907,14 @@ const ART = {
       ctx.scale(photoMode.zoom, photoMode.zoom);
       ctx.translate(-w / 2, -h / 2);
     } else if ((arena.camZoom || 1) > 1.002 || Math.abs(arena.camKickX || 0) > 0.2) {
-      const kScale = a11ySettings.shakeScale;
+      const kScale = a11ySettings.reducedMotion ? 0 : a11ySettings.shakeScale;
       ctx.translate(w / 2 + (arena.camKickX || 0) * kScale, h / 2 + (arena.camKickY || 0) * kScale);
       ctx.scale(arena.camZoom || 1, arena.camZoom || 1);
       ctx.translate(-focX, -focY);
     }
-    if (arena.shake > 0.2 && a11ySettings.shakeScale > 0.01) {
-      const effShake = arena.shake * a11ySettings.shakeScale;
+    const effShakeScale = a11ySettings.reducedMotion ? 0 : a11ySettings.shakeScale;
+    if (arena.shake > 0.2 && effShakeScale > 0.01) {
+      const effShake = arena.shake * effShakeScale;
       ctx.translate((Math.random() - 0.5) * effShake, (Math.random() - 0.5) * effShake);
     }
 
@@ -23777,19 +24338,84 @@ const ART = {
     }
   }
 
+  const FOCUSABLE_SELECTOR = [
+    "a[href]",
+    "button:not([disabled])",
+    "input:not([disabled]):not([type='hidden'])",
+    "select:not([disabled])",
+    "textarea:not([disabled])",
+    "[tabindex]:not([tabindex='-1'])"
+  ].join(", ");
+
+  function getFocusableElements(container) {
+    if (!container) return [];
+    return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR)).filter(el => {
+      if (el.disabled || el.getAttribute("aria-hidden") === "true") return false;
+      const style = window.getComputedStyle(el);
+      if (style.display === "none" || style.visibility === "hidden") return false;
+      return el.offsetParent !== null || style.position === "fixed";
+    });
+  }
+
+  function trapFocusInContainer(ev, container) {
+    if (!container) return;
+    const list = getFocusableElements(container);
+    if (!list.length) {
+      ev.preventDefault();
+      if (typeof container.focus === "function") container.focus({ preventScroll: true });
+      return;
+    }
+    const first = list[0];
+    const last = list[list.length - 1];
+    const ae = document.activeElement;
+    const inside = container.contains(ae);
+    if (ev.shiftKey) {
+      if (!inside || ae === first || ae === container) {
+        ev.preventDefault();
+        last.focus({ preventScroll: true });
+      }
+    } else {
+      if (!inside || ae === last) {
+        ev.preventDefault();
+        first.focus({ preventScroll: true });
+      }
+    }
+  }
+
   function focusDialogSafely(containerEl) {
     if (!containerEl) return;
     try {
-      const target = containerEl.querySelector("button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])") || containerEl;
+      const list = getFocusableElements(containerEl);
+      const target = list[0] || containerEl;
       if (target && typeof target.focus === "function") target.focus({ preventScroll: true });
     } catch (e) {}
   }
 
   function restoreTriggerFocus(el) {
-    if (!el || !el.isConnected || el.disabled) return;
+    const canFocus = (cand) => {
+      if (!cand || !cand.isConnected || cand.disabled || typeof cand.focus !== "function") return false;
+      try {
+        const style = window.getComputedStyle(cand);
+        if (style.display === "none" || style.visibility === "hidden") return false;
+        return cand.offsetParent !== null || style.position === "fixed";
+      } catch (e) {
+        return false;
+      }
+    };
     try {
-      if (el.offsetParent !== null && typeof el.focus === "function") {
+      if (canFocus(el)) {
         el.focus({ preventScroll: true });
+        return;
+      }
+      const ws = document.getElementById("welcome-screen");
+      const fallbacks = (ws && ws.style.display !== "none")
+        ? [document.getElementById("btn-continue-save"), document.getElementById("btn-start-new")]
+        : [document.getElementById("btn-open-settings"), document.getElementById("nav-btn-cultivate")];
+      for (const fb of fallbacks) {
+        if (canFocus(fb)) {
+          fb.focus({ preventScroll: true });
+          return;
+        }
       }
     } catch (e) {}
   }
@@ -23816,6 +24442,8 @@ const ART = {
   }
   function closeModal() {
     clearTransientInputs();
+    rebindListeningAction = null;
+    pendingCloudImport = null;
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
     const bd = document.getElementById("modal-backdrop");
@@ -23823,7 +24451,9 @@ const ART = {
     if (bd) bd.classList.remove("open");
     arena.paused = drawerOpen || cutscene.active;
     renderPropInteractHud();
-    if (wasOpen && !drawerOpen) {
+    if (wasOpen && drawerOpen) {
+      focusDialogSafely(document.getElementById("jade-panel"));
+    } else if (wasOpen && !drawerOpen) {
       const target = lastModalTriggerEl;
       lastModalTriggerEl = null;
       restoreTriggerFocus(target);
@@ -23871,13 +24501,15 @@ const ART = {
   }
 
   function muralHeader(artKey, sealTxt, titleTxt) {
+    const safeSeal = escapeHtml(sealTxt);
+    const safeTitle = escapeHtml(titleTxt);
     return `
       <div class="drawer-mural-banner">
-        <img src="${ART[artKey]}" alt="${titleTxt}" />
+        <img src="${ART[artKey]}" alt="${safeTitle}" />
         <div class="drawer-mural-overlay">
           <div>
-            <span class="cinnabar-seal">${sealTxt}</span>
-            <h2 class="panel-title" style="margin-top:4px;">${titleTxt}</h2>
+            <span class="cinnabar-seal">${safeSeal}</span>
+            <h2 class="panel-title" style="margin-top:4px;">${safeTitle}</h2>
           </div>
           <button class="btn-ghost" data-close-drawer="1">收卷 ✕</button>
         </div>
@@ -23983,8 +24615,8 @@ const ART = {
                   <div style="display:flex;align-items:center;gap:7px;">
                     <img src="${ART[eq ? eq.art : meta.emptyArt]}" alt="${meta.label}" style="width:32px;height:32px;" />
                     <div style="min-width:0;flex:1;">
-                      <div style="font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="${eq ? `txt-r${eq.rarity}` : ""}">${eq ? `${eq.name}${eq.lvl ? ` +${eq.lvl}` : ""}` : `${meta.label}·空`}</div>
-                      <div style="font-size:9.8px;color:var(--text-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${eq ? formatGearStats(eq) : "秘境斩妖掉落"}</div>
+                      <div style="font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="${eq ? `txt-r${Number(eq.rarity) || 1}` : ""}">${eq ? `${escapeHtml(eq.name)}${eq.lvl ? ` +${Number(eq.lvl) || 0}` : ""}` : `${meta.label}·空`}</div>
+                      <div style="font-size:9.8px;color:var(--text-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${eq ? escapeHtml(formatGearStats(eq)) : "秘境斩妖掉落"}</div>
                     </div>
                   </div>
                   ${eq ? `
@@ -24508,10 +25140,10 @@ const ART = {
               return `
                 <div class="visual-tile rarity-${it.rarity}" style="justify-content:space-between;">
                   <div style="display:flex;align-items:center;gap:8px;">
-                    <img src="${ART[it.art]}" alt="${it.name}" style="width:34px;height:34px;" />
+                    <img src="${ART[it.art]}" alt="${escapeHtml(it.name)}" style="width:34px;height:34px;" />
                     <div>
-                      <div style="font-size:12px;font-weight:700;" class="txt-r${it.rarity}">${it.name}</div>
-                      <div style="font-size:10.5px;color:var(--text-sub);">${formatGearStats(it)}</div>
+                      <div style="font-size:12px;font-weight:700;" class="txt-r${Number(it.rarity) || 1}">${escapeHtml(it.name)}</div>
+                      <div style="font-size:10.5px;color:var(--text-sub);">${escapeHtml(formatGearStats(it))}</div>
                     </div>
                   </div>
                   <button class="btn-gold" style="padding:5px 11px;font-size:11.5px;" data-buy-gear="${idx}" ${game.stones < cost ? "disabled" : ""}>${cost}石购</button>
@@ -24533,10 +25165,10 @@ const ART = {
                 return `
                   <div class="visual-tile rarity-${it.rarity}" style="flex-direction:column;align-items:stretch;gap:5px;padding:7px 8px;">
                     <div style="display:flex;align-items:center;gap:7px;">
-                      <img src="${ART[it.art]}" alt="${it.name}" style="width:32px;height:32px;" />
+                      <img src="${ART[it.art]}" alt="${escapeHtml(it.name)}" style="width:32px;height:32px;" />
                       <div style="min-width:0;flex:1;">
-                        <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${it.rarity}">${it.name}${it.lvl ? ` +${it.lvl}` : ""}</div>
-                        <div style="font-size:10px;color:var(--text-sub);">${formatGearStats(it)}</div>
+                        <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${Number(it.rarity) || 1}">${escapeHtml(it.name)}${it.lvl ? ` +${Number(it.lvl) || 0}` : ""}</div>
+                        <div style="font-size:10px;color:var(--text-sub);">${escapeHtml(formatGearStats(it))}</div>
                       </div>
                     </div>
                     <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;">
@@ -24730,7 +25362,7 @@ const ART = {
           </div>
         ` : ""}
         <div style="display:flex;justify-content:center;gap:10px;margin-top:4px;flex-wrap:wrap;">
-          <button class="btn-gold" data-action="reincarnate-now">再入轮回（第 ${(metaState.ascensions || 0) + 1} 世${selectedCalamityTier > 0 ? ` · 劫火×${selectedCalamityTier}` : ""}）</button>
+          <button class="btn-gold" data-action="reincarnate-now">再入轮回（第 ${(Number(metaState.ascensions) || 0) + 1} 世${selectedCalamityTier > 0 ? ` · 劫火×${selectedCalamityTier}` : ""}）</button>
           <button class="btn-jade" data-action="open-hall-of-lives">🏛 历世道果殿堂（${(metaState.hallOfLives || []).length} 卷）</button>
           <button class="btn-ghost" data-modal-close="1">继续演武</button>
         </div>
@@ -24851,6 +25483,13 @@ const ART = {
             </div>
             <button type="button" id="btn-a11y-autocombo" class="btn-ghost ${a11ySettings.autoComboAssist ? "active-pill" : ""}" style="padding:5px 14px;font-size:11.5px;" data-action="toggle-a11y-autocombo">${a11ySettings.autoComboAssist ? "已开启 ✓" : "已关闭"}</button>
           </div>
+          <div class="a11y-row">
+            <div>
+              <strong style="font-size:12px;color:#e6f4f1;">减弱动态效果 (Reduced Motion)</strong>
+              <div style="font-size:10px;color:var(--text-sub);">遵循系统 prefers-reduced-motion 或手动开启：关闭震屏与顿帧并大幅缩短界面过渡动效</div>
+            </div>
+            <button type="button" id="btn-a11y-reduced-motion" class="btn-ghost ${a11ySettings.reducedMotion ? "active-pill" : ""}" style="padding:5px 14px;font-size:11.5px;" data-action="toggle-a11y-reduced-motion">${a11ySettings.reducedMotion ? "已开启 ✓" : "已关闭"}</button>
+          </div>
         </div>
         <div style="margin-top:6px;border-top:1px solid rgba(216,179,106,0.22);padding-top:6px;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -24900,7 +25539,7 @@ const ART = {
             return `<div class="kb-row">
               <span style="font-size:11.5px;color:#e6f4f1;">${cfg.label}</span>
               <button type="button" class="kb-cap-btn ${listening ? "listening" : ""}" data-rebind-act="${act}">
-                ${listening ? "请按键/手柄..." : `${kbTxt} · 🎮${cfg.padGlyph}`}
+                ${listening ? "请按键/手柄..." : `${kbTxt} · 🎮${cfg.padGlyph || "未绑"}`}
               </button>
             </div>`;
           };
@@ -24921,7 +25560,7 @@ const ART = {
           </div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-top:4px;">
-          <span style="font-size:11px;color:var(--text-sub);">改键自动冲突检测互换并持久化保存（第 ${(metaState.ascensions || 0) + 1} 世 · 最高 ${metaState.bestScore || 0} 分）</span>
+          <span style="font-size:11px;color:var(--text-sub);">改键自动冲突检测互换并持久化保存（第 ${(Number(metaState.ascensions) || 0) + 1} 世 · 最高 ${Number(metaState.bestScore) || 0} 分）</span>
           <div style="display:flex;gap:6px;align-items:center;">
             <button type="button" class="btn-ghost" data-action="return-title-safe">保存并返回标题主菜单</button>
             <button type="button" class="btn-ghost" style="border-color:rgba(255,118,110,0.55);color:#ffb4ae;" data-action="confirm-reset-save">清空当前存档</button>
@@ -25056,6 +25695,7 @@ const ART = {
 
   function renderWelcomeScreen() {
     const saveRes = inspectSavedBundle();
+    inspectMetaState({ applyToMemory: true });
     loadedSaveRev = saveRes.ok ? saveRes.rev : 0;
     document.getElementById("btn-continue-save").style.display = saveRes.ok ? "inline-flex" : "none";
     renderWelcomeSaveStatusBanner();
@@ -25136,35 +25776,23 @@ const ART = {
     }
   }
 
+  function isTypingTarget(target) {
+    if (!target || target.nodeType !== 1) return false;
+    const tag = target.tagName;
+    if (tag === "TEXTAREA" || tag === "SELECT") return true;
+    if (tag === "INPUT") {
+      const type = (target.getAttribute("type") || "text").toLowerCase();
+      return !["button", "submit", "reset", "checkbox", "radio", "image"].includes(type);
+    }
+    if (target.isContentEditable) return true;
+    return !!(target.closest && target.closest("[contenteditable=''], [contenteditable='true']"));
+  }
+
   // ==================== 12. INPUTS & MAIN 60FPS LOOP ====================
   window.addEventListener("keydown", (ev) => {
-    if (cutscene.active) {
-      if (ev.code === "Space" || ev.code === "Enter") { ev.preventDefault(); advanceCutscene(false); return; }
-      if (ev.code === "Escape") { ev.preventDefault(); advanceCutscene(true); return; }
-      return;
-    }
-
-    if (ev.code === "Escape") {
-      const bd = document.getElementById("modal-backdrop");
-      if (bd && bd.classList.contains("open") && modalCloseable) {
-        ev.preventDefault();
-        closeModal();
-        return;
-      }
-      if (drawerOpen) {
-        ev.preventDefault();
-        closeDrawer();
-        return;
-      }
-    }
-
-    if (ev.code === "Space" && drawerOpen && currentTab === "alchemy" && furnaceGame.active) {
-      ev.preventDefault();
-      strikeFurnaceNeedle();
-      return;
-    }
-
     GamepadSystem.setMode("kb");
+
+    // 1. Keybind rebind capture mode (must work inside Settings modal, Escape cancels capture without closing modal)
     if (rebindListeningAction) {
       ev.preventDefault();
       if (ev.code === "Escape") {
@@ -25177,15 +25805,73 @@ const ART = {
       return;
     }
 
-    keysDown[ev.code] = true;
-    if (craftMinigame.open && document.getElementById("modal-backdrop").classList.contains("open")) {
-      if (ev.code === "Space") { ev.preventDefault(); strikeTaixuCraftMinigame(false); return; }
-      if (ev.code === "Escape") { ev.preventDefault(); craftMinigame.open = false; closeModal(); return; }
+    // 2. Cutscene overlay
+    if (cutscene.active) {
+      if (ev.code === "Space" || ev.code === "Enter") { ev.preventDefault(); advanceCutscene(false); return; }
+      if (ev.code === "Escape") { ev.preventDefault(); advanceCutscene(true); return; }
       return;
     }
+
+    // 3. Modal open: trap Tab/Shift+Tab, allow Escape & modal-internal keys only; block all global shortcuts
+    const bd = document.getElementById("modal-backdrop");
+    const modalOpen = !!(bd && bd.classList.contains("open"));
+    if (modalOpen) {
+      if (ev.code === "Tab") {
+        trapFocusInContainer(ev, document.getElementById("modal-content"));
+        return;
+      }
+      if (ev.code === "Escape") {
+        if (modalCloseable) {
+          ev.preventDefault();
+          craftMinigame.open = false;
+          closeModal();
+        }
+        return;
+      }
+      if (craftMinigame.open && ev.code === "Space" && !isTypingTarget(ev.target)) {
+        ev.preventDefault();
+        strikeTaixuCraftMinigame(false);
+        return;
+      }
+      return;
+    }
+
+    // 4. Drawer open: trap Tab/Shift+Tab, allow Escape & alchemy Space; block all background global shortcuts
+    if (drawerOpen) {
+      if (ev.code === "Tab") {
+        trapFocusInContainer(ev, document.getElementById("jade-panel"));
+        return;
+      }
+      if (ev.code === "Escape") {
+        ev.preventDefault();
+        closeDrawer();
+        return;
+      }
+      if (ev.code === "Space" && currentTab === "alchemy" && furnaceGame.active && !isTypingTarget(ev.target)) {
+        ev.preventDefault();
+        strikeFurnaceNeedle();
+        return;
+      }
+      return;
+    }
+
+    // 5. Typing / form input guard outside modal & drawer (e.g. #player-name-input, #photo-zoom-range)
+    if (isTypingTarget(ev.target)) {
+      if (ev.code === "Escape") {
+        if (photoMode.active) {
+          ev.preventDefault();
+          togglePhotoMode(false);
+        } else if (ev.target && typeof ev.target.blur === "function") {
+          ev.target.blur();
+        }
+      }
+      return;
+    }
+
+    keysDown[ev.code] = true;
     if (ev.code === "BracketRight" && game) { ev.preventDefault(); toggleLocalCoop2P(); return; }
     if (ev.code === "BracketLeft" && game) { ev.preventDefault(); cycleCoop2PPartner(); return; }
-    if (ev.code === "Backquote" && game) { ev.preventDefault(); cycleCelestialTimePhase(); return; }
+    if (ev.code === "Backslash" && game) { ev.preventDefault(); cycleCelestialTimePhase(); return; }
     if (arena.coop2P && arena.coop2P.active && !arena.paused && ["Semicolon", "Quote", "Numpad0", "Numpad1", "Numpad2"].includes(ev.code)) {
       ev.preventDefault();
       arena.coop2P.manualIdleT = 0;
@@ -25227,7 +25913,7 @@ const ART = {
       matchedBind = "jump";
     }
     if (matchedBind) {
-      if (ev.code === "Space" || ev.code === "Tab") ev.preventDefault();
+      if (ev.code === "Space") ev.preventDefault();
       triggerMappedAction(matchedBind);
     } else if (ev.code === "KeyB") {
       startLiveTribulation();
@@ -25569,6 +26255,68 @@ const ART = {
       showToast("已确认覆盖旧损坏存档并开启全新道途！");
       return;
     }
+    if (m1Act === "copy-corrupt-meta-raw") {
+      const rawTxt = metaReadError && metaReadError.raw ? metaReadError.raw : "";
+      if (!rawTxt) { showToast("当前无可复制的受损元存档原文"); return; }
+      const fallbackCopy = () => {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = rawTxt;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          showToast("已复制受损元存档原文（本地原数据未修改）");
+        } catch (e) {
+          showToast("请手动在浏览器开发者工具查看本地元存档键值");
+        }
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(rawTxt)
+          .then(() => showToast("已复制受损元存档原文（本地原数据未修改）"))
+          .catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+      return;
+    }
+    if (m1Act === "prompt-reset-corrupt-meta") {
+      openCorruptedMetaResetConfirmModal();
+      return;
+    }
+    if (m1Act === "confirm-reset-corrupt-meta") {
+      const prevMetaReadError = metaReadError;
+      const prevMetaSnap = JSON.parse(JSON.stringify(metaState));
+      metaReadError = null;
+      metaWriteError = null;
+      const freshMeta = createDefaultMetaState();
+      Object.keys(metaState).forEach(k => { if (!(k in freshMeta)) delete metaState[k]; });
+      Object.assign(metaState, freshMeta);
+      const resetOk = saveMeta({ forceReset: true });
+      if (!resetOk) {
+        metaReadError = prevMetaReadError;
+        Object.keys(metaState).forEach(k => { if (!(k in prevMetaSnap)) delete metaState[k]; });
+        Object.assign(metaState, prevMetaSnap);
+        saveAlertDismissed = false;
+        const errMsg = (metaWriteError && metaWriteError.message) ? metaWriteError.message : "元存档写入失败";
+        renderWelcomeSaveStatusBanner();
+        renderHudSaveAlert();
+        showToast(`⚠ 元存档重置写入失败：${errMsg}`);
+        return;
+      }
+      closeModal();
+      const ws = document.getElementById("welcome-screen");
+      if (!game || (ws && ws.style.display !== "none")) {
+        renderWelcomeScreen();
+      } else {
+        renderHudSaveAlert();
+        updateHud();
+      }
+      showToast("已确认重置元存档并恢复写入。");
+      return;
+    }
     if (m1Act === "open-save-conflict") {
       openSaveConflictModal();
       return;
@@ -25650,6 +26398,13 @@ const ART = {
       return;
     }
     if (m1Act === "confirm-reset-save") {
+      if (saveReadOnlyMode || saveConflictState) {
+        renderHudSaveAlert();
+        showToast(saveConflictState
+          ? "⚠ 存在未处理的多标签页存档冲突，已拒绝清空存档！请先处理冲突。"
+          : "⚠ 当前处于只读观览态，已拒绝清空存档以免误删另一标签页的进度！");
+        return;
+      }
       openModal(`
         <div class="drawer-mural-banner" style="height:80px;">
           <img src="${ART.banner_archive}" alt="清空存档确认" />
@@ -25672,6 +26427,26 @@ const ART = {
       return;
     }
     if (m1Act === "execute-reset-save") {
+      if (saveReadOnlyMode || saveConflictState) {
+        closeModal();
+        renderHudSaveAlert();
+        showToast(saveConflictState
+          ? "⚠ 存在未处理的多标签页存档冲突，已拒绝清空存档！请先处理冲突。"
+          : "⚠ 当前处于只读观览态，已拒绝清空存档以免误删另一标签页的进度！");
+        return;
+      }
+      try {
+        const curRaw = localStorage.getItem(STORAGE_KEY);
+        if (curRaw) {
+          const curRes = parseAndValidateSaveRaw(curRaw, STORAGE_KEY);
+          if (curRes.ok && curRes.tabId && curRes.tabId !== TAB_ID && curRes.rev > loadedSaveRev) {
+            closeModal();
+            triggerSaveConflict(curRes, true);
+            showToast("⚠ 检测到另一标签页更新了存档，已中止清空操作！");
+            return;
+          }
+        }
+      } catch (e) {}
       try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
       game = null;
       loadedSaveRev = 0;
@@ -25933,13 +26708,34 @@ const ART = {
     }
     if (t.id === "btn-import-cloud-save" || t.getAttribute("data-action") === "import-cloud-save") {
       const inp = document.getElementById("inp-cloud-save-code");
-      const ok = inp ? importFullCloudSaveCode(inp.value) : false;
+      const parsedRes = parseCloudSaveCode(inp ? inp.value : "");
       const stEl = document.getElementById("lbl-cloud-save-status");
-      if (!ok) {
-        if (stEl) { stEl.textContent = "云码校验失败 ✕"; stEl.style.color = "#ff6b6b"; }
-        showToast("⚠ 太虚云码格式或校验位无效，请粘贴完整的 CY24SAVE-... 云码！");
+      if (!parsedRes.ok) {
+        if (stEl) { stEl.textContent = `${parsedRes.reason} ✕`; stEl.style.color = "#ff6b6b"; }
+        showToast(`⚠ ${parsedRes.reason}`);
       } else {
-        if (stEl) { stEl.textContent = "存档恢复成功 ✓"; stEl.style.color = "#80ffea"; }
+        openCloudImportConfirmModal(parsedRes);
+      }
+      return;
+    }
+    if (t.getAttribute("data-action") === "cancel-cloud-import") {
+      pendingCloudImport = null;
+      currentSysTab = "controls";
+      openSettingsModal();
+      return;
+    }
+    if (t.id === "btn-confirm-cloud-import" || t.getAttribute("data-action") === "confirm-cloud-import") {
+      const req = pendingCloudImport;
+      const res = commitCloudSaveImport(req);
+      if (res.ok) {
+        pendingCloudImport = null;
+        closeModal();
+      } else {
+        const errEl = document.getElementById("cloud-import-error-msg");
+        if (errEl) {
+          errEl.textContent = `导入失败：${res.reason}`;
+          errEl.style.display = "block";
+        }
       }
       return;
     }
@@ -26103,6 +26899,15 @@ const ART = {
     }
     if (t.getAttribute("data-action") === "toggle-a11y-autocombo") {
       a11ySettings.autoComboAssist = !a11ySettings.autoComboAssist;
+      saveA11ySettings(); openSettingsModal();
+      return;
+    }
+    if (t.getAttribute("data-action") === "toggle-a11y-reduced-motion") {
+      a11ySettings.reducedMotion = !a11ySettings.reducedMotion;
+      if (a11ySettings.reducedMotion) {
+        a11ySettings.shakeScale = 0;
+        a11ySettings.hitStopScale = 0;
+      }
       saveA11ySettings(); openSettingsModal();
       return;
     }
@@ -26960,12 +27765,34 @@ const ART = {
     } else if (act === "show-verdict") {
       closeDrawer(); openEndingModal();
     } else if (act === "reincarnate-now") {
+      if (saveReadOnlyMode || saveConflictState) {
+        renderHudSaveAlert();
+        showToast(saveConflictState
+          ? "⚠ 存在多标签页存档冲突，已拒绝轮回清档！请先处理冲突。"
+          : "⚠ 当前处于只读观览态，已拒绝轮回清档以免误删另一标签页的进度！");
+        return;
+      }
+      try {
+        const curRaw = localStorage.getItem(STORAGE_KEY);
+        if (curRaw) {
+          const curRes = parseAndValidateSaveRaw(curRaw, STORAGE_KEY);
+          if (curRes.ok && curRes.tabId && curRes.tabId !== TAB_ID && curRes.rev > loadedSaveRev) {
+            triggerSaveConflict(curRes, true);
+            showToast("⚠ 检测到另一标签页更新了存档，已中止轮回清档！");
+            return;
+          }
+        }
+      } catch (e) {}
       if (game && game.status === "ascended" && game.ending && !game.lifeRecorded) {
         recordPastLifeInHall(game, game.ending);
       }
       saveMeta();
       try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
       game = null;
+      loadedSaveRev = 0;
+      saveReadOnlyMode = false;
+      saveConflictState = null;
+      storageWriteError = null;
       cutscene.active = false;
       document.getElementById("story-dialogue-bar").classList.remove("open");
       closeModal(); closeDrawer();
@@ -27091,8 +27918,12 @@ const ART = {
         storageReadError,
         storageWriteError,
         saveConflictState,
-        saveReadOnlyMode
-      }
+        saveReadOnlyMode,
+        metaReadError,
+        metaWriteError,
+        metaRev: Number(metaState.metaRev) || 0
+      },
+      a11ySettings
     }),
     getPersistenceState: () => ({
       tabId: TAB_ID,
@@ -27100,7 +27931,10 @@ const ART = {
       storageReadError,
       storageWriteError,
       saveConflictState,
-      saveReadOnlyMode
+      saveReadOnlyMode,
+      metaReadError,
+      metaWriteError,
+      metaRev: Number(metaState.metaRev) || 0
     }),
     inspectSavedBundle,
     saveGame,
@@ -27209,7 +28043,15 @@ const ART = {
     RECIPES,
     spawnBossRushBout,
     useQuickHealingPill,
-    activatePedestalChoice
+    activatePedestalChoice,
+    inspectMetaState,
+    mergeMetaStates,
+    flushSaveOnLifecycle,
+    exportFullCloudSaveCode,
+    parseCloudSaveCode,
+    getPendingCloudImport: () => pendingCloudImport,
+    DEFAULT_KEYBINDS,
+    getKeybinds: () => keybinds
   };
   window.__CHENYUAN_V24__ = {
     getState: () => ({

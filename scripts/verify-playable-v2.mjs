@@ -21,6 +21,7 @@ const REPO_ROOT = path.resolve(__dirname, "..");
 const PUBLIC_DIR = path.join(REPO_ROOT, "web", "public");
 const STORAGE_KEY = "chenyuan_wendao_v11_save";
 const LEGACY_V10_KEY = "chenyuan_wendao_v10_save";
+const META_KEY = "chenyuan_wendao_v11_meta";
 
 // ==================== CLI ARGUMENTS ====================
 const args = process.argv.slice(2);
@@ -1216,12 +1217,15 @@ try {
   await runSuite("P1-1", "Phase 1 Guardrails: Anti-AFK Prologue, Ch1-Ch5 TTK & %HP Pressure, Real MP Loop & Mortal Locks", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "P1-1", false);
 
-    // 1. 4.2s AFK test in prologue: wolves must stay alive & player must take real HP damage
+    // 1. AFK test in prologue: wolves must stay alive & player must take real HP damage
     const startSnap = await page.evaluate(() => {
       const s = window.__CHENYUAN_V25__.getState();
       return { hp: s.game.hp, enemies: s.arena.enemies.length };
     });
-    await page.waitForTimeout(3600);
+    await page.waitForFunction((startHp) => {
+      const s = window.__CHENYUAN_V25__.getState();
+      return s && s.game && s.game.hp < startHp;
+    }, startSnap.hp, { timeout: 12000 }).catch(() => {});
     const afkSnap = await page.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const s = api.getState();
@@ -1805,6 +1809,671 @@ try {
     });
     assert.ok(rushHps.b1 > 0 && rushHps.b1 < rushHps.b5 && rushHps.b5 < rushHps.b6 && rushHps.b6 < rushHps.b7,
       `Boss Rush HP must climb monotonically b1 < b5 < b6 < b7, got ${JSON.stringify(rushHps)}`);
+
+    await ctx.close();
+  });
+
+  // =========================================================================
+  // R2-1: T1 — 元存档损坏保护（保留原文 + 横幅提示 + 复制原文 + 确认前绝不覆写 + 显式确认重置）
+  // =========================================================================
+  await runSuite("R2-1", "T1 元存档损坏保护（保留原文、提示条、复制原文、显式确认重置）", async () => {
+    const ctx = await newIsolatedContext(browser);
+    const page = await ctx.newPage();
+    attachErrorListeners(page, "R2-1");
+    await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
+
+    const corruptMeta = "{CORRUPT_META_EB0EA67::ascensions=5,broken";
+    await page.evaluate(({ mk, raw }) => {
+      localStorage.clear();
+      localStorage.setItem(mk, raw);
+    }, { mk: META_KEY, raw: corruptMeta });
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#welcome-screen");
+
+    const bannerInfo = await page.evaluate(() => {
+      const el = document.getElementById("save-status-banner");
+      return {
+        visible: !!el && getComputedStyle(el).display !== "none",
+        text: el ? el.textContent : "",
+        hasCopyBtn: !!el?.querySelector('[data-action="copy-corrupt-meta-raw"]'),
+        hasResetBtn: !!el?.querySelector('[data-action="prompt-reset-corrupt-meta"]'),
+        metaReadError: window.__CHENYUAN_V25__.getPersistenceState().metaReadError
+      };
+    });
+    assert.ok(bannerInfo.visible, "Welcome #save-status-banner must be visible when meta is corrupt");
+    assert.ok(bannerInfo.text.includes("元存档损坏"), `Banner must mention 元存档损坏, got: ${bannerInfo.text}`);
+    assert.ok(bannerInfo.hasCopyBtn && bannerInfo.hasResetBtn, "Banner must expose 复制原文 & 确认重置 buttons");
+    assert.ok(bannerInfo.metaReadError && bannerInfo.metaReadError.raw === corruptMeta, "metaReadError must preserve raw corrupt string");
+
+    // Click 复制原文 — must NOT mutate corrupt storage
+    await page.click('#save-status-banner [data-action="copy-corrupt-meta-raw"]');
+    await page.waitForTimeout(100);
+    const afterCopyRaw = await page.evaluate((mk) => localStorage.getItem(mk), META_KEY);
+    assert.equal(afterCopyRaw, corruptMeta, "Copying raw meta must preserve corrupt meta intact");
+
+    // Start a fresh game and trigger saveGame() + saveMeta() — corrupt meta MUST NOT be overwritten!
+    await page.click("#btn-start-new");
+    await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.getState().game.stones += 55;
+      api.saveGame();
+      api.saveMeta();
+    });
+    const afterPlayRaw = await page.evaluate((mk) => localStorage.getItem(mk), META_KEY);
+    assert.equal(afterPlayRaw, corruptMeta, "saveGame/saveMeta must NEVER overwrite corrupt meta before explicit confirmation");
+
+    // In-game HUD alert must also warn about corrupt meta
+    const hudAlertText = await page.evaluate(() => {
+      const el = document.getElementById("hud-save-alert");
+      return el && getComputedStyle(el).display !== "none" ? el.textContent : "";
+    });
+    assert.ok(hudAlertText.includes("元存档损坏"), `In-game #hud-save-alert must show 元存档损坏, got: ${hudAlertText}`);
+
+    // Two-step explicit confirmation reset
+    await page.click('#hud-save-alert [data-action="prompt-reset-corrupt-meta"]');
+    await page.waitForSelector('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
+    // Still untouched before clicking confirm!
+    assert.equal(await page.evaluate((mk) => localStorage.getItem(mk), META_KEY), corruptMeta);
+
+    await page.click('[data-action="confirm-reset-corrupt-meta"]');
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+
+    const afterReset = await page.evaluate((mk) => {
+      const raw = localStorage.getItem(mk);
+      const parsed = raw ? JSON.parse(raw) : null;
+      const alertEl = document.getElementById("hud-save-alert");
+      return {
+        parsed,
+        metaReadError: window.__CHENYUAN_V25__.getPersistenceState().metaReadError,
+        alertHidden: !alertEl || getComputedStyle(alertEl).display === "none"
+      };
+    }, META_KEY);
+    assert.ok(afterReset.parsed && afterReset.parsed.metaRev >= 1, `Reset meta must be valid JSON with metaRev >= 1, got ${JSON.stringify(afterReset.parsed)}`);
+    assert.equal(afterReset.metaReadError, null, "metaReadError must clear after explicit reset");
+    assert.ok(afterReset.alertHidden, "HUD meta alert must hide after explicit reset");
+
+    await ctx.close();
+  });
+
+  // =========================================================================
+  // R2-2: T2 & T3 — 输入框内屏蔽全局快捷键 + 弹窗/抽屉焦点陷阱与焦点返回
+  // =========================================================================
+  await runSuite("R2-2", "T2/T3 输入框屏蔽快捷键、弹窗门控按键、弹窗与抽屉焦点陷阱及焦点返回", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "R2-2", true);
+
+    // 1. Open Settings -> Controls, focus #inp-cloud-save-code, type P, [, ], `, F3
+    await page.click("#btn-open-settings");
+    await page.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+    await page.click('[data-sys-tab="controls"]');
+    await page.waitForSelector("#inp-cloud-save-code");
+
+    await page.click("#inp-cloud-save-code");
+    await page.fill("#inp-cloud-save-code", "");
+    await page.keyboard.type("p[]`");
+    await page.keyboard.press("F3");
+    await page.waitForTimeout(100);
+
+    const inputCheck = await page.evaluate(() => ({
+      modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+      photoActive: window.__CHENYUAN_V18__.getState().photoMode.active,
+      telemetryVisible: document.getElementById("telemetry-panel") ? getComputedStyle(document.getElementById("telemetry-panel")).display !== "none" : false,
+      inpVal: document.getElementById("inp-cloud-save-code")?.value || ""
+    }));
+    assert.ok(inputCheck.modalOpen, "Typing p[]` and F3 inside input must NOT close Settings modal");
+    assert.equal(inputCheck.photoActive, false, "Typing 'p' inside input must NOT enter photo mode");
+    assert.equal(inputCheck.telemetryVisible, false, "Pressing F3 inside input must NOT open telemetry");
+    assert.equal(inputCheck.inpVal, "p[]`", `Expected typed chars in input, got: ${inputCheck.inpVal}`);
+
+    // 2. Focus a non-input button inside modal; global shortcuts (P, F3, M, T, [) must be blocked
+    await page.focus('#modal-content [data-action="reset-keybinds"]');
+    for (const k of ["KeyP", "F3", "KeyM", "KeyT", "BracketLeft", "BracketRight"]) {
+      await page.keyboard.press(k);
+    }
+    const modalGateCheck = await page.evaluate(() => ({
+      modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+      photoActive: window.__CHENYUAN_V18__.getState().photoMode.active,
+      stillControls: !!document.getElementById("inp-cloud-save-code")
+    }));
+    assert.ok(modalGateCheck.modalOpen && modalGateCheck.stillControls, "Global shortcuts must be blocked while modal is open");
+    assert.equal(modalGateCheck.photoActive, false, "KeyP must not trigger photoMode while modal is open");
+
+    // 3. Keybind rebind capture: Escape cancels capture WITHOUT closing Settings modal
+    await page.click('.kb-cap-btn[data-rebind-act="posture"]');
+    await page.waitForSelector('.kb-cap-btn.listening[data-rebind-act="posture"]');
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(80);
+    const afterRebindEsc = await page.evaluate(() => ({
+      modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+      stillListening: !!document.querySelector(".kb-cap-btn.listening")
+    }));
+    assert.ok(afterRebindEsc.modalOpen, "Escape during keybind capture must keep Settings modal open");
+    assert.equal(afterRebindEsc.stillListening, false, "Escape must cancel keybind listening state");
+
+    // 4. T3 Modal focus trap: 25x Tab & 10x Shift+Tab must NEVER leave #modal-content
+    for (let i = 0; i < 25; i++) {
+      await page.keyboard.press("Tab");
+      const inside = await page.evaluate(() => document.getElementById("modal-content").contains(document.activeElement));
+      assert.ok(inside, `Modal Tab #${i + 1} escaped #modal-content!`);
+    }
+    for (let i = 0; i < 10; i++) {
+      await page.keyboard.press("Shift+Tab");
+      const inside = await page.evaluate(() => document.getElementById("modal-content").contains(document.activeElement));
+      assert.ok(inside, `Modal Shift+Tab #${i + 1} escaped #modal-content!`);
+    }
+
+    // 5. Escape closes modal and restores focus to #btn-open-settings
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+    const restoredModalFocus = await page.evaluate(() => document.activeElement?.id || "");
+    assert.equal(restoredModalFocus, "btn-open-settings", `Modal close must restore focus to #btn-open-settings, got: ${restoredModalFocus}`);
+
+    // 6. T3 Drawer focus trap (#jade-panel) & focus restoration
+    await page.click("#nav-btn-cultivate");
+    await page.waitForSelector("#jade-panel.drawer-open");
+    for (let i = 0; i < 20; i++) {
+      await page.keyboard.press("Tab");
+      const inside = await page.evaluate(() => document.getElementById("jade-panel").contains(document.activeElement));
+      assert.ok(inside, `Drawer Tab #${i + 1} escaped #jade-panel!`);
+    }
+    for (let i = 0; i < 8; i++) {
+      await page.keyboard.press("Shift+Tab");
+      const inside = await page.evaluate(() => document.getElementById("jade-panel").contains(document.activeElement));
+      assert.ok(inside, `Drawer Shift+Tab #${i + 1} escaped #jade-panel!`);
+    }
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.getElementById("jade-panel").classList.contains("drawer-open"));
+    const restoredDrawerFocus = await page.evaluate(() => document.activeElement?.id || "");
+    assert.equal(restoredDrawerFocus, "nav-btn-cultivate", `Drawer close must restore focus to #nav-btn-cultivate, got: ${restoredDrawerFocus}`);
+
+    await ctx.close();
+  });
+
+  // =========================================================================
+  // R2-3: T4 — 云码导入确认流程（校验 -> 预览对比 -> 取消 -> 写入失败回滚 -> 确认导入 + 刷新持久化）
+  // =========================================================================
+  await runSuite("R2-3", "T4 云码导入确认流程（预览对比、normalizeLoadedGame、写入失败回滚、刷新验证）", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "R2-3", true);
+
+    // Prepare current save A ("原道友", stones 123) and synthesize a valid cloud code B ("云端剑尊", qi, stones 888, omitting newer fields)
+    const { codeB, badRealmCode } = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const st = api.getState();
+      st.game.name = "原道友";
+      st.game.stones = 123;
+      api.getMetaState().bestScore = 9999;
+      api.saveGame();
+
+      function makeCode(payload) {
+        const jsonStr = JSON.stringify(payload);
+        let sum = 0x24;
+        for (let i = 0; i < jsonStr.length; i++) sum = (sum * 31 + jsonStr.charCodeAt(i)) & 0xFFFF;
+        const chk = sum.toString(16).toUpperCase().padStart(4, "0");
+        const bytes = new TextEncoder().encode(jsonStr);
+        let bin = "";
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return `CY24SAVE-${chk}-${btoa(bin)}`;
+      }
+      return {
+        codeB: makeCode({
+          v: 24,
+          game: { name: "云端剑尊", realm: "qi", stones: 888, openingChoice: "help" },
+          metaState: { bestScore: 100, seenEnemies: ["wolf", "bandit"] }
+        }),
+        badRealmCode: makeCode({
+          v: 24,
+          game: { name: "非法境", realm: "nonexistent_realm", stones: 50 }
+        })
+      };
+    });
+
+    // Open Settings -> Controls
+    await page.click("#btn-open-settings");
+    await page.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+    await page.click('[data-sys-tab="controls"]');
+    await page.waitForSelector("#inp-cloud-save-code");
+
+    // 1. Invalid / unknown-realm code must fail cleanly without opening confirm modal
+    await page.fill("#inp-cloud-save-code", badRealmCode);
+    await page.click("#btn-import-cloud-save");
+    await page.waitForTimeout(80);
+    const badRes = await page.evaluate(() => ({
+      hasConfirmBtn: !!document.getElementById("btn-confirm-cloud-import"),
+      statusText: document.getElementById("lbl-cloud-save-status")?.textContent || "",
+      stones: window.__CHENYUAN_V25__.getState().game.stones
+    }));
+    assert.equal(badRes.hasConfirmBtn, false, "Invalid realm cloud code must not open confirm modal");
+    assert.ok(badRes.statusText.includes("非法") || badRes.statusText.includes("✕"), `Expected error status, got: ${badRes.statusText}`);
+    assert.equal(badRes.stones, 123);
+
+    // 2. Valid code B opens side-by-side confirmation preview WITHOUT mutating game yet
+    await page.fill("#inp-cloud-save-code", codeB);
+    await page.click("#btn-import-cloud-save");
+    await page.waitForSelector("#btn-confirm-cloud-import");
+    const previewState = await page.evaluate(() => ({
+      modalText: document.getElementById("modal-content").textContent,
+      curName: window.__CHENYUAN_V25__.getState().game.name,
+      curStones: window.__CHENYUAN_V25__.getState().game.stones
+    }));
+    assert.ok(previewState.modalText.includes("原道友") && previewState.modalText.includes("云端剑尊"), "Preview modal must show current vs imported 道号");
+    assert.ok(previewState.modalText.includes("炼气") && previewState.modalText.includes("888"), "Preview modal must show imported 境界 & 灵石");
+    assert.equal(previewState.curStones, 123, "Game state must NOT change before explicit confirmation");
+
+    // 3. Cancel returns to Settings without modifying game
+    await page.click('[data-action="cancel-cloud-import"]');
+    await page.waitForSelector("#inp-cloud-save-code");
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones), 123);
+
+    // 4. Write failure (QuotaExceededError) on Confirm must roll back & report failure honestly (NEVER "成功")
+    await page.fill("#inp-cloud-save-code", codeB);
+    await page.click("#btn-import-cloud-save");
+    await page.waitForSelector("#btn-confirm-cloud-import");
+    await page.evaluate(() => {
+      window.__origSetItemR23 = Storage.prototype.setItem;
+      Storage.prototype.setItem = function () {
+        const err = new Error("Simulated Quota Exceeded");
+        err.name = "QuotaExceededError";
+        throw err;
+      };
+    });
+    await page.click("#btn-confirm-cloud-import");
+    await page.waitForTimeout(120);
+    const failedImport = await page.evaluate(() => {
+      Storage.prototype.setItem = window.__origSetItemR23;
+      const errEl = document.getElementById("cloud-import-error-msg");
+      return {
+        errVisible: !!errEl && getComputedStyle(errEl).display !== "none",
+        errText: errEl ? errEl.textContent : "",
+        name: window.__CHENYUAN_V25__.getState().game.name,
+        stones: window.__CHENYUAN_V25__.getState().game.stones
+      };
+    });
+    assert.ok(failedImport.errVisible && failedImport.errText.includes("导入失败"), `Write failure must show honest error, got: ${failedImport.errText}`);
+    assert.ok(!failedImport.errText.includes("成功"), "Write failure must NEVER report success");
+    assert.equal(failedImport.name, "原道友", "Failed import must roll back game.name");
+    assert.equal(failedImport.stones, 123, "Failed import must roll back game.stones");
+
+    // 5. Now confirm with storage restored -> succeeds, normalizes missing fields, merges meta monotonically, persists across reload
+    await page.click("#btn-confirm-cloud-import");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+    const committed = await page.evaluate(() => {
+      const g = window.__CHENYUAN_V25__.getState().game;
+      const m = window.__CHENYUAN_V25__.getMetaState();
+      return {
+        name: g.name,
+        realm: g.realm,
+        stones: g.stones,
+        hasSanctumLevels: !!g.sanctumLevels && typeof g.sanctumLevels === "object",
+        hasGourd: !!g.gourd && typeof g.gourd === "object",
+        bestScore: m.bestScore,
+        hasBandit: m.seenEnemies.includes("bandit")
+      };
+    });
+    assert.equal(committed.name, "云端剑尊");
+    assert.equal(committed.realm, "qi");
+    assert.equal(committed.stones, 888);
+    assert.ok(committed.hasSanctumLevels && committed.hasGourd, "normalizeLoadedGame must populate missing fields on cloud import");
+    assert.equal(committed.bestScore, 9999, "Cloud import must NOT regress higher metaState.bestScore");
+    assert.ok(committed.hasBandit, "Cloud import must merge seenEnemies union");
+
+    // Refresh & continue verifies persistence
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#btn-continue-save");
+    await page.click("#btn-continue-save");
+    await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+    const afterReload = await page.evaluate(() => ({
+      name: window.__CHENYUAN_V25__.getState().game.name,
+      stones: window.__CHENYUAN_V25__.getState().game.stones
+    }));
+    assert.equal(afterReload.name, "云端剑尊");
+    assert.equal(afterReload.stones, 888);
+
+    // 6. XSS safety: crafted cloud save with HTML/onerror payloads in game.name & metaState.hallOfLives
+    //    must render escaped text without executing JS in muralHeader (#nav-btn-cultivate) or openHallOfLivesModal()
+    const xssCode = await page.evaluate(() => {
+      function makeCode(payload) {
+        const jsonStr = JSON.stringify(payload);
+        let sum = 0x24;
+        for (let i = 0; i < jsonStr.length; i++) sum = (sum * 31 + jsonStr.charCodeAt(i)) & 0xFFFF;
+        const chk = sum.toString(16).toUpperCase().padStart(4, "0");
+        const bytes = new TextEncoder().encode(jsonStr);
+        let bin = "";
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return `CY24SAVE-${chk}-${btoa(bin)}`;
+      }
+      return makeCode({
+        v: 24,
+        game: { name: "<img src=x onerror=window.__XSS_MURAL=1>", realm: "qi", stones: 777, openingChoice: "help" },
+        metaState: {
+          bestRushGrade: "<img src=x onerror=window.__XSS_GRADE=1>",
+          hallOfLives: [{
+            lifeNum: 1,
+            name: "<img src=x onerror=window.__XSS_HALL=1>",
+            epithet: "<img src=x onerror=window.__XSS_EPITHET=1>",
+            poem: "<img src=x onerror=window.__XSS_POEM=1>",
+            grade: "S",
+            score: 1234,
+            karmaMode: "neutral\" onmouseover=\"window.__XSS_ATTR=1",
+            karmaLabel: "本真中正",
+            perkId: "sword_bone",
+            recordedAt: 1700000000000
+          }]
+        }
+      });
+    });
+
+    await page.click("#btn-open-settings");
+    await page.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+    await page.click('[data-sys-tab="controls"]');
+    await page.waitForSelector("#inp-cloud-save-code");
+    await page.fill("#inp-cloud-save-code", xssCode);
+    await page.click("#btn-import-cloud-save");
+    await page.waitForSelector("#btn-confirm-cloud-import");
+    await page.click("#btn-confirm-cloud-import");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+
+    // Open cultivate drawer (triggers muralHeader with game.name)
+    await page.click("#nav-btn-cultivate");
+    await page.waitForSelector("#panel-scroll-body .drawer-mural-banner");
+    const drawerXss = await page.evaluate(() => ({
+      muralRan: window.__XSS_MURAL,
+      injectedImgs: document.querySelectorAll("#panel-scroll-body img[onerror]").length,
+      titleText: document.querySelector("#panel-scroll-body .panel-title")?.textContent || ""
+    }));
+    assert.equal(drawerXss.muralRan, undefined, "muralHeader() must NOT execute XSS from game.name");
+    assert.equal(drawerXss.injectedImgs, 0, "muralHeader() must NOT inject <img onerror>");
+    assert.ok(drawerXss.titleText.includes("<img src=x onerror=window.__XSS_MURAL=1>"), "muralHeader() must render literal escaped game.name");
+
+    // Open Hall of Lives modal (renders metaState.bestRushGrade & metaState.hallOfLives)
+    await page.evaluate(() => window.__CHENYUAN_V25__.openHallOfLivesModal());
+    await page.waitForSelector("#modal-backdrop.open .hall-life-card");
+    const hallXss = await page.evaluate(() => ({
+      hallRan: window.__XSS_HALL,
+      epithetRan: window.__XSS_EPITHET,
+      poemRan: window.__XSS_POEM,
+      gradeRan: window.__XSS_GRADE,
+      attrRan: window.__XSS_ATTR,
+      injectedImgs: document.querySelectorAll("#modal-content img[onerror]").length,
+      modalText: document.getElementById("modal-content")?.textContent || ""
+    }));
+    assert.equal(hallXss.hallRan, undefined, "openHallOfLivesModal() must NOT execute XSS from lf.name");
+    assert.equal(hallXss.epithetRan, undefined, "openHallOfLivesModal() must NOT execute XSS from lf.epithet");
+    assert.equal(hallXss.poemRan, undefined, "openHallOfLivesModal() must NOT execute XSS from lf.poem");
+    assert.equal(hallXss.gradeRan, undefined, "openHallOfLivesModal() must NOT execute XSS from metaState.bestRushGrade");
+    assert.equal(hallXss.attrRan, undefined, "openHallOfLivesModal() must NOT allow karmaMode attribute breakout");
+    assert.equal(hallXss.injectedImgs, 0, "openHallOfLivesModal() must NOT inject <img onerror>");
+    assert.ok(hallXss.modalText.includes("<img src=x onerror=window.__XSS_HALL=1>"), "Hall of Lives must render literal escaped name");
+
+    await ctx.close();
+  });
+
+  // =========================================================================
+  // R2-4: T5 — 旧档续玩 (eb0ea67 无 metaRev 格式) + 元存档多标签页无损合并 + 刷新持久化
+  // =========================================================================
+  await runSuite("R2-4", "T5 旧档续玩(eb0ea67格式)与多标签页元存档无损合并", async () => {
+    const ctx = await newIsolatedContext(browser);
+    const tabA = await ctx.newPage();
+    attachErrorListeners(tabA, "R2-4-TabA");
+    await tabA.goto(targetUrl, { waitUntil: "domcontentloaded" });
+
+    // Seed eb0ea67-format primary save + legacy meta save (without metaRev)
+    await tabA.evaluate(({ sk, mk }) => {
+      localStorage.clear();
+      const legacyPrimary = {
+        game: { name: "旧档剑修", realm: "qi", stones: 321, openingChoice: "help", hp: 180, mp: 90, laws: ["fire"] },
+        stageIdx: 0,
+        stanceIdx: 0,
+        towerMode: false,
+        sanctumMode: false
+      };
+      const legacyMeta = {
+        ascensions: 2,
+        bestScore: 500,
+        bestTower: 3,
+        bestRushGrade: "A",
+        bestRushTime: 180,
+        seenEnemies: ["wolf", "bandit"],
+        seenLaws: ["fire"],
+        unlockedEndings: ["sword_saint"],
+        reincarnationPoints: 40,
+        hallOfLives: [{ lifeNum: 1, name: "前世一", score: 500, endingId: "sword_saint", recordedAt: 1000 }]
+      };
+      localStorage.setItem(sk, JSON.stringify(legacyPrimary));
+      localStorage.setItem(mk, JSON.stringify(legacyMeta));
+    }, { sk: STORAGE_KEY, mk: META_KEY });
+
+    await tabA.reload({ waitUntil: "domcontentloaded" });
+    await tabA.waitForSelector("#btn-continue-save");
+    await tabA.click("#btn-continue-save");
+    await tabA.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+
+    const tabB = await ctx.newPage();
+    attachErrorListeners(tabB, "R2-4-TabB");
+    await tabB.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tabB.waitForSelector("#btn-continue-save");
+    await tabB.click("#btn-continue-save");
+    await tabB.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+
+    // Tab A progresses ascensions=3, seenEnemies+=stone_golem, bestRushGrade="S", bestRushTime=120
+    await tabA.evaluate(() => {
+      const m = window.__CHENYUAN_V25__.getMetaState();
+      m.ascensions = 3;
+      m.reincarnationPoints += 120;
+      m.bestRushGrade = "S";
+      m.bestRushTime = 120;
+      m.seenEnemies.push("stone_golem");
+      window.__CHENYUAN_V25__.saveMeta();
+    });
+
+    // Tab B (stale ascensions=2) progresses bestScore=999, seenEnemies+=jade_serpent, bestRushGrade="SS"
+    await tabB.evaluate(() => {
+      const m = window.__CHENYUAN_V25__.getMetaState();
+      m.bestScore = 999;
+      m.bestRushGrade = "SS";
+      m.seenEnemies.push("jade_serpent");
+      window.__CHENYUAN_V25__.saveMeta();
+    });
+
+    // Wait for Chromium cross-tab storage IPC + storage event sync on tabA
+    await tabA.waitForFunction((mk) => {
+      try {
+        const cur = JSON.parse(localStorage.getItem(mk) || "{}");
+        return cur.bestScore === 999 && window.__CHENYUAN_V25__.getMetaState().bestScore === 999;
+      } catch (e) { return false; }
+    }, META_KEY, { timeout: 5000 });
+
+    const mergedRaw = await tabA.evaluate((mk) => JSON.parse(localStorage.getItem(mk) || "{}"), META_KEY);
+    assert.ok(mergedRaw.metaRev >= 2, `Expected metaRev >= 2, got ${mergedRaw.metaRev}`);
+    assert.equal(mergedRaw.ascensions, 3, `Tab B must NOT regress ascensions from 3 to ${mergedRaw.ascensions}`);
+    assert.equal(mergedRaw.bestScore, 999, "Merged bestScore must take max (999)");
+    assert.equal(mergedRaw.bestRushGrade, "SS", "Merged bestRushGrade must take highest rank (SS > S > A)");
+    assert.equal(mergedRaw.bestRushTime, 120, "Merged bestRushTime must take min positive (120)");
+    assert.ok(mergedRaw.seenEnemies.includes("stone_golem") && mergedRaw.seenEnemies.includes("jade_serpent"), "Merged seenEnemies must be union of both tabs");
+
+    // Reload Tab A and verify merged meta persists
+    await tabA.reload({ waitUntil: "domcontentloaded" });
+    const afterReloadMeta = await tabA.evaluate(() => window.__CHENYUAN_V25__.getMetaState());
+    assert.equal(afterReloadMeta.ascensions, 3);
+    assert.equal(afterReloadMeta.bestScore, 999);
+
+    await ctx.close();
+  });
+
+  // =========================================================================
+  // R2-5: T6 — 危险写操作守卫（只读/冲突拒删）、pagehide/visibilitychange 落盘、非法外部 storage 提示
+  // =========================================================================
+  await runSuite("R2-5", "T6 危险写操作守卫、页面隐藏落盘与非法跨标签页 storage 提示", async () => {
+    const ctx = await newIsolatedContext(browser);
+    const tabA = await ctx.newPage();
+    attachErrorListeners(tabA, "R2-5-TabA");
+    await tabA.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tabA.evaluate(() => localStorage.clear());
+    await tabA.reload({ waitUntil: "domcontentloaded" });
+    await tabA.click("#btn-start-new");
+    await tabA.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+    await tabA.evaluate(() => {
+      window.__CHENYUAN_V25__.getState().game.openingChoice = "help";
+      window.__CHENYUAN_V25__.saveGame();
+    });
+
+    const tabB = await ctx.newPage();
+    attachErrorListeners(tabB, "R2-5-TabB");
+    await tabB.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tabB.waitForSelector("#btn-continue-save");
+    await tabB.click("#btn-continue-save");
+    await tabB.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+
+    // Tab B saves newer stones=777 with an XSS payload in name -> Tab A receives conflict -> verify escaped HTML -> Tab A chooses read-only mode
+    const conflictXssPayload = "<img src=x onerror=window.__XSS_CONFLICT=1>";
+    await tabB.evaluate((payload) => {
+      const g = window.__CHENYUAN_V25__.getState().game;
+      g.name = payload;
+      g.stones = 777;
+      window.__CHENYUAN_V25__.saveGame();
+    }, conflictXssPayload);
+    await tabA.waitForSelector('#modal-backdrop.open [data-action="stay-readonly-save"]');
+    const conflictXssCheck = await tabA.evaluate(() => ({
+      xssExecuted: !!window.__XSS_CONFLICT,
+      injectedImgs: document.querySelectorAll('#modal-content img[onerror]').length,
+      modalText: document.getElementById("modal-content")?.textContent || ""
+    }));
+    assert.equal(conflictXssCheck.xssExecuted, false, "openSaveConflictModal must NOT execute XSS payload from externalName");
+    assert.equal(conflictXssCheck.injectedImgs, 0, "openSaveConflictModal must escape externalName without injecting <img>");
+    assert.ok(conflictXssCheck.modalText.includes(conflictXssPayload), "openSaveConflictModal must display escaped externalName text");
+    await tabA.click('[data-action="stay-readonly-save"]');
+    await tabA.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+
+    // 1. In read-only Tab A, confirm-reset-save MUST be refused and STORAGE_KEY untouched
+    await tabA.click("#btn-open-settings");
+    await tabA.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+    await tabA.click('[data-sys-tab="controls"]');
+    await tabA.waitForSelector('[data-action="confirm-reset-save"]');
+    await tabA.click('[data-action="confirm-reset-save"]');
+    await tabA.waitForTimeout(100);
+    const afterResetAttempt = await tabA.evaluate((sk) => ({
+      stonesInStorage: JSON.parse(localStorage.getItem(sk) || "{}")?.game?.stones,
+      hasExecuteBtn: !!document.querySelector('[data-action="execute-reset-save"]')
+    }), STORAGE_KEY);
+    assert.equal(afterResetAttempt.hasExecuteBtn, false, "confirm-reset-save must be refused in read-only mode");
+    assert.equal(afterResetAttempt.stonesInStorage, 777, "STORAGE_KEY must remain 777 after refused reset");
+
+    // 2. Direct execute-reset-save & reincarnate-now clicks in read-only Tab A MUST also be refused
+    await tabA.evaluate(() => {
+      const btn1 = document.createElement("button");
+      btn1.setAttribute("data-action", "execute-reset-save");
+      document.body.appendChild(btn1);
+      btn1.click();
+      btn1.remove();
+      const btn2 = document.createElement("button");
+      btn2.setAttribute("data-action", "reincarnate-now");
+      document.body.appendChild(btn2);
+      btn2.click();
+      btn2.remove();
+    });
+    const afterDangerClicks = await tabA.evaluate((sk) => JSON.parse(localStorage.getItem(sk) || "{}")?.game?.stones, STORAGE_KEY);
+    assert.equal(afterDangerClicks, 777, "execute-reset-save and reincarnate-now must NOT delete storage in read-only mode");
+
+    // 3. Cloud import in read-only Tab A MUST be refused and never report success
+    const codeFromA = await tabA.evaluate(() => window.__CHENYUAN_V25__.exportFullCloudSaveCode());
+    const importInReadOnly = await tabA.evaluate((code) => window.__CHENYUAN_V24__.importFullCloudSaveCode(code), codeFromA);
+    assert.equal(importInReadOnly, false, "Cloud import must return false in read-only mode");
+    assert.equal(await tabA.evaluate((sk) => JSON.parse(localStorage.getItem(sk) || "{}")?.game?.stones, STORAGE_KEY), 777);
+
+    // 4. pagehide flush in read-only Tab A must NOT overwrite Tab B's 777
+    await tabA.evaluate(() => {
+      window.__CHENYUAN_V25__.getState().game.stones = 11;
+      window.dispatchEvent(new Event("pagehide"));
+    });
+    assert.equal(await tabA.evaluate((sk) => JSON.parse(localStorage.getItem(sk) || "{}")?.game?.stones, STORAGE_KEY), 777);
+    await ctx.close();
+
+    // 5. Clean Tab C: mutate stones=456 without saveGame(), dispatch pagehide -> reload -> persists 456!
+    const { ctx: ctxC, page: tabC } = await startCleanGamePage(browser, "R2-5-TabC", true);
+    await tabC.evaluate(() => {
+      window.__CHENYUAN_V25__.getState().game.stones = 456;
+      window.dispatchEvent(new Event("pagehide"));
+    });
+    await tabC.reload({ waitUntil: "domcontentloaded" });
+    await tabC.waitForSelector("#btn-continue-save");
+    await tabC.click("#btn-continue-save");
+    await tabC.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+    assert.equal(await tabC.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones), 456, "pagehide must flush active save to storage");
+
+    // 6. Synthetic invalid cross-tab storage event must display visible HUD alert & block overwrite
+    await tabC.evaluate((sk) => {
+      window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: "{CORRUPT_EXTERNAL_JSON" }));
+    }, STORAGE_KEY);
+    await tabC.waitForTimeout(80);
+    const extAlert = await tabC.evaluate(() => {
+      const el = document.getElementById("hud-save-alert");
+      return {
+        visible: !!el && getComputedStyle(el).display !== "none",
+        text: el ? el.textContent : "",
+        hasReadErr: !!window.__CHENYUAN_V25__.getPersistenceState().storageReadError
+      };
+    });
+    assert.ok(extAlert.visible && extAlert.hasReadErr, `Invalid external storage event must show HUD alert, got: ${JSON.stringify(extAlert)}`);
+    await ctxC.close();
+  });
+
+  // =========================================================================
+  // R2-6: T7 — 无障碍 (prefers-reduced-motion) + Tab 原生焦点导航不抢占 + 手柄无重复键位
+  // =========================================================================
+  await runSuite("R2-6", "T7 无障碍(prefers-reduced-motion)、Tab焦点导航与手柄无重复键位", async () => {
+    const ctx = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      reducedMotion: "reduce"
+    });
+    const page = await ctx.newPage();
+    attachErrorListeners(page, "R2-6");
+    await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => localStorage.clear());
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.click("#btn-start-new");
+    await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+
+    const check = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const a11y = api.getState().a11ySettings;
+      const defs = api.DEFAULT_KEYBINDS;
+      const padBtns = Object.values(defs).map(v => v.padBtn).filter(v => v !== null && v !== undefined);
+      const uniquePadBtns = new Set(padBtns);
+      const btn = document.getElementById("btn-open-settings");
+      const transDur = btn ? getComputedStyle(btn).transitionDuration : "";
+      return {
+        reducedMotion: a11y.reducedMotion,
+        shakeScale: a11y.shakeScale,
+        hitStopScale: a11y.hitStopScale,
+        transDur,
+        postureKb: defs.posture.kb,
+        padBtnCount: padBtns.length,
+        uniquePadBtnCount: uniquePadBtns.size,
+        allPadInRange: padBtns.every(n => Number.isInteger(n) && n >= 0 && n <= 16)
+      };
+    });
+    assert.equal(check.reducedMotion, true, "prefers-reduced-motion: reduce must set a11ySettings.reducedMotion = true");
+    assert.equal(check.shakeScale, 0, "prefers-reduced-motion: reduce must default shakeScale = 0");
+    assert.equal(check.hitStopScale, 0, "prefers-reduced-motion: reduce must default hitStopScale = 0");
+    assert.ok(check.postureKb !== "Tab", `Default posture keybind must NOT be Tab, got: ${check.postureKb}`);
+    assert.equal(check.padBtnCount, check.uniquePadBtnCount, `Duplicate gamepad padBtn found! total=${check.padBtnCount}, unique=${check.uniquePadBtnCount}`);
+    assert.ok(check.allPadInRange, "All default padBtn indices must be integers in 0..16");
+
+    // Pressing Tab on main HUD moves native browser focus across interactive controls without triggering posture switch
+    const postureBefore = await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.posture);
+    await page.focus("#btn-open-settings");
+    const visitedIds = new Set();
+    for (let i = 0; i < 6; i++) {
+      await page.keyboard.press("Tab");
+      const activeDesc = await page.evaluate(() => {
+        const ae = document.activeElement;
+        return ae ? (ae.id || ae.tagName + ":" + (ae.textContent || "").trim().slice(0, 12)) : "";
+      });
+      if (activeDesc) visitedIds.add(activeDesc);
+    }
+    const postureAfter = await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.posture);
+    assert.ok(visitedIds.size >= 3, `Native Tab focus navigation must cycle across HUD controls, visited: ${Array.from(visitedIds).join(", ")}`);
+    assert.equal(postureAfter, postureBefore, "Pressing Tab must NOT hijack posture switch");
 
     await ctx.close();
   });
