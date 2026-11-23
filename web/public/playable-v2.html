@@ -16406,6 +16406,7 @@ const ART = {
       renderActiveUnlockCard();
       syncPendingRewardsBadge();
     }
+    resetEncounterTelemetry();
     closeModal();
     if (opts && opts.preset) {
       applyStagePreset(opts.preset, { insideSandbox: true });
@@ -17240,7 +17241,7 @@ const ART = {
       return {
         tier1HudHigh: false,
         tier1Reasons: [],
-        tier2TabLow: { cultivate: false, story: 0, explore: false, alchemy: false, bag: false },
+        tier2TabLow: { cultivate: false, story: 0, explore: false, alchemy: false },
         tier3LockedCount: 0
       };
     }
@@ -17261,10 +17262,6 @@ const ART = {
     const needPet = rankOf(g.realm) >= 1 && !(g.pet && g.pet.id);
     const canFeed = canAffordPetFeed(g) || getPendingPetSkillTier(g) !== null;
     const canRelic = !g.loadout.relic && g.stones >= 130 && rankOf(g.realm) >= 1;
-    const hasBagUpgrade = Array.isArray(g.gearBag) && g.gearBag.some(it => {
-      const curEq = g.equippedGear && g.equippedGear[it.slot];
-      return !curEq || num(it.power, 0) > num(curEq.power, 0);
-    });
     const exploreOptReady = isEcosystemSystemUnlocked(g, "demon_tower") && (g.towerBest || 0) < 1;
 
     let tier3LockedCount = 0;
@@ -17280,8 +17277,7 @@ const ART = {
         cultivate: Boolean(needPet || canFeed),
         story: availStories.length,
         explore: Boolean(exploreOptReady),
-        alchemy: Boolean(canRelic),
-        bag: Boolean(hasBagUpgrade)
+        alchemy: Boolean(canRelic)
       },
       tier3LockedCount
     };
@@ -17343,7 +17339,10 @@ const ART = {
     if (!g || !eq) return { valid: false, slot, steps: 0, maxSteps: 0, totalCost: 0, canAfford: false, before: null, after: null, dAtk: 0, dHp: 0, dDr: 0 };
     const eqLvl = Math.max(0, Math.floor(num(eq.lvl, 0)));
     const maxSteps = Math.max(0, 10 - eqLvl);
-    const safeSteps = maxSteps > 0 ? Math.max(1, Math.min(5, maxSteps, Math.floor(num(steps, 1)))) : 0;
+    if (typeof steps !== "number" || !Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1 || steps > 5) {
+      return { valid: false, slot, steps: 0, maxSteps, totalCost: 0, canAfford: false, before: null, after: null, dAtk: 0, dHp: 0, dDr: 0 };
+    }
+    const safeSteps = maxSteps > 0 ? Math.min(maxSteps, steps) : 0;
     let totalCost = 0;
     for (let i = 0; i < safeSteps; i++) {
       totalCost += getGearEnhanceCost(g, Object.assign({}, eq, { lvl: eqLvl + i }));
@@ -17473,8 +17472,7 @@ const ART = {
     }
     if (kind === "sanctum_upgrade") {
       const spec = SANCTUM_BUILDINGS.find(b => b.id === targetId);
-      const lvMap = ensureSanctumLevels(g);
-      const curLv = lvMap[targetId] || 1;
+      const curLv = getSanctumLevel(g, targetId);
       const nextCost = getSanctumNextCost(targetId, curLv);
       if (!spec || !nextCost) {
         return { valid: false, canAfford: false, costText: "已圆满 Lv.5", deltaText: "该灵脉建筑已达最高阶", sceneText: spec ? spec.role : "洞府灵脉加成", missingMats: [] };
@@ -17562,15 +17560,17 @@ const ART = {
     const nextM = findNextMainlineStep(g);
     const nextRoute = nextM && nextM.step ? nextM.step.route : null;
     const nextChIdx = nextM && nextM.ch ? nextM.ch.index : null;
+    const inBossRush = Boolean(arena.bossRush && arena.bossRush.active);
     const mapNodes = KYUSHU_MAP_NODES.map(nd => {
       const unlocked = isWorldMapNodeUnlocked(g, nd);
       const isCurrent = (nd.kind === "hub" && arena.sanctumMode)
         || (nd.kind === "tower" && !arena.sanctumMode && arena.towerMode)
-        || (nd.kind === "stage" && !arena.sanctumMode && !arena.towerMode && arena.stageIdx === nd.stageIdx);
+        || (nd.kind === "boss_rush" && !arena.sanctumMode && !arena.towerMode && inBossRush)
+        || (nd.kind === "stage" && !arena.sanctumMode && !arena.towerMode && !inBossRush && arena.stageIdx === nd.stageIdx);
       const isMainTarget = Boolean(
         !nextM?.allDone && nextM?.step && (
           (nd.kind === "chapter5_marker" && nextChIdx === 5) ||
-          (nd.routeKey && nextRoute && nd.routeKey === nextRoute && nd.kind !== "chapter5_marker")
+          (nextChIdx !== 5 && nd.routeKey && nextRoute && nd.routeKey === nextRoute && nd.kind !== "chapter5_marker")
         )
       );
       const stars = nd.kind === "stage" ? ((g.stageStars && g.stageStars[nd.stageIdx]) || 0) : 0;
@@ -18662,13 +18662,24 @@ const ART = {
     return g.sanctumLevels;
   }
 
+  function readSanctumLevelsPure(g) {
+    const raw = (g && g.sanctumLevels && typeof g.sanctumLevels === "object") ? g.sanctumLevels : {};
+    return {
+      spirit_eye: Math.max(1, Math.min(5, Math.floor(Number(raw.spirit_eye) || 1))),
+      cauldron: Math.max(1, Math.min(5, Math.floor(Number(raw.cauldron) || 1))),
+      sword_forge: Math.max(1, Math.min(5, Math.floor(Number(raw.sword_forge) || 1))),
+      scripture_hall: Math.max(1, Math.min(5, Math.floor(Number(raw.scripture_hall) || 1))),
+      guard_array: Math.max(1, Math.min(5, Math.floor(Number(raw.guard_array) || 1)))
+    };
+  }
+
   function getSanctumLevel(g, bId) {
-    const lvMap = ensureSanctumLevels(g);
+    const lvMap = readSanctumLevelsPure(g);
     return lvMap[bId] || 1;
   }
 
   function getSanctumTotalLevel(g) {
-    const lvMap = ensureSanctumLevels(g);
+    const lvMap = readSanctumLevelsPure(g);
     return Object.values(lvMap).reduce((s, v) => s + v, 0);
   }
 
@@ -18775,14 +18786,7 @@ const ART = {
     };
   }
 
-  function advanceLifespanMonths(months, reason = "", opts = {}) {
-    if (!game || !(months > 0) || sandboxMode || isPracticeModeActive() || game.realm === "ascended") {
-      return { aged: 0, skipped: true, info: getLifespanInfo(game) };
-    }
-    const prevLf = getLifespanInfo(game);
-    const delta = Math.max(1, Math.round(months));
-    game.elapsedMonths = Math.max(0, Math.floor(num(game.elapsedMonths, 0))) + delta;
-    const nextLf = getLifespanInfo(game);
+  function applyLifespanPostAdvanceEffects(prevLf, nextLf, opts = {}) {
     if (!(opts && opts.silentToast)) {
       if (prevLf.status === "normal" && nextLf.status === "warning") {
         showToast(`⚠ 寿元已过 75%（${nextLf.curYears}/${nextLf.maxYears}载），宜炼制【延寿青莲丹】或破境延寿！`, { tier: 2, category: "other", key: "lifespan_warn_75", throttleMs: 6000 });
@@ -18798,6 +18802,17 @@ const ART = {
       pendingLifespanExhaustedPrompt = true;
       enqueuePendingReward({ kind: "lifespan_exhausted", payload: {}, persist: true });
     }
+  }
+
+  function advanceLifespanMonths(months, reason = "", opts = {}) {
+    if (!game || !(months > 0) || sandboxMode || isPracticeModeActive() || game.realm === "ascended") {
+      return { aged: 0, skipped: true, info: getLifespanInfo(game) };
+    }
+    const prevLf = getLifespanInfo(game);
+    const delta = Math.max(1, Math.round(months));
+    game.elapsedMonths = Math.max(0, Math.floor(num(game.elapsedMonths, 0))) + delta;
+    const nextLf = getLifespanInfo(game);
+    applyLifespanPostAdvanceEffects(prevLf, nextLf, opts);
     return { aged: delta, skipped: false, reason, prev: prevLf, info: nextLf };
   }
 
@@ -19146,7 +19161,7 @@ const ART = {
         <span style="font-size:var(--fs-xs);color:var(--text-sub);">提示：缺少灵材可点击「📍来源」查看获取路径并返回当前建筑。</span>
         <button type="button" class="btn-tertiary btn-ghost" data-modal-close="1">关闭</button>
       </div>
-    `, true, { tier: "decision" });
+    `, true, { kind: "sanctum_upgrade", tier: "decision" });
   }
 
   function getCompanionDynamicGreeting(g, npcId) {
@@ -19970,6 +19985,7 @@ const ART = {
 
   function routeToGoalTarget(routeKey) {
     if (!game) return;
+    activeMatSourceJump = null;
     closeModal();
     const r = REALMS[game.realm];
     if (routeKey === "tribulate") {
@@ -20005,8 +20021,8 @@ const ART = {
       return;
     }
     if (routeKey === "tower") {
-      if (rankOf(game.realm) < 1) { showToast("晋升【炼气期】后开启镇妖古塔！"); return; }
-      closeDrawer(); initArenaStage(3, true);
+      if (!isEcosystemSystemUnlocked(game, "demon_tower")) { showToast("晋升【炼气期】后开启镇妖古塔！"); return; }
+      closeDrawer(); focusBattlefield(); initArenaStage(3, true);
       return;
     }
     if (routeKey && routeKey.startsWith("stage_")) {
@@ -20018,13 +20034,14 @@ const ART = {
         return;
       }
       closeDrawer();
-      if (arena.sanctumMode || arena.stageIdx !== idx || arena.towerMode) initArenaStage(idx, false);
+      if (arena.sanctumMode || arena.stageIdx !== idx || arena.towerMode) { focusBattlefield(); initArenaStage(idx, false); }
       else showToast(`已在【${stg.name}】· 跟随脚底金针斩妖推进！`);
     }
   }
 
   function openObjectivesModal(forceTab = null) {
     if (!game) return;
+    activeMatSourceJump = null;
     if (forceTab) currentGoalTab = forceTab;
     closeDrawer();
     const pct = computeOverallCompletionPct(game);
@@ -20032,6 +20049,7 @@ const ART = {
     const navSnap = buildNavigationSnapshot(game);
     const activeInfo = findNextMainlineStep(game);
     const activeChIdx = activeInfo && activeInfo.ch ? activeInfo.ch.index : CHAPTERS.length;
+    const maxVisibleChIdx = Math.max(activeChIdx, getCurrentChapterIndex(game));
 
     let tabBody = "";
     if (currentGoalTab === "mainline") {
@@ -20060,7 +20078,7 @@ const ART = {
           }).join("")}
         </div>
         <div style="max-height:330px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px;">
-          ${CHAPTERS.filter(ch => ch.index <= activeChIdx + 1).map(ch => {
+          ${CHAPTERS.filter(ch => ch.index <= maxVisibleChIdx + 1).map(ch => {
             const volStories = navSnap.companions.filter(st => st.chapter === ch.index);
             const compFooter = volStories.length ? `
               <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:4px;border-top:1px dashed rgba(244,196,255,0.22);font-size:var(--fs-xs);">
@@ -29583,13 +29601,31 @@ const ART = {
     "input:not([disabled]):not([type='hidden'])",
     "select:not([disabled])",
     "textarea:not([disabled])",
+    "details > summary:first-of-type",
     "[tabindex]:not([tabindex='-1'])"
   ].join(", ");
+
+  function isHiddenInsideClosedDetails(el) {
+    if (!el) return false;
+    let cur = el.parentElement;
+    while (cur && typeof cur.closest === "function") {
+      const closedDetails = cur.closest("details:not([open])");
+      if (!closedDetails) return false;
+      const isDirectSummary = el.tagName === "SUMMARY" && el.parentElement === closedDetails;
+      if (isDirectSummary && cur === closedDetails) {
+        cur = closedDetails.parentElement;
+        continue;
+      }
+      return true;
+    }
+    return false;
+  }
 
   function getFocusableElements(container) {
     if (!container) return [];
     return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR)).filter(el => {
       if (el.disabled || el.getAttribute("aria-hidden") === "true") return false;
+      if (isHiddenInsideClosedDetails(el)) return false;
       const style = window.getComputedStyle(el);
       if (style.display === "none" || style.visibility === "hidden") return false;
       return el.offsetParent !== null || style.position === "fixed";
@@ -29608,13 +29644,14 @@ const ART = {
     const last = list[list.length - 1];
     const ae = document.activeElement;
     const inside = container.contains(ae);
+    const idx = list.indexOf(ae);
     if (ev.shiftKey) {
-      if (!inside || ae === first || ae === container) {
+      if (!inside || ae === first || ae === container || idx <= 0) {
         ev.preventDefault();
         last.focus({ preventScroll: true });
       }
     } else {
-      if (!inside || ae === last) {
+      if (!inside || ae === last || idx === -1) {
         ev.preventDefault();
         first.focus({ preventScroll: true });
       }
@@ -29635,6 +29672,7 @@ const ART = {
     try {
       const dlgBar = document.getElementById("story-dialogue-bar");
       if (dlgBar && dlgBar.contains(cand) && !dlgBar.classList.contains("open")) return false;
+      if (isHiddenInsideClosedDetails(cand)) return false;
       const style = window.getComputedStyle(cand);
       if (style.display === "none" || style.visibility === "hidden") return false;
       return cand.offsetParent !== null || style.position === "fixed";
@@ -29751,6 +29789,9 @@ const ART = {
     if (prevTok) releasePauseToken(prevTok);
 
     modalCloseable = closeable;
+    if (activeMatSourceJump && activeMatSourceJump.inModal === "sanctum" && modalKind !== "sanctum_upgrade") {
+      activeMatSourceJump = null;
+    }
     activeModalKind = modalKind;
     const modalTier = (opts && opts.tier) || (nextPri >= 100 ? "critical" : nextPri >= 40 ? "decision" : "info");
     box.setAttribute("data-tier", modalTier);
@@ -29769,7 +29810,7 @@ const ART = {
     pendingBatchCraft = null;
     pendingBatchEnhance = null;
     pendingSoulRefineId = null;
-    if (activeMatSourceJump && activeMatSourceJump.inModal) activeMatSourceJump = null;
+    activeMatSourceJump = null;
     const closingKind = activeModalKind;
     activeModalKind = "";
     if (activePendingRewardId) {
@@ -29849,6 +29890,7 @@ const ART = {
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
     if (drawerOpen && currentTab === tab) { closeDrawer(); return; }
+    if (activeMatSourceJump && !activeMatSourceJump.inModal) activeMatSourceJump = null;
     clearTransientInputs();
     const panel = document.getElementById("jade-panel");
     if (!drawerOpen) {
@@ -29869,6 +29911,7 @@ const ART = {
 
   function closeDrawer() {
     clearTransientInputs();
+    if (activeMatSourceJump && !activeMatSourceJump.inModal) activeMatSourceJump = null;
     const wasOpen = drawerOpen;
     furnaceGame.active = false;
     drawerOpen = false;
@@ -30456,7 +30499,7 @@ const ART = {
         `}
       `;
     } else if (currentTab === "explore") {
-      const towerUnlocked = rankOf(game.realm) >= 1;
+      const towerUnlocked = isEcosystemSystemUnlocked(game, "demon_tower");
       const expOk = isEcosystemSystemUnlocked(game, "vein_expedition");
       const expSpec = getEcosystemSystemSpec("vein_expedition");
       const expMinName = (expSpec && REALMS[expSpec.min]) ? REALMS[expSpec.min].name : "元婴";
@@ -31070,13 +31113,16 @@ const ART = {
 
   function executeAlchemyBatchCraft(recId, qty = 1) {
     if (!game || !hasOwn(RECIPES, recId)) return { ok: false, reason: "invalid_recipe" };
+    if (typeof qty !== "number" || !Number.isFinite(qty) || !Number.isInteger(qty) || qty < 1 || qty > 5) {
+      return { ok: false, reason: "invalid_qty" };
+    }
     const rec = RECIPES[recId];
     const caulLv = getSanctumLevel(game, "cauldron");
     if (rec.reqCauldronLv && caulLv < rec.reqCauldronLv) {
       showToast(`需先将【紫微丹鼎】升至 Lv.${rec.reqCauldronLv} 解封该丹方！`);
       return { ok: false, reason: "cauldron_locked" };
     }
-    const safeQty = Math.max(1, Math.min(5, Math.floor(num(qty, 1))));
+    const safeQty = qty;
     const bd = computeBatchRecipeCost(game, rec, safeQty);
     if (num(game.stones, 0) < bd.totalStoneCost) {
       showToast(`灵石不足（批量 ×${safeQty} 共需 ${bd.totalStoneCost} 灵石）`);
@@ -31089,11 +31135,14 @@ const ART = {
       inventory: Object.assign({}, game.inventory),
       immortalPills: game.immortalPills,
       elapsedMonths: game.elapsedMonths,
-      lifespanWarned: game.lifespanWarned,
-      lifespanCriticalWarned: game.lifespanCriticalWarned,
-      lifespanExhaustedPromptDismissed: game.lifespanExhaustedPromptDismissed,
+      pendingRewards: Array.isArray(game.pendingRewards) ? JSON.parse(JSON.stringify(game.pendingRewards)) : [],
+      pendingLifespanExhaustedPrompt,
       journalLen: Array.isArray(game.journal) ? game.journal.length : 0
     };
+
+    const willAge = !sandboxMode && !isPracticeModeActive() && game.realm !== "ascended" && bd.totalMonths > 0;
+    const prevLf = getLifespanInfo(game);
+    const ageDelta = willAge ? Math.max(1, Math.round(bd.totalMonths)) : 0;
 
     game.stones -= bd.totalStoneCost;
     bd.consumedMats.forEach(m => {
@@ -31104,7 +31153,9 @@ const ART = {
       game.inventory.healing_pill = (game.inventory.healing_pill || 0) + bd.bonusHealing;
     }
     game.immortalPills = (game.immortalPills || 0) + safeQty;
-    const ageRes = advanceLifespanMonths(bd.totalMonths, "alchemy");
+    if (willAge) {
+      game.elapsedMonths = Math.max(0, Math.floor(num(game.elapsedMonths, 0))) + ageDelta;
+    }
 
     if (!sandboxMode && !isPracticeModeActive()) {
       const savedOk = saveGame();
@@ -31113,12 +31164,14 @@ const ART = {
         game.inventory = snap.inventory;
         game.immortalPills = snap.immortalPills;
         game.elapsedMonths = snap.elapsedMonths;
-        game.lifespanWarned = snap.lifespanWarned;
-        game.lifespanCriticalWarned = snap.lifespanCriticalWarned;
-        game.lifespanExhaustedPromptDismissed = snap.lifespanExhaustedPromptDismissed;
+        game.pendingRewards = snap.pendingRewards;
+        pendingLifespanExhaustedPrompt = snap.pendingLifespanExhaustedPrompt;
         if (Array.isArray(game.journal) && game.journal.length > snap.journalLen) {
           game.journal.splice(0, game.journal.length - snap.journalLen);
         }
+        const lifeBadge = document.getElementById("hud-lifespan-badge");
+        if (lifeBadge) lifeBadge.classList.toggle("lifespan-pulse", getLifespanInfo(game).status === "exhausted");
+        syncPendingRewardsBadge();
         updateHud();
         if (drawerOpen) renderDrawerContent();
         showToast("⚠ 存档写入失败，已原子回滚本次批量炼丹（未扣除灵石/灵材/寿元）", { critical: true, key: "batch_craft_rollback", throttleMs: 2500 });
@@ -31126,10 +31179,14 @@ const ART = {
       }
     }
 
+    if (willAge) {
+      applyLifespanPostAdvanceEffects(prevLf, getLifespanInfo(game));
+    }
+
     unlockAchievement("ach_pill");
     Sound.qiOrb(Math.min(8, 3 + safeQty));
     const outSpec = ITEMS[rec.output];
-    const ageSuffix = ageRes && ageRes.aged > 0 ? ` · 耗寿 ${ageRes.aged} 月` : "";
+    const ageSuffix = ageDelta > 0 ? ` · 耗寿 ${ageDelta} 月` : "";
     showToast(`批量成丹 ×${bd.totalOutput} · 【${outSpec.name}】（共耗 ${bd.totalStoneCost} 灵石${ageSuffix}）`);
     updateHud();
     if (drawerOpen) renderDrawerContent();
@@ -31145,7 +31202,14 @@ const ART = {
       showToast("该仙装已淬火至圆满 +10！");
       return false;
     }
-    const safeSteps = Math.max(1, Math.min(5, maxSteps, Math.floor(num(steps, Math.min(3, maxSteps)))));
+    const baseStepOptions = [1, 3, 5];
+    const stepOptions = (maxSteps > 1 && maxSteps < 5 && !baseStepOptions.includes(maxSteps))
+      ? [...baseStepOptions, maxSteps].sort((a, b) => a - b)
+      : baseStepOptions;
+    const clampedReq = Math.max(1, Math.min(5, maxSteps, Math.floor(num(steps, Math.min(3, maxSteps)))));
+    const safeSteps = stepOptions.includes(clampedReq)
+      ? clampedReq
+      : stepOptions.filter(s => s <= maxSteps).slice(-1)[0] || 1;
     const preview = computeBatchEnhancePreview(game, slot, safeSteps);
     pendingBatchEnhance = { slot, steps: safeSteps };
     openModal(`
@@ -31159,10 +31223,11 @@ const ART = {
       <div class="modal-body">
         <div class="batch-qty-row" role="group" aria-label="选择淬火阶数">
           <span style="font-size:var(--fs-sm);color:var(--text-sub);">选择阶数：</span>
-          ${[1, 3, 5].map(stVal => {
+          ${stepOptions.map(stVal => {
             const dis = stVal > maxSteps;
             const act = safeSteps === stVal;
-            return `<button type="button" class="batch-qty-btn ${act ? "active" : ""} ${dis ? "is-locked" : ""}" data-batch-enh-steps="${stVal}" aria-pressed="${act ? "true" : "false"}" ${dis ? "disabled" : ""}>+${stVal} 阶</button>`;
+            const lbl = (stVal === maxSteps && !baseStepOptions.includes(stVal)) ? `+${stVal} 阶(满)` : `+${stVal} 阶`;
+            return `<button type="button" class="batch-qty-btn ${act ? "active" : ""} ${dis ? "is-locked" : ""}" data-batch-enh-steps="${stVal}" aria-pressed="${act ? "true" : "false"}" ${dis ? "disabled" : ""}>${lbl}</button>`;
           }).join("")}
         </div>
         <div class="jade-card batch-summary-table" style="gap:6px;">
@@ -31186,11 +31251,22 @@ const ART = {
 
   function executeGearBatchEnhance(slot, steps = 1) {
     if (!game || !game.equippedGear || !game.equippedGear[slot]) return { ok: false, reason: "missing_slot" };
+    if (typeof steps !== "number" || !Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1 || steps > 5) {
+      return { ok: false, reason: "invalid_steps" };
+    }
     const eq = game.equippedGear[slot];
-    const preview = computeBatchEnhancePreview(game, slot, steps);
-    if (!preview.valid) {
+    const eqLvl = Math.max(0, Math.floor(num(eq.lvl, 0)));
+    const maxSteps = Math.max(0, 10 - eqLvl);
+    if (maxSteps <= 0) {
       showToast("该仙装已淬火至圆满 +10！");
       return { ok: false, reason: "max_level" };
+    }
+    if (steps > maxSteps) {
+      return { ok: false, reason: "invalid_steps" };
+    }
+    const preview = computeBatchEnhancePreview(game, slot, steps);
+    if (!preview.valid) {
+      return { ok: false, reason: "invalid_steps" };
     }
     if (!preview.canAfford) {
       showToast(`灵石不足（淬火 +${preview.steps} 阶共需 ${preview.totalCost} 灵石）`);
@@ -32790,8 +32866,17 @@ const ART = {
       const targetTab = t.getAttribute("data-defeat-nav");
       const isTrib = t.getAttribute("data-defeat-trib") === "1" || !!(arena.defeatPending && arena.defeatPending.isTribulation);
       resolveDefeatChoice(isTrib ? "abort-tribulation" : "retreat-sanctum");
-      if (targetTab === "alchemy" || targetTab === "cultivate") {
-        toggleDrawer(targetTab);
+      if (!saveConflictState && (targetTab === "alchemy" || targetTab === "cultivate")) {
+        if (!drawerOpen || currentTab !== targetTab) {
+          toggleDrawer(targetTab);
+        } else {
+          renderDrawerContent();
+          const panel = document.getElementById("jade-panel");
+          if (panel) {
+            panel.classList.add("drawer-open");
+            focusDialogSafely(panel);
+          }
+        }
       }
       return;
     }
@@ -34305,6 +34390,7 @@ const ART = {
     // F17: Single-Layer Material Source Jump & Return Focus
     if (t.hasAttribute("data-mat-source")) {
       const matId = t.getAttribute("data-mat-source");
+      if (!matId || !hasOwn(MATERIAL_SOURCE_CATALOG, matId)) return;
       const inModal = t.getAttribute("data-source-modal") || "";
       const originSelector = t.getAttribute("data-source-origin") || "";
       if (inModal === "sanctum") {
@@ -34607,7 +34693,10 @@ const ART = {
         showToast(`需晋升至【${REALMS[stg.min].name}】方可前往${stg.name}`);
         return;
       }
+      const bd = document.getElementById("modal-backdrop");
+      if (bd && bd.classList.contains("open")) closeModal();
       closeDrawer();
+      focusBattlefield();
       initArenaStage(targetIdx, false);
       saveGame();
       return;
@@ -34699,7 +34788,12 @@ const ART = {
     const act = t.getAttribute("data-action");
     if (act === "challenge-tower") {
       if (!guardEcosystemAccess("demon_tower")) return;
-      closeDrawer(); initArenaStage(3, true); saveGame();
+      const bd = document.getElementById("modal-backdrop");
+      if (bd && bd.classList.contains("open")) closeModal();
+      closeDrawer();
+      focusBattlefield();
+      initArenaStage(3, true);
+      saveGame();
     } else if (act === "feed-pet" && game.pet.id) {
       const curLv = Math.max(1, Math.min(5, Math.floor(num(game.pet.level, 1))));
       if (curLv >= 5) { showToast("灵兽已臻化境 Lv.5"); return; }
@@ -35145,8 +35239,6 @@ const ART = {
     }),
     // Q2 (F14–F18) inspection & verification hooks
     NAV_MODEL_TABS,
-    KYUSHU_MAP_NODES,
-    CHAPTERS,
     renderSemanticTag,
     buildNavigationSnapshot,
     getSelectedWorldMapNodeId: () => selectedWorldMapNodeId,
