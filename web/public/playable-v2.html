@@ -4952,9 +4952,11 @@ const ART = {
     if (!metaState.karmaAscensions || typeof metaState.karmaAscensions !== "object" || Array.isArray(metaState.karmaAscensions)) {
       metaState.karmaAscensions = { righteous: 0, neutral: 0, demonic: 0 };
     } else {
-      metaState.karmaAscensions.righteous = Math.max(0, Math.floor(num(metaState.karmaAscensions.righteous, 0)));
-      metaState.karmaAscensions.neutral = Math.max(0, Math.floor(num(metaState.karmaAscensions.neutral, 0)));
-      metaState.karmaAscensions.demonic = Math.max(0, Math.floor(num(metaState.karmaAscensions.demonic, 0)));
+      const ka = safeAssignPlain({ righteous: 0, neutral: 0, demonic: 0 }, metaState.karmaAscensions);
+      ka.righteous = Math.max(0, Math.floor(num(ka.righteous, 0)));
+      ka.neutral = Math.max(0, Math.floor(num(ka.neutral, 0)));
+      ka.demonic = Math.max(0, Math.floor(num(ka.demonic, 0)));
+      metaState.karmaAscensions = ka;
     }
     metaState.metaRev = Math.max(0, Math.floor(num(metaState.metaRev, 0)));
     metaState.ascensions = Math.max(0, Math.floor(num(metaState.ascensions, 0)));
@@ -4983,10 +4985,15 @@ const ART = {
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return { ok: false, empty: false, sourceKey, reason: "元存档根结构非法（非对象）", raw };
     }
-    if (parsed.metaRev !== undefined && (!Number.isFinite(Number(parsed.metaRev)) || Number(parsed.metaRev) < 0)) {
+    const isInvalidNonNegField = (v) => v !== undefined && (
+      v === null || typeof v === "boolean" || typeof v === "object" ||
+      (typeof v === "string" && v.trim() === "") ||
+      !Number.isFinite(Number(v)) || Number(v) < 0
+    );
+    if (isInvalidNonNegField(parsed.metaRev)) {
       return { ok: false, empty: false, sourceKey, reason: "元存档版本号字段非法", raw };
     }
-    if (parsed.ascensions !== undefined && (!Number.isFinite(Number(parsed.ascensions)) || Number(parsed.ascensions) < 0)) {
+    if (isInvalidNonNegField(parsed.ascensions)) {
       return { ok: false, empty: false, sourceKey, reason: "元存档飞升世数字段非法", raw };
     }
     return {
@@ -4994,7 +5001,7 @@ const ART = {
       empty: false,
       sourceKey,
       meta: parsed,
-      metaRev: Math.max(0, Math.floor(Number(parsed.metaRev) || 0)),
+      metaRev: Math.max(0, Math.floor(num(parsed.metaRev, 0))),
       legacy: sourceKey !== META_KEY
     };
   }
@@ -5077,7 +5084,7 @@ const ART = {
       if (res.ok) {
         metaReadError = null;
         if (applyToMemory) {
-          Object.assign(metaState, mergeMetaStates(metaState, res.meta));
+          safeAssignPlain(metaState, mergeMetaStates(metaState, res.meta));
           ensureMetaState();
         }
         return res;
@@ -5099,7 +5106,7 @@ const ART = {
         if (res.ok) {
           metaReadError = null;
           if (applyToMemory) {
-            Object.assign(metaState, mergeMetaStates(metaState, res.meta));
+            safeAssignPlain(metaState, mergeMetaStates(metaState, res.meta));
             ensureMetaState();
           }
           return res;
@@ -5831,12 +5838,14 @@ const ART = {
 
   function ensureDeterministicPity(g) {
     if (!g) return { epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 };
-    if (!g.pity || typeof g.pity !== "object") {
-      g.pity = { epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 };
-    }
-    ["epic", "mythic", "critAcc", "vampHits", "thunderHits", "gearDrops"].forEach(k => {
-      if (typeof g.pity[k] !== "number" || isNaN(g.pity[k])) g.pity[k] = 0;
+    const cleanPity = safeAssignPlain({ epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 }, g.pity);
+    const keys = ["epic", "mythic", "critAcc", "vampHits", "thunderHits", "gearDrops"];
+    keys.forEach(k => {
+      cleanPity[k] = Math.max(0, num(cleanPity[k], 0));
     });
+    if (!g.pity || typeof g.pity !== "object" || Array.isArray(g.pity) || Object.getPrototypeOf(g.pity) !== Object.prototype || keys.some(k => g.pity[k] !== cleanPity[k])) {
+      g.pity = cleanPity;
+    }
     return g.pity;
   }
 
@@ -7536,7 +7545,7 @@ const ART = {
     if (!guardActionRealm("soul")) return;
     if ((arena.soulCd || 0) > 0) return;
     if (!consumePlayerMp(18, "镇妖魂印")) return;
-    const eqId = (game.equippedSoul && SOUL_SPIRITS[game.equippedSoul]) ? game.equippedSoul : "blood_warden";
+    const eqId = hasOwn(SOUL_SPIRITS, game.equippedSoul) ? game.equippedSoul : "blood_warden";
     const sp = SOUL_SPIRITS[eqId];
     const p = arena.player;
     const st = getCombatStats(game);
@@ -7990,7 +7999,7 @@ const ART = {
           const acts = Object.keys(DEFAULT_KEYBINDS);
           acts.forEach(act => {
             const def = DEFAULT_KEYBINDS[act];
-            const next = Object.assign({}, def);
+            const next = safeAssignPlain({}, def);
             const saved = hasOwn(parsed.binds, act) ? parsed.binds[act] : null;
             if (saved && typeof saved === "object" && !Array.isArray(saved)) {
               if (typeof saved.kb === "string" && /^[A-Za-z0-9]{1,24}$/.test(saved.kb)) {
@@ -8873,7 +8882,7 @@ const ART = {
       bondBtn.style.display = "inline-flex";
     }
     if (arsBtn && game) {
-      const wf = WEAPON_ARSENAL_SPECS[game.weaponForm || "sword"] || WEAPON_ARSENAL_SPECS.sword;
+      const wf = hasOwn(WEAPON_ARSENAL_SPECS, game.weaponForm) ? WEAPON_ARSENAL_SPECS[game.weaponForm] : WEAPON_ARSENAL_SPECS.sword;
       arsBtn.textContent = wf.short;
     }
     if (!wrap || !game) return;
@@ -8976,8 +8985,8 @@ const ART = {
     if (!game) return;
     if (!guardActionRealm("weapon_form")) return;
     const order = ["sword", "spear", "chakram"];
-    const cur = game.weaponForm || "sword";
-    game.weaponForm = (targetForm && WEAPON_ARSENAL_SPECS[targetForm]) ? targetForm : order[(order.indexOf(cur) + 1) % order.length];
+    const cur = hasOwn(WEAPON_ARSENAL_SPECS, game.weaponForm) ? game.weaponForm : "sword";
+    game.weaponForm = (targetForm && hasOwn(WEAPON_ARSENAL_SPECS, targetForm)) ? targetForm : order[(order.indexOf(cur) + 1) % order.length];
     const spec = WEAPON_ARSENAL_SPECS[game.weaponForm];
     Sound.switchStanceChime(game.weaponForm === "spear");
     spawnDistortionRing(arena.player.x, arena.player.y, 128, game.weaponForm === "spear" ? "#ffd166" : game.weaponForm === "chakram" ? "#d69eff" : "#70ffe6");
@@ -10916,7 +10925,7 @@ const ART = {
     if (!game) return false;
     if (seedOverride) {
       const parsed = decodeWorkshopSeed(seedOverride);
-      if (parsed) Object.assign(workshopState, parsed);
+      if (parsed) safeAssignPlain(workshopState, parsed);
     }
     const activeSeed = encodeWorkshopSeed(workshopState);
     closeModal();
@@ -11424,8 +11433,17 @@ const ART = {
 
   function ensurePrimordialCrafts(g) {
     if (!g) return { goldenAcolyte: false, voidSwordRift: false, pillBatches: 0, forgedBlades: 0 };
-    if (!g.primordialCrafts) {
-      g.primordialCrafts = { goldenAcolyte: false, voidSwordRift: false, pillBatches: 0, forgedBlades: 0 };
+    const rawPc = (g.primordialCrafts && typeof g.primordialCrafts === "object" && !Array.isArray(g.primordialCrafts)) ? g.primordialCrafts : null;
+    const cleanPc = {
+      goldenAcolyte: !!(rawPc && rawPc.goldenAcolyte),
+      voidSwordRift: !!(rawPc && rawPc.voidSwordRift),
+      pillBatches: Math.max(0, Math.floor(num(rawPc && rawPc.pillBatches, 0))),
+      forgedBlades: Math.max(0, Math.floor(num(rawPc && rawPc.forgedBlades, 0)))
+    };
+    if (!rawPc || Object.getPrototypeOf(rawPc) !== Object.prototype ||
+        rawPc.goldenAcolyte !== cleanPc.goldenAcolyte || rawPc.voidSwordRift !== cleanPc.voidSwordRift ||
+        rawPc.pillBatches !== cleanPc.pillBatches || rawPc.forgedBlades !== cleanPc.forgedBlades) {
+      g.primordialCrafts = cleanPc;
     }
     return g.primordialCrafts;
   }
@@ -11983,20 +12001,25 @@ const ART = {
     { id: "sky_ascension",  name: "☄ 挑空引力绝杀谱", slots: ["sword_twindragon", "chakram_vortex", "spear_starfall", "greatsword_cleave"], desc: "1段双龙回元 → 2段剑轮黑洞聚拢 → 3段龙枪挑飞 → 4段巨阙坠天劈" }
   ];
 
+  const DEFAULT_COMBO_SEQ_SLOTS = ["sword_crescent", "spear_flurry", "chakram_vortex", "greatsword_cleave"];
   function ensureCustomComboSeq(g) {
-    if (!g) return { enabled: false, slots: ["sword_crescent", "spear_flurry", "chakram_vortex", "greatsword_cleave"], morphCount: 0 };
-    if (!g.customComboSeq || !Array.isArray(g.customComboSeq.slots) || g.customComboSeq.slots.length !== 4) {
-      g.customComboSeq = {
-        enabled: false,
-        slots: ["sword_crescent", "spear_flurry", "chakram_vortex", "greatsword_cleave"],
-        morphCount: 0
-      };
+    if (!g) return { enabled: false, slots: DEFAULT_COMBO_SEQ_SLOTS.slice(), morphCount: 0 };
+    const rawSeq = (g.customComboSeq && typeof g.customComboSeq === "object" && !Array.isArray(g.customComboSeq)) ? g.customComboSeq : null;
+    const rawSlots = (rawSeq && Array.isArray(rawSeq.slots) && rawSeq.slots.length === 4) ? rawSeq.slots : DEFAULT_COMBO_SEQ_SLOTS;
+    const safeSlots = rawSlots.map((modId, idx) => hasOwn(COMBO_SEQ_MODULES, modId) ? modId : DEFAULT_COMBO_SEQ_SLOTS[idx]);
+    const enabled = !!(rawSeq && rawSeq.enabled);
+    const morphCount = Math.max(0, Math.floor(num(rawSeq && rawSeq.morphCount, 0)));
+    if (!rawSeq || Object.getPrototypeOf(rawSeq) !== Object.prototype ||
+        rawSeq.enabled !== enabled || rawSeq.morphCount !== morphCount ||
+        !Array.isArray(rawSeq.slots) || rawSeq.slots.length !== 4 ||
+        rawSlots.some((m, i) => m !== safeSlots[i])) {
+      g.customComboSeq = { enabled, slots: safeSlots, morphCount };
     }
     return g.customComboSeq;
   }
 
   function executeComboSequencerModule(modId, sx, sy, ang, st, isEcho = false, echoColor = null) {
-    const mod = COMBO_SEQ_MODULES[modId] || COMBO_SEQ_MODULES.sword_crescent;
+    const mod = hasOwn(COMBO_SEQ_MODULES, modId) ? COMBO_SEQ_MODULES[modId] : COMBO_SEQ_MODULES.sword_crescent;
     const col = echoColor || mod.color;
     const dmgScale = (isEcho ? 0.55 : 1.0) * (1 + (game ? getSanctumBonuses(game).seqDmgBonus : 0));
 
@@ -12131,14 +12154,15 @@ const ART = {
 
       <div class="seq-slot-grid">
         ${seq.slots.map((modId, idx) => {
-          const curM = COMBO_SEQ_MODULES[modId] || COMBO_SEQ_MODULES.sword_crescent;
+          const curM = hasOwn(COMBO_SEQ_MODULES, modId) ? COMBO_SEQ_MODULES[modId] : COMBO_SEQ_MODULES.sword_crescent;
+          const wfSpec = hasOwn(WEAPON_ARSENAL_SPECS, curM.form) ? WEAPON_ARSENAL_SPECS[curM.form] : WEAPON_ARSENAL_SPECS.sword;
           return `<div class="seq-slot-card">
             <div style="display:flex;justify-content:space-between;align-items:center;">
               <strong style="font-size:12px;color:${curM.color};">${stepTitles[idx]}</strong>
-              <span class="tag-chip done">${WEAPON_ARSENAL_SPECS[curM.form].short}</span>
+              <span class="tag-chip done">${wfSpec.short}</span>
             </div>
             <select class="workshop-select" data-seq-slot="${idx}">
-              ${Object.values(COMBO_SEQ_MODULES).map(m => `<option value="${m.id}" ${m.id === modId ? "selected" : ""}>${m.name}</option>`).join("")}
+              ${Object.values(COMBO_SEQ_MODULES).map(m => `<option value="${m.id}" ${m.id === curM.id ? "selected" : ""}>${m.name}</option>`).join("")}
             </select>
             <span style="font-size:10.5px;color:#b8dcd5;">${curM.desc}</span>
           </div>`;
@@ -12424,22 +12448,26 @@ const ART = {
 
   function ensureExpeditionState(g) {
     if (!g) return { assignments: {}, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 };
-    if (!g.expeditions || typeof g.expeditions !== "object" || Array.isArray(g.expeditions)) {
-      g.expeditions = {
-        assignments: {},
-        bankedStones: 0,
-        bankedStars: 0,
-        supportThunderCount: 0,
-        tickTimer: 8.5
-      };
+    const rawEx = (g.expeditions && typeof g.expeditions === "object" && !Array.isArray(g.expeditions)) ? g.expeditions : null;
+    const exHasUnsafeKey = !!(rawEx && (hasOwn(rawEx, "__proto__") || hasOwn(rawEx, "constructor") || hasOwn(rawEx, "prototype")));
+    if (!rawEx || Object.getPrototypeOf(rawEx) !== Object.prototype || exHasUnsafeKey) {
+      const cleanEx = safeAssignPlain({ assignments: {}, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 }, rawEx);
+      cleanEx.assignments = safeAssignPlain({}, cleanEx.assignments);
+      cleanEx.bankedStones = Math.max(0, Math.floor(num(cleanEx.bankedStones, 0)));
+      cleanEx.bankedStars = Math.max(0, Math.floor(num(cleanEx.bankedStars, 0)));
+      cleanEx.supportThunderCount = Math.max(0, Math.floor(num(cleanEx.supportThunderCount, 0)));
+      cleanEx.tickTimer = Math.max(0, num(cleanEx.tickTimer, 8.5));
+      g.expeditions = cleanEx;
     } else {
-      if (!g.expeditions.assignments || typeof g.expeditions.assignments !== "object" || Array.isArray(g.expeditions.assignments)) {
-        g.expeditions.assignments = {};
+      const asgn = rawEx.assignments;
+      const asgnUnsafe = !!(asgn && typeof asgn === "object" && (hasOwn(asgn, "__proto__") || hasOwn(asgn, "constructor") || hasOwn(asgn, "prototype")));
+      if (!asgn || typeof asgn !== "object" || Array.isArray(asgn) || Object.getPrototypeOf(asgn) !== Object.prototype || asgnUnsafe) {
+        rawEx.assignments = safeAssignPlain({}, asgn);
       }
-      g.expeditions.bankedStones = Math.max(0, Math.floor(num(g.expeditions.bankedStones, 0)));
-      g.expeditions.bankedStars = Math.max(0, Math.floor(num(g.expeditions.bankedStars, 0)));
-      g.expeditions.supportThunderCount = Math.max(0, Math.floor(num(g.expeditions.supportThunderCount, 0)));
-      g.expeditions.tickTimer = Math.max(0, num(g.expeditions.tickTimer, 8.5));
+      rawEx.bankedStones = Math.max(0, Math.floor(num(rawEx.bankedStones, 0)));
+      rawEx.bankedStars = Math.max(0, Math.floor(num(rawEx.bankedStars, 0)));
+      rawEx.supportThunderCount = Math.max(0, Math.floor(num(rawEx.supportThunderCount, 0)));
+      rawEx.tickTimer = Math.max(0, num(rawEx.tickTimer, 8.5));
     }
     return g.expeditions;
   }
@@ -12613,14 +12641,31 @@ const ART = {
       .replace(/'/g, "&#39;");
   }
   function num(v, d = 0) {
+    const fallback = (typeof d === "number" && Number.isFinite(d)) ? d : 0;
+    if (v == null || typeof v === "boolean" || typeof v === "object") return fallback;
+    if (typeof v === "string" && v.trim() === "") return fallback;
     const n = Number(v);
-    return Number.isFinite(n) ? n : d;
+    return Number.isFinite(n) ? n : fallback;
   }
   function rarityNum(v) {
     return Math.max(0, Math.min(5, Math.floor(num(v, 0))));
   }
   function hasOwn(obj, key) {
     return !!obj && typeof key === "string" && Object.prototype.hasOwnProperty.call(obj, key);
+  }
+  function safeAssignPlain(target, ...sources) {
+    const out = (target && typeof target === "object") ? target : {};
+    for (let i = 0; i < sources.length; i++) {
+      const src = sources[i];
+      if (!src || typeof src !== "object" || Array.isArray(src)) continue;
+      const keys = Object.keys(src);
+      for (let j = 0; j < keys.length; j++) {
+        const k = keys[j];
+        if (k === "__proto__" || k === "constructor" || k === "prototype") continue;
+        out[k] = src[k];
+      }
+    }
+    return out;
   }
 
   let pendingCloudImport = null;
@@ -12746,13 +12791,13 @@ const ART = {
     }
     const prevGame = game;
     const prevMeta = JSON.parse(JSON.stringify(metaState));
-    const prevA11y = Object.assign({}, a11ySettings);
-    const prevStems = Object.assign({}, Sound.stems);
+    const prevA11y = safeAssignPlain({}, a11ySettings);
+    const prevStems = safeAssignPlain({}, Sound.stems);
     try {
       game = normalizeLoadedGame(parsedRes.parsed.game);
       if (parsedRes.parsed.metaState && typeof parsedRes.parsed.metaState === "object" && !Array.isArray(parsedRes.parsed.metaState)) {
         if (!metaReadError) {
-          Object.assign(metaState, mergeMetaStates(metaState, parsedRes.parsed.metaState));
+          safeAssignPlain(metaState, mergeMetaStates(metaState, parsedRes.parsed.metaState));
           ensureMetaState();
         }
       }
@@ -12766,10 +12811,10 @@ const ART = {
       if (!saved) {
         game = prevGame;
         Object.keys(metaState).forEach(k => { if (!(k in prevMeta)) delete metaState[k]; });
-        Object.assign(metaState, prevMeta);
-        Object.assign(a11ySettings, prevA11y);
+        safeAssignPlain(metaState, prevMeta);
+        safeAssignPlain(a11ySettings, prevA11y);
         applyReducedMotionClass();
-        Object.assign(Sound.stems, prevStems);
+        safeAssignPlain(Sound.stems, prevStems);
         if (game) updateHud();
         const reason = saveConflictState
           ? "检测到多标签页冲突，导入已回滚"
@@ -12783,16 +12828,17 @@ const ART = {
       syncTagTeamHud();
       syncV22TacticalDock();
       updateHud();
+      lastSavedPayloadChecksum = computeCurrentPayloadChecksum();
       Sound.fanfare();
       showToast(`☁ 太虚大道云码导入成功！已恢复道号【${game.name}】（${REALMS[game.realm].name} · ${game.stones} 灵石）！`);
       return { ok: true };
     } catch (e) {
       game = prevGame;
       Object.keys(metaState).forEach(k => { if (!(k in prevMeta)) delete metaState[k]; });
-      Object.assign(metaState, prevMeta);
-      Object.assign(a11ySettings, prevA11y);
+      safeAssignPlain(metaState, prevMeta);
+      safeAssignPlain(a11ySettings, prevA11y);
       applyReducedMotionClass();
-      Object.assign(Sound.stems, prevStems);
+      safeAssignPlain(Sound.stems, prevStems);
       if (game) updateHud();
       const reason = e && e.message ? e.message : "导入过程异常，已回滚";
       showToast(`⚠ 云码导入失败：${reason}`);
@@ -13864,7 +13910,10 @@ const ART = {
     const sp = SYNERGIES.find(s => s.id === synId);
     return sp ? sp.active(g) : false;
   }
-  function currentOmen(g) { return g ? CELESTIAL_OMENS[(g.omenIndex || 0) % CELESTIAL_OMENS.length] : CELESTIAL_OMENS[0]; }
+  function currentOmen(g) {
+    const idx = Math.floor(Math.max(0, num(g && g.omenIndex, 0))) % CELESTIAL_OMENS.length;
+    return CELESTIAL_OMENS[idx] || CELESTIAL_OMENS[0];
+  }
   function escTip(t, d) { return `${escapeHtml(t)}|${escapeHtml(d)}`; }
 
   function countBondedAllies(g) {
@@ -13878,8 +13927,9 @@ const ART = {
   }
 
   function getEquippedRelicStars(g) {
-    if (!g || !g.loadout.relic) return 0;
-    return (g.relicStars && g.relicStars[g.loadout.relic]) || 1;
+    if (!g || !g.loadout || !g.loadout.relic || !hasOwn(RELICS, g.loadout.relic)) return 0;
+    const rawStars = (g.relicStars && hasOwn(g.relicStars, g.loadout.relic)) ? g.relicStars[g.loadout.relic] : 1;
+    return Math.max(0, Math.min(5, Math.floor(num(rawStars, 1))));
   }
 
   function getGearTotals(g) {
@@ -13962,7 +14012,7 @@ const ART = {
 
     const g = {
       version: 11,
-      name: String(playerName == null ? "" : playerName).trim().slice(0, 12) || "顾长青",
+      name: String(playerName == null ? "" : playerName).replace(/[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/g, "").trim().slice(0, 12) || "顾长青",
       perk: effectivePerk,
       calamityTier: effCalamity,
       realm: "mortal",
@@ -14042,6 +14092,10 @@ const ART = {
       tutorialDismissed: false,
       sanctumChatStage: {},
       karmaMarketBought: {},
+      weaponForm: "sword",
+      customComboSeq: { enabled: false, slots: DEFAULT_COMBO_SEQ_SLOTS.slice(), morphCount: 0 },
+      expeditions: { assignments: {}, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 },
+      primordialCrafts: { goldenAcolyte: false, voidSwordRift: false, pillBatches: 0, forgedBlades: 0 },
       journal: [effCalamity > 0 ? `第 ${(metaState.ascensions || 0) + 1} 世重入红尘，主动点燃【${calSpec.name}】劫火试炼！` : "十八岁山雨倾盆，仗剑踏入青岚破庙。"]
     };
     const st = getCombatStats(g);
@@ -14054,7 +14108,7 @@ const ART = {
     if (!item || typeof item !== "object" || Array.isArray(item)) return null;
     const slot = ["weapon", "armor", "ring"].includes(item.slot) ? item.slot : (fallbackSlot || "weapon");
     const defArt = slot === "armor" ? "icon_heart" : slot === "ring" ? "item_jade" : "icon_blade";
-    const out = Object.assign({}, item, {
+    const out = safeAssignPlain({}, item, {
       slot,
       name: String(item.name == null ? "灵器" : item.name),
       rarity: rarityNum(item.rarity),
@@ -14069,15 +14123,15 @@ const ART = {
       price: Math.max(0, Math.floor(num(item.price, 25))),
       art: hasOwn(ART, item.art) ? item.art : defArt
     });
-    if ("power" in item) out.power = Math.max(0, num(item.power, 0));
+    if (hasOwn(item, "power")) out.power = Math.max(0, num(item.power, 0));
     return out;
   }
 
   function normalizeLoadedGame(raw) {
     const rawCal = raw && typeof raw.calamityTier === "number" ? raw.calamityTier : 0;
     const base = createFreshGame(raw && raw.name != null ? raw.name : "顾长青", raw && raw.perk ? raw.perk : "sword_bone", rawCal);
-    if (!raw || typeof raw !== "object") return base;
-    const g = Object.assign(base, raw);
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return base;
+    const g = safeAssignPlain({}, base, raw);
     if (typeof g.name !== "string") {
       g.name = (typeof raw.name === "number" && Number.isFinite(raw.name)) ? String(raw.name) : "顾长青";
     }
@@ -14090,19 +14144,20 @@ const ART = {
     ["stones", "xp", "overflowXp", "wins", "towerBest", "bestSpireFloor", "tribShield", "bonusStarPts", "bonusSwords", "omenIndex", "jadeCuts", "immortalPills", "karmaEventsDone", "atkFlatBonus", "maxHpBonus", "retreats", "tribulationFails", "defiantBreakthroughs", "lifespanBonusMonths"].forEach(k => {
       g[k] = Math.max(0, num(g[k], base[k] != null ? base[k] : 0));
     });
+    g.omenIndex = Math.floor(Math.max(0, num(g.omenIndex, 0))) % CELESTIAL_OMENS.length;
     g.towerFloor = Math.max(1, Math.floor(num(g.towerFloor, 1)));
     g.elapsedMonths = Math.max(0, num(g.elapsedMonths, 0));
     g.startAgeMonths = Math.max(12, num(g.startAgeMonths, 216));
     g.statMultBonus = Math.max(0.5, num(g.statMultBonus, base.statMultBonus));
     g.karmaScore = num(g.karmaScore, 0);
     g.karmaDrBonus = Math.max(0, num(g.karmaDrBonus, 0));
-    g.inventory = Object.assign({}, base.inventory, (raw.inventory && typeof raw.inventory === "object" && !Array.isArray(raw.inventory)) ? raw.inventory : {});
+    g.inventory = safeAssignPlain({}, base.inventory, raw.inventory);
     Object.keys(g.inventory).forEach(k => {
       g.inventory[k] = Math.max(0, Math.floor(num(g.inventory[k], 0)));
     });
-    g.loadout = Object.assign({}, base.loadout, (raw.loadout && typeof raw.loadout === "object" && !Array.isArray(raw.loadout)) ? raw.loadout : {});
+    g.loadout = safeAssignPlain({}, base.loadout, raw.loadout);
     if (g.loadout.relic && !hasOwn(RELICS, g.loadout.relic)) g.loadout.relic = null;
-    g.equippedGear = Object.assign({ weapon: base.equippedGear.weapon, armor: null, ring: null }, (raw.equippedGear && typeof raw.equippedGear === "object" && !Array.isArray(raw.equippedGear)) ? raw.equippedGear : {});
+    g.equippedGear = safeAssignPlain({ weapon: base.equippedGear.weapon, armor: null, ring: null }, raw.equippedGear);
     ["weapon", "armor", "ring"].forEach(sl => {
       g.equippedGear[sl] = g.equippedGear[sl] ? normalizeGearItem(g.equippedGear[sl], sl) : null;
     });
@@ -14110,76 +14165,88 @@ const ART = {
     else g.gearBag = g.gearBag.map(it => normalizeGearItem(it)).filter(Boolean);
     if (!Array.isArray(g.marketStock)) g.marketStock = [];
     else g.marketStock = g.marketStock.map(it => normalizeGearItem(it)).filter(Boolean);
-    g.pet = Object.assign({ id: null, level: 1 }, (raw.pet && typeof raw.pet === "object" && !Array.isArray(raw.pet)) ? raw.pet : {});
+    g.pet = safeAssignPlain({ id: null, level: 1 }, raw.pet);
     if (g.pet.id && !hasOwn(SPIRIT_PETS, g.pet.id)) g.pet.id = null;
     g.pet.level = Math.max(1, Math.min(5, Math.floor(num(g.pet.level, 1))));
-    g.aids = Object.assign({ shen: false, pei: false, lu: false, yan: false }, (raw.aids && typeof raw.aids === "object" && !Array.isArray(raw.aids)) ? raw.aids : {});
-    g.dao = Object.assign({ benevolence: 6, edge: 10, serenity: 6 }, (raw.dao && typeof raw.dao === "object" && !Array.isArray(raw.dao)) ? raw.dao : {});
+    g.aids = safeAssignPlain({ shen: false, pei: false, lu: false, yan: false }, raw.aids);
+    g.dao = safeAssignPlain({ benevolence: 6, edge: 10, serenity: 6 }, raw.dao);
     ["benevolence", "edge", "serenity"].forEach(k => {
       g.dao[k] = Math.max(0, num(g.dao[k], base.dao[k]));
     });
-    g.choices = Object.assign({}, (raw.choices && typeof raw.choices === "object" && !Array.isArray(raw.choices)) ? raw.choices : {});
-    g.relicStars = Object.assign({}, (raw.relicStars && typeof raw.relicStars === "object" && !Array.isArray(raw.relicStars)) ? raw.relicStars : {});
+    g.choices = safeAssignPlain({}, raw.choices);
+    g.relicStars = safeAssignPlain({}, raw.relicStars);
     Object.keys(g.relicStars).forEach(k => {
       g.relicStars[k] = Math.max(0, Math.min(5, Math.floor(num(g.relicStars[k], 1))));
     });
-    if (g.spireCurios && typeof g.spireCurios === "object" && !Array.isArray(g.spireCurios)) {
+    if (raw.spireCurios !== undefined) {
+      g.spireCurios = safeAssignPlain({}, raw.spireCurios);
       Object.keys(g.spireCurios).forEach(k => {
         g.spireCurios[k] = Math.max(0, Math.floor(num(g.spireCurios[k], 0)));
       });
-    } else if (g.spireCurios !== undefined) {
-      g.spireCurios = {};
     }
-    if (raw.expeditions) ensureExpeditionState(g);
-    g.seenCutscenes = Object.assign({}, (raw.seenCutscenes && typeof raw.seenCutscenes === "object" && !Array.isArray(raw.seenCutscenes)) ? raw.seenCutscenes : {});
-    g.foundationQuality = Object.assign({}, (raw.foundationQuality && typeof raw.foundationQuality === "object" && !Array.isArray(raw.foundationQuality)) ? raw.foundationQuality : {});
+    g.expeditions = safeAssignPlain({ assignments: {}, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 }, raw.expeditions);
+    g.expeditions.assignments = safeAssignPlain({}, g.expeditions.assignments);
+    ensureExpeditionState(g);
+    g.seenCutscenes = safeAssignPlain({}, raw.seenCutscenes);
+    g.foundationQuality = safeAssignPlain({}, raw.foundationQuality);
     if (!Array.isArray(g.laws)) g.laws = [];
     if (!Array.isArray(g.learned)) g.learned = base.learned.slice();
     base.learned.forEach(sk => { if (!g.learned.includes(sk)) g.learned.push(sk); });
     if (!Array.isArray(g.ownedRelics)) g.ownedRelics = [];
-    g.ownedRelics.forEach(rid => { if (!g.relicStars[rid]) g.relicStars[rid] = 1; });
+    g.ownedRelics = Array.from(new Set(g.ownedRelics.filter(rid => hasOwn(RELICS, rid))));
+    g.ownedRelics.forEach(rid => { if (!hasOwn(g.relicStars, rid)) g.relicStars[rid] = 1; });
     if (!Array.isArray(g.achievements)) g.achievements = [];
     if (!Array.isArray(g.claimedAchievements)) g.claimedAchievements = [];
-    if (!Array.isArray(g.destinyFruits)) g.destinyFruits = [];
-    if (!g.stageStars || typeof g.stageStars !== "object" || Array.isArray(g.stageStars)) g.stageStars = {};
-    else Object.keys(g.stageStars).forEach(k => { g.stageStars[k] = Math.max(0, Math.min(3, Math.floor(num(g.stageStars[k], 0)))); });
+    g.destinyFruits = Array.isArray(g.destinyFruits)
+      ? Array.from(new Set(g.destinyFruits.filter(fid => hasOwn(DESTINY_FRUITS, fid))))
+      : [];
+    g.stageStars = safeAssignPlain({}, raw.stageStars);
+    Object.keys(g.stageStars).forEach(k => { g.stageStars[k] = Math.max(0, Math.min(3, Math.floor(num(g.stageStars[k], 0)))); });
     if (!Array.isArray(g.claimedStepIds)) g.claimedStepIds = [];
     if (!Array.isArray(g.claimedStarChests)) g.claimedStarChests = [];
-    g.bountyTiers = Object.assign({ slay: 1, tech: 1, craft: 1 }, (g.bountyTiers && typeof g.bountyTiers === "object" && !Array.isArray(g.bountyTiers)) ? g.bountyTiers : {});
+    g.bountyTiers = safeAssignPlain({ slay: 1, tech: 1, craft: 1 }, raw.bountyTiers);
     Object.keys(g.bountyTiers).forEach(k => { g.bountyTiers[k] = Math.max(1, Math.floor(num(g.bountyTiers[k], 1))); });
-    g.goalStats = Object.assign({ kills: 0, techBreaks: 0, craftOrLoot: 0 }, (g.goalStats && typeof g.goalStats === "object" && !Array.isArray(g.goalStats)) ? g.goalStats : {});
+    g.goalStats = safeAssignPlain({ kills: 0, techBreaks: 0, craftOrLoot: 0 }, raw.goalStats);
     Object.keys(g.goalStats).forEach(k => { g.goalStats[k] = Math.max(0, Math.floor(num(g.goalStats[k], 0))); });
     if (!Array.isArray(g.pactSeals)) g.pactSeals = [];
-    g.bondTiers = Object.assign({ shen: 1, pei: 0, lu: 0, yan: 0 }, (raw.bondTiers && typeof raw.bondTiers === "object" && !Array.isArray(raw.bondTiers)) ? raw.bondTiers : {});
+    g.bondTiers = safeAssignPlain({ shen: 1, pei: 0, lu: 0, yan: 0 }, raw.bondTiers);
     Object.keys(g.bondTiers).forEach(k => { g.bondTiers[k] = Math.max(0, Math.floor(num(g.bondTiers[k], 0))); });
-    g.gourd = Object.assign({ charges: 5, maxCharges: 5, soaks: ["iron_lotus", "samadhi_fire", "parry_brew"], parryChargeProg: 0 }, (raw.gourd && typeof raw.gourd === "object" && !Array.isArray(raw.gourd)) ? raw.gourd : {});
+    g.gourd = safeAssignPlain({ charges: 5, maxCharges: 5, soaks: ["iron_lotus", "samadhi_fire", "parry_brew"], parryChargeProg: 0 }, raw.gourd);
     g.gourd.charges = Math.max(0, Math.floor(num(g.gourd.charges, 5)));
     g.gourd.maxCharges = Math.max(1, Math.floor(num(g.gourd.maxCharges, 5)));
     g.gourd.parryChargeProg = Math.max(0, num(g.gourd.parryChargeProg, 0));
     if (!Array.isArray(g.gourd.soaks)) g.gourd.soaks = ["iron_lotus", "samadhi_fire", "parry_brew"];
-    g.cosmetics = Object.assign({ bladeSkin: "celadon", trailSkin: g.taixuTrailActive ? "taixu_prismatic" : "ink_jade", footAura: "lotus_step", swordAura: "azure_jade" }, (raw.cosmetics && typeof raw.cosmetics === "object" && !Array.isArray(raw.cosmetics)) ? raw.cosmetics : {});
+    g.cosmetics = safeAssignPlain({ bladeSkin: "celadon", trailSkin: g.taixuTrailActive ? "taixu_prismatic" : "ink_jade", footAura: "lotus_step", swordAura: "azure_jade" }, raw.cosmetics);
     if (!WARDROBE_OPTIONS.swordAura.some(x => x.id === g.cosmetics.swordAura)) g.cosmetics.swordAura = "azure_jade";
-    if (!Array.isArray(g.unlockedSouls) || !g.unlockedSouls.length) g.unlockedSouls = ["blood_warden"];
-    if (!g.equippedSoul || !hasOwn(SOUL_SPIRITS, g.equippedSoul)) g.equippedSoul = g.unlockedSouls[0];
+    const safeSouls = Array.isArray(g.unlockedSouls)
+      ? Array.from(new Set(g.unlockedSouls.filter(id => hasOwn(SOUL_SPIRITS, id))))
+      : [];
+    g.unlockedSouls = safeSouls.length ? safeSouls : ["blood_warden"];
+    if (!hasOwn(SOUL_SPIRITS, g.equippedSoul)) g.equippedSoul = g.unlockedSouls[0];
     if (g.equippedMount && !hasOwn(MYTHIC_MOUNTS, g.equippedMount)) g.equippedMount = "qilin";
+    if (!hasOwn(WEAPON_ARSENAL_SPECS, g.weaponForm)) g.weaponForm = "sword";
     if (!Array.isArray(g.litStars)) g.litStars = [];
+    g.pity = safeAssignPlain({ epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 }, raw.pity);
     ensureDeterministicPity(g);
+    ensureCustomComboSeq(g);
+    ensurePrimordialCrafts(g);
     g.unlockAllArcana = !!raw.unlockAllArcana;
-    g.sanctumLevels = Object.assign(
+    g.sanctumLevels = safeAssignPlain(
       { spirit_eye: 1, cauldron: 1, sword_forge: 1, scripture_hall: 1, guard_array: 1 },
-      raw.sanctumLevels && typeof raw.sanctumLevels === "object" && !Array.isArray(raw.sanctumLevels) ? raw.sanctumLevels : {}
+      raw.sanctumLevels
     );
     Object.keys(g.sanctumLevels).forEach(k => {
       g.sanctumLevels[k] = Math.max(1, Math.min(5, Math.floor(num(g.sanctumLevels[k], 1))));
     });
     g.tutorialDismissed = !!raw.tutorialDismissed;
-    if (typeof raw.tutorialStep === "number" && !isNaN(raw.tutorialStep)) {
+    if (typeof raw.tutorialStep === "number" && Number.isFinite(raw.tutorialStep)) {
       g.tutorialStep = Math.max(0, Math.min(4, Math.floor(raw.tutorialStep)));
     } else {
       g.tutorialStep = (rankOf(g.realm) >= 1 || !!g.openingChoice) ? 4 : 0;
     }
-    g.sanctumChatStage = Object.assign({}, (raw.sanctumChatStage && typeof raw.sanctumChatStage === "object" && !Array.isArray(raw.sanctumChatStage)) ? raw.sanctumChatStage : {});
-    g.karmaMarketBought = Object.assign({}, (raw.karmaMarketBought && typeof raw.karmaMarketBought === "object" && !Array.isArray(raw.karmaMarketBought)) ? raw.karmaMarketBought : {});
+    g.sanctumChatStage = safeAssignPlain({}, raw.sanctumChatStage);
+    g.karmaMarketBought = safeAssignPlain({}, raw.karmaMarketBought);
+    if (!Array.isArray(g.journal)) g.journal = base.journal.slice();
     const st = getCombatStats(g);
     g.hp = num(g.hp, st.maxHp);
     if (g.hp <= 0) g.hp = st.maxHp;
@@ -14223,8 +14290,21 @@ const ART = {
 
   function computeCurrentPayloadChecksum() {
     if (!game) return null;
+    const gameSnap = safeAssignPlain({}, game);
+    if (gameSnap.expeditions && typeof gameSnap.expeditions === "object" && !Array.isArray(gameSnap.expeditions)) {
+      const exSnap = safeAssignPlain({}, gameSnap.expeditions);
+      delete exSnap.tickTimer;
+      gameSnap.expeditions = exSnap;
+    }
+    if (gameSnap.pity && typeof gameSnap.pity === "object" && !Array.isArray(gameSnap.pity)) {
+      const pitySnap = safeAssignPlain({}, gameSnap.pity);
+      delete pitySnap.critAcc;
+      delete pitySnap.vampHits;
+      delete pitySnap.thunderHits;
+      gameSnap.pity = pitySnap;
+    }
     return computeSaveChecksum(buildCanonicalSavePayload({
-      game,
+      game: gameSnap,
       stageIdx: arena.stageIdx,
       stanceIdx: arena.stanceIdx,
       towerMode: !!arena.towerMode,
@@ -14242,11 +14322,18 @@ const ART = {
     } catch (e) {
       return { ok: false, empty: false, sourceKey, reason: `JSON 解析失败（${e && e.message ? e.message : "格式损坏"}）`, raw };
     }
-    if (!parsed || typeof parsed !== "object" || !parsed.game || typeof parsed.game !== "object") {
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || !parsed.game || typeof parsed.game !== "object" || Array.isArray(parsed.game)) {
       return { ok: false, empty: false, sourceKey, reason: "存档缺少核心 game 数据结构", raw };
     }
     if (typeof parsed.game.realm !== "string" || !hasOwn(REALMS, parsed.game.realm)) {
       return { ok: false, empty: false, sourceKey, reason: `存档境界字段非法（${String(parsed.game.realm)}）`, raw };
+    }
+    if (parsed.saveRev !== undefined && (
+      parsed.saveRev === null || typeof parsed.saveRev === "boolean" || typeof parsed.saveRev === "object" ||
+      (typeof parsed.saveRev === "string" && parsed.saveRev.trim() === "") ||
+      !Number.isFinite(Number(parsed.saveRev)) || Number(parsed.saveRev) < 0
+    )) {
+      return { ok: false, empty: false, sourceKey, reason: "存档版本号字段非法", raw };
     }
     if (parsed.envelopeVersion >= 2 && parsed.checksum) {
       const expected = computeSaveChecksum(buildCanonicalSavePayload(parsed));
@@ -14259,9 +14346,9 @@ const ART = {
       empty: false,
       sourceKey,
       bundle: parsed,
-      rev: Number(parsed.saveRev) || 0,
-      tabId: parsed.tabId || null,
-      updatedAt: Number(parsed.updatedAt) || 0,
+      rev: Math.max(0, Math.floor(num(parsed.saveRev, 0))),
+      tabId: typeof parsed.tabId === "string" ? parsed.tabId : null,
+      updatedAt: Math.max(0, Math.floor(num(parsed.updatedAt, 0))),
       legacy: sourceKey !== STORAGE_KEY || !parsed.envelopeVersion
     };
   }
@@ -14549,12 +14636,12 @@ const ART = {
   function buildConflictInfoFromResult(res) {
     const g = res.bundle.game;
     return {
-      externalRev: res.rev,
+      externalRev: Math.max(0, Math.floor(num(res.rev, 0))),
       externalTabId: res.tabId,
-      externalUpdatedAt: res.updatedAt,
+      externalUpdatedAt: Math.max(0, Math.floor(num(res.updatedAt, 0))),
       externalName: g.name || "顾长青",
-      externalRealm: (REALMS[g.realm] && REALMS[g.realm].name) || g.realm,
-      externalStones: g.stones || 0
+      externalRealm: (hasOwn(REALMS, g.realm) && REALMS[g.realm].name) || g.realm,
+      externalStones: Math.max(0, Math.floor(num(g.stones, 0)))
     };
   }
 
@@ -14617,7 +14704,7 @@ const ART = {
       } catch (e) {}
     }
 
-    const nextRev = Math.max(loadedSaveRev, externalMaxRev) + 1;
+    const nextRev = Math.max(Math.max(0, Math.floor(num(loadedSaveRev, 0))), Math.max(0, Math.floor(num(externalMaxRev, 0)))) + 1;
     const payloadObj = {
       game,
       stageIdx: arena.stageIdx,
@@ -14637,7 +14724,7 @@ const ART = {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));
       loadedSaveRev = nextRev;
-      lastSavedPayloadChecksum = payloadChecksum;
+      lastSavedPayloadChecksum = computeCurrentPayloadChecksum();
       storageWriteError = null;
       storageReadError = null;
       saveConflictState = null;
@@ -14688,8 +14775,8 @@ const ART = {
             return false;
           }
           const merged = mergeMetaStates(metaState, curRes.meta);
-          Object.assign(metaState, merged);
-          nextMetaRev = Math.max(Number(metaState.metaRev) || 0, curRes.metaRev) + 1;
+          safeAssignPlain(metaState, merged);
+          nextMetaRev = Math.max(Math.max(0, Math.floor(num(metaState.metaRev, 0))), Math.max(0, Math.floor(num(curRes.metaRev, 0)))) + 1;
         }
       } catch (e) {}
     } else {
@@ -14739,8 +14826,8 @@ const ART = {
         return;
       }
       if (res.meta.metaTabId && res.meta.metaTabId === TAB_ID) return;
-      Object.assign(metaState, mergeMetaStates(metaState, res.meta));
-      metaState.metaRev = Math.max(Number(metaState.metaRev) || 0, res.metaRev);
+      safeAssignPlain(metaState, mergeMetaStates(metaState, res.meta));
+      metaState.metaRev = Math.max(Math.max(0, Math.floor(num(metaState.metaRev, 0))), Math.max(0, Math.floor(num(res.metaRev, 0))));
       metaReadError = null;
       ensureMetaState();
       const ws = document.getElementById("welcome-screen");
@@ -16235,7 +16322,7 @@ const ART = {
         { name: "一重天命 · 证道化神", desc: "由凡胎一步步渡劫突破至【化神期】尊者", cur: `${REALMS[game.realm].name} (${rankOf(game.realm)}/5)`, done: rankOf(game.realm) >= 5, route: "tribulate" },
         { name: "二重天命 · 逆天改命", desc: "在紫霄雷劫中觉醒至少 2 枚【先天道果】", cur: `${(game.destinyFruits || []).length}/2 枚`, done: (game.destinyFruits || []).length >= 2, route: "tribulate" },
         { name: "三重天命 · 红尘同心", desc: "与沈清禾、裴照、陆玄松、砚尘结契至少 3 人", cur: `${countBondedAllies(game)}/3 位`, done: countBondedAllies(game) >= 3, route: "drawer_story" },
-        { name: "四重天命 · 神兵万法", desc: "激活任一双法则神话羁绊，或本命法宝淬炼至 ★3", cur: `${SYNERGIES.some(s => s.active(game)) ? "已激活神话羁绊" : `法宝★${getEquippedRelicStars(game)}`}`, done: SYNERGIES.some(s => s.active(game)) || getEquippedRelicStars(game) >= 3, route: "drawer_alchemy" },
+        { name: "四重天命 · 神兵万法", desc: "激活任一双法则神话羁绊，或本命法宝淬炼至 ★3", cur: `${SYNERGIES.some(s => s.active(game)) ? "已激活神话羁绊" : `法宝★${num(getEquippedRelicStars(game), 0)}`}`, done: SYNERGIES.some(s => s.active(game)) || num(getEquippedRelicStars(game), 0) >= 3, route: "drawer_alchemy" },
         { name: "五重天命 · 剑开天门", desc: "踏破【九霄天门】击败天门道影，白日飞升证道仙帝！", cur: game.status === "ascended" ? "已飞升证道" : "待叩天门", done: game.status === "ascended", route: "stage_4" }
       ];
       const pactsOk = isEcosystemSystemUnlocked(game, "heavenly_pacts");
@@ -16537,9 +16624,10 @@ const ART = {
   }
 
   // Enter Peaceful Immortal Sanctuary Hub (`[H] 听雨洞府主城`)!
-  function enterSanctumHub() {
+  function enterSanctumHub(opts = {}) {
     if (!game) return;
-    if (game.openingChoice && (game.tutorialStep || 0) === 2) {
+    const skipSave = !!(opts && opts.skipSave);
+    if (!skipSave && game.openingChoice && (game.tutorialStep || 0) === 2) {
       advanceOnboardingStep(2);
       showToast("🏠 听雨洞府三大核心地标：紫微丹鼎（炼丹）、天工剑炉（锻剑）与九州出征阵门！");
     }
@@ -16708,7 +16796,7 @@ const ART = {
     if (recapCard) recapCard.classList.remove("open");
     Sound.qiOrb(3);
     showToast("已返【听雨洞府】· 可点击【藏经阁】升阶洞府建筑，或与四位故人茶叙切磋！");
-    saveGame();
+    if (!skipSave) saveGame();
     updateHud();
   }
 
@@ -16727,7 +16815,7 @@ const ART = {
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
     arena.nearbyProp = null;
-    arena.stageIdx = Math.max(0, Math.min(STAGES.length - 1, stageIdx));
+    arena.stageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(stageIdx, 0))));
     arena.stageTechDone = false;
     arena.maxStageCombo = 0;
     arena.waveIdx = 0;
@@ -24239,7 +24327,7 @@ const ART = {
         const calSp = getCalamityCycleSpec(cTier);
         calBadge.style.display = "inline-flex";
         calBadge.textContent = `🔥 劫火×${cTier}`;
-        calBadge.setAttribute("data-tip", escTip(`劫火周目 · ${calSp.name}`, calSp.desc));
+        calBadge.setAttribute("data-tip", `劫火周目 · ${calSp.name}|${calSp.desc}`);
       } else {
         calBadge.style.display = "none";
       }
@@ -24380,7 +24468,7 @@ const ART = {
     const soulImg = document.getElementById("orb-img-soul");
     const soulLbl = document.getElementById("lbl-soul-name");
     if (soulImg && soulLbl && game) {
-      const curSoul = SOUL_SPIRITS[game.equippedSoul] || SOUL_SPIRITS.blood_warden;
+      const curSoul = hasOwn(SOUL_SPIRITS, game.equippedSoul) ? SOUL_SPIRITS[game.equippedSoul] : SOUL_SPIRITS.blood_warden;
       soulImg.src = ART.spirit_seal_emblem;
       soulLbl.textContent = curSoul.shortLbl;
     }
@@ -24812,7 +24900,7 @@ const ART = {
             <strong style="font-size:12px;color:#f3d9ff;">☯ 已觉醒【逆天改命】先天道果（渡劫破境获取）</strong>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
               ${game.destinyFruits.map(fid => {
-                const df = DESTINY_FRUITS[fid];
+                const df = hasOwn(DESTINY_FRUITS, fid) ? DESTINY_FRUITS[fid] : null;
                 return df ? `<span class="destiny-fruit-pill" data-tip="${escTip(df.name, df.desc)}">★ ${df.name} · ${df.badge}</span>` : "";
               }).join("")}
             </div>
@@ -24870,7 +24958,7 @@ const ART = {
             <button class="visual-tile ${relicSpec ? "rarity-4" : ""}" data-tab="alchemy">
               <img src="${ART[relicSpec ? relicSpec.art : "relic_soul_lamp"]}" alt="法宝" style="width:34px;height:34px;" />
               <div>
-                <div style="font-size:11.5px;font-weight:700;color:#ffe07d;">${relicSpec ? `${relicSpec.name} ★${getEquippedRelicStars(game)}` : "镇魂法宝·空"}</div>
+                <div style="font-size:11.5px;font-weight:700;color:#ffe07d;">${relicSpec ? `${relicSpec.name} ★${num(getEquippedRelicStars(game), 0)}` : "镇魂法宝·空"}</div>
                 <div style="font-size:10px;color:var(--text-sub);">${relicSpec ? "点击赴百工升星" : "点击赴百工铸造"}</div>
               </div>
             </button>`;
@@ -26428,13 +26516,17 @@ const ART = {
       storageWriteError = null;
       saveAlertDismissed = false;
       game = normalizeLoadedGame(s.game);
-      arena.stanceIdx = typeof s.stanceIdx === "number" ? (s.stanceIdx % SWORD_STANCES.length) : 0;
+      arena.stanceIdx = ((Math.floor(num(s.stanceIdx, 0)) % SWORD_STANCES.length) + SWORD_STANCES.length) % SWORD_STANCES.length;
+      arena.stageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(s.stageIdx, 0))));
       document.getElementById("welcome-screen").style.display = "none";
-      if (s.sanctumMode) enterSanctumHub();
-      else initArenaStage(s.stageIdx || 0, !!s.towerMode);
+      if (s.sanctumMode) enterSanctumHub({ skipSave: true });
+      else initArenaStage(arena.stageIdx, !!s.towerMode);
       if (res.legacy) {
-        saveGame({ forceOverwrite: true });
-        showToast("已兼容载入旧版存档并自动升级校验封装！");
+        if (saveGame({ forceOverwrite: true })) {
+          showToast("已兼容载入旧版存档并自动升级校验封装！");
+        } else {
+          lastSavedPayloadChecksum = computeCurrentPayloadChecksum();
+        }
       } else {
         lastSavedPayloadChecksum = computeCurrentPayloadChecksum();
       }
@@ -26602,11 +26694,12 @@ const ART = {
       storageWriteError = null;
       saveAlertDismissed = false;
       game = normalizeLoadedGame(s.game);
-      arena.stanceIdx = typeof s.stanceIdx === "number" ? (s.stanceIdx % SWORD_STANCES.length) : 0;
+      arena.stanceIdx = ((Math.floor(num(s.stanceIdx, 0)) % SWORD_STANCES.length) + SWORD_STANCES.length) % SWORD_STANCES.length;
+      arena.stageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(s.stageIdx, 0))));
       closeModal();
       closeDrawer();
-      if (s.sanctumMode) enterSanctumHub();
-      else initArenaStage(s.stageIdx || 0, !!s.towerMode);
+      if (s.sanctumMode) enterSanctumHub({ skipSave: true });
+      else initArenaStage(arena.stageIdx, !!s.towerMode);
       lastSavedPayloadChecksum = computeCurrentPayloadChecksum();
       updateHud();
       renderHudSaveAlert();
@@ -26650,6 +26743,13 @@ const ART = {
       return;
     }
     if (m1Act === "confirm-reset-save") {
+      if (storageReadError) {
+        saveAlertDismissed = false;
+        renderWelcomeSaveStatusBanner();
+        renderHudSaveAlert();
+        showToast("⚠ 检测到本地受损主存档尚未处理，已拒绝清空存档并保留原数据！请先备份原文或通过受损存档流程处理。");
+        return;
+      }
       if (saveReadOnlyMode || saveConflictState) {
         renderHudSaveAlert();
         showToast(saveConflictState
@@ -26657,6 +26757,26 @@ const ART = {
           : "⚠ 当前处于只读观览态，已拒绝清空存档以免误删另一标签页的进度！");
         return;
       }
+      try {
+        const curRaw = localStorage.getItem(STORAGE_KEY);
+        if (curRaw !== null && curRaw !== "") {
+          const curRes = parseAndValidateSaveRaw(curRaw, STORAGE_KEY);
+          if (!curRes.ok) {
+            storageReadError = {
+              key: STORAGE_KEY,
+              reason: curRes.reason || "本地存档结构异常",
+              raw: curRaw,
+              rawLength: curRaw.length,
+              at: Date.now()
+            };
+            saveAlertDismissed = false;
+            renderWelcomeSaveStatusBanner();
+            renderHudSaveAlert();
+            showToast("⚠ 检测到本地主存档已损坏，已中止清空操作并保留原数据！");
+            return;
+          }
+        }
+      } catch (e) {}
       openModal(`
         <div class="drawer-mural-banner" style="height:80px;">
           <img src="${ART.banner_archive}" alt="清空存档确认" />
@@ -26679,6 +26799,14 @@ const ART = {
       return;
     }
     if (m1Act === "execute-reset-save") {
+      if (storageReadError) {
+        closeModal();
+        saveAlertDismissed = false;
+        renderWelcomeSaveStatusBanner();
+        renderHudSaveAlert();
+        showToast("⚠ 检测到本地受损主存档尚未处理，已拒绝清空存档并保留原数据！");
+        return;
+      }
       if (saveReadOnlyMode || saveConflictState) {
         closeModal();
         renderHudSaveAlert();
@@ -26689,9 +26817,24 @@ const ART = {
       }
       try {
         const curRaw = localStorage.getItem(STORAGE_KEY);
-        if (curRaw) {
+        if (curRaw !== null && curRaw !== "") {
           const curRes = parseAndValidateSaveRaw(curRaw, STORAGE_KEY);
-          if (curRes.ok && curRes.tabId && curRes.tabId !== TAB_ID && curRes.rev > loadedSaveRev) {
+          if (!curRes.ok) {
+            storageReadError = {
+              key: STORAGE_KEY,
+              reason: curRes.reason || "本地存档结构异常",
+              raw: curRaw,
+              rawLength: curRaw.length,
+              at: Date.now()
+            };
+            saveAlertDismissed = false;
+            closeModal();
+            renderWelcomeSaveStatusBanner();
+            renderHudSaveAlert();
+            showToast("⚠ 检测到本地主存档已损坏，已中止清空操作并保留原数据！");
+            return;
+          }
+          if (curRes.tabId && curRes.tabId !== TAB_ID && curRes.rev > loadedSaveRev) {
             closeModal();
             triggerSaveConflict(curRes, true);
             showToast("⚠ 检测到另一标签页更新了存档，已中止清空操作！");
@@ -27065,7 +27208,7 @@ const ART = {
         showToast("⚠ 论剑码校验失败，请输入形如 CY22-02-23-01-XX 的有效太虚论剑码！");
         return;
       }
-      Object.assign(workshopState, parsed);
+      safeAssignPlain(workshopState, parsed);
       Sound.fanfare();
       openCustomWorkshopModal();
       showToast(`📥 论剑码解析成功！已还原双王配置与劫律奇物！`);
@@ -27203,7 +27346,7 @@ const ART = {
     if (t.hasAttribute("data-equip-soul")) {
       if (!guardEcosystemAccess("soul_seal")) return;
       const sid = t.getAttribute("data-equip-soul");
-      const sp = SOUL_SPIRITS[sid];
+      const sp = hasOwn(SOUL_SPIRITS, sid) ? SOUL_SPIRITS[sid] : null;
       if (!sp) return;
       if (!Array.isArray(game.unlockedSouls)) game.unlockedSouls = ["blood_warden"];
       if (!game.unlockedSouls.includes(sid)) {
@@ -27631,8 +27774,15 @@ const ART = {
       Sound.bianzhong(659.25, 0.09);
       Sound.fanfare();
       showToast(`✦ 定向铭刻！【${eq.name}】已刻录【${picked.name}】（${picked.desc}）！`);
-      closeModal();
       saveGame(); updateHud(); renderDrawerContent();
+      const panel = document.getElementById("jade-panel");
+      if (drawerOpen && panel) {
+        const refreshedTrigger = panel.querySelector(`[data-reforge-slot="${sl}"]`);
+        if (refreshedTrigger && isElementFocusable(refreshedTrigger)) {
+          lastModalTriggerEl = refreshedTrigger;
+        }
+      }
+      closeModal();
       return;
     }
     if (t.hasAttribute("data-toggle-pact")) {
@@ -27746,7 +27896,7 @@ const ART = {
     }
     if (t.hasAttribute("data-destiny-fruit")) {
       const fid = t.getAttribute("data-destiny-fruit");
-      const df = DESTINY_FRUITS[fid];
+      const df = hasOwn(DESTINY_FRUITS, fid) ? DESTINY_FRUITS[fid] : null;
       if (df && !hasDestinyFruit(game, fid)) {
         game.destinyFruits.push(fid);
         if (fid === "glutton_pill") {
@@ -28019,6 +28169,13 @@ const ART = {
     } else if (act === "show-verdict") {
       closeDrawer(); openEndingModal();
     } else if (act === "reincarnate-now") {
+      if (storageReadError) {
+        saveAlertDismissed = false;
+        renderWelcomeSaveStatusBanner();
+        renderHudSaveAlert();
+        showToast("⚠ 检测到本地受损主存档尚未处理，已中止轮回清档并保留原数据！");
+        return;
+      }
       if (saveReadOnlyMode || saveConflictState) {
         renderHudSaveAlert();
         showToast(saveConflictState
@@ -28034,9 +28191,23 @@ const ART = {
       }
       try {
         const curRaw = localStorage.getItem(STORAGE_KEY);
-        if (curRaw) {
+        if (curRaw !== null && curRaw !== "") {
           const curRes = parseAndValidateSaveRaw(curRaw, STORAGE_KEY);
-          if (curRes.ok && curRes.tabId && curRes.tabId !== TAB_ID && curRes.rev > loadedSaveRev) {
+          if (!curRes.ok) {
+            storageReadError = {
+              key: STORAGE_KEY,
+              reason: curRes.reason || "本地存档结构异常",
+              raw: curRaw,
+              rawLength: curRaw.length,
+              at: Date.now()
+            };
+            saveAlertDismissed = false;
+            renderWelcomeSaveStatusBanner();
+            renderHudSaveAlert();
+            showToast("⚠ 检测到本地主存档已损坏，已中止轮回清档并保留原数据！");
+            return;
+          }
+          if (curRes.tabId && curRes.tabId !== TAB_ID && curRes.rev > loadedSaveRev) {
             triggerSaveConflict(curRes, true);
             showToast("⚠ 检测到另一标签页更新了存档，已中止轮回清档！");
             return;

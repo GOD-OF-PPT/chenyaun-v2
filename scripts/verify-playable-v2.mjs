@@ -2625,12 +2625,13 @@ try {
       assert.equal(cappedVal, "<img src=x o", `maxlength=12 must cap typed input, got: ${cappedVal}`);
 
       await page.fill("#player-name-input", "");
-      await page.locator("#player-name-input").pressSequentially(P_TYPED);
+      await page.fill("#player-name-input", "\u202E" + P_TYPED);
       await page.click("#btn-start-new");
       await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
 
       const hudName1 = await page.textContent("#hud-name");
-      assert.equal(hudName1, P_TYPED, `#hud-name must show literal typed name, got: ${hudName1}`);
+      assert.equal(hudName1, P_TYPED, `#hud-name must strip bidi controls on initial session and show literal typed name, got: ${hudName1}`);
+      assert.equal(hudName1.includes("\u202E"), false, "createFreshGame must strip bidi control characters on first session");
       await probeXss(page, "R2-7a-hud");
 
       await page.click("#nav-btn-cultivate");
@@ -2681,6 +2682,7 @@ try {
             tutorialDismissed: true,
             tutorialStep: 4,
             stones: pImg,
+            statMultBonus: pImg,
             inventory: { herb: pImg, core: pImg, healing_pill: pImg },
             towerBest: pImg,
             towerFloor: pImg,
@@ -2738,16 +2740,37 @@ try {
       await page.click("#btn-continue-save");
       await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
 
-      const loadedCheck = await page.evaluate((pFull) => ({
-        hudName: document.getElementById("hud-name")?.textContent || "",
-        stonesType: typeof window.__CHENYUAN_V25__.getState().game.stones,
-        bestRushGrade: window.__CHENYUAN_V25__.getMetaState().bestRushGrade,
-        slashLabel: window.__CHENYUAN_V25__.getKeybinds().slash.label,
-        slashKb: window.__CHENYUAN_V25__.getKeybinds().slash.kb,
-        matchesFull: (document.getElementById("hud-name")?.textContent || "") === pFull
-      }), P_FULL);
+      const loadedCheck = await page.evaluate((pFull) => {
+        const g = window.__CHENYUAN_V25__.getState().game;
+        return {
+          hudName: document.getElementById("hud-name")?.textContent || "",
+          hudStones: (document.getElementById("hud-stones")?.textContent || "").trim(),
+          hudAgeSchool: document.getElementById("hud-age-school")?.textContent || "",
+          stones: g.stones,
+          towerBest: g.towerBest,
+          tribShield: g.tribShield,
+          statMultBonus: g.statMultBonus,
+          daoBen: g.dao?.benevolence,
+          daoEdge: g.dao?.edge,
+          daoSer: g.dao?.serenity,
+          herb: g.inventory?.herb,
+          bestRushGrade: window.__CHENYUAN_V25__.getMetaState().bestRushGrade,
+          slashLabel: window.__CHENYUAN_V25__.getKeybinds().slash.label,
+          slashKb: window.__CHENYUAN_V25__.getKeybinds().slash.kb,
+          matchesFull: (document.getElementById("hud-name")?.textContent || "") === pFull
+        };
+      }, P_FULL);
       assert.equal(loadedCheck.matchesFull, true, "Legacy long name must be preserved verbatim (not truncated)");
-      assert.equal(loadedCheck.stonesType, "number", "normalizeLoadedGame must coerce stones to number");
+      assert.ok(Number.isFinite(loadedCheck.stones) && loadedCheck.stones >= 0, `stones must be finite >= 0, got: ${loadedCheck.stones}`);
+      assert.ok(Number.isFinite(loadedCheck.towerBest) && loadedCheck.towerBest >= 0, `towerBest must be finite >= 0, got: ${loadedCheck.towerBest}`);
+      assert.ok(Number.isFinite(loadedCheck.tribShield) && loadedCheck.tribShield >= 0, `tribShield must be finite >= 0, got: ${loadedCheck.tribShield}`);
+      assert.ok(Number.isFinite(loadedCheck.statMultBonus) && loadedCheck.statMultBonus >= 0.5, `statMultBonus must be finite >= 0.5, got: ${loadedCheck.statMultBonus}`);
+      assert.ok(Number.isFinite(loadedCheck.daoBen) && loadedCheck.daoBen >= 0, `dao.benevolence must be finite >= 0, got: ${loadedCheck.daoBen}`);
+      assert.ok(Number.isFinite(loadedCheck.daoEdge) && loadedCheck.daoEdge >= 0, `dao.edge must be finite >= 0, got: ${loadedCheck.daoEdge}`);
+      assert.ok(Number.isFinite(loadedCheck.daoSer) && loadedCheck.daoSer >= 0, `dao.serenity must be finite >= 0, got: ${loadedCheck.daoSer}`);
+      assert.ok(Number.isFinite(loadedCheck.herb) && loadedCheck.herb >= 0, `inventory.herb must be finite >= 0, got: ${loadedCheck.herb}`);
+      assert.match(loadedCheck.hudStones, /^\d+$/, `#hud-stones must render finite integer string (not NaN), got: ${loadedCheck.hudStones}`);
+      assert.ok(!loadedCheck.hudAgeSchool.includes("NaN"), `#hud-age-school must not render NaN, got: ${loadedCheck.hudAgeSchool}`);
       assert.equal(loadedCheck.bestRushGrade, null, "ensureMetaState must reject non-whitelisted bestRushGrade");
       assert.equal(loadedCheck.slashLabel, "四段轻剑连招", "loadKeybinds must ignore untrusted storage label");
       assert.equal(loadedCheck.slashKb, "KeyI", "loadKeybinds must reject malformed kb code");
@@ -2833,22 +2856,155 @@ try {
       const page = await ctx.newPage();
       attachErrorListeners(page, "R2-7b-NumericName");
       await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
-      await page.evaluate((sk) => {
+      await page.evaluate(() => {
         localStorage.clear();
-        localStorage.setItem(sk, JSON.stringify({
+        localStorage.setItem("chenyuan_wendao_v10_save", JSON.stringify({
           game: { name: 12345, realm: "qi", stones: 88, openingChoice: "help" },
           stageIdx: 0,
           stanceIdx: 0,
           towerMode: false,
           sanctumMode: false
         }));
-      }, STORAGE_KEY);
+      });
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.waitForSelector("#btn-continue-save");
+      // Mock QuotaExceededError on STORAGE_KEY during legacy upgrade -> toast must NOT falsely claim upgrade succeeded
+      await page.evaluate((sk) => {
+        window.__origSetLeg = Storage.prototype.setItem;
+        Storage.prototype.setItem = function (k, v) {
+          if (k === sk) {
+            const err = new Error("Quota full during legacy upgrade");
+            err.name = "QuotaExceededError";
+            throw err;
+          }
+          return window.__origSetLeg.call(this, k, v);
+        };
+      }, STORAGE_KEY);
       await page.click("#btn-continue-save");
       await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
-      assert.equal(await page.textContent("#hud-name"), "12345", "Numeric legacy name must coerce to '12345' without crashing");
+      const legQuotaCheck = await page.evaluate(() => {
+        Storage.prototype.setItem = window.__origSetLeg;
+        return {
+          hudName: document.getElementById("hud-name")?.textContent || "",
+          toastTxt: document.getElementById("toast-container")?.textContent || "",
+          hasWriteErr: !!window.__CHENYUAN_V25__.getPersistenceState().storageWriteError,
+          v10Intact: !!localStorage.getItem("chenyuan_wendao_v10_save")
+        };
+      });
+      assert.equal(legQuotaCheck.hudName, "12345", "Numeric legacy name must coerce to '12345' without crashing");
+      assert.equal(legQuotaCheck.hasWriteErr, true, "Legacy upgrade quota failure must set storageWriteError");
+      assert.equal(legQuotaCheck.v10Intact, true, "Legacy v10 save must stay intact on quota failure");
+      assert.equal(legQuotaCheck.toastTxt.includes("自动升级校验封装"), false, `Legacy upgrade failure must not show false upgrade-success toast, got: ${legQuotaCheck.toastTxt}`);
       await ctx.close();
+    }
+
+    // ---- (b3) Prototype-pollution relicStars XSS (legacy) + malformed fields (null gear/learned, non-int indices, proto keys) + cross-tab saveRev:"Infinity" ----
+    {
+      // Part A: legacy save with __proto__ inside relicStars -> 0 XSS in Cultivate Drawer & Goals Endgame tab, finite HUD atk
+      const ctxProto = await newIsolatedContext(browser);
+      const pageProto = await ctxProto.newPage();
+      attachErrorListeners(pageProto, "R2-7b-ProtoRelic");
+      await pageProto.goto(targetUrl, { waitUntil: "domcontentloaded" });
+      await pageProto.evaluate((sk) => {
+        localStorage.clear();
+        const rawJson = '{"game":{"realm":"qi","name":"法宝原型测试","loadout":{"relic":"frost_sword"},"ownedRelics":["frost_sword"],"relicStars":{"__proto__":{"frost_sword":"<img src=x onerror=\\"window.__xss=99\\">"}}},"stageIdx":0,"stanceIdx":0,"towerMode":false,"sanctumMode":false}';
+        localStorage.setItem(sk, rawJson);
+      }, STORAGE_KEY);
+      await pageProto.reload({ waitUntil: "domcontentloaded" });
+      await pageProto.waitForSelector("#btn-continue-save");
+      await pageProto.click("#btn-continue-save");
+      await pageProto.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      const hudAtkText = await pageProto.textContent("#hud-age-school");
+      assert.ok(hudAtkText && !hudAtkText.includes("NaN"), `relicStars __proto__ must not poison HUD attack with NaN, got: ${hudAtkText}`);
+      await pageProto.click("#nav-btn-cultivate");
+      await pageProto.waitForSelector("#jade-panel.drawer-open #panel-scroll-body .drawer-mural-banner");
+      await probeXss(pageProto, "R2-7b-proto-relic-drawer");
+      await pageProto.keyboard.press("Escape");
+      await pageProto.waitForFunction(() => !document.getElementById("jade-panel").classList.contains("drawer-open"));
+      await pageProto.click("#btn-goals-modal");
+      await pageProto.waitForSelector('#modal-backdrop.open [data-goal-tab="endgame"]');
+      await pageProto.click('[data-goal-tab="endgame"]');
+      await probeXss(pageProto, "R2-7b-proto-relic-endgame");
+      await pageProto.keyboard.press("Escape");
+      await ctxProto.close();
+
+      // Part B: malformed legacy save (null gear/learned, omenIndex 1.5, stanceIdx -1, stageIdx "constructor", proto keys in comboSeq/souls/fruits/weaponForm, __proto__:null)
+      const ctxMal = await newIsolatedContext(browser);
+      const pageMal = await ctxMal.newPage();
+      attachErrorListeners(pageMal, "R2-7b-Malformed");
+      await pageMal.goto(targetUrl, { waitUntil: "domcontentloaded" });
+      await pageMal.evaluate((sk) => {
+        localStorage.clear();
+        const rawJson = '{"game":{"__proto__":null,"realm":"golden","unlockAllArcana":true,"name":"畸形旧档测试","equippedGear":null,"learned":null,"omenIndex":1.5,"customComboSeq":{"enabled":true,"slots":["constructor","toString","__proto__","valueOf"],"morphCount":0},"unlockedSouls":["constructor"],"equippedSoul":"bad_soul","destinyFruits":["constructor","toString"],"weaponForm":"constructor"},"stageIdx":"constructor","stanceIdx":-1,"towerMode":false,"sanctumMode":false}';
+        localStorage.setItem(sk, rawJson);
+      }, STORAGE_KEY);
+      await pageMal.reload({ waitUntil: "domcontentloaded" });
+      await pageMal.waitForSelector("#btn-continue-save");
+      await pageMal.click("#btn-continue-save");
+      await pageMal.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      const malState = await pageMal.evaluate(() => {
+        const st = window.__CHENYUAN_V25__.getState();
+        const g = st.game;
+        return {
+          protoIsObject: Object.getPrototypeOf(g) === Object.prototype,
+          hasWeapon: !!(g.equippedGear && g.equippedGear.weapon),
+          learnedIsArr: Array.isArray(g.learned) && g.learned.length > 0,
+          omenInt: Number.isInteger(g.omenIndex) && g.omenIndex >= 0,
+          stanceIdx: st.arena.stanceIdx,
+          stageIdx: st.arena.stageIdx,
+          equippedSoul: g.equippedSoul,
+          fruitsLen: Array.isArray(g.destinyFruits) ? g.destinyFruits.length : -1,
+          weaponForm: g.weaponForm,
+          soulLbl: (document.getElementById("lbl-soul-name")?.textContent || "").trim(),
+          arsBtn: (document.getElementById("btn-cycle-arsenal")?.textContent || "").trim()
+        };
+      });
+      assert.equal(malState.protoIsObject, true, "raw __proto__:null must not strip game prototype");
+      assert.equal(malState.hasWeapon, true, "equippedGear:null must fall back to default starter weapon");
+      assert.equal(malState.learnedIsArr, true, "learned:null must fall back to default learned skills");
+      assert.equal(malState.omenInt, true, "omenIndex:1.5 must be normalized to a valid integer");
+      assert.ok(Number.isInteger(malState.stanceIdx) && malState.stanceIdx >= 0 && malState.stanceIdx < 3, `stanceIdx:-1 must normalize to valid index, got: ${malState.stanceIdx}`);
+      assert.equal(malState.stageIdx, 0, `stageIdx:"constructor" must normalize to 0, got: ${malState.stageIdx}`);
+      assert.equal(malState.equippedSoul, "blood_warden", `prototype unlockedSouls must sanitize equippedSoul, got: ${malState.equippedSoul}`);
+      assert.equal(malState.fruitsLen, 0, `prototype destinyFruits must be filtered out, got length: ${malState.fruitsLen}`);
+      assert.equal(malState.weaponForm, "sword", `prototype weaponForm must default to sword, got: ${malState.weaponForm}`);
+      assert.ok(malState.soulLbl.length > 0, "#lbl-soul-name must stay populated");
+      assert.ok(malState.arsBtn.length > 0, "#btn-cycle-arsenal must stay populated");
+
+      // Open Cultivate Drawer + Combo Sequencer modal cleanly with 0 errors
+      await pageMal.click("#nav-btn-cultivate");
+      await pageMal.waitForSelector("#jade-panel.drawer-open #panel-scroll-body .drawer-mural-banner");
+      const drawerTxt = await pageMal.textContent("#panel-scroll-body");
+      assert.ok(!drawerTxt.includes("★ Object · undefined"), "Cultivate drawer must not render prototype keys as destiny fruits");
+      await pageMal.click('[data-action="open-sequencer"]');
+      await pageMal.waitForSelector("#modal-backdrop.open .seq-slot-grid");
+      await pageMal.keyboard.press("Escape");
+      await pageMal.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+
+      // Part C: cross-tab saveRev:"Infinity" must NEVER show vInfinity or write "saveRev": null
+      const infCheck = await pageMal.evaluate((sk) => {
+        const cur = JSON.parse(localStorage.getItem(sk));
+        cur.saveRev = "Infinity";
+        cur.tabId = "other_tab_inf";
+        const evilRaw = JSON.stringify(cur);
+        window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: evilRaw }));
+        const modalTxt = document.getElementById("modal-backdrop")?.classList.contains("open")
+          ? (document.getElementById("modal-content")?.textContent || "")
+          : "";
+        const pers = window.__CHENYUAN_V25__.getPersistenceState();
+        // Force overwrite should still write a finite positive integer saveRev (never null)
+        window.__CHENYUAN_V25__.saveGame({ forceOverwrite: true });
+        const afterSave = JSON.parse(localStorage.getItem(sk) || "{}");
+        return {
+          modalShowsInfinity: modalTxt.includes("vInfinity") || modalTxt.includes("Infinity"),
+          caughtReadErr: !!pers.storageReadError,
+          writtenRev: afterSave.saveRev
+        };
+      }, STORAGE_KEY);
+      assert.equal(infCheck.modalShowsInfinity, false, "saveRev:'Infinity' must NEVER render vInfinity");
+      assert.equal(infCheck.caughtReadErr, true, "saveRev:'Infinity' must be flagged as invalid save envelope");
+      assert.ok(Number.isInteger(infCheck.writtenRev) && infCheck.writtenRev >= 1, `saveRev after overwrite must be finite positive integer (never null), got: ${infCheck.writtenRev}`);
+      await ctxMal.close();
     }
 
     // ---- (c) Cloud code preview + confirm + reload with malicious payloads ----
@@ -2865,8 +3021,14 @@ try {
             name: pFull,
             realm: "nascent",
             stones: pImg,
+            statMultBonus: pImg,
             towerBest: pImg,
+            tribShield: pImg,
+            dao: { benevolence: pImg, edge: pImg, serenity: pImg },
             inventory: { herb: pImg, core: pImg },
+            loadout: { relic: "frost_sword" },
+            ownedRelics: ["frost_sword"],
+            relicStars: JSON.parse('{"__proto__":{"frost_sword":"<img src=x onerror=\\"window.__xss=99\\">"}}'),
             openingChoice: "help"
           },
           metaState: {
@@ -2877,6 +3039,7 @@ try {
           stems: { guqin: "bad_str" }
         };
         const jsonStr = JSON.stringify(payload);
+        if (!jsonStr.includes('"__proto__"')) throw new Error("Cloud XSS test payload missing __proto__ key");
         let sum = 0x24;
         for (let i = 0; i < jsonStr.length; i++) sum = (sum * 31 + jsonStr.charCodeAt(i)) & 0xFFFF;
         const chk = sum.toString(16).toUpperCase().padStart(4, "0");
@@ -2911,21 +3074,49 @@ try {
         const v22 = window.__CHENYUAN_V22__.getState();
         return {
           name: st.game.name,
-          stonesType: typeof st.game.stones,
-          herbType: typeof st.game.inventory.herb,
+          hudStones: (document.getElementById("hud-stones")?.textContent || "").trim(),
+          hudAgeSchool: document.getElementById("hud-age-school")?.textContent || "",
+          stones: st.game.stones,
+          towerBest: st.game.towerBest,
+          tribShield: st.game.tribShield,
+          statMultBonus: st.game.statMultBonus,
+          daoBen: st.game.dao?.benevolence,
+          daoEdge: st.game.dao?.edge,
+          daoSer: st.game.dao?.serenity,
+          herb: st.game.inventory.herb,
           bestRushGrade: m.bestRushGrade,
-          shakeType: typeof st.a11ySettings.shakeScale,
+          shakeScale: st.a11ySettings.shakeScale,
           rmType: typeof st.a11ySettings.reducedMotion,
-          guqinType: typeof v22.audioStems.guqin
+          guqin: v22.audioStems.guqin
         };
       });
       assert.equal(afterImport.name, P_FULL);
-      assert.equal(afterImport.stonesType, "number", "Cloud import must normalize stones to number");
-      assert.equal(afterImport.herbType, "number", "Cloud import must normalize inventory.herb to number");
+      assert.ok(Number.isFinite(afterImport.stones) && afterImport.stones >= 0, `Cloud import stones must be finite >= 0, got: ${afterImport.stones}`);
+      assert.ok(Number.isFinite(afterImport.towerBest) && afterImport.towerBest >= 0, `Cloud import towerBest must be finite >= 0, got: ${afterImport.towerBest}`);
+      assert.ok(Number.isFinite(afterImport.tribShield) && afterImport.tribShield >= 0, `Cloud import tribShield must be finite >= 0, got: ${afterImport.tribShield}`);
+      assert.ok(Number.isFinite(afterImport.statMultBonus) && afterImport.statMultBonus >= 0.5, `Cloud import statMultBonus must be finite >= 0.5, got: ${afterImport.statMultBonus}`);
+      assert.ok(Number.isFinite(afterImport.daoBen) && afterImport.daoBen >= 0, `Cloud import dao.benevolence must be finite >= 0, got: ${afterImport.daoBen}`);
+      assert.ok(Number.isFinite(afterImport.daoEdge) && afterImport.daoEdge >= 0, `Cloud import dao.edge must be finite >= 0, got: ${afterImport.daoEdge}`);
+      assert.ok(Number.isFinite(afterImport.daoSer) && afterImport.daoSer >= 0, `Cloud import dao.serenity must be finite >= 0, got: ${afterImport.daoSer}`);
+      assert.ok(Number.isFinite(afterImport.herb) && afterImport.herb >= 0, `Cloud import inventory.herb must be finite >= 0, got: ${afterImport.herb}`);
+      assert.match(afterImport.hudStones, /^\d+$/, `Cloud import #hud-stones must be finite numeric string, got: ${afterImport.hudStones}`);
+      assert.ok(!afterImport.hudAgeSchool.includes("NaN"), `Cloud import #hud-age-school must not show NaN, got: ${afterImport.hudAgeSchool}`);
       assert.equal(afterImport.bestRushGrade, null, "Cloud import must whitelist bestRushGrade");
-      assert.equal(afterImport.shakeType, "number", "Cloud import must sanitize a11ySettings.shakeScale");
+      assert.ok(Number.isFinite(afterImport.shakeScale), "Cloud import must sanitize a11ySettings.shakeScale");
       assert.equal(afterImport.rmType, "boolean", "Cloud import must sanitize a11ySettings.reducedMotion");
-      assert.equal(afterImport.guqinType, "number", "Cloud import must sanitize audioStems");
+      assert.ok(Number.isFinite(afterImport.guqin), "Cloud import must sanitize audioStems");
+
+      await page.click("#nav-btn-cultivate");
+      await page.waitForSelector("#jade-panel.drawer-open #panel-scroll-body .drawer-mural-banner");
+      await probeXss(page, "R2-7c-proto-relic-drawer");
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(() => !document.getElementById("jade-panel").classList.contains("drawer-open"));
+
+      await page.click("#btn-goals-modal");
+      await page.waitForSelector('#modal-backdrop.open [data-goal-tab="endgame"]');
+      await page.click('[data-goal-tab="endgame"]');
+      await probeXss(page, "R2-7c-proto-relic-endgame");
+      await page.keyboard.press("Escape");
 
       await page.evaluate(() => window.__CHENYUAN_V25__.openBossRushModal());
       await page.waitForSelector("#modal-backdrop.open");
@@ -3174,6 +3365,121 @@ try {
       await ctx.close();
     }
 
+    // ---- (d2b) G-T6a REAL idle animation-frame no-op flush (fresh start + Golden Core Sanctum Hub active expedition) ----
+    {
+      // Case 1: Fresh start + >=280ms real rAF frames -> hidden/pagehide MUST NOT bump saveRev or trigger false conflict in Tab B
+      const ctxIdle1 = await newIsolatedContext(browser);
+      const tabA = await ctxIdle1.newPage();
+      attachErrorListeners(tabA, "R2-7d-IdleFreshA");
+      await tabA.goto(targetUrl, { waitUntil: "domcontentloaded" });
+      await tabA.evaluate(() => localStorage.clear());
+      await tabA.reload({ waitUntil: "domcontentloaded" });
+      await tabA.click("#btn-start-new");
+      await tabA.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+
+      const revFresh0 = await tabA.evaluate((sk) => JSON.parse(localStorage.getItem(sk)).saveRev, STORAGE_KEY);
+      const tabB = await ctxIdle1.newPage();
+      attachErrorListeners(tabB, "R2-7d-IdleFreshB");
+      await tabB.goto(targetUrl, { waitUntil: "domcontentloaded" });
+      await tabB.waitForSelector("#btn-continue-save");
+      await tabB.click("#btn-continue-save");
+      await tabB.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+
+      await tabA.waitForTimeout(300);
+      await tabA.evaluate(() => {
+        const origDesc = Object.getOwnPropertyDescriptor(Document.prototype, "visibilityState");
+        Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+        document.dispatchEvent(new Event("visibilitychange"));
+        window.dispatchEvent(new Event("pagehide"));
+        if (origDesc) Object.defineProperty(document, "visibilityState", origDesc);
+        else delete document.visibilityState;
+      });
+      await tabB.waitForTimeout(120);
+      const idleFreshRes = await tabB.evaluate((sk) => ({
+        revNow: JSON.parse(localStorage.getItem(sk)).saveRev,
+        tabBConflict: window.__CHENYUAN_V25__.getPersistenceState().saveConflictState
+      }), STORAGE_KEY);
+      assert.equal(idleFreshRes.revNow, revFresh0, `G-T6a fresh idle rAF must NOT bump saveRev (${revFresh0} -> ${idleFreshRes.revNow})`);
+      assert.equal(idleFreshRes.tabBConflict, null, "G-T6a fresh idle rAF must NOT trigger false conflict in Tab B");
+      await ctxIdle1.close();
+
+      // Case 2: Golden Core player in Sanctum Hub with active qinglan_vein expedition -> >=280ms real rAF frames (tickTimer ticks!) -> tab hide/switch MUST NOT bump saveRev or trigger false conflict
+      const ctxIdle2 = await newIsolatedContext(browser);
+      const tabS1 = await ctxIdle2.newPage();
+      attachErrorListeners(tabS1, "R2-7d-IdleSanctumA");
+      await tabS1.goto(targetUrl, { waitUntil: "domcontentloaded" });
+      await tabS1.evaluate(() => localStorage.clear());
+      await tabS1.reload({ waitUntil: "domcontentloaded" });
+      await tabS1.click("#btn-start-new");
+      await tabS1.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      const revBeforeSanctumContinue = await tabS1.evaluate((sk) => {
+        const api = window.__CHENYUAN_V25__;
+        const g = api.getState().game;
+        g.realm = "golden";
+        g.openingChoice = "help";
+        g.tutorialStep = 4;
+        g.seenCutscenes.prologue = true;
+        g.seenCutscenes.enter_sanctum = true;
+        g.expeditions = { assignments: { qinglan_vein: "shen" }, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 8.5 };
+        api.enterSanctumHub();
+        return JSON.parse(localStorage.getItem(sk)).saveRev;
+      }, STORAGE_KEY);
+      // Reload Tab S1 cleanly and click #btn-continue-save (simulating real Sanctum resume)
+      await tabS1.reload({ waitUntil: "domcontentloaded" });
+      await tabS1.waitForSelector("#btn-continue-save");
+      await tabS1.click("#btn-continue-save");
+      await tabS1.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      await tabS1.waitForTimeout(300);
+
+      const tickCheck = await tabS1.evaluate((sk) => ({
+        tickTimer: window.__CHENYUAN_V25__.getState().game.expeditions.tickTimer,
+        revAfterContinue: JSON.parse(localStorage.getItem(sk)).saveRev
+      }), STORAGE_KEY);
+      assert.ok(tickCheck.tickTimer < 8.5, `Expected expedition tickTimer to decrement during idle rAF, got: ${tickCheck.tickTimer}`);
+      assert.equal(tickCheck.revAfterContinue, revBeforeSanctumContinue, "Continuing Sanctum Hub save must NOT bump saveRev");
+
+      const tabS2 = await ctxIdle2.newPage();
+      attachErrorListeners(tabS2, "R2-7d-IdleSanctumB");
+      await tabS2.goto(targetUrl, { waitUntil: "domcontentloaded" });
+      await tabS2.waitForSelector("#btn-continue-save");
+      await tabS2.click("#btn-continue-save");
+      await tabS2.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      await tabS2.waitForTimeout(300);
+
+      // Simulate hiding both tabs after idle rAF ticks
+      for (const pg of [tabS1, tabS2]) {
+        await pg.evaluate(() => {
+          const origDesc = Object.getOwnPropertyDescriptor(Document.prototype, "visibilityState");
+          Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+          document.dispatchEvent(new Event("visibilitychange"));
+          if (origDesc) Object.defineProperty(document, "visibilityState", origDesc);
+          else delete document.visibilityState;
+        });
+      }
+      await tabS1.waitForTimeout(120);
+      const sanctumIdleRes = await tabS1.evaluate((sk) => ({
+        revNow: JSON.parse(localStorage.getItem(sk)).saveRev,
+        s1Conf: window.__CHENYUAN_V25__.getPersistenceState().saveConflictState
+      }), STORAGE_KEY);
+      const s2Conf = await tabS2.evaluate(() => window.__CHENYUAN_V25__.getPersistenceState().saveConflictState);
+      assert.equal(sanctumIdleRes.revNow, revBeforeSanctumContinue, `G-T6a Sanctum active expedition idle rAF must NOT bump saveRev (${revBeforeSanctumContinue} -> ${sanctumIdleRes.revNow})`);
+      assert.equal(sanctumIdleRes.s1Conf, null, "Tab S1 must NOT enter false conflict on idle tab switch");
+      assert.equal(s2Conf, null, "Tab S2 must NOT enter false conflict on idle tab switch");
+
+      // Genuine mutation (stones += 10) MUST flush on visibilitychange(hidden)
+      await tabS1.evaluate(() => {
+        window.__CHENYUAN_V25__.getState().game.stones += 10;
+        const origDesc = Object.getOwnPropertyDescriptor(Document.prototype, "visibilityState");
+        Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+        document.dispatchEvent(new Event("visibilitychange"));
+        if (origDesc) Object.defineProperty(document, "visibilityState", origDesc);
+        else delete document.visibilityState;
+      });
+      const revAfterRealMut = await tabS1.evaluate((sk) => JSON.parse(localStorage.getItem(sk)).saveRev, STORAGE_KEY);
+      assert.equal(revAfterRealMut, revBeforeSanctumContinue + 1, "Genuine mutation in Sanctum Hub must still flush on visibilitychange(hidden)");
+      await ctxIdle2.close();
+    }
+
     // ---- (d3) G-T1a reincarnate-now under metaReadError & meta quota failure + G-T3a modal opened inside #jade-panel focus return ----
     {
       const { ctx, page } = await startCleanGamePage(browser, "R2-7d-GT1a-GT3a", true);
@@ -3204,8 +3510,30 @@ try {
       assert.equal(gt3aFocus.drawerStillOpen, true, "G-T3a: drawer must stay open after closing nested modal");
       assert.equal(gt3aFocus.insidePanel, true, "G-T3a: focus must stay inside #jade-panel");
       assert.equal(gt3aFocus.triggerAttr, "weapon", `G-T3a: focus must return to exact trigger [data-reforge-slot="weapon"], got: ${gt3aFocus.triggerAttr}`);
+
+      // Real [data-engrave-slot="weapon"] confirm re-renders drawer + closes modal: focus MUST stay inside #jade-panel (never BODY)
+      await page.click('#jade-panel [data-reforge-slot="weapon"]');
+      await page.waitForSelector('#modal-backdrop.open [data-engrave-slot="weapon"]:not([disabled])');
+      await page.click('#modal-backdrop.open [data-engrave-slot="weapon"]:not([disabled])');
+      await page.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+      const afterEngraveFocus = await page.evaluate(() => {
+        const panel = document.getElementById("jade-panel");
+        const ae = document.activeElement;
+        return {
+          drawerOpen: !!panel && panel.classList.contains("drawer-open"),
+          insidePanel: !!panel && panel.contains(ae),
+          activeTag: ae ? ae.tagName : "",
+          reforgeSlot: ae ? ae.getAttribute("data-reforge-slot") : null
+        };
+      });
+      assert.equal(afterEngraveFocus.drawerOpen, true, "Drawer must stay open after affix engrave");
+      assert.equal(afterEngraveFocus.insidePanel, true, `Focus must stay inside #jade-panel after affix engrave re-render, got activeTag=${afterEngraveFocus.activeTag}`);
+      assert.notEqual(afterEngraveFocus.activeTag, "BODY", "Focus must never drop to BODY after affix engrave");
+      assert.equal(afterEngraveFocus.reforgeSlot, "weapon", `Focus should land on refreshed [data-reforge-slot="weapon"], got: ${afterEngraveFocus.reforgeSlot}`);
       await page.keyboard.press("Escape");
       await page.waitForFunction(() => !document.getElementById("jade-panel").classList.contains("drawer-open"));
+      // Restore stones to 333 after engrave spent 35
+      await page.evaluate(() => { window.__CHENYUAN_V25__.getState().game.stones = 333; window.__CHENYUAN_V25__.saveGame(); });
 
       // G-T1a Case 1: reincarnate-now under metaReadError aborts & preserves primary save
       await page.evaluate((mk) => {
@@ -3270,6 +3598,29 @@ try {
       assert.equal(gt1aCase2.lifeRecorded, false, "G-T1a: failed reincarnate must roll back game.lifeRecorded");
       assert.equal(gt1aCase2.hallLenAfter, gt1aCase2.hallLenBefore, "G-T1a: failed reincarnate must roll back metaState.hallOfLives");
       assert.ok(gt1aCase2.alertVisible && gt1aCase2.alertText.includes("元存档写入失败"), `G-T1a/b: failed reincarnate must show visible meta write alert, got: ${gt1aCase2.alertText}`);
+
+      // AGENTS.md & T6: active storageReadError MUST block confirm-reset-save, execute-reset-save, and reincarnate-now and preserve corrupted STORAGE_KEY verbatim
+      const corruptPrimaryRaw = "{CORRUPT_PRIMARY_SAVE_MUST_BE_PRESERVED_R27";
+      const corruptGuardRes = await page.evaluate(({ sk, raw }) => {
+        localStorage.setItem(sk, raw);
+        window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: raw }));
+        const hadReadErr = !!window.__CHENYUAN_V25__.getPersistenceState().storageReadError;
+        for (const act of ["confirm-reset-save", "execute-reset-save", "reincarnate-now"]) {
+          const btn = document.createElement("button");
+          btn.setAttribute("data-action", act);
+          document.body.appendChild(btn);
+          btn.click();
+          btn.remove();
+        }
+        return {
+          hadReadErr,
+          rawAfter: localStorage.getItem(sk),
+          hasGameAfter: !!window.__CHENYUAN_V25__.getState().game
+        };
+      }, { sk: STORAGE_KEY, raw: corruptPrimaryRaw });
+      assert.equal(corruptGuardRes.hadReadErr, true, "Corrupt primary storage event must activate storageReadError");
+      assert.equal(corruptGuardRes.rawAfter, corruptPrimaryRaw, "reincarnate-now and execute-reset-save must preserve corrupted primary save verbatim");
+      assert.equal(corruptGuardRes.hasGameAfter, true, "Blocked reset/reincarnate under storageReadError must keep active game");
       await ctx.close();
     }
   });
