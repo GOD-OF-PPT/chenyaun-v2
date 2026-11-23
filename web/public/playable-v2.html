@@ -110,6 +110,7 @@
     position: absolute; inset: 0; width: 100%; height: 100%;
     overflow: hidden; background: #050d10; cursor: crosshair; touch-action: none;
   }
+  #visual-stage:focus { outline: none; }
   #stage-bg-img {
     position: absolute; inset: -2.5%; width: 105%; height: 105%;
     object-fit: cover; object-position: center;
@@ -3522,7 +3523,7 @@
 
   <!-- FULL-SCREEN 45° ISOMETRIC 2.5D ARENA + COLLAPSIBLE DRAWER -->
   <main id="main-workspace">
-    <section id="visual-stage">
+    <section id="visual-stage" tabindex="-1" aria-label="剑阵战场">
       <img id="stage-bg-img" alt="道场" />
       <canvas id="fx-canvas"></canvas>
       <div id="stage-vignette-css"></div>
@@ -3617,13 +3618,13 @@
           </div>
           <span class="v22-key-badge">]</span>
         </button>
-        <button type="button" id="btn-celestial-time" class="v23-ep-btn" data-action="cycle-celestial-time" data-tip="太虚天时 · 四相昼夜流转 (`键切换晨曦/烈阳/血暮/星河)|实时流转或一键切换四相天光与倒影法则：【晨曦紫气】正道回灵护盾、【烈阳当空】剑意暴涨、【残阳血暮】魔心火血+42%、【极夜星河】二十八星宿翻倍 + 首领月华夜煞与必掉星魄！">
+        <button type="button" id="btn-celestial-time" class="v23-ep-btn" data-action="cycle-celestial-time" data-tip="太虚天时 · 四相昼夜流转 (\键切换晨曦/烈阳/血暮/星河)|实时流转或一键切换四相天光与倒影法则：【晨曦紫气】正道42%莲盾、每秒回血4%/回元5%、仙葫+25%、减伤+4；【烈阳当空】常驻攻击池+10%、法天元神+25%；【残阳血暮】常驻攻击池魔心+22%/其余+12%、暴伤+16%、重击回2%最大气血；【极夜星河】二十八星宿翻倍(×2.0) + 首领月华夜煞与必掉星魄！">
           <img id="img-celestial-ico" alt="四相天时" />
           <div style="display:flex;flex-direction:column;gap:1px;">
             <strong id="lbl-celestial-title" style="font-family:var(--font-serif);font-size:11px;color:#ffe89e;">晨曦紫气</strong>
-            <span id="lbl-celestial-sub" style="font-size:9.2px;color:#9effec;">正道回灵+盾</span>
+            <span id="lbl-celestial-sub" style="font-size:9.2px;color:#9effec;">正道护盾+回灵</span>
           </div>
-          <span class="v22-key-badge">~</span>
+          <span class="v22-key-badge">\</span>
         </button>
         <button type="button" id="btn-comic-scroll" class="v23-ep-btn" data-action="open-comic-scroll" data-tip="太虚剑意录 · 四格水墨连环画战报|自动抓拍本局最惊艳的 4 帧高光瞬间（识破剑反/双神角力/踏躯逆鳞/双剑诛仙），一键生成宣纸朱砂题跋【四格水墨连环画长卷】并导出高清 PNG！">
           <img id="img-comic-ico" alt="剑意战报" />
@@ -3689,7 +3690,7 @@
       <div id="cd-dash" class="skill-cd-mask"></div>
     </button>
 
-    <button type="button" id="orb-stance" class="skill-orb-btn stance-hunt" data-unlock-rank="1" data-arena-skill="stance" data-tip="三才剑阵变幻 (Y / B)|炼气期解封：实时切换【游龙阵(追猎叠印) → 剑轮阵(护体斩弹幕) → 巨阙阵(玄天巨剑重劈破势)】！">
+    <button type="button" id="orb-stance" class="skill-orb-btn stance-hunt" data-unlock-rank="1" data-arena-skill="stance" data-tip="三才剑阵变幻 (Y / 手柄B)|炼气期解封：实时切换【游龙阵(追猎叠印) → 剑轮阵(护体斩弹幕) → 巨阙阵(玄天巨剑重劈破势)】！">
       <img id="orb-img-stance" alt="剑阵" />
       <span class="skill-key-cap" data-bind-cap="stance">Y</span>
       <span class="skill-orb-lbl" id="lbl-stance-mode">游龙阵</span>
@@ -3754,7 +3755,7 @@
       引动天劫 (B)
     </button>
 
-    <button type="button" id="orb-pill" class="skill-orb-btn" data-unlock-rank="0" data-arena-skill="pill" data-tip="本命九转仙葫 · 三槽泡酒灵粹 (Q)|畅饮本命仙葫瞬间回血并触发已镶嵌的三槽泡酒神效！回洞府自动满酿">
+    <button type="button" id="orb-pill" class="skill-orb-btn" data-unlock-rank="0" data-arena-skill="pill" data-tip="本命九转仙葫 / 回春丹 (Q)|优先畅饮本命仙葫瞬间回血并触发已镶嵌的三槽泡酒神效；空葫时自动服用背包【回春丹】救急！回洞府自动满酿">
       <img id="orb-img-pill" alt="仙葫" />
       <span class="skill-key-cap" data-bind-cap="pill">Q</span>
       <span class="skill-orb-lbl" id="lbl-pill-count">葫5/5</span>
@@ -4607,11 +4608,81 @@ const ART = {
   };
 
   // ==================== 2. CELESTIAL OMENS & CORE WORLD DATA ====================
+  // Shared single source of truth for combat rule parameters referenced by BOTH live formulas and copy builders (F06)
+  const COMBAT_RULE_PARAMS = Object.freeze({
+    passiveSoftCapKnee: 0.95,
+    passiveSoftCapMax: 1.65,
+    activeMultCap: 1.95,
+    critCap: 0.78,
+    critMultCap: 2.35,
+    skills: Object.freeze({
+      sword_pierce:   Object.freeze({ mindAtk: 10 }),
+      sword_still:    Object.freeze({ mindDr: 8, xpMult: 1.25 }),
+      talisman_clear: Object.freeze({ mindDr: 12, mindAtk: 5 })
+    }),
+    laws: Object.freeze({
+      wealth_power:    Object.freeze({ perStones: 100, pctPerStep: 0.04, maxPct: 0.36, pool: "passive" }),
+      stagger_surge:   Object.freeze({ baseStunMult: 1.45, enhancedStunMult: 1.65, breakMp: 15, breakUltCdReduce: 1.5 }),
+      crit_lotus:      Object.freeze({ crit: 0.18, critMult: 0.18 }),
+      age_might:       Object.freeze({ baseAge: 18, yearsPerStep: 10, pctPerStep: 0.06, maxPct: 0.30, pool: "passive" }),
+      karma_resonance: Object.freeze({ pctPerChoice: 0.05, maxPct: 0.28, pool: "passive" })
+    }),
+    omens: Object.freeze({
+      wolf_star: Object.freeze({ crit: 0.12, stoneMult: 1.40 })
+    }),
+    celestialPhases: Object.freeze({
+      dawn:       Object.freeze({ dr: 4, righteousShieldPct: 0.42, hpRegenPctPerSec: 0.04, mpRegenPctPerSec: 0.05, healAmp: 1.25 }),
+      noon:       Object.freeze({ passiveAtkPct: 0.10, astralEnergyMult: 1.25 }),
+      blood_dusk: Object.freeze({ demonicPassiveAtkPct: 0.22, otherPassiveAtkPct: 0.12, critMult: 0.16, heavyHealMaxHpPct: 0.02 }),
+      star_night: Object.freeze({ starChartMult: 2.0 })
+    }),
+    climates: Object.freeze({
+      sword_wind:   Object.freeze({ haste: 0.12, speedMult: 1.10 }),
+      thunder_loom: Object.freeze({ critMult: 0.14 }),
+      blood_haze:   Object.freeze({ playerActiveMult: 1.15, enemyAtkMult: 1.18 })
+    }),
+    runBoons: Object.freeze({
+      blood_intent:    Object.freeze({ hpThreshold: 0.55, crit: 0.20, intentGainMult: 1.65 }),
+      posture_shatter: Object.freeze({ postureMult: 1.45, mobTrueDmgRatio: 0.18, bossTrueDmgRatio: 0.08 }),
+      gourd_overload:  Object.freeze({ durationSec: 7.0, hyperArmorSec: 5.0, passiveAtkPct: 0.28, haste: 0.22 }),
+      vampiric_qi:     Object.freeze({ breakHealPct: 0.06, killHealPct: 0.08, mpGain: 12 }),
+      aerial_reign:    Object.freeze({ dmgMult: 1.45 }),
+      gold_alchemist:  Object.freeze({ stoneDropMult: 1.45, perStones: 100, pctPerStep: 0.03, maxPct: 0.28, pool: "passive" })
+    })
+  });
+
+  function getLawLiveContributionText(g, lawId) {
+    if (!g) return "";
+    const P = COMBAT_RULE_PARAMS;
+    if (lawId === "wealth_power") {
+      const wp = P.laws.wealth_power;
+      const rawPct = Math.min(wp.maxPct, Math.floor(Math.max(0, num(g.stones, 0)) / wp.perStones) * wp.pctPerStep);
+      return `当前常驻池 +${Math.round(rawPct * 100)}% / 上限 +${Math.round(wp.maxPct * 100)}%`;
+    }
+    if (lawId === "age_might") {
+      const am = P.laws.age_might;
+      const years = Math.floor(((g.startAgeMonths || 216) + (g.elapsedMonths || 0)) / 12);
+      const rawPct = Math.min(am.maxPct, Math.floor(Math.max(0, years - am.baseAge) / am.yearsPerStep) * am.pctPerStep);
+      return `当前常驻池 +${Math.round(rawPct * 100)}% / 上限 +${Math.round(am.maxPct * 100)}%`;
+    }
+    if (lawId === "karma_resonance") {
+      const kr = P.laws.karma_resonance;
+      const rawPct = Math.min(kr.maxPct, Object.keys(g.choices || {}).length * kr.pctPerChoice);
+      return `当前常驻池 +${Math.round(rawPct * 100)}% / 上限 +${Math.round(kr.maxPct * 100)}%`;
+    }
+    return "";
+  }
+
   const CELESTIAL_OMENS = [
     { id: "tide", name: "灵潮涌动", short: "吐纳+45%", desc: "天地灵脉潮汐暴涨，洞府吐纳与闭关修为收益 +45%！" },
     { id: "alchemy_star", name: "紫微临丹", short: "仙品丹率大增", desc: "紫微星垂照丹庐，控火黄金温区拓宽 +10%，成丹额外获丹香修为！" },
     { id: "harvest", name: "百草丰年", short: "采集产出+1", desc: "山川灵粹盎然，所有灵脉采集、宗门委托与秘境药谷材料产出 +1！" },
-    { id: "wolf_star", name: "贪狼破军", short: "暴击+18%·战利+40%", desc: "杀伐星动，全招式暴击率 +18%，除妖与镇妖塔灵石收益 +40%！" },
+    {
+      id: "wolf_star",
+      name: "贪狼破军",
+      short: `暴击+${Math.round(COMBAT_RULE_PARAMS.omens.wolf_star.crit * 100)}%·战利+${Math.round((COMBAT_RULE_PARAMS.omens.wolf_star.stoneMult - 1) * 100)}%`,
+      desc: `杀伐星动，全招式暴击率 +${Math.round(COMBAT_RULE_PARAMS.omens.wolf_star.crit * 100)}%（总暴击上限 ${Math.round(COMBAT_RULE_PARAMS.critCap * 100)}%），除妖与镇妖塔灵石收益 +${Math.round((COMBAT_RULE_PARAMS.omens.wolf_star.stoneMult - 1) * 100)}%！`
+    },
     { id: "fair", name: "万宝云集", short: "坊市8折·赌玉翻倍", desc: "九州商帮齐聚云岚坊市，采买 8 折优惠，古玉鉴宝切出仙髓率翻倍！" }
   ];
 
@@ -4658,8 +4729,8 @@ const ART = {
 
   const SKILLS = {
     sword_mind:    { id: "sword_mind", name: "青锋心诀", school: "sword", slot: "mind", min: "qi", price: 0, art: "icon_blade", desc: "基础剑道心法：左键四段剑舞叠剑印，右键切手派生与爆剑破除敌方架势。" },
-    sword_still:   { id: "sword_still", name: "止水剑心", school: "sword", slot: "mind", min: "foundation", price: 95, art: "icon_heart", desc: "【稳守流】周天吐纳与修为获取 +25%，常驻护体减伤 +6。" },
-    sword_pierce:  { id: "sword_pierce", name: "破妄剑心", school: "sword", slot: "mind", min: "foundation", price: 95, art: "icon_blade", desc: "【锐攻流】基础剑道攻击永久 +14，高爆发斩破妖王架势。" },
+    sword_still:   { id: "sword_still", name: "止水剑心", school: "sword", slot: "mind", min: "foundation", price: 95, art: "icon_heart", desc: `【稳守流】装备于心法槽时生效：周天吐纳与修为获取 +${Math.round((COMBAT_RULE_PARAMS.skills.sword_still.xpMult - 1) * 100)}%，护体减伤 +${COMBAT_RULE_PARAMS.skills.sword_still.mindDr}。` },
+    sword_pierce:  { id: "sword_pierce", name: "破妄剑心", school: "sword", slot: "mind", min: "foundation", price: 95, art: "icon_blade", desc: `【锐攻流】装备于心法槽时生效：基础剑道攻击 +${COMBAT_RULE_PARAMS.skills.sword_pierce.mindAtk}，高爆发斩破妖王架势。` },
     sword_build:   { id: "sword_build", name: "青锋起势", school: "sword", slot: "builder", min: "qi", price: 0, art: "icon_blade", desc: "基础起手剑势：稳定挥出青锋剑气并为目标叠剑印。" },
     sword_guard:   { id: "sword_guard", name: "听雨剑势", school: "sword", slot: "builder", min: "foundation", price: 80, art: "icon_seal", desc: "【护体剑幕】出剑同步凝起短暂剑幕灵盾，稳健换血与防失误。" },
     sword_surge:   { id: "sword_surge", name: "惊涛剑势", school: "sword", slot: "builder", min: "foundation", price: 80, art: "icon_blade", desc: "【狂澜猛攻】四段剑舞与剑气威力大幅提升 +24%！" },
@@ -4668,8 +4739,8 @@ const ART = {
     sword_shatter: { id: "sword_shatter", name: "断岳斩", school: "sword", slot: "finisher", min: "golden", price: 155, art: "icon_blade", desc: "【裂地爆发】四段终结斩伤害暴涨 +45%，强力轰碎护盾与架势！" },
 
     talisman_mind:    { id: "talisman_mind", name: "镇灵心诀", school: "talisman", slot: "mind", min: "qi", price: 0, art: "icon_seal", desc: "基础雷符心法：出招附着灼魂符印与雷链共鸣，右键爆剑引爆高额符伤。" },
-    talisman_calm:    { id: "talisman_calm", name: "太清符心", school: "talisman", slot: "mind", min: "foundation", price: 95, art: "icon_scroll", desc: "【回灵流】周天吐纳与修为获取 +25%，持久释放法宝剑域更从容。" },
-    talisman_clear:   { id: "talisman_clear", name: "清虚符心", school: "talisman", slot: "mind", min: "foundation", price: 95, art: "icon_heart", desc: "【御守流】常驻护体减伤 +10、基础攻击 +6，稳扎稳打。" },
+    talisman_calm:    { id: "talisman_calm", name: "太清符心", school: "talisman", slot: "mind", min: "foundation", price: 95, art: "icon_scroll", desc: "【回灵流】装备于心法槽时生效：周天吐纳与修为获取 +25%，持久释放法宝剑域更从容。" },
+    talisman_clear:   { id: "talisman_clear", name: "清虚符心", school: "talisman", slot: "mind", min: "foundation", price: 95, art: "icon_heart", desc: `【御守流】装备于心法槽时生效：护体减伤 +${COMBAT_RULE_PARAMS.skills.talisman_clear.mindDr}、基础攻击 +${COMBAT_RULE_PARAMS.skills.talisman_clear.mindAtk}，稳扎稳打。` },
     talisman_build:   { id: "talisman_build", name: "镇灵符", school: "talisman", slot: "builder", min: "qi", price: 0, art: "icon_seal", desc: "基础镇灵起符：挥招附带符障护体并叠加剑印。" },
     talisman_frost:   { id: "talisman_frost", name: "寒霜符", school: "talisman", slot: "builder", min: "foundation", price: 80, art: "icon_seal", desc: "【寒霜附刃】剑气化作玄冥霜蓝，命中持续施加 2.6 秒寒霜减速！" },
     talisman_ember:   { id: "talisman_ember", name: "烬火符", school: "talisman", slot: "builder", min: "foundation", price: 80, art: "icon_seal", desc: "【烈焰余烬】剑招伤害 +24%，且敌方灼魂燃烧持续伤害暴涨 +45%！" },
@@ -4690,17 +4761,17 @@ const ART = {
     wanjian:         { id: "wanjian", name: "万剑归宗", rarity: "仙品", cat: "剑符神通", desc: "环身飞剑永久 +2，出剑额外激发追踪飞剑与剑雨弧光！" },
     yinyang:         { id: "yinyang", name: "阴阳剑符", rarity: "鸿蒙", cat: "跨派神通", desc: "打通剑符界限！剑招附带灼魂符印，爆剑与连携引动额外雷火爆发！" },
     pill_fire:       { id: "pill_fire", name: "丹火不息", rarity: "仙品", cat: "丹战神通", desc: "按 Q 饮仙葫或服回春丹时瞬间引爆大范围丹火震波，重创周围群妖！" },
-    wealth_power:    { id: "wealth_power", name: "聚宝乾坤", rarity: "仙品", cat: "财道气运", desc: "每持有 100 灵石剑道攻击 +6%（最高 +85%），战利品灵石收益大幅提升！" },
+    wealth_power:    { id: "wealth_power", name: "聚宝乾坤", rarity: "仙品", cat: "财道气运", desc: `每持有 ${COMBAT_RULE_PARAMS.laws.wealth_power.perStones} 灵石提供 +${Math.round(COMBAT_RULE_PARAMS.laws.wealth_power.pctPerStep * 100)}% 攻击加成（上限 +${Math.round(COMBAT_RULE_PARAMS.laws.wealth_power.maxPct * 100)}%，计入常驻增伤池并受 ${Math.round(COMBAT_RULE_PARAMS.passiveSoftCapKnee * 100)}%～${Math.round(COMBAT_RULE_PARAMS.passiveSoftCapMax * 100)}% 软上限约束）。` },
     thunder_body:    { id: "thunder_body", name: "紫霄雷体", rarity: "仙品", cat: "不灭雷体", desc: "周身雷罡环绕，周期引落紫霄神雷自动劈击近身妖兽并联动水洼感电！" },
-    crit_lotus:      { id: "crit_lotus", name: "刹那芳华", rarity: "灵品", cat: "剑符神通", desc: "暴击率 +25%、暴击倍率 +22%，破势处决与识破剑反必定暴击！" },
+    crit_lotus:      { id: "crit_lotus", name: "刹那芳华", rarity: "灵品", cat: "剑符神通", desc: `暴击率 +${Math.round(COMBAT_RULE_PARAMS.laws.crit_lotus.crit * 100)}%（总上限 ${Math.round(COMBAT_RULE_PARAMS.critCap * 100)}%）、暴击倍率 +${Math.round(COMBAT_RULE_PARAMS.laws.crit_lotus.critMult * 100)}%（总上限 ${COMBAT_RULE_PARAMS.critMultCap.toFixed(2)}×），破势处决与识破剑反必定暴击！` },
     nine_pill:       { id: "nine_pill", name: "九转丹香", rarity: "仙品", cat: "丹器造化", desc: "丹鼎控火黄金区大幅拓宽，每次成丹产出额外 +1 枚且永久增益气血！" },
     eternal_spring:  { id: "eternal_spring", name: "生生造化", rarity: "灵品", cat: "不灭雷体", desc: "战中持续缓缓回复气血与剑元，搭配【丹火不息】觉醒青莲不灭真身！" },
-    stagger_surge:   { id: "stagger_surge", name: "破阵惊雷", rarity: "仙品", cat: "剑符神通", desc: "敌方破势易伤暴涨至 +75%，击空架势立即回复剑元并缩短法宝冷却！" },
+    stagger_surge:   { id: "stagger_surge", name: "破阵惊雷", rarity: "仙品", cat: "剑符神通", desc: `敌方破势易伤由 ${COMBAT_RULE_PARAMS.laws.stagger_surge.baseStunMult.toFixed(2)}×(+${Math.round((COMBAT_RULE_PARAMS.laws.stagger_surge.baseStunMult - 1) * 100)}%) 提升至 ${COMBAT_RULE_PARAMS.laws.stagger_surge.enhancedStunMult.toFixed(2)}×(+${Math.round((COMBAT_RULE_PARAMS.laws.stagger_surge.enhancedStunMult - 1) * 100)}%，并与处决倍率叠乘)；击空架势立即回复 ${COMBAT_RULE_PARAMS.laws.stagger_surge.breakMp} 剑元并缩短法宝冷却 ${COMBAT_RULE_PARAMS.laws.stagger_surge.breakUltCdReduce} 秒！` },
     void_haste:      { id: "void_haste", name: "太虚神速", rarity: "灵品", cat: "气运财道", desc: "身法移速与周天吐纳大幅提速，每次吸收灵韵光球额外获得灵石！" },
     relic_awake:     { id: "relic_awake", name: "百宝通灵", rarity: "仙品", cat: "丹器造化", desc: "本命法宝【太虚剑域】冷却大幅缩短，剑域爆发伤害与护盾 +40%！" },
     beast_soul:      { id: "beast_soul", name: "兽魂共鸣", rarity: "鸿蒙", cat: "御兽神通", desc: "本命灵兽主动协同出手频率大幅提升（1.95s → 1.15s），绝技威力 +60%！" },
-    age_might:       { id: "age_might", name: "岁月长歌", rarity: "灵品", cat: "不灭雷体", desc: "随骨龄增长永久提升剑道威力（最高 +40%），采集委托耗时减半！" },
-    karma_resonance: { id: "karma_resonance", name: "红尘同心", rarity: "鸿蒙", cat: "因果神通", desc: "每段已结故人因果提供 +6% 增伤，大幅强化【故人助阵】合击频率与威能！" },
+    age_might:       { id: "age_might", name: "岁月长歌", rarity: "灵品", cat: "不灭雷体", desc: `骨龄超过 ${COMBAT_RULE_PARAMS.laws.age_might.baseAge} 岁后每增 ${COMBAT_RULE_PARAMS.laws.age_might.yearsPerStep} 载提供 +${Math.round(COMBAT_RULE_PARAMS.laws.age_might.pctPerStep * 100)}% 攻击加成（上限 +${Math.round(COMBAT_RULE_PARAMS.laws.age_might.maxPct * 100)}%，计入常驻增伤池），采集委托耗时减半！` },
+    karma_resonance: { id: "karma_resonance", name: "红尘同心", rarity: "鸿蒙", cat: "因果神通", desc: `每段已结故人因果提供 +${Math.round(COMBAT_RULE_PARAMS.laws.karma_resonance.pctPerChoice * 100)}% 攻击加成（上限 +${Math.round(COMBAT_RULE_PARAMS.laws.karma_resonance.maxPct * 100)}%，计入常驻增伤池），大幅强化【故人助阵】合击频率与威能！` },
     destiny_eye:     { id: "destiny_eye", name: "天命慧眼", rarity: "灵品", cat: "气运财道", desc: "击杀掉落灵石与灵草翻倍，所有采集与宗门委托材料产出额外 +1！" }
   };
 
@@ -5625,10 +5696,10 @@ const ART = {
 
   // ==================== 5A-M2. 5-LAYER EXPEDITION STAR-MAP, CLIMATES & 12 RUN-SCOPED BOONS ====================
   const DUNGEON_CLIMATES = {
-    sword_wind:   { id: "sword_wind",   name: "剑风呼啸", icon: "🌪", badge: "攻速+15% · 移速+10%", desc: "剑风贯阵：挥剑攻速 +15%、身法移速 +10%" },
+    sword_wind:   { id: "sword_wind",   name: "剑风呼啸", icon: "🌪", badge: `攻速+${Math.round(COMBAT_RULE_PARAMS.climates.sword_wind.haste * 100)}% · 移速+${Math.round((COMBAT_RULE_PARAMS.climates.sword_wind.speedMult - 1) * 100)}%`, desc: `剑风贯阵：挥剑攻速 +${Math.round(COMBAT_RULE_PARAMS.climates.sword_wind.haste * 100)}%、身法移速 +${Math.round((COMBAT_RULE_PARAMS.climates.sword_wind.speedMult - 1) * 100)}%` },
     spirit_mist:  { id: "spirit_mist",  name: "灵雾滋养", icon: "🌫", badge: "灵草翻倍 · 回灵+35%", desc: "灵雾充盈：灵气与灵草掉落翻倍，剑元恢复 +35%" },
-    thunder_loom: { id: "thunder_loom", name: "雷云压境", icon: "⛈", badge: "暴伤+18% · 易引链雷", desc: "雷云低垂：暴击伤害 +18%，每次暴击易引紫电链雷" },
-    blood_haze:   { id: "blood_haze",   name: "煞气凝重", icon: "🩸", badge: "敌我伤+18% · 仙装高爆", desc: "凶煞翻涌：敌我伤害均 +18%，精英仙装爆率大增" }
+    thunder_loom: { id: "thunder_loom", name: "雷云压境", icon: "⛈", badge: `暴伤+${Math.round(COMBAT_RULE_PARAMS.climates.thunder_loom.critMult * 100)}% · 易引链雷`, desc: `雷云低垂：暴击伤害 +${Math.round(COMBAT_RULE_PARAMS.climates.thunder_loom.critMult * 100)}%，每次暴击易引紫电链雷` },
+    blood_haze:   { id: "blood_haze",   name: "煞气凝重", icon: "🩸", badge: `我方伤+${Math.round((COMBAT_RULE_PARAMS.climates.blood_haze.playerActiveMult - 1) * 100)}% · 敌攻+${Math.round((COMBAT_RULE_PARAMS.climates.blood_haze.enemyAtkMult - 1) * 100)}%`, desc: `凶煞翻涌：我方主动增伤 +${Math.round((COMBAT_RULE_PARAMS.climates.blood_haze.playerActiveMult - 1) * 100)}%（受主动倍率上限约束）、敌方攻击 +${Math.round((COMBAT_RULE_PARAMS.climates.blood_haze.enemyAtkMult - 1) * 100)}%，精英仙装爆率大增` }
   };
 
   const DUNGEON_ROOM_TYPES = {
@@ -5645,16 +5716,16 @@ const ART = {
   const RUN_BOONS = [
     { id: "frost_splash",   name: "玄霜剑爆", badge: "寒霜溅射", art: "relic_frost_sword", desc: "本趟秘境：剑击命中 38% 迸发寒霜冲击波，冰缓并重创周围妖兽。" },
     { id: "parry_reset",    name: "镜花水月", badge: "识破刷冷", art: "icon_seal",         desc: "本趟秘境：空格完美一闪/识破剑反立即重置爆剑冷却、减 4s 大招冷却并 +25% 剑意。" },
-    { id: "blood_intent",   name: "背水剑意", badge: "残血暴击", art: "icon_blade",        desc: "本趟秘境：气血低于 55% 时暴击率 +25%，剑意获取速度翻倍！" },
+    { id: "blood_intent",   name: "背水剑意", badge: "残血暴击", art: "icon_blade",        desc: `本趟秘境：气血低于 ${Math.round(COMBAT_RULE_PARAMS.runBoons.blood_intent.hpThreshold * 100)}% 时暴击率 +${Math.round(COMBAT_RULE_PARAMS.runBoons.blood_intent.crit * 100)}%，剑意获取速率提升至 ${COMBAT_RULE_PARAMS.runBoons.blood_intent.intentGainMult.toFixed(2)}×！` },
     { id: "lightning_chain",name: "九霄链雷", badge: "暴击链雷", art: "relic_soul_lamp",   desc: "本趟秘境：每次暴击引动 2 道九霄紫电跳跃连锁打击周围妖兽。" },
     { id: "sword_echo",     name: "剑影回响", badge: "三剑齐射", art: "icon_blade",        desc: "本趟秘境：每第 3 次挥剑额外激射 3 道贯穿敌阵的灵剑残影！" },
-    { id: "posture_shatter",name: "崩岳破势", badge: "破势真伤", art: "relic_jade_seal",   desc: "本趟秘境：削势效率 +55%；击破敌方架势瞬间引爆目标高额破势真伤（杂兵18%/首领8%）！" },
-    { id: "gourd_overload", name: "仙酿剑狂", badge: "饮葫狂暴", art: "item_immortal_gourd", desc: "本趟秘境：饮用仙葫后 7 秒内剑攻 +38%、攻速 +30% 并获霸体护身！" },
-    { id: "vampiric_qi",    name: "噬灵归元", badge: "斩妖回血", art: "item_lotus",        desc: "本趟秘境：每次斩杀妖兽或破势立即回复 8% 最大气血与 12 点真元。" },
+    { id: "posture_shatter",name: "崩岳破势", badge: "破势真伤", art: "relic_jade_seal",   desc: `本趟秘境：削势效率提升至 ${COMBAT_RULE_PARAMS.runBoons.posture_shatter.postureMult.toFixed(2)}×（+${Math.round((COMBAT_RULE_PARAMS.runBoons.posture_shatter.postureMult - 1) * 100)}%）；击破敌方架势瞬间引爆目标高额破势真伤（杂兵${Math.round(COMBAT_RULE_PARAMS.runBoons.posture_shatter.mobTrueDmgRatio * 100)}%/首领${Math.round(COMBAT_RULE_PARAMS.runBoons.posture_shatter.bossTrueDmgRatio * 100)}%）！` },
+    { id: "gourd_overload", name: "仙酿剑狂", badge: "饮葫狂暴", art: "item_immortal_gourd", desc: `本趟秘境：饮用仙葫后 ${COMBAT_RULE_PARAMS.runBoons.gourd_overload.durationSec} 秒内常驻攻击池 +${Math.round(COMBAT_RULE_PARAMS.runBoons.gourd_overload.passiveAtkPct * 100)}%、攻速 +${Math.round(COMBAT_RULE_PARAMS.runBoons.gourd_overload.haste * 100)}%，并获 ${COMBAT_RULE_PARAMS.runBoons.gourd_overload.hyperArmorSec} 秒霸体护身！` },
+    { id: "vampiric_qi",    name: "噬灵归元", badge: "斩妖回血", art: "item_lotus",        desc: `本趟秘境：破势回复 ${Math.round(COMBAT_RULE_PARAMS.runBoons.vampiric_qi.breakHealPct * 100)}% 最大气血、斩杀妖兽回复 ${Math.round(COMBAT_RULE_PARAMS.runBoons.vampiric_qi.killHealPct * 100)}% 最大气血，并均回复 ${COMBAT_RULE_PARAMS.runBoons.vampiric_qi.mpGain} 点真元。` },
     { id: "recall_nova",    name: "万剑归墟", badge: "爆剑清弹", art: "relic_frost_sword", desc: "本趟秘境：右键爆剑引爆印记时清散周身妖丹并绽放范围剑莲震爆！" },
     { id: "dash_clone",     name: "残影剑分身",badge: "闪避留影", art: "clone_yuqing_cyan", desc: "本趟秘境：空格闪避在原地留下剑影分身，0.85 秒后自动爆裂重创群妖！" },
-    { id: "aerial_reign",   name: "御风凌霄", badge: "空战增伤", art: "vfx_sky_meteor_plunge", desc: "本趟秘境：腾空斩与下坠陨星劈伤害 +65%，命中令目标额外失衡眩晕！" },
-    { id: "gold_alchemist", name: "点石成剑", badge: "灵石增威", art: "item_jade",         desc: "本趟秘境：灵石掉落 +45%，每持有 100 灵石额外提供 +4% 秘境攻击（上限 +36%）。" }
+    { id: "aerial_reign",   name: "御风凌霄", badge: "空战增伤", art: "vfx_sky_meteor_plunge", desc: `本趟秘境：腾空斩与下坠陨星劈伤害提升至 ${COMBAT_RULE_PARAMS.runBoons.aerial_reign.dmgMult.toFixed(2)}×（+${Math.round((COMBAT_RULE_PARAMS.runBoons.aerial_reign.dmgMult - 1) * 100)}%），命中令目标额外失衡眩晕！` },
+    { id: "gold_alchemist", name: "点石成剑", badge: "灵石增威", art: "item_jade",         desc: `本趟秘境：灵石掉落 +${Math.round((COMBAT_RULE_PARAMS.runBoons.gold_alchemist.stoneDropMult - 1) * 100)}%，每持有 ${COMBAT_RULE_PARAMS.runBoons.gold_alchemist.perStones} 灵石额外提供 +${Math.round(COMBAT_RULE_PARAMS.runBoons.gold_alchemist.pctPerStep * 100)}% 常驻池攻击（上限 +${Math.round(COMBAT_RULE_PARAMS.runBoons.gold_alchemist.maxPct * 100)}%）。` }
   ];
 
   // ==================== 5B. IMMORTAL GEAR & MARKET SYSTEM (4-SLOT LOOT ENGINE) ====================
@@ -6978,7 +7049,7 @@ const ART = {
   }
 
   const LAW_SHORT_BADGE = {
-    wanjian: "飞剑 +2", yinyang: "雷火链电", crit_lotus: "暴击 +25%",
+    wanjian: "飞剑 +2", yinyang: "雷火链电", crit_lotus: `暴击 +${Math.round(COMBAT_RULE_PARAMS.laws.crit_lotus.crit * 100)}%`,
     stagger_surge: "破势绞杀+", pill_fire: "服丹震爆", nine_pill: "双倍仙丹",
     wealth_power: "灵石增威", thunder_body: "周身落雷", eternal_spring: "常驻回血",
     void_haste: "幻影剑分身", beast_soul: "灵兽狂暴", relic_awake: "大招减CD",
@@ -8248,13 +8319,14 @@ const ART = {
     });
     // V23 Celestial Law (`极夜星河`): All 28-Constellation Star Chart passive bonuses are DOUBLED (×2.0)!
     if (typeof getCurrentCelestialPhase === "function" && getCurrentCelestialPhase().id === "star_night") {
-      res.atk *= 2;
-      res.hp *= 2;
-      res.dr *= 2;
-      res.crit *= 2;
-      res.critMult *= 2;
-      res.spd *= 2;
-      res.mp *= 2;
+      const snMult = COMBAT_RULE_PARAMS.celestialPhases.star_night.starChartMult;
+      res.atk *= snMult;
+      res.hp *= snMult;
+      res.dr *= snMult;
+      res.crit *= snMult;
+      res.critMult *= snMult;
+      res.spd *= snMult;
+      res.mp *= snMult;
     }
     return res;
   }
@@ -8736,8 +8808,8 @@ const ART = {
     tagSwitch: { label: "道侣同心瞬切", kb: "KeyV",      mouseLabel: null,   padBtn: 15,   padGlyph: "→" },
     ally:      { label: "故人真身助阵", kb: "KeyR",      mouseLabel: null,   padBtn: 16,   padGlyph: "Guide" },
     pet:       { label: "灵宠觉醒绝技", kb: "KeyG",      mouseLabel: null,   padBtn: 6,    padGlyph: "LT" },
-    meditate:  { label: "周天吐纳聚气", kb: "KeyB",      mouseLabel: null,   padBtn: 9,    padGlyph: "Menu" },
-    pill:      { label: "瞬服回春灵丹", kb: "KeyQ",      mouseLabel: null,   padBtn: 12,   padGlyph: "↑" },
+    meditate:  { label: "周天吐纳 / 满修渡劫", kb: "KeyB",      mouseLabel: null,   padBtn: 9,    padGlyph: "Menu" },
+    pill:      { label: "饮仙葫 / 空葫服回春丹", kb: "KeyQ",      mouseLabel: null,   padBtn: 12,   padGlyph: "↑" },
     jump:      { label: "御风腾跃/踏剑", kb: "KeyZ",     mouseLabel: null,   padBtn: 10,   padGlyph: "L3" },
     swordBlink:{ label: "飞剑缩地瞬身", kb: "KeyF",      mouseLabel: "中键", padBtn: 14,   padGlyph: "←" },
     photo:     { label: "太虚摄影模式", kb: "KeyP",      mouseLabel: null,   padBtn: null, padGlyph: "未绑" },
@@ -11948,31 +12020,31 @@ const ART = {
       id: "dawn",
       name: "晨曦紫气",
       short: "🌅 晨曦紫气",
-      sub: "正道护盾+回灵",
+      sub: `正道护盾·减伤+${COMBAT_RULE_PARAMS.celestialPhases.dawn.dr}`,
       color: "#ffe29a",
       ambientTint: "rgba(255, 214, 150, 0.09)",
       waterCol: "rgba(255, 228, 172, 0.42)",
-      desc: "紫气东来：太清正道莲盾强度+45%，每秒回血回元+4%，仙葫回春效果+25%，常驻减伤+10！"
+      desc: `紫气东来：正道切入时凝结 ${Math.round(COMBAT_RULE_PARAMS.celestialPhases.dawn.righteousShieldPct * 100)}% 气血莲盾，每秒回复 ${Math.round(COMBAT_RULE_PARAMS.celestialPhases.dawn.hpRegenPctPerSec * 100)}% 气血与 ${Math.round(COMBAT_RULE_PARAMS.celestialPhases.dawn.mpRegenPctPerSec * 100)}% 灵力，仙葫回春效果 +${Math.round((COMBAT_RULE_PARAMS.celestialPhases.dawn.healAmp - 1) * 100)}%，常驻护体减伤 +${COMBAT_RULE_PARAMS.celestialPhases.dawn.dr}！`
     },
     {
       id: "noon",
       name: "烈阳当空",
       short: "☀ 烈阳当空",
-      sub: "剑威+16%·攒意加速",
+      sub: `攻击池+${Math.round(COMBAT_RULE_PARAMS.celestialPhases.noon.passiveAtkPct * 100)}%·元神+${Math.round((COMBAT_RULE_PARAMS.celestialPhases.noon.astralEnergyMult - 1) * 100)}%`,
       color: "#ffd166",
       ambientTint: "rgba(255, 238, 178, 0.07)",
       waterCol: "rgba(255, 245, 200, 0.36)",
-      desc: "乾阳炽盛：全角色剑威+16%，剑意与法天元神积攒效率+35%，重击破势削韧+25%！"
+      desc: `乾阳炽盛：常驻攻击池 +${Math.round(COMBAT_RULE_PARAMS.celestialPhases.noon.passiveAtkPct * 100)}%，法天元神积攒效率 +${Math.round((COMBAT_RULE_PARAMS.celestialPhases.noon.astralEnergyMult - 1) * 100)}%！`
     },
     {
       id: "blood_dusk",
       name: "残阳血暮",
       short: "🌇 残阳血暮",
-      sub: "魔心火血+42%·噬血",
+      sub: `魔+${Math.round(COMBAT_RULE_PARAMS.celestialPhases.blood_dusk.demonicPassiveAtkPct * 100)}%/常+${Math.round(COMBAT_RULE_PARAMS.celestialPhases.blood_dusk.otherPassiveAtkPct * 100)}%·重击回血`,
       color: "#ff6b6b",
       ambientTint: "rgba(218, 56, 48, 0.16)",
       waterCol: "rgba(255, 98, 78, 0.46)",
-      desc: "残阳如血：劫煞魔心与火/血系伤害暴涨+42%，暴击伤害+28%，攻击附带6%血暮噬魂回血！"
+      desc: `残阳如血：常驻攻击池提升（魔心 +${Math.round(COMBAT_RULE_PARAMS.celestialPhases.blood_dusk.demonicPassiveAtkPct * 100)}% / 其余 +${Math.round(COMBAT_RULE_PARAMS.celestialPhases.blood_dusk.otherPassiveAtkPct * 100)}%），暴击倍率 +${Math.round(COMBAT_RULE_PARAMS.celestialPhases.blood_dusk.critMult * 100)}%，重击命中回复 ${Math.round(COMBAT_RULE_PARAMS.celestialPhases.blood_dusk.heavyHealMaxHpPct * 100)}% 最大气血！`
     },
     {
       id: "star_night",
@@ -11982,7 +12054,7 @@ const ART = {
       color: "#a8b8ff",
       ambientTint: "rgba(22, 36, 96, 0.24)",
       waterCol: "rgba(150, 195, 255, 0.52)",
-      desc: "星河倒悬：【周天二十八星图】全部星宿被动翻倍（×2.0）！激发首领【月华夜煞】弦月变招，斩杀首领额外必掉稀有【鸿蒙星魄+1】！"
+      desc: `星河倒悬：【周天二十八星图】全部星宿被动翻倍（×${COMBAT_RULE_PARAMS.celestialPhases.star_night.starChartMult.toFixed(1)}）！激发首领【月华夜煞】弦月变招，斩杀首领额外必掉稀有【鸿蒙星魄+1】！`
     }
   ];
 
@@ -12012,7 +12084,7 @@ const ART = {
       showToast(`☯ 天时流转至【${ph.name}】：${ph.desc}`);
       if (ph.id === "dawn" && getKarmaState(game).mode === "righteous") {
         const st = getCombatStats(game);
-        arena.player.shieldHp = Math.max(arena.player.shieldHp || 0, Math.round(st.maxHp * 0.42));
+        arena.player.shieldHp = Math.max(arena.player.shieldHp || 0, Math.round(st.maxHp * COMBAT_RULE_PARAMS.celestialPhases.dawn.righteousShieldPct));
       }
     }
     syncV23EpochDock();
@@ -12195,8 +12267,8 @@ const ART = {
     }
     const ph = getCurrentCelestialPhase();
     if (ph.id === "dawn" && game && !arena.paused) {
-      game.hp = Math.min(st.maxHp, game.hp + st.maxHp * 0.04 * dt);
-      game.mp = Math.min(st.maxMp, (game.mp || 0) + st.maxMp * 0.05 * dt);
+      game.hp = Math.min(st.maxHp, game.hp + st.maxHp * COMBAT_RULE_PARAMS.celestialPhases.dawn.hpRegenPctPerSec * dt);
+      game.mp = Math.min(st.maxMp, (game.mp || 0) + st.maxMp * COMBAT_RULE_PARAMS.celestialPhases.dawn.mpRegenPctPerSec * dt);
     }
     if (ph.id === "star_night" && !arena.paused) {
       // Boss/Demon-King Lunar Night-Fiend (`月华夜煞`) crescent barrage mutation!
@@ -14398,7 +14470,7 @@ const ART = {
   function executeActionImmediate(act, fromBuffer = false) {
     if (!guardActionRealm(act)) return;
     notifyUnlockCardTried(act);
-    const labelMap = { posture: (arena.player.comboWindow > 0.12 || arena.player.dashTimer > 0) ? "☯易剑连携斩" : "易剑切姿", slash: `${arena.weaponPosture === "xuanzhong" ? "巨阙" : "疾剑"}S${((arena.player.comboWindow > 0 ? arena.player.comboStep + 1 : 0) % 4) + 1}`, recall: (arena.player.comboWindow > 0.25 && (arena.morphCd || 0) <= 0) ? "切手重技" : "收剑爆印", dash: "闪身/剑反", stance: "变阵", ult: "法宝剑域", finisher: "真传奥义", ally: "故人助阵", pet: "灵兽绝技", pill: "灵丹", meditate: "吐纳" };
+    const labelMap = { posture: (arena.player.comboWindow > 0.12 || arena.player.dashTimer > 0) ? "☯易剑连携斩" : "易剑切姿", slash: `${arena.weaponPosture === "xuanzhong" ? "巨阙" : "疾剑"}S${((arena.player.comboWindow > 0 ? arena.player.comboStep + 1 : 0) % 4) + 1}`, recall: (arena.player.comboWindow > 0.25 && (arena.morphCd || 0) <= 0) ? "切手重技" : "收剑爆印", dash: "闪身/剑反", stance: "变阵", ult: "法宝剑域", finisher: "真传奥义", ally: "故人助阵", pet: "灵兽绝技", pill: "仙葫/回春丹", meditate: "吐纳/渡劫" };
     if (labelMap[act]) pushTelemetryInput((fromBuffer ? "⚡" : "") + labelMap[act], fromBuffer);
     if (arena.bladeClash && ["slash", "recall", "dash", "soul", "posture"].includes(act)) {
       pumpBladeClashInput();
@@ -16573,7 +16645,7 @@ const ART = {
     if (!game || amount <= 0) return;
     const r = REALMS[game.realm];
     const omenMult = currentOmen(game).id === "tide" ? 1.45 : 1.0;
-    const mindMult = (game.loadout.mind === "sword_still" || game.loadout.mind === "talisman_calm") ? 1.25 : 1.0;
+    const mindMult = (game.loadout.mind === "sword_still" || game.loadout.mind === "talisman_calm") ? COMBAT_RULE_PARAMS.skills.sword_still.xpMult : 1.0;
     const lf = getLifespanInfo(game);
     const lifeMult = (opts && opts.bypassLifespanPenalty) ? 1.0 : lf.xpEfficiencyMult;
     const finalAmt = Math.max(1, Math.round(amount * omenMult * mindMult * lifeMult));
@@ -18124,13 +18196,14 @@ const ART = {
   }
 
   function getCombatStats(g) {
+    const P = COMBAT_RULE_PARAMS;
     const r = REALMS[g.realm] || REALMS.mortal;
     const gt = getGearTotals(g);
     const maxHp = getMaxHp(g);
     const maxMp = Math.round(r.maxMp * (1 + Math.min(0.65, Math.max(0, (g.statMultBonus || 1) - 1))));
     const stars = getEquippedRelicStars(g);
     const starScale = 1 + Math.max(0, stars - 1) * 0.18;
-    const mindBonus = g.loadout.mind === "sword_pierce" ? 10 : g.loadout.mind === "talisman_clear" ? 5 : 0;
+    const mindBonus = g.loadout.mind === "sword_pierce" ? P.skills.sword_pierce.mindAtk : g.loadout.mind === "talisman_clear" ? P.skills.talisman_clear.mindAtk : 0;
     const relicBonus = Math.round(((g.loadout.relic === "frost_sword" ? 9 : g.loadout.relic === "soul_lamp" ? 8 : 4) * (g.loadout.relic ? starScale : 0)));
     const starB = getStarChartBonuses(g);
     const sanctumB = getSanctumBonuses(g);
@@ -18149,19 +18222,19 @@ const ART = {
     const phoenixLowHp = g.perk === "calamity_phoenix" && g.hp <= maxHp * 0.45;
     let rawPassivePct = Math.max(0, (g.statMultBonus || 1) - 1) * 0.75;
     if (phoenixLowHp) rawPassivePct += 0.22;
-    if (hasLaw(g, "age_might")) rawPassivePct += Math.min(0.30, Math.floor(Math.max(0, years - 18) / 10) * 0.06);
-    if (hasLaw(g, "karma_resonance")) rawPassivePct += Math.min(0.28, Object.keys(g.choices || {}).length * 0.05);
-    if (hasLaw(g, "wealth_power")) rawPassivePct += Math.min(0.36, Math.floor((g.stones || 0) / 100) * 0.04);
+    if (hasLaw(g, "age_might")) rawPassivePct += Math.min(P.laws.age_might.maxPct, Math.floor(Math.max(0, years - P.laws.age_might.baseAge) / P.laws.age_might.yearsPerStep) * P.laws.age_might.pctPerStep);
+    if (hasLaw(g, "karma_resonance")) rawPassivePct += Math.min(P.laws.karma_resonance.maxPct, Object.keys(g.choices || {}).length * P.laws.karma_resonance.pctPerChoice);
+    if (hasLaw(g, "wealth_power")) rawPassivePct += Math.min(P.laws.wealth_power.maxPct, Math.floor((g.stones || 0) / P.laws.wealth_power.perStones) * P.laws.wealth_power.pctPerStep);
     if (stoneCurioLv > 0) rawPassivePct += Math.min(PERM_GROWTH_CAPS.curioStoneAlchemyDmgCap, Math.floor((g.stones || 0) / 100) * 0.04 * stoneCurioLv);
     if (shieldThornLv > 0 && arena && arena.player && (arena.player.shieldHp || 0) > 0) rawPassivePct += Math.min(0.45, 0.20 * shieldThornLv);
     if (setB && setB.atkMult) rawPassivePct += setB.atkMult;
     rawPassivePct += ks.mode === "demonic" ? 0.18 : ks.mode === "righteous" ? 0.06 : 0;
-    rawPassivePct += celPh.id === "noon" ? 0.10 : (celPh.id === "blood_dusk" ? (ks.mode === "demonic" ? 0.22 : 0.12) : 0);
-    if (hasRunBoon("gold_alchemist")) rawPassivePct += Math.min(0.28, Math.floor((g.stones || 0) / 100) * 0.03);
-    if (arena && arena.player && (arena.player.boonOverloadTimer || 0) > 0) rawPassivePct += 0.28;
+    rawPassivePct += celPh.id === "noon" ? P.celestialPhases.noon.passiveAtkPct : (celPh.id === "blood_dusk" ? (ks.mode === "demonic" ? P.celestialPhases.blood_dusk.demonicPassiveAtkPct : P.celestialPhases.blood_dusk.otherPassiveAtkPct) : 0);
+    if (hasRunBoon("gold_alchemist")) rawPassivePct += Math.min(P.runBoons.gold_alchemist.maxPct, Math.floor((g.stones || 0) / P.runBoons.gold_alchemist.perStones) * P.runBoons.gold_alchemist.pctPerStep);
+    if (arena && arena.player && (arena.player.boonOverloadTimer || 0) > 0) rawPassivePct += P.runBoons.gourd_overload.passiveAtkPct;
     const petWrathBuffActive = Boolean(arena && arena.player && (arena.player.petBuffTimer || 0) > 0 && hasPetSkill(g, "celestial_wrath"));
     if (petWrathBuffActive) rawPassivePct += 0.16;
-    const cappedPassivePct = softCapPct(rawPassivePct, 0.95, 1.65);
+    const cappedPassivePct = softCapPct(rawPassivePct, P.passiveSoftCapKnee, P.passiveSoftCapMax);
 
     // Bucket 3: Active Stance / Burst / Climate Multiplier (capped cleanly at 1.95x)
     const revMult = (arena.reversedDomainTimer || 0) > 0 ? 1.20 : 1.0;
@@ -18171,24 +18244,24 @@ const ART = {
     const rushAtkMult = rushGlass ? 1.38 : 1.0;
     const astralMult = (arena && arena.astralForm && arena.astralForm.active) ? (arena.astralForm.mode === "demonic" ? 1.45 : 1.35) : 1.0;
     const clim = getActiveDungeonClimate();
-    const climateAtkMult = (clim && clim.id === "blood_haze") ? 1.15 : 1.0;
-    const activeMult = Math.min(1.95, revMult * postureAtkMult * rushAtkMult * astralMult * climateAtkMult);
+    const climateAtkMult = (clim && clim.id === "blood_haze") ? P.climates.blood_haze.playerActiveMult : 1.0;
+    const activeMult = Math.min(P.activeMultCap, revMult * postureAtkMult * rushAtkMult * astralMult * climateAtkMult);
 
     const dmgReduce = gt.dr
       + (g.pet.id === "turtle" ? 10 : 0)
       + (hasPetSkill(g, "spirit_ward") ? 12 : 0)
-      + (g.loadout.mind === "sword_still" ? 8 : 0)
-      + (g.loadout.mind === "talisman_clear" ? 12 : 0)
+      + (g.loadout.mind === "sword_still" ? P.skills.sword_still.mindDr : 0)
+      + (g.loadout.mind === "talisman_clear" ? P.skills.talisman_clear.mindDr : 0)
       + (g.loadout.relic === "jade_seal" ? Math.round(12 * starScale) : 0)
       + sanctumB.guardDr
       + (phoenixLowHp ? 18 : 0);
 
     const tier = getComboTier(arena.comboCount);
-    const lowHpBoonCrit = (hasRunBoon("blood_intent") && g.hp <= maxHp * 0.55) ? 0.20 : 0;
-    const crit = Math.min(0.78, 0.10 + gt.crit + (g.perk === "sword_bone" ? 0.08 : 0) + (g.pet.id === "fox" ? 0.10 : 0) + (hasPetSkill(g, "fury_fang") ? 0.05 : 0) + (hasLaw(g, "crit_lotus") ? 0.18 : 0) + (currentOmen(g).id === "wolf_star" ? 0.12 : 0) + lowHpBoonCrit);
-    const climSpdMult = (clim && clim.id === "sword_wind") ? 1.10 : 1.0;
-    const climHaste = (clim && clim.id === "sword_wind") ? 0.12 : 0;
-    const climCritMult = (clim && clim.id === "thunder_loom") ? 0.14 : 0;
+    const lowHpBoonCrit = (hasRunBoon("blood_intent") && g.hp <= maxHp * P.runBoons.blood_intent.hpThreshold) ? P.runBoons.blood_intent.crit : 0;
+    const crit = Math.min(P.critCap, 0.10 + gt.crit + (g.perk === "sword_bone" ? 0.08 : 0) + (g.pet.id === "fox" ? 0.10 : 0) + (hasPetSkill(g, "fury_fang") ? 0.05 : 0) + (hasLaw(g, "crit_lotus") ? P.laws.crit_lotus.crit : 0) + (currentOmen(g).id === "wolf_star" ? P.omens.wolf_star.crit : 0) + lowHpBoonCrit);
+    const climSpdMult = (clim && clim.id === "sword_wind") ? P.climates.sword_wind.speedMult : 1.0;
+    const climHaste = (clim && clim.id === "sword_wind") ? P.climates.sword_wind.haste : 0;
+    const climCritMult = (clim && clim.id === "thunder_loom") ? P.climates.thunder_loom.critMult : 0;
     const speed = 3.85 * (1 + gt.spd) * (hasLaw(g, "void_haste") ? 1.18 : 1.0) * (1 + tier.spdBonus * 0.30) * climSpdMult;
     const pineCrit = hasDestinyFruit(g, "eternal_pine") ? 0.10 : 0;
     const pineMult = hasDestinyFruit(g, "eternal_pine") ? Math.min(0.32, Math.floor((g.stones || 0) / 80) * 0.03) : 0;
@@ -18196,11 +18269,11 @@ const ART = {
     const postureSpdMult = isHeavyPosture ? 0.92 : 1.10;
     const finalMaxHp = rushGlass ? Math.max(40, Math.round(maxHp * 0.5)) : maxHp;
     const karmaDr = (g.karmaDrBonus || 0) + (ks.mode === "righteous" ? 12 : 0);
-    const gourdHaste = (arena.player && (arena.player.gourdHasteTimer || 0) > 0) ? 0.22 : 0;
+    const gourdHaste = (arena.player && (arena.player.gourdHasteTimer || 0) > 0) ? P.runBoons.gourd_overload.haste : 0;
     const gourdCrit = (arena.player && (arena.player.gourdCritTimer || 0) > 0) ? 0.18 : 0;
     const styleSpec = getStyleRankSpec(arena ? (arena.styleScore || 0) : 0);
-    const celDrBonus = celPh.id === "dawn" ? 4 : 0;
-    const celCritMult = celPh.id === "blood_dusk" ? 0.16 : 0;
+    const celDrBonus = celPh.id === "dawn" ? P.celestialPhases.dawn.dr : 0;
+    const celCritMult = celPh.id === "blood_dusk" ? P.celestialPhases.blood_dusk.critMult : 0;
     const perkCritMult = g.perk === "sword_sovereign" ? 0.18 : 0;
     const perkHaste = g.perk === "primordial_sage" ? 0.10 : 0;
     const daoB = getDaoBonuses(g);
@@ -18211,8 +18284,8 @@ const ART = {
       maxHp: finalMaxHp, maxMp: maxMp + starB.mp,
       atk: finalAtk,
       dmgReduce: dmgReduce + (isHeavyPosture ? 16 : 0) + karmaDr + starB.dr + celDrBonus,
-      crit: Math.min(0.78, crit + pineCrit + gourdCrit + starB.crit + daoB.critBonus),
-      critMult: Math.min(2.35, 1.48 + styleSpec.critDmg * 0.75 + starB.critMult + celCritMult + climCritMult + perkCritMult + (schoolB.critMultBonus || 0) + (hasLaw(g, "crit_lotus") ? 0.18 : 0) + pineMult + ((setB && setB.critMult) || 0)),
+      crit: Math.min(P.critCap, crit + pineCrit + gourdCrit + starB.crit + daoB.critBonus),
+      critMult: Math.min(P.critMultCap, 1.48 + styleSpec.critDmg * 0.75 + starB.critMult + celCritMult + climCritMult + perkCritMult + (schoolB.critMultBonus || 0) + (hasLaw(g, "crit_lotus") ? P.laws.crit_lotus.critMult : 0) + pineMult + ((setB && setB.critMult) || 0)),
       atkHaste: Math.max(0.70, Math.min(1.85, 1 + gt.spd + starB.spd + styleSpec.haste * 0.7 + postureHasteBonus + gourdHaste + climHaste + perkHaste + (petWrathBuffActive ? 0.15 : 0) + (schoolB.hasteBonus || 0) + (arena.domain ? 0.24 : 0) + ((arena.reversedDomainTimer || 0) > 0 ? 0.20 : 0))),
       speed: speed * postureSpdMult * (1 + gourdHaste * 0.7 + starB.spd),
       daoBonuses: daoB,
@@ -19124,6 +19197,7 @@ const ART = {
     Sound.qiOrb(3);
     showToast("已返【听雨洞府】· 可点击【藏经阁】升阶洞府建筑，或与四位故人茶叙切磋！");
     if (!skipSave) saveGame();
+    focusBattlefield();
     updateHud();
   }
 
@@ -19228,8 +19302,10 @@ const ART = {
         x: shenPos.x, y: shenPos.y, r: 48, rescued: false, bubble: "妖狼围困 · 道友拔剑助我！"
       });
       spawnEnemyPack(["wolf", "wolf", "wolf"], w * 0.52, h * 0.55, 85, 1.0);
+      focusBattlefield();
     } else {
       spawnCurrentWave();
+      focusBattlefield();
       // Trigger atmospheric story dialogue on first arrival in Sect / Secret / Sword Mound / Terrace!
       if (!towerMode && arena.stageIdx === 1) playCutscene("enter_sect");
       else if (!towerMode && arena.stageIdx === 2) playCutscene("enter_secret");
@@ -20032,7 +20108,7 @@ const ART = {
     const pactPosMult = (isBoss && game && hasPact(game, "iron_posture")) ? 1.35 : 1.0;
     const calSpec = game ? getCalamityCycleSpec(game) : CALAMITY_CYCLES[0];
     const clim = getActiveDungeonClimate();
-    const climAtkMult = (clim && clim.id === "blood_haze") ? 1.18 : 1.0;
+    const climAtkMult = (clim && clim.id === "blood_haze") ? COMBAT_RULE_PARAMS.climates.blood_haze.enemyAtkMult : 1.0;
     const bossMultTable = [10.0, 10.5, 10.6, 9.0, 5.3];
     const effStage = arena.towerMode ? Math.min(4, Math.floor(Math.max(0, ((game && game.towerFloor) || 1) - 1) / 3)) : arena.stageIdx;
     const alphaWolfBonus = (isBoss && id === "wolf") ? 1.25 : 1.0;
@@ -21168,7 +21244,7 @@ const ART = {
     }
     const daoHealAmp = st.daoBonuses ? st.daoBonuses.healMult : 1.0;
     const daoShieldAmp = st.daoBonuses ? st.daoBonuses.shieldMult : 1.0;
-    const shenAmp = (hasKeepsake(game, "shen") ? 1.25 : 1.0) * (getCurrentCelestialPhase().id === "dawn" ? 1.25 : 1.0) * daoHealAmp;
+    const shenAmp = (hasKeepsake(game, "shen") ? 1.25 : 1.0) * (getCurrentCelestialPhase().id === "dawn" ? COMBAT_RULE_PARAMS.celestialPhases.dawn.healAmp : 1.0) * daoHealAmp;
     const heal = Math.round(st.maxHp * (hasPact(game, "bitter_pill") ? 0.36 : 0.46) * shenAmp);
     game.hp = Math.min(st.maxHp, game.hp + heal);
     if (ensurePrimordialCrafts(game).goldenAcolyte) {
@@ -21180,10 +21256,11 @@ const ART = {
       p.shieldHp = Math.max(p.shieldHp || 0, Math.round(st.maxHp * 0.18 * daoShieldAmp));
     }
     if (hasRunBoon("gourd_overload")) {
-      p.boonOverloadTimer = 7.0;
-      p.gourdHasteTimer = Math.max(p.gourdHasteTimer || 0, 7.0);
-      p.hyperArmorTimer = Math.max(p.hyperArmorTimer || 0, 5.0);
-      addFloat("✦ 仙酿剑狂 · 剑攻+38% 霸体 7s！", p.x, p.y - 82, "#ffd166", 17, true);
+      const goP = COMBAT_RULE_PARAMS.runBoons.gourd_overload;
+      p.boonOverloadTimer = goP.durationSec;
+      p.gourdHasteTimer = Math.max(p.gourdHasteTimer || 0, goP.durationSec);
+      p.hyperArmorTimer = Math.max(p.hyperArmorTimer || 0, goP.hyperArmorSec);
+      addFloat(`✦ 仙酿剑狂 · 攻+${Math.round(goP.passiveAtkPct * 100)}% 速+${Math.round(goP.haste * 100)}% 霸体！`, p.x, p.y - 82, "#ffd166", 17, true);
     }
 
     Sound.gourdSipChime();
@@ -21846,10 +21923,11 @@ const ART = {
     const freshLaws = isReroll ? unownedLaws.filter(l => !activeDraftMeta.lastIds.includes(l.id)) : unownedLaws;
     const lawPool = shuffleFisherYates(freshLaws.length >= 2 ? freshLaws : unownedLaws).map(l => {
       const completesSyn = SYNERGIES.find(syn => !syn.active(game) && syn.active(Object.assign({}, game, { laws: game.laws.concat(l.id) })));
+      const liveNote = getLawLiveContributionText(game, l.id);
       return {
         pickType: "law", id: l.id, art: LAW_ICONS[l.id] || "icon_blade", name: l.name,
         badge: completesSyn ? `★ 必成羁绊【${completesSyn.name}】` : (LAW_SHORT_BADGE[l.id] || l.cat),
-        sub: l.desc,
+        sub: liveNote ? `${l.desc}（${liveNote}）` : l.desc,
         completesSyn: !!completesSyn
       };
     });
@@ -22093,7 +22171,8 @@ const ART = {
     if (execBonus > 1.0 && st.daoBonuses && st.daoBonuses.execMult > 1.0) {
       execBonus *= st.daoBonuses.execMult;
     }
-    const brokenMult = (e.state === "stun" ? (hasLaw(game, "stagger_surge") ? 1.65 : 1.45) : 1.0) * execBonus;
+    const P = COMBAT_RULE_PARAMS;
+    const brokenMult = (e.state === "stun" ? (hasLaw(game, "stagger_surge") ? P.laws.stagger_surge.enhancedStunMult : P.laws.stagger_surge.baseStunMult) : 1.0) * execBonus;
     if (arena.shanheDomain && arena.shanheDomain.active) {
       rawDmg = Math.round(rawDmg * 1.30);
       postureDmg = Math.round(postureDmg * 1.45);
@@ -22105,10 +22184,10 @@ const ART = {
       if ((e.wardHp || 0) > 0) e.wardHp = Math.max(0, e.wardHp - Math.round(rawDmg * 1.0));
     }
     const celNow = getCurrentCelestialPhase();
-    const celEnergyAmp = celNow.id === "noon" ? 1.25 : 1.0;
+    const celEnergyAmp = celNow.id === "noon" ? P.celestialPhases.noon.astralEnergyMult : 1.0;
     arena.astralEnergy = Math.min(100, (arena.astralEnergy || 0) + (isHeavySkill ? 5.0 : 2.2) * celEnergyAmp);
     if (celNow.id === "blood_dusk" && isHeavySkill && game) {
-      game.hp = Math.min(st.maxHp, game.hp + Math.max(2, Math.round(st.maxHp * 0.02)));
+      game.hp = Math.min(st.maxHp, game.hp + Math.max(2, Math.round(st.maxHp * P.celestialPhases.blood_dusk.heavyHealMaxHpPct)));
     }
     const ptCombat = ensureDeterministicPity(game);
     let isCrit = forceCrit || inSiGate || (execBonus > 1.0);
@@ -22126,7 +22205,7 @@ const ART = {
     const omniLv = getCurioStacks(game, "curio_hongmeng_omni");
     const effCritMult = Math.min(2.65, st.critMult + omniLv * 0.22);
     let hexGuardMult = ((e.hexBuffTimer || 0) > 0 && e.state !== "stun") ? 0.75 : 1.0;
-    const aerialBoonMult = (hasRunBoon("aerial_reign") && ((arena.player.z || 0) > 10 || arena.player.plunging)) ? 1.45 : 1.0;
+    const aerialBoonMult = (hasRunBoon("aerial_reign") && ((arena.player.z || 0) > 10 || arena.player.plunging)) ? P.runBoons.aerial_reign.dmgMult : 1.0;
     let dmg = Math.max(1, Math.round(rawDmg * hexGuardMult * aerialBoonMult * brokenMult * (isCrit ? effCritMult : 1.0)));
     if (isCrit && getCurioStacks(game, "curio_crit_silk") > 0) {
       const critSilkBonus = Math.min(PERM_GROWTH_CAPS.curioCritSilkDmgCap, 0.18 * getCurioStacks(game, "curio_crit_silk"));
@@ -22145,7 +22224,7 @@ const ART = {
     }
     if (e.isDummy && e.hp < 5000) e.hp = e.maxHp;
     recordDamageTelemetry(dmg);
-    const intentAmp = (hasRunBoon("blood_intent") && game.hp <= st.maxHp * 0.55) ? 1.65 : 1.0;
+    const intentAmp = (hasRunBoon("blood_intent") && game.hp <= st.maxHp * P.runBoons.blood_intent.hpThreshold) ? P.runBoons.blood_intent.intentGainMult : 1.0;
     arena.swordIntent = Math.min(100, (arena.swordIntent || 0) + (isHeavySkill ? 2.8 : 1.3) * intentAmp);
     if (aerialBoonMult > 1.0 && !e.isBoss && e.state !== "stun" && (e.poiseArmorTimer || 0) <= 0) {
       e.state = "stun";
@@ -22234,7 +22313,7 @@ const ART = {
       }
     }
 
-    if (hasRunBoon("posture_shatter")) postureDmg = Math.round(postureDmg * 1.45);
+    if (hasRunBoon("posture_shatter")) postureDmg = Math.round(postureDmg * P.runBoons.posture_shatter.postureMult);
     if (e.state !== "stun" && e.posture >= 0) {
       e.posture = Math.max(0, e.posture - postureDmg);
       if (e.posture <= 0) {
@@ -22244,19 +22323,19 @@ const ART = {
         e.posture = e.maxPosture;
         unlockAchievement("ach_break");
         if (hasLaw(game, "stagger_surge")) {
-          game.mp = Math.min(st.maxMp, (game.mp || 0) + 15);
-          arena.player.ultCd = Math.max(0, arena.player.ultCd - 1.5);
+          game.mp = Math.min(st.maxMp, (game.mp || 0) + P.laws.stagger_surge.breakMp);
+          arena.player.ultCd = Math.max(0, arena.player.ultCd - P.laws.stagger_surge.breakUltCdReduce);
         }
         if (hasRunBoon("posture_shatter") && !e.isDummy) {
-          const shatterRatio = e.isBoss ? 0.08 : 0.18;
+          const shatterRatio = e.isBoss ? P.runBoons.posture_shatter.bossTrueDmgRatio : P.runBoons.posture_shatter.mobTrueDmgRatio;
           const shatterTrue = Math.max(12, Math.round(e.maxHp * shatterRatio));
           e.hp -= shatterTrue;
           addFloat(`💥 崩岳破势真伤 -${shatterTrue}！`, e.x, e.y - e.r - 46, "#ffd166", 20, true);
         }
         if (hasRunBoon("vampiric_qi")) {
-          const vHeal = Math.max(5, Math.round(st.maxHp * 0.06));
+          const vHeal = Math.max(5, Math.round(st.maxHp * P.runBoons.vampiric_qi.breakHealPct));
           game.hp = Math.min(st.maxHp, game.hp + vHeal);
-          game.mp = Math.min(st.maxMp, (game.mp || 0) + 12);
+          game.mp = Math.min(st.maxMp, (game.mp || 0) + P.runBoons.vampiric_qi.mpGain);
           addFloat(`✦ 噬灵归元 +${vHeal}血`, arena.player.x, arena.player.y - 44, "#70ffe6", 14);
         }
         Sound.drum(0.28);
@@ -22404,9 +22483,9 @@ const ART = {
     const curNodeD = getCurrentDungeonNode();
     if (hasRunBoon("vampiric_qi")) {
       const stV = getCombatStats(game);
-      const vHeal = Math.max(5, Math.round(stV.maxHp * 0.08));
+      const vHeal = Math.max(5, Math.round(stV.maxHp * COMBAT_RULE_PARAMS.runBoons.vampiric_qi.killHealPct));
       game.hp = Math.min(stV.maxHp, game.hp + vHeal);
-      game.mp = Math.min(stV.maxMp, (game.mp || 0) + 12);
+      game.mp = Math.min(stV.maxMp, (game.mp || 0) + COMBAT_RULE_PARAMS.runBoons.vampiric_qi.mpGain);
       addFloat(`✦ 噬灵归元 +${vHeal}血`, arena.player.x, arena.player.y - 44, "#70ffe6", 14);
     }
     if (!inPractice) {
@@ -22425,7 +22504,7 @@ const ART = {
             : Math.max(Math.min(baseEnemyXp * roomXpMult, capShare * 1.45), capShare));
       const xpOrbVal = Math.max(2, Math.round(rawXpOrb * calDrop.rewardMult));
       const daoDropB = getDaoBonuses(game);
-      const wolfStarMult = (currentOmen(game).id === "wolf_star" ? 1.4 : 1.0) * (hasRunBoon("gold_alchemist") ? 1.45 : 1.0) * calDrop.rewardMult * daoDropB.stoneMult;
+      const wolfStarMult = (currentOmen(game).id === "wolf_star" ? COMBAT_RULE_PARAMS.omens.wolf_star.stoneMult : 1.0) * (hasRunBoon("gold_alchemist") ? COMBAT_RULE_PARAMS.runBoons.gold_alchemist.stoneDropMult : 1.0) * calDrop.rewardMult * daoDropB.stoneMult;
       spawnDrop("qi", e.x, e.y, xpOrbVal);
       spawnDrop("stone", e.x + 12, e.y - 8, Math.round((e.isBoss ? 48 + arena.stageIdx * 24 : 10 + arena.stageIdx * 5) * wolfStarMult));
 
@@ -27121,6 +27200,12 @@ const ART = {
     document.getElementById("hud-mp-bar").style.width = `${Math.min(100, Math.round(((game.mp || 0) / st.maxMp) * 100))}%`;
     const xpPct = r.xpCap ? Math.min(100, Math.round((game.xp / r.xpCap) * 100)) : 100;
     document.getElementById("hud-xp-bar").style.width = `${xpPct}%`;
+    const hpTxtEl = document.getElementById("hud-hp-txt");
+    if (hpTxtEl) hpTxtEl.textContent = `${Math.max(0, Math.round(num(game.hp, 0)))}/${Math.max(1, Math.round(num(st.maxHp, 1)))}`;
+    const mpTxtEl = document.getElementById("hud-mp-txt");
+    if (mpTxtEl) mpTxtEl.textContent = `${Math.max(0, Math.round(num(game.mp, 0)))}/${Math.max(1, Math.round(num(st.maxMp, 1)))}`;
+    const xpTxtEl = document.getElementById("hud-xp-txt");
+    if (xpTxtEl) xpTxtEl.textContent = r.xpCap ? `${Math.max(0, Math.round(num(game.xp, 0)))}/${Math.max(1, Math.round(num(r.xpCap, 1)))}` : "圆满";
     document.getElementById("hud-stones").textContent = String(game.stones);
     document.getElementById("omen-label-txt").textContent = om.name.slice(0, 2);
     const qm = document.getElementById("quick-map-lbl");
@@ -27175,7 +27260,10 @@ const ART = {
       }
       game.laws.forEach(id => {
         const l = hasOwn(DAO_LAWS, id) ? DAO_LAWS[id] : null;
-        if (l) icons.push(`<div class="build-mini-ico" data-tip="${escTip(l.name, LAW_SHORT_BADGE[id] + " · " + l.desc)}"><img src="${ART[LAW_ICONS[id] || "icon_blade"]}" alt="" /></div>`);
+        if (l) {
+          const liveNote = getLawLiveContributionText(game, id);
+          icons.push(`<div class="build-mini-ico" data-tip="${escTip(l.name, LAW_SHORT_BADGE[id] + " · " + l.desc + (liveNote ? "｜" + liveNote : ""))}"><img src="${ART[LAW_ICONS[id] || "icon_blade"]}" alt="" /></div>`);
+        }
       });
       strip.innerHTML = icons.join("");
     }
@@ -27546,24 +27634,46 @@ const ART = {
     }
   }
 
+  function focusBattlefield() {
+    try {
+      const ws = document.getElementById("welcome-screen");
+      if (ws && ws.style.display !== "none") return false;
+      const bd = document.getElementById("modal-backdrop");
+      const modalOpen = !!(bd && bd.classList.contains("open"));
+      if (cutscene.active || modalOpen || drawerOpen) return false;
+      const stageEl = document.getElementById("visual-stage");
+      if (stageEl && typeof stageEl.focus === "function") {
+        stageEl.focus({ preventScroll: true });
+        return document.activeElement === stageEl;
+      }
+    } catch (e) {}
+    return false;
+  }
+
   function restoreTriggerFocus(el) {
     try {
       const dlgBar = document.getElementById("story-dialogue-bar");
+      if (cutscene.active) {
+        focusDialogSafely(dlgBar);
+        return;
+      }
       const safeEl = (el && !(dlgBar && dlgBar.contains(el) && !dlgBar.classList.contains("open"))) ? el : null;
       if (isElementFocusable(safeEl)) {
         safeEl.focus({ preventScroll: true });
         return;
       }
       const ws = document.getElementById("welcome-screen");
-      const fallbacks = (ws && ws.style.display !== "none")
-        ? [document.getElementById("btn-continue-save"), document.getElementById("btn-start-new")]
-        : [document.getElementById("btn-open-settings"), document.getElementById("nav-btn-cultivate")];
-      for (const fb of fallbacks) {
-        if (isElementFocusable(fb)) {
-          fb.focus({ preventScroll: true });
-          return;
+      if (ws && ws.style.display !== "none") {
+        const fallbacks = [document.getElementById("btn-continue-save"), document.getElementById("btn-start-new")];
+        for (const fb of fallbacks) {
+          if (isElementFocusable(fb)) {
+            fb.focus({ preventScroll: true });
+            return;
+          }
         }
+        return;
       }
+      focusBattlefield();
     } catch (e) {}
   }
 
@@ -27642,7 +27752,9 @@ const ART = {
     pendingVolumeRecapOnDismiss = null;
     const target = lastModalTriggerEl;
     lastModalTriggerEl = null;
-    if (wasOpen && drawerOpen) {
+    if (wasOpen && cutscene.active) {
+      focusDialogSafely(document.getElementById("story-dialogue-bar"));
+    } else if (wasOpen && drawerOpen) {
       const panel = document.getElementById("jade-panel");
       if (panel && target && panel.contains(target) && isElementFocusable(target)) {
         try { target.focus({ preventScroll: true }); } catch (e) {}
@@ -27815,6 +27927,22 @@ const ART = {
               ${game.destinyFruits.map(fid => {
                 const df = hasOwn(DESTINY_FRUITS, fid) ? DESTINY_FRUITS[fid] : null;
                 return df ? `<span class="destiny-fruit-pill" data-tip="${escTip(df.name, df.desc)}">★ ${df.name} · ${df.badge}</span>` : "";
+              }).join("")}
+            </div>
+          </div>
+        ` : ""}
+        ${(game.laws && game.laws.length > 0) ? `
+          <div class="jade-card" id="cultivate-laws-card" style="gap:6px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+              <strong style="font-size:12px;color:var(--gold-bright);">✦ 已悟大道法则（${game.laws.length}/${Object.keys(DAO_LAWS).length}）</strong>
+              <span style="font-size:10px;color:var(--text-sub);">常驻池当前 ${Math.round((st.statBreakdown?.rawPassivePct || 0) * 100)}% → 折算 ${Math.round((st.statBreakdown?.cappedPassivePct || 0) * 100)}%</span>
+            </div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;">
+              ${game.laws.map(lid => {
+                const lw = hasOwn(DAO_LAWS, lid) ? DAO_LAWS[lid] : null;
+                if (!lw) return "";
+                const liveNote = getLawLiveContributionText(game, lid);
+                return `<span class="tag-chip done" data-law-inspect="${escapeHtml(lid)}" data-tip="${escTip(lw.name, lw.desc + (liveNote ? "｜" + liveNote : ""))}">${escapeHtml(lw.name)}${liveNote ? ` · ${escapeHtml(liveNote)}` : ""}</span>`;
               }).join("")}
             </div>
           </div>
@@ -28975,8 +29103,9 @@ const ART = {
           }).join("")}
           ${Object.values(DAO_LAWS).map(lw => {
             const ok = seenL.includes(lw.id) || (game && game.laws.includes(lw.id));
+            const liveNote = (ok && game) ? getLawLiveContributionText(game, lw.id) : "";
             return `
-              <div class="comp-cell ${ok ? "unlocked" : "locked"}" data-tip="${escTip(ok ? lw.name : "未悟法则", ok ? lw.desc : "渡劫破境或切开鸿蒙原石参悟")}">
+              <div class="comp-cell ${ok ? "unlocked" : "locked"}" data-tip="${escTip(ok ? lw.name : "未悟法则", ok ? (lw.desc + (liveNote ? "｜" + liveNote : "")) : "渡劫破境或切开鸿蒙原石参悟")}">
                 <img src="${ART[LAW_ICONS[lw.id] || "icon_blade"]}" alt="${lw.name}" />
                 <strong style="font-size:11px;color:${ok ? "#70ffe6" : "var(--text-sub)"};">${ok ? lw.name : "？？？"}</strong>
                 <span style="font-size:9.5px;color:var(--text-sub);">${lw.rarity}法则</span>
@@ -29377,7 +29506,31 @@ const ART = {
       return;
     }
 
-    // 2. Cutscene overlay
+    // 2. Modal open (MUST run before cutscene so a modal over a cutscene still traps Tab and closes on Escape)
+    const bd = document.getElementById("modal-backdrop");
+    const modalOpen = !!(bd && bd.classList.contains("open"));
+    if (modalOpen) {
+      if (ev.code === "Tab") {
+        trapFocusInContainer(ev, document.getElementById("modal-content"));
+        return;
+      }
+      if (ev.code === "Escape") {
+        if (modalCloseable) {
+          ev.preventDefault();
+          craftMinigame.open = false;
+          closeModal();
+        }
+        return;
+      }
+      if (craftMinigame.open && ev.code === "Space" && !isTypingTarget(ev.target)) {
+        ev.preventDefault();
+        strikeTaixuCraftMinigame(false);
+        return;
+      }
+      return;
+    }
+
+    // 3. Cutscene overlay
     if (cutscene.active) {
       if (ev.code === "Tab") {
         trapFocusInContainer(ev, document.getElementById("story-dialogue-bar"));
@@ -29398,30 +29551,6 @@ const ART = {
       if (ev.code === "Escape") {
         ev.preventDefault();
         advanceCutscene(true);
-        return;
-      }
-      return;
-    }
-
-    // 3. Modal open: trap Tab/Shift+Tab, allow Escape & modal-internal keys only; block all global shortcuts
-    const bd = document.getElementById("modal-backdrop");
-    const modalOpen = !!(bd && bd.classList.contains("open"));
-    if (modalOpen) {
-      if (ev.code === "Tab") {
-        trapFocusInContainer(ev, document.getElementById("modal-content"));
-        return;
-      }
-      if (ev.code === "Escape") {
-        if (modalCloseable) {
-          ev.preventDefault();
-          craftMinigame.open = false;
-          closeModal();
-        }
-        return;
-      }
-      if (craftMinigame.open && ev.code === "Space" && !isTypingTarget(ev.target)) {
-        ev.preventDefault();
-        strikeTaixuCraftMinigame(false);
         return;
       }
       return;
@@ -29492,9 +29621,17 @@ const ART = {
     }
     if (!game || arena.paused) return;
 
+    const ae = document.activeElement;
+    const aeTag = ae && ae.tagName;
+    const aeIsRoleButton = !!(ae && typeof ae.getAttribute === "function" && ae.getAttribute("role") === "button");
+    if (aeIsRoleButton && (ev.code === "Enter" || ev.code === "Space")) {
+      ev.preventDefault();
+      if (typeof ae.click === "function") ae.click();
+      return;
+    }
+
     if (ev.code === "Enter" && arena.nearbyProp) {
-      const aeTag = document.activeElement && document.activeElement.tagName;
-      if (!aeTag || !/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/i.test(aeTag)) {
+      if (!aeIsRoleButton && (!aeTag || !/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/i.test(aeTag))) {
         ev.preventDefault();
         interactWithProp(arena.nearbyProp);
         return;
@@ -29609,7 +29746,8 @@ const ART = {
         photoMode.dragStartY = ev.clientY - photoMode.panY;
         return;
       }
-      if (drawerOpen) { closeDrawer(); return; }
+      if (drawerOpen) { closeDrawer(); focusBattlefield(); return; }
+      focusBattlefield();
       GamepadSystem.setMode("kb");
       if (ev.button === 1) {
         ev.preventDefault();
@@ -29962,6 +30100,7 @@ const ART = {
       Sound.fanfare();
       initArenaStage(0, false);
       playCutscene("opening_scroll");
+      focusBattlefield();
       const saved = saveGame({ forceOverwrite: true });
       renderHudSaveAlert();
       return saved;
@@ -30015,6 +30154,7 @@ const ART = {
       queueNewUnlockCardsForState(game);
       updateHud();
       renderHudSaveAlert();
+      focusBattlefield();
       return;
     }
 
@@ -31470,10 +31610,10 @@ const ART = {
       }
       closeModal();
       Sound.fanfare();
-      if (nd.kind === "hub") enterSanctumHub();
+      if (nd.kind === "hub") { focusBattlefield(); enterSanctumHub(); }
       else if (nd.kind === "boss_rush") openBossRushModal();
-      else if (nd.kind === "tower") initArenaStage(3, true);
-      else initArenaStage(nd.stageIdx, false);
+      else if (nd.kind === "tower") { focusBattlefield(); initArenaStage(3, true); }
+      else { focusBattlefield(); initArenaStage(nd.stageIdx, false); }
       saveGame();
       return;
     }
@@ -32124,7 +32264,16 @@ const ART = {
     openPetSkillChoiceModal,
     castPetUltimate,
     RELICS,
-    PACT_SEALS
+    PACT_SEALS,
+    COMBAT_RULE_PARAMS,
+    getCombatRuleParams: () => COMBAT_RULE_PARAMS,
+    getLawLiveContributionText,
+    focusBattlefield,
+    DAO_LAWS,
+    SKILLS,
+    LAW_SHORT_BADGE,
+    CELESTIAL_OMENS,
+    CELESTIAL_TIME_PHASES
   };
   window.__CHENYUAN_V24__ = {
     getState: () => ({
