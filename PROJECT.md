@@ -96,14 +96,14 @@
 ## Milestones
 | # | Name | Scope (features) | Branch | Dependencies | Status |
 |---|------|------------------|--------|-------------|--------|
-| M0 | 规划 PR | 提交 PROJECT.md | `codex/project-plan` | none | IN_PROGRESS |
-| M1 | 工具链与美术溯源 | T8, T9 | `codex/tooling-art-provenance` | none（不改 playable-v2.html，可与 M2 并行） | PLANNED |
-| M2 | 存档与输入安全 | T1–T7 | `codex/save-input-safety` | none | PLANNED |
-| M3 | 主线进阶完整性与难度曲线 | S1, S2, S5, S6, G3 | `codex/mainline-progression` | M2 已合并 | PLANNED |
+| M0 | 规划 PR | 提交 PROJECT.md | `codex/project-plan` | none | DONE (PR #11) |
+| M1 | 工具链与美术溯源 | T8, T9 | `codex/tooling-art-provenance` | none（不改 playable-v2.html，可与 M2 并行） | DONE (PR #12) |
+| M2 | 存档与输入安全 | T1–T7 | `codex/save-input-safety` | none | DONE (PR #13, `4b1fc00`) |
+| M3 | 主线进阶完整性与难度曲线 | S1, S2, S5, S6, G3 | `codex/mainline-progression` | M2 已合并 | DONE (`codex/mainline-progression`) |
 | M4 | 经济完整性与显式消费 | G1, G2, G4, G5, G6, G9, G11a | `codex/economy-integrity` | M3 已合并 | PLANNED |
 | M5 | 叙事内容：前提、卷终、故人线 | S3, S4, S7, S8, S9, S10 | `codex/narrative-content` | M4 已合并 | PLANNED |
 | M6 | 系统节奏与深度 | S11+G7, G8, G10, G11b, G12 | `codex/systems-pacing` | M5 已合并 | PLANNED |
-| E2E | E2E 测试轨道 | E1 → 发布 `TEST_READY.md` | `codex/e2e-suite` | M1（package.json），否则自带运行器 | PLANNED |
+| E2E | E2E 测试轨道 | E1 → 发布 `TEST_READY.md` | `codex/e2e-suite` | M1（package.json），否则自带运行器 | PAUSED (WIP on `codex/e2e-suite`; deferred to M7 per user directive) |
 | M7 | 最终里程碑：通过 E2E 并对抗加固 | E2：Tier 1→2→3→4 按顺序闸门，然后 Tier 5 | `codex/e2e-pass`、`codex/adversarial-hardening` | M1–M6 + TEST_READY.md | PLANNED |
 
 **顺序说明**：M2–M7 都要修改同一个文件 `web/public/playable-v2.html` 和 `scripts/verify-playable-v2.mjs`，按写入独占规则只能**串行**进行（每个 PR 合并后，下一个里程碑再从新的 `main` 开分支）。M1（不碰游戏文件）和 E2E 轨道（只写 `tests/e2e/**`）可以和 M2 并行。M3 把 Boss 门控和难度曲线放在同一个里程碑，因为强制击败 Boss 之后，原来 136k 血量、一击秒杀的最终 Boss 必须同时调低，否则主线会卡关。
@@ -165,5 +165,16 @@
 3. 对静态 HTTP 入口做真实操作冒烟测试：`python3 -m http.server <port> --bind 127.0.0.1 --directory web/public`，1440×900 Chrome，按键鼠路径操作，检查焦点返回和反馈。
 4. 闸门由 2 个 Reviewer、2 个 Challenger 和 1 个 Forensic Auditor 组成，Auditor 拥有一票否决权。
 
+> **2026-11-23 用户指令调整（见 `.agents/teamwork/ORIGINAL_REQUEST.md`）**：
+> - 不执行单独的手动冒烟测试（覆盖第 3 条）；真实入口操作验证由自动化 Playwright 套件（1440×900 独立浏览器上下文、静态 HTTP）统一满足。
+> - M2–M6 阶段集中推进功能改动与交付，采用秒级静态语法校验（提取 `web/public/playable-v2.html` 内联 JS 执行 `vm.Script` / `node --check`）、静态代码审查与合规检查放行；全量 `npm run test:regression`、`npm run test:e2e` 与 5-Agent 动态对抗门禁统一后置至 **M7** 阶段集中补齐并执行，所有 PR 须如实记录验证范围。
+
 ## Status Log
 - 2026-11-23T00:20Z — 调研（3/3）完成，PROJECT.md 初版完成，M0 规划 PR 进行中。
+- 2026-11-23 — M0（PR #11，`PROJECT.md`）与 M1（PR #12，工具链、CI、`docs/art-manifest.md`）已合并至 `main`。
+- 2026-11-23 — M2（PR #13，`4b1fc00`，`codex/save-input-safety`，T1–T7 + DOM XSS 加固）已合并至 `main`；E2E 轨道（`codex/e2e-suite`）按用户指令暂停保留 WIP，延后至 M7 接续。
+- 2026-11-23 — M3（`codex/mainline-progression`）完成全部 5 项功能改动（S1 Boss 门控进阶与零倒退旧档迁移、S2 真实动态结局与诚实评分、S5 圆满后劫火周目/锁妖塔目标引导、S6 `resolveKarmaDilemmaChoice` 花括号修复、G3 战役 Boss/45% 单击伤害上限及 Boss Rush/登仙台/锁妖塔境界缩放统一）与静态校验；以下 4 项 `scripts/verify-playable-v2.mjs` 回归用例适配与 `R3-*` 新增套件按用户指令延后至 M7 统一更新执行：
+  1. `M1-2`（L313、L344）两处瞬杀探针需改为 `hurtPlayer(99999, { uncapped: true })`（适配 G3 45% 单击上限）；
+  2. `M1-3`（L398）渡劫瞬杀探针需改为 `hurtPlayer(99999, { uncapped: true })`（适配 G3 45% 单击上限）；
+  3. `M1-3`（L372）炼气渡劫前置状态需补充 `s.game.stageStars[1] = 1`（或 `defeatedStageBosses[1] = true`）（适配 S1 守山石卫门控）；
+  4. 新增 `R3-*` 回归套件（覆盖 S1 Boss 门控/旧档迁移 5 场景、S2 真实尾声/评分、S5 圆满追踪器、S6 因果槽、G3 每关击杀攻击次数区间与 45% 上限及三侧边模式单调缩放）。
