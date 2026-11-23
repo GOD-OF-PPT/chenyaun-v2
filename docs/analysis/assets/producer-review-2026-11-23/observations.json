@@ -1,0 +1,24 @@
+{
+  "version": "b399c67",
+  "date": "2026-11-23",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "runtimeErrors": [],
+  "scope": [
+    "fresh start via UI",
+    "opening combat via mouse and keyboard",
+    "defeat and retreat",
+    "hub",
+    "cultivation",
+    "exploration drawer",
+    "midgame sandbox preset inspection"
+  ],
+  "limitations": [
+    "No full natural campaign completion",
+    "No human playtest sample",
+    "No audio listening or performance benchmark",
+    "Sandbox sample does not represent naturally earned midgame balance"
+  ]
+}
