@@ -31435,7 +31435,9 @@ const ART = {
       saveReadOnlyMode = false;
       saveConflictState = null;
       saveAlertDismissed = false;
-      const shouldCloseModal = !activeModalKind || activeModalKind === "save_conflict" || activeModalKind === "save_corrupt";
+      const modalBackdrop = document.getElementById("modal-backdrop");
+      const isModalOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
+      const shouldCloseModal = !isModalOpen || activeModalKind === "save_conflict" || activeModalKind === "save_corrupt";
       if (saveGame({ forceOverwrite: true })) {
         showToast(`已以本页进度强制覆盖存档（v${loadedSaveRev}）！`);
       }
