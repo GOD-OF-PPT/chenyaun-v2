@@ -5525,12 +5525,46 @@ try {
     await page.waitForTimeout(80);
     const afterFirstEsc = await page.evaluate(() => ({
       modalOpen: document.getElementById("modal-backdrop")?.classList.contains("open"),
-      cutsceneOpen: document.getElementById("story-dialogue-bar")?.classList.contains("open")
+      cutsceneOpen: document.getElementById("story-dialogue-bar")?.classList.contains("open"),
+      focusInsideDialogue: !!document.getElementById("story-dialogue-bar")?.contains(document.activeElement),
+      activeId: document.activeElement?.id || ""
     }));
     assert.equal(afterFirstEsc.modalOpen, false, "First Escape on Modal-over-Cutscene must close modal");
     assert.equal(afterFirstEsc.cutsceneOpen, true, "First Escape on Modal-over-Cutscene must keep cutscene open");
+    assert.equal(
+      afterFirstEsc.focusInsideDialogue,
+      true,
+      `First Escape on Modal-over-Cutscene must return focus inside #story-dialogue-bar, got activeElement=#${afterFirstEsc.activeId}`
+    );
+    assert.notEqual(
+      afterFirstEsc.activeId,
+      "btn-open-settings",
+      "First Escape on Modal-over-Cutscene must NOT leak focus back to #btn-open-settings"
+    );
     await page.keyboard.press("Escape");
     await page.waitForFunction(() => !document.getElementById("story-dialogue-bar")?.classList.contains("open"));
+
+    // 5b. Stage-transition cutscene via World Map (#btn-world-map -> data-map-node="stg_1" -> enter_sect)
+    //     must return focus cleanly to #visual-stage on dismissal instead of leaking back to #btn-world-map
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const st = api.getState();
+      st.game.realm = "qi";
+      if (st.game.seenCutscenes) delete st.game.seenCutscenes.enter_sect;
+      api.updateHud();
+    });
+    await page.click("#btn-world-map");
+    await page.waitForSelector('#modal-backdrop.open [data-map-node="stg_1"]');
+    await page.click('#modal-backdrop.open [data-map-node="stg_1"]');
+    await page.waitForSelector("#story-dialogue-bar.open");
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.getElementById("story-dialogue-bar")?.classList.contains("open"));
+    const focusAfterStageEntryCutscene = await page.evaluate(() => document.activeElement?.id || "");
+    assert.equal(
+      focusAfterStageEntryCutscene,
+      "visual-stage",
+      `Dismissing enter_sect cutscene after World Map travel must return focus to #visual-stage (not #btn-world-map), got: ${focusAfterStageEntryCutscene}`
+    );
 
     // 6. #hud-hp-txt, #hud-mp-txt, #hud-xp-txt stay synchronized with live stats
     const hudSync = await page.evaluate(() => {
