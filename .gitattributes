@@ -1,2 +1,5 @@
 * text=auto eol=lf
 *.webp binary
+# Keep vendored distributions and license texts byte-identical to the npm package.
+web/public/vendor/* -text
+web/public/vendor/DOMPurify-LICENSE-MPL.txt whitespace=-blank-at-eol

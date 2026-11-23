@@ -47,3 +47,21 @@ npm run art:manifest:check
 ```
 
 [版本更新记录](docs/v2-overhaul-notes.md) · [美术溯源清单](docs/art-manifest.md) · [随包美术素材](web/public/art/v4)
+
+## 安全扫描与静态 ZIP
+
+首次执行 `npm ci`，然后运行：
+
+```sh
+npm run security:test
+npm run security:scan -- .
+npm run security:smoke
+npm run build:static
+npm run security:scan -- dist/static-web
+```
+
+`dist/chenyuan-wendao-static.zip` 只包含浏览器静态文件，解压后打开 `index.html`，或完整上传到任意静态托管子目录。保留 `vendor/` 和 `art/` 的相对位置。静态包不需要 Node.js、Python 或包内后端。
+
+DOMPurify 使用锁定版本的本地发行文件，不访问 CDN；版本、npm 完整性值、SHA-256 与许可证随包保存。升级净化库后运行 `npm run vendor:update`，再复扫与验证。`vendor:check` 校验随包文件与已安装的锁定依赖逐字节一致。
+
+`security:scan` 遵循 Web Zip 技能的默认排除目录，只解析路径、HTML/HTM 与支持的 Vite 配置；不会执行网页、请求外部脚本或做 DNS 推断，不能替代渗透测试。使用 `--report <file.md>` 可同时输出 Markdown 和 JSON 证据。
