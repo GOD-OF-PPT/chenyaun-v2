@@ -28643,7 +28643,7 @@ const ART = {
     if (recapCb) recapCb();
     // F09: Resume active defeat decision modal if it was preempted by a peer N0 overlay (e.g., save_conflict) that has now cleared!
     const stillOpen = Boolean(bd && bd.classList.contains("open"));
-    if (!stillOpen && arena.defeatPending && !saveConflictState && !storageReadError && game && closingKind !== "defeat") {
+    if (!stillOpen && arena.defeatPending && !saveConflictState && game && closingKind !== "defeat") {
       openDefeatDecisionModal(!!arena.defeatPending.isTribulation);
       return;
     }
@@ -31435,10 +31435,11 @@ const ART = {
       saveReadOnlyMode = false;
       saveConflictState = null;
       saveAlertDismissed = false;
-      closeModal();
+      const shouldCloseModal = !activeModalKind || activeModalKind === "save_conflict" || activeModalKind === "save_corrupt";
       if (saveGame({ forceOverwrite: true })) {
         showToast(`已以本页进度强制覆盖存档（v${loadedSaveRev}）！`);
       }
+      if (shouldCloseModal) closeModal();
       return;
     }
     if (m1Act === "return-title-safe") {
