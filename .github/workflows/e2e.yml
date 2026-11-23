@@ -34,8 +34,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify inline JS syntax in playable-v2.html
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const vm = require("node:vm");
+            const html = fs.readFileSync("web/public/playable-v2.html", "utf8");
+            const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
+            if (scripts.length === 0) {
+              throw new Error("No inline <script> blocks found in web/public/playable-v2.html");
+            }
+            scripts.forEach((m, idx) => {
+              new vm.Script(m[1], { filename: `web/public/playable-v2.html#script-${idx}` });
+            });
+            console.log(`Inline JS syntax OK (${scripts.length} script block(s) validated).`);
+          '
+
       - name: Verify art provenance manifest is up to date
-        run: npm run art:manifest -- --check
+        run: npm run art:manifest:check
 
       - name: Install Playwright Chromium and export CHROMIUM_PATH
         run: |
@@ -46,21 +62,22 @@ jobs:
           echo "CHROMIUM_PATH=${CHROMIUM_BIN}" >> "$GITHUB_ENV"
 
       - name: Run 1440x900 Playwright regression suite
+        id: regression
+        continue-on-error: true
         run: |
           mkdir -p test-results/screenshots
           npm run test:regression -- \
             --report test-results/regression-report.json \
             --screenshots test-results/screenshots
 
-      - name: Run E2E acceptance suite (if present)
+      - name: Run E2E acceptance suite
+        id: e2e
+        continue-on-error: true
         run: |
-          if [ -f tests/e2e/run.mjs ]; then
-            npm run test:e2e -- --report test-results/e2e-report.json
-          else
-            echo "tests/e2e/run.mjs not present yet; skipping E2E suite."
-          fi
+          mkdir -p test-results
+          npm run test:e2e -- --report test-results/e2e-report.json
 
-      - name: Upload regression report and screenshots
+      - name: Upload regression & E2E reports and screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -68,3 +85,13 @@ jobs:
           path: test-results/
           if-no-files-found: ignore
           retention-days: 14
+
+      - name: Enforce regression and E2E pass gate
+        if: ${{ !cancelled() && (steps.regression.outcome != 'skipped' || steps.e2e.outcome != 'skipped') }}
+        run: |
+          echo "Regression outcome: ${{ steps.regression.outcome }}"
+          echo "E2E outcome: ${{ steps.e2e.outcome }}"
+          if [ "${{ steps.regression.outcome }}" != "success" ] || [ "${{ steps.e2e.outcome }}" != "success" ]; then
+            echo "One or more test suites failed."
+            exit 1
+          fi
