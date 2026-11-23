@@ -21287,10 +21287,6 @@ const ART = {
         lifespanExhaustedPromptDismissed = false;
         pendingLifespanExhaustedPrompt = false;
       }
-      if (activeLifespanModalOpen) {
-        activeLifespanModalOpen = false;
-        closeModal();
-      }
       if (Array.isArray(game.journal)) game.journal.unshift(`服下【延寿青莲丹】，寿元延至 ${lf.maxYears} 载！`);
       Sound.fanfare();
       addRipple(arena.player.x, arena.player.y + 18, 120, "#70ffe6");
@@ -21303,6 +21299,27 @@ const ART = {
         : `🌿 服下【延寿青莲丹】· 寿元永久 +30 载（${lf.curYears}/${lf.maxYears} 载，本境丹道永久气血已达上限 ${hpRes.pg.alchemyHp}/${hpRes.caps.alchemyHp}）！${reliefNote}`);
       saveGame(); updateHud();
       if (drawerOpen) renderDrawerContent();
+      if (activeLifespanModalOpen) {
+        activeLifespanModalOpen = false;
+        if (drawerOpen) {
+          const panel = document.getElementById("jade-panel");
+          if (panel && (!lastModalTriggerEl || !lastModalTriggerEl.isConnected || !isElementFocusable(lastModalTriggerEl))) {
+            const refreshedTrigger =
+              panel.querySelector('#panel-scroll-body [data-use-item="longevity_pill"]') ||
+              panel.querySelector('#panel-scroll-body [data-action="open-lifespan-exhausted"]') ||
+              panel.querySelector('[data-close-drawer]');
+            if (refreshedTrigger && isElementFocusable(refreshedTrigger)) {
+              lastModalTriggerEl = refreshedTrigger;
+            }
+          }
+        } else if (lastModalTriggerEl && lastModalTriggerEl.id === "hud-lifespan-badge" && (lastModalTriggerEl.style.display === "none" || !isElementFocusable(lastModalTriggerEl))) {
+          const fallbackBtn = document.getElementById("btn-open-profile") || document.getElementById("btn-open-settings");
+          if (fallbackBtn && isElementFocusable(fallbackBtn)) {
+            lastModalTriggerEl = fallbackBtn;
+          }
+        }
+        closeModal();
+      }
       return;
     }
     if (itemId === "blood_fury_pill") {
@@ -24352,6 +24369,10 @@ const ART = {
     const p = arena.player;
     p.meditating = false;
     p.meditateAgeTick = 0;
+    if (p.meditateAgedDirty) {
+      p.meditateAgedDirty = false;
+      if (!sandboxMode && !isPracticeModeActive()) saveGame();
+    }
     const st = getCombatStats(game);
     const pactEnemyMult = hasPact(game, "frenzy_hp") ? 1.25 : 1.0;
     const hasLotusSoak = game && game.gourd && Array.isArray(game.gourd.soaks) && game.gourd.soaks.includes("iron_lotus");
