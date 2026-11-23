@@ -5,3 +5,7 @@ __pycache__/
 .env
 .env.*
 saves/
+node_modules/
+.agents/
+test-results/
+playwright-report/

@@ -1,0 +1,70 @@
+name: E2E Regression & Art Provenance
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  regression:
+    name: Art Manifest & 1440x900 Chromium Regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify art provenance manifest is up to date
+        run: npm run art:manifest -- --check
+
+      - name: Install Playwright Chromium and export CHROMIUM_PATH
+        run: |
+          npx playwright-core install --with-deps chromium
+          CHROMIUM_BIN="$(node -e 'import("playwright-core").then((m) => console.log(m.chromium.executablePath()))')"
+          echo "Resolved Playwright Chromium: ${CHROMIUM_BIN}"
+          test -x "${CHROMIUM_BIN}"
+          echo "CHROMIUM_PATH=${CHROMIUM_BIN}" >> "$GITHUB_ENV"
+
+      - name: Run 1440x900 Playwright regression suite
+        run: |
+          mkdir -p test-results/screenshots
+          npm run test:regression -- \
+            --report test-results/regression-report.json \
+            --screenshots test-results/screenshots
+
+      - name: Run E2E acceptance suite (if present)
+        run: |
+          if [ -f tests/e2e/run.mjs ]; then
+            npm run test:e2e -- --report test-results/e2e-report.json
+          else
+            echo "tests/e2e/run.mjs not present yet; skipping E2E suite."
+          fi
+
+      - name: Upload regression report and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 14
