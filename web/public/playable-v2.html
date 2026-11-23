@@ -790,6 +790,9 @@
   .qt-row-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 11px; }
   .qt-tag-main { color: #ffe28a; font-weight: 700; font-size: 10.5px; }
   .qt-tag-sub  { color: #70ffe6; font-weight: 700; font-size: 10.5px; }
+  .qt-tag-companion { color: #f4c4ff; font-weight: 700; font-size: 10.5px; }
+  .qt-goal-row.qt-companion-row { border-color: rgba(244, 196, 255, 0.34); background: rgba(24, 16, 36, 0.78); }
+  .qt-goal-row.qt-companion-row:hover { border-color: rgba(244, 196, 255, 0.72); background: rgba(36, 22, 52, 0.90); }
   .qt-action-pill {
     font-size: 9.5px; padding: 1px 6px; border-radius: 99px; font-weight: 700; white-space: nowrap;
     background: rgba(216, 179, 106, 0.22); color: var(--gold-bright);
@@ -3296,7 +3299,7 @@
       <!-- V13 Live 4-Tier Goal & Quest Jade-Slip Tracker -->
       <div id="quest-tracker-hud">
         <div class="qt-header">
-          <div id="btn-open-goals-hdr" class="qt-title" role="button" tabindex="0" style="cursor:pointer;" data-tip="九霄问道录 (T)|点击展开五幕主线、宗门悬赏令、九州15星秘宝与飞升终极道标！">
+          <div id="btn-open-goals-hdr" class="qt-title" role="button" tabindex="0" style="cursor:pointer;" data-tip="九霄问道录 (T)|点击展开六卷主线、宗门悬赏令、九州15星秘宝与飞升终极道标！">
             <span style="display:inline-flex;align-items:center;gap:5px;"><svg class="svg-ico" style="width:13px;height:13px;color:var(--gold);" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>问道目标</span>
             <span id="qt-overall-pct" class="qt-pct-pill">12%</span>
           </div>
@@ -3312,7 +3315,7 @@
         <span>🧪 <b>演武沙盒模式</b> · 不影响正式存档/成就/轮回殿</span>
         <button type="button" id="btn-exit-sandbox" class="btn-gold" style="padding:2px 10px;font-size:11px;" data-action="exit-sandbox">退出沙盒</button>
       </div>
-      <div id="btn-mainline-compass" class="hud-compass stage-wave-hud" role="status" aria-live="polite"><div class="wave-title-row"><span id="stage-title"></span><span id="wave-sub-tag" class="tag-chip done"></span></div><div id="wave-dots-row" class="wave-dots"></div><span id="compass-vol-label" class="sr-only">第一幕 · 山雨初鸣</span> <span id="compass-step-label" class="sr-only">破庙拔剑：救下沈清禾</span></div>
+      <div id="btn-mainline-compass" class="hud-compass stage-wave-hud" role="status" aria-live="polite"><div class="wave-title-row"><span id="stage-title"></span><span id="wave-sub-tag" class="tag-chip done"></span></div><div id="wave-dots-row" class="wave-dots"></div><span id="compass-vol-label" class="sr-only">第一卷 · 山雨初鸣</span> <span id="compass-step-label" class="sr-only">破庙拔剑：救下沈清禾</span></div>
       <button type="button" id="btn-dungeon-route" class="dungeon-route-btn" data-action="open-dungeon-map" style="display:none;" data-tip="秘境五层星图 (9)|查看本趟秘境 5 层分支路线、天候气候与奖励预览；清房后点击可择路前行！"></button>
 
       <div id="tribulation-live-banner">
@@ -3347,7 +3350,7 @@
       <button id="btn-omen-banner" class="icon-btn active" data-tip="天时星象 (炼气期解封)|点击耗20灵石改换星象加成">
         <span id="omen-label-txt">灵潮</span>
       </button>
-      <button id="btn-goals-modal" class="goal-btn-pill" data-tip="九霄问道录 (T)|查看并领取五幕主线、宗门悬赏令与九州15星秘宝奖励！"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg><span>目标</span><span id="goal-hud-dot" class="goal-red-dot"></span></button>
+      <button id="btn-goals-modal" class="goal-btn-pill" data-tip="九霄问道录 (T)|查看并领取六卷主线、宗门悬赏令与九州15星秘宝奖励！"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg><span>目标</span><span id="goal-hud-dot" class="goal-red-dot"></span></button>
       <button id="btn-world-map" class="map-btn-pill" data-tip="九州山海舆图 (M)|展开千里青绿山海卷：自由选择五大秘境悬赏、镇妖古塔或返回听雨洞府！"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/><path d="M9 4v14M15 6v14"/></svg><span>舆图</span></button>
       <button id="btn-sanctum-hub" class="hub-btn-pill" data-tip="听雨洞府主城 · 演武论剑坪 (H)|随时返回安全宗门洞府：休整、控火炼丹、神兵淬炼与木桩演武！"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></svg><span>洞府</span></button>
       <button type="button" id="btn-pavilion-menu" class="pavilion-trigger-btn" data-action="toggle-pavilion" data-tip="太虚仙阁|展开问道阶梯、九世轮回殿、仙乐音效与演武沙盒开关"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.2L18.5 21 12 16.8 5.5 21l2-7.8L2 9h7l3-7z"/></svg><span>仙阁 ▾</span></button>
@@ -3636,7 +3639,7 @@
     <button id="nav-btn-story" class="nav-tab-btn" data-tab="story" data-tip="故人盟契|结交沈清禾、裴照、陆玄松、砚尘">
       <svg class="svg-ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/></svg>
       <span class="sr-only">📜 </span>
-      <span class="nav-tab-text"><strong><span class="sr-only">尘缘</span>主线</strong><small class="sr-only">七卷 · 故人 · 问心</small></span>
+      <span class="nav-tab-text"><strong><span class="sr-only">红尘</span>故人</strong><small class="sr-only">结缘 · 羁绊 · 问心</small></span>
       <span id="badge-story" class="nav-badge-dot" style="display:none;">1</span>
     </button>
     <button id="nav-btn-explore" class="nav-tab-btn" data-tab="explore" data-tip="五大道场|传送青岚石坪、青云仙台、照影莲台、锁妖内坛与登仙台">
@@ -3658,7 +3661,7 @@
     </button>
   </nav>
 
-  <div id="story-dialogue-bar">
+  <div id="story-dialogue-bar" role="dialog" aria-modal="true" aria-label="剧情演出" tabindex="-1">
     <div class="dlg-portrait-wrap"><img id="dlg-portrait-img" alt="人物" /></div>
     <div class="dlg-body">
       <div class="dlg-speaker-row">
@@ -4601,14 +4604,14 @@ const ART = {
     sentinel:      { id: "sentinel", name: "云台守灵", min: "spirit", location: "terrace", art: "enemy_sentinel", hp: 1520, attack: 32, heavy: 72, stones: 195, xp: 520, loot: { dao: 2, soul: 1 }, mech: "ward", mechDesc: "【护山灵阵】护阵期大幅减伤，切【`玄重巨阙式】重劈或右键爆剑崩碎其金盾！" },
     trial_heart:   { id: "trial_heart", name: "第一劫 · 往昔心魔", min: "spirit", location: "terrace", art: "enemy_trial_heart", hp: 1380, attack: 30, heavy: 66, stones: 0, xp: 0, loot: {}, trial: true, mech: "drain", mechDesc: "九霄第一劫：幻化执念噬血攻心，识破其蓄势方见真我。" },
     trial_thunder: { id: "trial_thunder", name: "第二劫 · 九霄雷劫", min: "spirit", location: "terrace", art: "enemy_trial_thunder", hp: 1620, attack: 33, heavy: 76, stones: 0, xp: 0, loot: {}, trial: true, mech: null, mechDesc: "九霄第二劫：沈清禾【灵枢药阵】与裴照【剑痕】将在此劫显化护持！" },
-    trial_gate:    { id: "trial_gate", name: "第三劫 · 天门道影", min: "spirit", location: "terrace", art: "enemy_trial_gate", hp: 1820, attack: 36, heavy: 84, stones: 0, xp: 0, loot: {}, trial: true, mech: "ward", mechDesc: "九霄终劫：倾尽双姿态连携、法宝剑域、灵兽与故人合击斩开仙门！" },
+    trial_gate:    { id: "trial_gate", name: "天门道影", min: "spirit", location: "terrace", art: "enemy_trial_gate", hp: 1820, attack: 36, heavy: 84, stones: 0, xp: 0, loot: {}, trial: true, mech: "ward", mechDesc: "九霄终劫：倾尽双姿态连携、法宝剑域、灵兽与故人合击斩开仙门！" },
     sky_roc:       { id: "sky_roc",    name: "巡天金甲雷鹏将",   min: "golden", location: "terrace", art: "enemy_roc_sky_general", hp: 1200, attack: 28, heavy: 64, stones: 180, xp: 340, loot: { soul: 2, core: 2 }, mech: "sky_barrage", mechDesc: "【九霄巡天】振翅布下天雷激光网并攒射漫天雷球：按空格【滚筒侧闪】穿激光，按右键【太虚剑盾】将漫天法球原路震回破其金甲！" }
   };
 
-  // ==================== 4. SINGLE SOURCE OF TRUTH: 5-ACT CAMPAIGN PROGRESSION (CAMPAIGN_ACTS) ====================
+  // ==================== 4. SINGLE SOURCE OF TRUTH: CAMPAIGN VOLUMES PROGRESSION (CAMPAIGN_ACTS) ====================
   const CAMPAIGN_ACTS = [
     {
-      stageIdx: 0, id: "wilderness", actLabel: "第一幕", seal: "第一秘境",
+      stageIdx: 0, id: "wilderness", actLabel: "第一卷", seal: "第一秘境",
       min: "mortal", targetRealm: "qi", loc: "wilderness",
       arenaArt: "arena_wilderness", particleKind: "rain_mist",
       shape: "diamond", rx: 0.37, ry: 0.31, cy: 0.54,
@@ -4620,7 +4623,7 @@ const ART = {
       matDrops: ["herb", "dew"], bossMats: ["core", "dew"], dropPreview: "凝气草 · 晨曦灵露 · 妖核"
     },
     {
-      stageIdx: 1, id: "sect", actLabel: "第二幕", seal: "第二秘境",
+      stageIdx: 1, id: "sect", actLabel: "第二卷", seal: "第二秘境",
       min: "qi", targetRealm: "foundation", loc: "sect",
       arenaArt: "arena_sect", particleKind: "cloud_leaf",
       shape: "diamond", rx: 0.36, ry: 0.30, cy: 0.52,
@@ -4632,7 +4635,7 @@ const ART = {
       matDrops: ["core", "dew", "herb"], bossMats: ["core", "dew", "jade"], dropPreview: "妖核 · 晨曦灵露 · 凝气草"
     },
     {
-      stageIdx: 2, id: "secret", actLabel: "第三幕", seal: "第三秘境",
+      stageIdx: 2, id: "secret", actLabel: "第三卷", seal: "第三秘境",
       min: "foundation", targetRealm: "golden", loc: "secret",
       arenaArt: "arena_secret", particleKind: "lotus_glow",
       shape: "diamond", rx: 0.36, ry: 0.30, cy: 0.53,
@@ -4644,7 +4647,7 @@ const ART = {
       matDrops: ["jade", "core"], bossMats: ["jade", "lotus"], dropPreview: "地脉灵玉 · 妖核 · 寒霜神兵"
     },
     {
-      stageIdx: 3, id: "sword_mound", actLabel: "第四幕", seal: "第四秘境",
+      stageIdx: 3, id: "sword_mound", actLabel: "第四卷", seal: "第四秘境",
       min: "golden", targetRealm: "nascent", loc: "secret",
       arenaArt: "arena_tower", particleKind: "ghost_ember",
       shape: "ellipse", rx: 0.34, ry: 0.28, cy: 0.54,
@@ -4656,7 +4659,7 @@ const ART = {
       matDrops: ["lotus", "jade"], bossMats: ["lotus", "soul"], dropPreview: "月华莲 · 地脉灵玉 · 仙品神兵"
     },
     {
-      stageIdx: 4, id: "terrace", actLabel: "第五幕", seal: "终局圣境",
+      stageIdx: 4, id: "terrace", actLabel: "终卷", seal: "终局圣境",
       min: "nascent", targetRealm: "ascended", loc: "terrace",
       arenaArt: "arena_terrace", particleKind: "star_dust",
       shape: "ellipse", rx: 0.36, ry: 0.30, cy: 0.53,
@@ -4671,64 +4674,112 @@ const ART = {
 
   const CHAPTERS = [
     {
-      index: 1, realm: "mortal", vol: "第一幕", title: "山雨初鸣 · 青岚破庙",
+      index: 1, realm: "mortal", vol: "第一卷", title: "山雨初鸣 · 青岚破庙",
       poem: "山雨欲来破庙寒，一剑退狼定前缘。",
-      desc: "于青岚破庙拔剑退狼救下沈清禾，择定玉莲台仙缘后踏入青岚荒野击败【雾隐狼王】，攒满修为首渡紫霄初劫晋升炼气期！",
+      desc: "天门崩裂百年，道影残片坠入青岚。于破庙雨夜拔剑救下沈清禾、择定玉莲仙缘，斩灭受染的【雾隐狼王】粉碎第一枚残片，攒满修为渡劫晋升炼气期！",
       steps: [
         { id: "s1_open",  text: "破庙拔剑：退群狼救沈清禾并择定玉莲台仙缘", tab: "story", loc: "wilderness", route: "stage_0", reward: { stones: 35, pill: "healing_pill" }, rewardTxt: "35灵石 · 回春丹×1", check: g => !!g.openingChoice },
-        { id: "s1_xp",    text: "青岚追猎：扫荡青岚秘境击败【雾隐狼王】", tab: "explore", loc: "wilderness", route: "stage_0", reward: { stones: 45, herb: 2 }, rewardTxt: "45灵石 · 凝气草×2", check: g => isStageBossDefeated(g, 0) },
+        { id: "s1_wolf",  text: "青岚追猎：扫荡青岚秘境击败【雾隐狼王】", tab: "explore", loc: "wilderness", route: "stage_0", reward: { stones: 45, herb: 2 }, rewardTxt: "45灵石 · 凝气草×2", check: g => isStageBossDefeated(g, 0) },
         { id: "s1_break", text: "引动天劫：修为圆满后按 B 开启渡劫仪轨晋升【炼气期】", tab: "cultivate", loc: "cave", route: "tribulate", reward: { stones: 65, gearMin: 1 }, rewardTxt: "65灵石 · 灵品仙装", check: g => rankOf(g.realm) >= 1 }
       ]
     },
     {
-      index: 2, realm: "qi", vol: "第二幕", title: "洞府开炉 · 青云外门",
+      index: 2, realm: "qi", vol: "第二卷", title: "洞府开炉 · 青云外门",
       poem: "钟鸣云海问仙途，镇山金卫试青锋。",
-      desc: "回听雨洞府开炉炼丹、契约首只随行灵宠，出征【青云外门】斩破镇守首领【守山石卫】，集妖核炼筑基丹晋升筑基期！",
+      desc: "循残片气机入青云山门：回听雨洞府开炉炼丹、契约灵宠，于【青云外门】斩破失控的【守山石卫】清除第二枚残片，集妖核炼筑基丹晋升筑基期！",
       steps: [
-        { id: "s2_school", text: "缔结灵宠：在【修行】面板契约首只随行本命灵兽", tab: "cultivate", loc: "cave", route: "drawer_cultivate", reward: { stones: 60, herb: 3 }, rewardTxt: "60灵石 · 凝气草×3", check: g => !!g.pet.id },
+        { id: "s2_pet",    text: "缔结灵宠：在【修行】面板契约首只随行本命灵兽", tab: "cultivate", loc: "cave", route: "drawer_cultivate", reward: { stones: 60, herb: 3 }, rewardTxt: "60灵石 · 凝气草×3", check: g => !!g.pet.id },
         { id: "s2_lu",     text: "洞府整备：回听雨洞府炼丹1次或结交执事陆玄松", tab: "alchemy", loc: "cave", route: "hub", reward: { stones: 75, pill: "spirit_pill" }, rewardTxt: "75灵石 · 回灵丹×1", check: g => (g.immortalPills || 0) >= 1 || !!g.choices.lu_intro },
         { id: "s2_warden", text: "剑破外门：击败【青云外门 · 守山石卫】", tab: "explore", loc: "sect", route: "stage_1", reward: { stones: 85, core: 1 }, rewardTxt: "85灵石 · 妖核×1", check: g => isStageBossDefeated(g, 1) },
         { id: "s2_break",  text: "渡劫筑基：集妖核炼筑基丹，按 B 渡劫晋升【筑基期】", tab: "cultivate", loc: "cave", route: "tribulate", reward: { stones: 95, gearMin: 2 }, rewardTxt: "95灵石 · 玄品仙装", check: g => rankOf(g.realm) >= 2 }
       ]
     },
     {
-      index: 3, realm: "foundation", vol: "第三幕", title: "寒潭镜心 · 照影问剑",
+      index: 3, realm: "foundation", vol: "第三卷", title: "寒潭镜心 · 照影问剑",
       poem: "幽潭冷月映青莲，玄蛇吐雾锁寒烟。",
-      desc: "结交红尘故人、解封双姿易剑与魂印，深入【照影寒潭】斩杀【寒潭玄蛇】，采集地脉灵玉凝结不朽金丹！",
+      desc: "道影寒气沉入照影古境。在【故人】面板结交红尘同道，深入【照影寒潭】斩杀受染的【寒潭玄蛇】粉碎第三枚残片，采地脉灵玉凝结金丹！",
       steps: [
-        { id: "s3_npc",   text: "红尘盟契：在【主线】完成任一段故人茶叙机缘", tab: "story", loc: "sect", route: "drawer_story", reward: { stones: 90, core: 1 }, rewardTxt: "90灵石 · 妖核×1", check: g => Object.keys(g.choices || {}).length >= 1 },
-        { id: "s3_skill", text: "寒潭斩蛇：击败【照影寒潭 · 寒潭玄蛇】", tab: "explore", loc: "secret", route: "stage_2", reward: { stones: 110, pill: "healing_pill" }, rewardTxt: "110灵石 · 回春丹×2", check: g => isStageBossDefeated(g, 2) },
-        { id: "s3_break", text: "凝结金丹：集地脉灵玉炼凝金丹，渡劫晋升【金丹期】", tab: "cultivate", loc: "cave", route: "tribulate", reward: { stones: 140, gearMin: 2 }, rewardTxt: "140灵石 · 玄品神兵", check: g => rankOf(g.realm) >= 3 }
+        { id: "s3_npc",     text: "红尘盟契：在【故人】面板完成任一段故人茶叙机缘", tab: "story", loc: "sect", route: "drawer_story", reward: { stones: 90, core: 1 }, rewardTxt: "90灵石 · 妖核×1", check: g => Object.keys(g.choices || {}).length >= 1 },
+        { id: "s3_serpent", text: "寒潭斩蛇：击败【照影寒潭 · 寒潭玄蛇】", tab: "explore", loc: "secret", route: "stage_2", reward: { stones: 110, pill: "healing_pill", pillQty: 2 }, rewardTxt: "110灵石 · 回春丹×2", check: g => isStageBossDefeated(g, 2) },
+        { id: "s3_break",   text: "凝结金丹：集地脉灵玉炼凝金丹，渡劫晋升【金丹期】", tab: "cultivate", loc: "cave", route: "tribulate", reward: { stones: 140, gearMin: 2 }, rewardTxt: "140灵石 · 玄品神兵", check: g => rankOf(g.realm) >= 3 }
       ]
     },
     {
-      index: 4, realm: "golden", vol: "第四幕", title: "古冢剑魄 · 铸器启星",
+      index: 4, realm: "golden", vol: "第四卷", title: "古冢剑魄 · 铸器启星",
       poem: "残碑断剑埋万骨，犹有剑意贯长虹。",
-      desc: "铸造本命法宝并启周天星图，踏入【古修剑冢】破除镜阵斩灭【古境剑傀】，采月华莲碎丹成婴！",
+      desc: "残片余波直指古修剑冢。铸造本命法宝并启周天星图，随砚尘石碑线索破除镜阵、斩灭【古境剑傀】清除第四枚残片，采月华莲碎丹成婴！",
       steps: [
-        { id: "s4_relic", text: "本命神兵：在【百工】铸造并佩带一件镇魂本命法宝", tab: "alchemy", loc: "cave", route: "drawer_alchemy", reward: { stones: 130, core: 2 }, rewardTxt: "130灵石 · 妖核×2", check: g => !!g.loadout.relic },
-        { id: "s4_npc",   text: "古冢斩傀：深入【古修剑冢】击败镇守首领【古境剑傀】", tab: "explore", loc: "secret", route: "stage_3", reward: { stones: 150, gearMin: 3 }, rewardTxt: "150灵石 · 仙品宝匣", check: g => isStageBossDefeated(g, 3) },
-        { id: "s4_break", text: "碎丹成婴：携结婴丹渡紫霄雷劫晋升【元婴期】真君", tab: "cultivate", loc: "cave", route: "tribulate", reward: { stones: 185, bonusSword: 1 }, rewardTxt: "185灵石 · 飞剑永久+1", check: g => rankOf(g.realm) >= 4 }
+        { id: "s4_relic",  text: "本命神兵：在【百工】铸造并佩带一件镇魂本命法宝", tab: "alchemy", loc: "cave", route: "drawer_alchemy", reward: { stones: 130, core: 2 }, rewardTxt: "130灵石 · 妖核×2", check: g => !!g.loadout.relic },
+        { id: "s4_puppet", text: "古冢斩傀：深入【古修剑冢】击败镇守首领【古境剑傀】", tab: "explore", loc: "secret", route: "stage_3", reward: { stones: 150, gearMin: 3 }, rewardTxt: "150灵石 · 仙品宝匣", check: g => isStageBossDefeated(g, 3) },
+        { id: "s4_break",  text: "碎丹成婴：携结婴丹渡紫霄雷劫晋升【元婴期】真君", tab: "cultivate", loc: "cave", route: "tribulate", reward: { stones: 185, bonusSword: 1 }, rewardTxt: "185灵石 · 飞剑永久+1", check: g => rankOf(g.realm) >= 4 }
       ]
     },
     {
-      index: 5, realm: "nascent", vol: "第五幕·上", title: "法则共鸣 · 元神化神",
+      index: 5, realm: "nascent", vol: "第五卷", title: "法则共鸣 · 元神化神",
       poem: "万法归宗凝道果，一念通天化元神。",
-      desc: "参悟大道法则激活共鸣羁绊，初探【九霄天门】采集凝魂晶与道蕴砂，突破化神尊者之境！",
+      desc: "四境残片已清，照影石碑指向九霄星盘。参悟大道法则激活万法共鸣，初探【九霄天门】采集凝魂晶与道蕴砂，渡劫突破化神尊者之境！",
       steps: [
-        { id: "s5_shen",  text: "万法通明：累计领悟 4 门大道法则或法宝升至 ★3", tab: "cultivate", loc: "cave", route: "stage_4", reward: { stones: 210, core: 2 }, rewardTxt: "210灵石 · 妖核×2", check: g => (g.laws || []).length >= 4 || getEquippedRelicStars(g) >= 3 },
+        { id: "s5_laws",  text: "万法通明：累计领悟 4 门大道法则或法宝升至 ★3", tab: "cultivate", loc: "cave", route: "stage_4", reward: { stones: 210, core: 2 }, rewardTxt: "210灵石 · 妖核×2", check: g => (g.laws || []).length >= 4 || getEquippedRelicStars(g) >= 3 },
         { id: "s5_break", text: "元神化神：渡劫晋升【化神期】俯瞰九州山海", tab: "cultivate", loc: "terrace", route: "tribulate", reward: { stones: 260, gearMin: 3 }, rewardTxt: "260灵石 · 仙品圣装", check: g => rankOf(g.realm) >= 5 }
       ]
     },
     {
-      index: 6, realm: "spirit", vol: "第五幕·终", title: "九霄天门 · 万古证道",
+      index: 6, realm: "spirit", vol: "第六卷", title: "九霄天门 · 万古证道",
       poem: "雷龙绕柱开天门，今日仗剑问长生。",
-      desc: "整备鸿蒙神装与故人盟契，于【九霄天门】斩破镇守首领【天门道影】，渡最终飞升天劫择定证道结局！",
+      desc: "整备鸿蒙神装与故人同心盟契，登临【九霄天门】直面百年祸源【天门道影】，斩碎最后天障并渡终极飞升天劫，择定三大证道结局！",
       steps: [
-        { id: "s6_pacts", text: "故人同心：结契至少 2 位故人或闯锁妖塔第 4 层", tab: "story", loc: "sect", route: "drawer_story", reward: { stones: 280, pill: "spirit_pill" }, rewardTxt: "280灵石 · 回灵丹×2", check: g => countBondedAllies(g) >= 2 || (g.towerBest || 0) >= 4 },
-        { id: "s7_trial", text: "剑斩道影：击败【九霄天门 · 天门道影】贯通仙门", tab: "explore", loc: "terrace", route: "stage_4", reward: { stones: 400, bonusSword: 2 }, rewardTxt: "400灵石 · 飞剑永久+2", check: g => isStageBossDefeated(g, 4) },
-        { id: "s7_end",   text: "白日飞升：渡过最终飞升天劫择定三大证道结局", tab: "cultivate", loc: "terrace", route: "tribulate", reward: { stones: 600 }, rewardTxt: "600灵石 · 仙帝金榜", check: g => g.status === "ascended" }
+        { id: "s6_pacts",  text: "故人同心：结契至少 2 位故人或闯锁妖塔第 4 层", tab: "story", loc: "sect", route: "drawer_story", reward: { stones: 280, pill: "spirit_pill", pillQty: 2 }, rewardTxt: "280灵石 · 回灵丹×2", check: g => countBondedAllies(g) >= 2 || (g.towerBest || 0) >= 4 },
+        { id: "s6_gate",   text: "剑斩道影：击败【九霄天门 · 天门道影】贯通仙门", tab: "explore", loc: "terrace", route: "stage_4", reward: { stones: 400, bonusSword: 2 }, rewardTxt: "400灵石 · 飞剑永久+2", check: g => isStageBossDefeated(g, 4) },
+        { id: "s6_ascend", text: "白日飞升：渡过最终飞升天劫择定三大证道结局", tab: "cultivate", loc: "terrace", route: "tribulate", reward: { stones: 600 }, rewardTxt: "600灵石 · 仙帝金榜", check: g => g.status === "ascended" }
       ]
+    }
+  ];
+
+  const LEGACY_STEP_ID_MAP = {
+    s1_xp: "s1_wolf",
+    s2_school: "s2_pet",
+    s3_skill: "s3_serpent",
+    s4_npc: "s4_puppet",
+    s5_shen: "s5_laws",
+    s7_trial: "s6_gate",
+    s7_end: "s6_ascend"
+  };
+
+  function canonicalizeStepId(id) {
+    if (typeof id !== "string" || !id) return "";
+    return hasOwn(LEGACY_STEP_ID_MAP, id) ? LEGACY_STEP_ID_MAP[id] : id;
+  }
+
+  const VOLUME_RECAP_META = [
+    {
+      stageIdx: 0,
+      volEndLabel: "第一卷·终",
+      title: "山雨初鸣 · 青岚破庙",
+      chronicle: "山雨倾盆之夜，你于青岚破庙拔剑护下沈清禾，终在荒野深处斩灭受染的【雾隐狼王】，粉碎坠入九州的第一枚天门道影残片。残片余波已飘往青云山门方向。"
+    },
+    {
+      stageIdx: 1,
+      volEndLabel: "第二卷·终",
+      title: "洞府开炉 · 青云外门",
+      chronicle: "你立足听雨洞府、登临青云八卦仙台，一剑破除失控【守山石卫】心障，清除了第二枚天门道影残片。陆玄松观气机所指，第三道寒煞已沉入照影寒潭。"
+    },
+    {
+      stageIdx: 2,
+      volEndLabel: "第三卷·终",
+      title: "寒潭镜心 · 照影问剑",
+      chronicle: "踏破幽潭玄冰、斩碎霜弹剑阵，你亲手诛灭【寒潭玄蛇】并震散第三枚天门道影残片。裴照勘察残气去向，直指埋骨万剑的古修剑冢与守碑老人砚尘。"
+    },
+    {
+      stageIdx: 3,
+      volEndLabel: "第四卷·终",
+      title: "古冢剑魄 · 铸器启星",
+      chronicle: "剑墟遗阵之中，你破铜镜反震、斩灭【古境剑傀】，四方灵枢残片至此尽数清零。砚尘展卷对照照影残碑，石碑最后一行铭文已指向云海之巅的【九霄天门】。"
+    },
+    {
+      stageIdx: 4,
+      volEndLabel: "第六卷·终",
+      title: "九霄天门 · 万古证道",
+      chronicle: "历尽九州五境星图，你终在九霄星盘仙台斩破百年祸源【天门道影】，五境残片尽消、九霄仙门重开！照影石碑补全最后一笔，三界飞升之路就在眼前。"
     }
   ];
 
@@ -4745,6 +4796,19 @@ const ART = {
     { slot: "craft", title: "百工寻宝令", icon: "furnace",    statKey: "craftOrLoot", baseNeed: 2,  stepNeed: 2,  descTpl: n => `炼丹、切玉或拾取仙装累计 ${n} 次`, baseStones: 70, baseXp: 50 }
   ];
 
+  const STORY_LOCATIONS = {
+    wilderness:  { id: "wilderness",  name: "青岚破庙", stageIdx: 0 },
+    cave:        { id: "cave",        name: "听雨洞府", stageIdx: -1 },
+    sect:        { id: "sect",        name: "青云外门", stageIdx: 1 },
+    secret:      { id: "secret",      name: "照影古境", stageIdx: 2 },
+    sword_mound: { id: "sword_mound", name: "古修剑冢", stageIdx: 3 },
+    terrace:     { id: "terrace",     name: "九霄天门", stageIdx: 4 }
+  };
+
+  function getStoryLocationLabel(locKey) {
+    return (locKey && hasOwn(STORY_LOCATIONS, locKey)) ? STORY_LOCATIONS[locKey].name : "九州尘缘";
+  }
+
   const NPC_META = {
     shen: { id: "shen", name: "沈清禾", role: "青云药庐 · 悬壶医修", art: "char_shen", coopName: "青莲回春阵", coopDesc: "合击：恢复38%气血并张开灵障", aidDesc: "盟约后天劫雷击减伤+10、每合回血+8；平时可召【青莲回春阵】", chain: ["shen_return", "shen_pact"] },
     pei:  { id: "pei", name: "裴照", role: "青云剑阁 · 同辈剑首", art: "char_pei", coopName: "惊鸿裂天斩", coopDesc: "合击：裂天剑气重创并强断蓄势！", aidDesc: "盟约后天劫减伤+8、破招+20%；平时可召【惊鸿裂天斩】断势", chain: ["pei_meet", "pei_echo", "pei_pact"] },
@@ -4754,7 +4818,7 @@ const ART = {
 
   const STORIES = [
     {
-      id: "lu_intro", npc: "lu", name: "执事问道", min: "qi", location: "sect",
+      id: "lu_intro", npc: "lu", name: "执事问道", min: "qi", chapter: 2, location: "sect",
       body: "青云宗执事陆玄松并未苛问你的灵根出身，只摊开山门舆图：『观天时星象而动，灵潮吐纳、丰年采药、破军试剑，善取舍者方能证道。』",
       options: [
         { id: "listen", label: "虚心请教天时筹备之道", detail: "获凝气草 ×4、晨曦灵露 ×2 · 解锁陆玄松合击 · 本真 +6", gain: { herb: 4, dew: 2 }, dao: { serenity: 6 }, result: "陆玄松欣然颔首，赠你灵草与一枚青云传讯符，斗法时可召山门钟声助阵！" },
@@ -4762,7 +4826,7 @@ const ART = {
       ]
     },
     {
-      id: "shen_return", npc: "shen", name: "药香故人", min: "foundation", location: "sect",
+      id: "shen_return", npc: "shen", name: "药香故人", min: "foundation", chapter: 3, location: "sect",
       body: "青云药庐竹影摇曳，沈清禾正守着药炉。重逢昔日破庙雨夜之人，她抬眸望向你，案上摆着新炼成的灵丹。",
       options: [
         { id: "warm", label: "坐下叙旧，共论丹道", detail: "获回春丹 ×2、回灵丹 ×1 · 解锁沈清禾合击 · 仁心 +8", gain: { healing_pill: 2, spirit_pill: 1 }, dao: { benevolence: 8 }, result: "药香袅袅，她将亲手精炼的灵丹与一枚药庐青莲令推到你面前。" },
@@ -4770,7 +4834,7 @@ const ART = {
       ]
     },
     {
-      id: "pei_meet", npc: "pei", name: "山门论剑", min: "foundation", location: "sect",
+      id: "pei_meet", npc: "pei", name: "山门论剑", min: "foundation", chapter: 3, location: "sect",
       body: "演武场上剑气如虹，同辈俊杰裴照按剑相邀：『求仙问道，道友以为当相扶同行，还是各凭锋芒争渡？』",
       options: [
         { id: "cooperate", label: "相约同行，互通有无", detail: "付灵石 15 → 获地脉灵玉 ×2 · 解锁裴照裂天合击 · 仁心 +5", stonesCost: 15, gain: { jade: 2 }, dao: { benevolence: 5, serenity: 4 }, result: "裴照爽朗大笑，分你两块灵玉并留下一道剑符：遇强敌蓄势，捏碎剑符他必出剑断势！" },
@@ -4778,7 +4842,7 @@ const ART = {
       ]
     },
     {
-      id: "yan_stone", npc: "yan", name: "古境守碑人", min: "foundation", location: "secret",
+      id: "yan_stone", npc: "yan", name: "古境守碑人", min: "foundation", chapter: 3, location: "secret",
       body: "照影古境云雾深处，守碑老人砚尘拂去残碑积灰：『碑上尽是飞升大能的名讳，碑下却少有人记取凡尘来路。你要刻下什么？』",
       options: [
         { id: "story", label: "刻下山雨破庙与凡人烟火", detail: "获灵露 ×4、灵玉 ×1 · 解锁砚尘古镜合击 · 仁心 +7 / 本真 +6", gain: { dew: 4, jade: 1 }, dao: { benevolence: 7, serenity: 6 }, result: "砚尘眼中微光闪烁：『不忘来处者，心魔难侵。』赠你一面古境子镜。" },
@@ -4786,7 +4850,7 @@ const ART = {
       ]
     },
     {
-      id: "pei_echo", npc: "pei", name: "古境重逢", min: "golden", location: "secret", requires: "pei_meet",
+      id: "pei_echo", npc: "pei", name: "古境重逢", min: "golden", chapter: 4, location: "secret", requires: "pei_meet",
       body: "寒池断阶前剑傀虎视眈眈，裴照衣袂染霜，正勘察古阵破绽。见你踏云而至，他扬眉相询今日如何共进。",
       options: [
         { id: "share", label: "以灵露助他调息，并肩探池", detail: "耗晨曦灵露 ×2 → 获月华莲 ×3 · 仁心 +8 / 锋芒 +5", cost: { dew: 2 }, gain: { lotus: 3 }, dao: { benevolence: 8, edge: 5 }, result: "你们合力击退寒池禁制，采得三株晶莹月华莲！" },
@@ -4794,7 +4858,7 @@ const ART = {
       ]
     },
     {
-      id: "lu_teach", npc: "lu", name: "薪火授业", min: "golden", location: "sect", requires: "lu_intro",
+      id: "lu_teach", npc: "lu", name: "薪火授业", min: "golden", chapter: 4, location: "sect", requires: "lu_intro",
       body: "青云宗新弟子齐聚传功堂，陆玄松请你这位金丹真人登台讲授一路走来的筹备与破境心得。",
       options: [
         { id: "teach", label: "倾囊相授，分灵玉作演武礼", detail: "耗地脉灵玉 ×1 → 获灵石 +135、修为 +250 · 仁心 +10", cost: { jade: 1 }, stonesGain: 135, xpGain: 250, dao: { benevolence: 10 }, result: "满堂后辈肃然长揖，你自己的金丹道果亦圆融数分！" },
@@ -4802,7 +4866,7 @@ const ART = {
       ]
     },
     {
-      id: "shen_pact", npc: "shen", name: "一诺千山", min: "nascent", location: "cave", requires: "shen_return",
+      id: "shen_pact", npc: "shen", name: "一诺千山", min: "nascent", chapter: 5, location: "cave", requires: "shen_return",
       body: "山下百里村落瘴疫横行，沈清禾冒雨登临听雨洞府：『急缺两枚回春丹作药阵阵眼。若道友肯助，他日九霄雷劫，清禾必以灵枢药阵相护！』",
       options: [
         { id: "lend", label: "慷慨赠丹，立下千山护阵盟约", detail: "耗回春丹 ×2 → 解锁天劫【灵枢药阵】 · 仁心 +16", cost: { healing_pill: 2 }, aid: "shen", dao: { benevolence: 16 }, result: "百村炊烟重起之日，一道温润功德金光没入你的眉心！" },
@@ -4810,14 +4874,14 @@ const ART = {
       ]
     },
     {
-      id: "yan_mirror", npc: "yan", name: "照见本心", min: "nascent", location: "secret", requires: "yan_stone",
+      id: "yan_mirror", npc: "yan", name: "照见本心", min: "nascent", chapter: 5, location: "secret", requires: "yan_stone",
       body: "照影古镜悬浮半空，镜中唯有十八岁那年攥着一枚回春丹站在破庙雨夜里的少年。砚尘轻声问：『修至元婴，你还认得镜中人么？』",
       options: [
         { id: "accept", label: "含笑颔首，接纳昔日弱小与赤诚", detail: "获凝魂晶 ×2 · 解锁天劫【古镜澄明】 · 本真 +15", gain: { soul: 2 }, aid: "yan", dao: { serenity: 15 }, result: "镜光化作两枚澄澈凝魂晶，往昔迷惘尽数化为今日道基！" }
       ]
     },
     {
-      id: "pei_pact", npc: "pei", name: "云台相约", min: "spirit", location: "sect", requires: "pei_echo",
+      id: "pei_pact", npc: "pei", name: "云台相约", min: "spirit", chapter: 6, location: "sect", requires: "pei_echo",
       body: "闻听你将赴登仙台叩问天门，裴照负剑立于云海之巅：『留一粒道蕴砂作引，我在云台替你斩开第一道罡风！』",
       options: [
         { id: "ally", label: "留砂布阵，与挚友并肩迎劫", detail: "耗道蕴砂 ×1 → 解锁天劫【云台剑痕】 · 锋芒 +12", cost: { dao: 1 }, aid: "pei", dao: { edge: 12 }, result: "裴照长剑出鞘，一道凛冽剑意封入你的护身阵盘！" },
@@ -4825,15 +4889,15 @@ const ART = {
       ]
     },
     {
-      id: "lu_farewell", npc: "lu", name: "山门送别", min: "spirit", location: "sect", requires: "lu_teach",
+      id: "lu_farewell", npc: "lu", name: "山门送别", min: "spirit", chapter: 6, location: "sect", requires: "lu_teach",
       body: "白发苍苍的陆玄松站在山门石阶前，双手捧出珍藏百年的上品回灵丹：『去吧，青云宗永远记得你走过的路。』",
       options: [
         { id: "remember", label: "郑重长揖，收下山门送行丹", detail: "获回灵丹 ×3、回春丹 ×2 · 解锁【山门薪火】 · 仁心 +12", gain: { spirit_pill: 3, healing_pill: 2 }, aid: "lu", dao: { benevolence: 12 }, result: "山门钟声九响送行，满山弟子遥遥稽首。" }
       ]
     },
     {
-      id: "yan_gate", npc: "yan", name: "天门之前", min: "spirit", location: "terrace", requires: "yan_mirror",
-      body: "登仙台石阶尽头，砚尘收起旧笔：『护阵能挡天雷，却替不得你答天门最后一问。保重，道友。』",
+      id: "yan_gate", npc: "yan", name: "天门之前", min: "spirit", chapter: 6, location: "terrace", requires: "yan_mirror",
+      body: "九霄星盘石阶尽头，砚尘合上随身旧笔，将两粒道蕴砂推至你掌心：『石碑已为你记到天门之下，余下那一页，须由你亲手以剑作答。保重，道友。』",
       options: [
         { id: "resolve", label: "揖别守碑人，收下道蕴砂", detail: "获道蕴砂 ×2 · 本真 +12", gain: { dao: 2 }, dao: { serenity: 12 }, result: "长风吹散衣上尘霜，九霄天门已在眼前！" }
       ]
@@ -5167,7 +5231,8 @@ const ART = {
     active: false,
     lines: [],
     idx: 0,
-    onFinish: null
+    onFinish: null,
+    triggerEl: null
   };
 
   // Live Flame-Control Alchemy Minigame State
@@ -5291,7 +5356,7 @@ const ART = {
     qi:         1, // 守山石卫 -> foundation
     foundation: 2, // 寒潭玄蛇 -> golden
     golden:     3, // 古境剑傀 -> nascent
-    nascent:    3, // 古境剑傀（第五幕·上防跳过） -> spirit
+    nascent:    3, // 古境剑傀（第五卷防跳过） -> spirit
     spirit:     4  // 天门道影 -> ascended
   };
 
@@ -5344,7 +5409,7 @@ const ART = {
     elemental_vault: { id: "elemental_vault", icon: "⚡", name: "五行秘窟",   short: "秘窟", reward: "五行剑碑 · 双倍灵材 + 道韵", peaceful: false, grantsBoon: true },
     vanguard_clash:  { id: "vanguard_clash",  icon: "🛡", name: "妖卫剑阵",   short: "战阵", reward: "战术三兵种 · 高修为 + 道韵", peaceful: false, grantsBoon: true },
     mystery_shrine:  { id: "mystery_shrine",  icon: "🩸", name: "血坛机缘",   short: "血坛", reward: "心魔血剑坛 · 原石 · 奇遇碑", peaceful: true,  grantsBoon: false },
-    boss:            { id: "boss",            icon: "👑", name: "镇守妖王",   short: "首领", reward: "三星秘宝 · 贯通下一章节", peaceful: false, grantsBoon: false }
+    boss:            { id: "boss",            icon: "👑", name: "镇守妖王",   short: "首领", reward: "三星秘宝 · 贯通下一卷", peaceful: false, grantsBoon: false }
   };
 
   const RUN_BOONS = [
@@ -5566,7 +5631,7 @@ const ART = {
       },
       postBattle: {
         righteous: "清禾浅笑收阵：『剑光澄澈、分毫不乱，此战既诛群妖又护住自身灵脉！』",
-        neutral:   "清禾递来丝帕：『好一场酣畅剑舞，回洞府歇息片刻再整备下章吧。』",
+        neutral:   "清禾递来丝帕：『好一场酣畅剑舞，回洞府歇息片刻再整备下卷吧。』",
         demonic:   "清禾为你抹去眉角血渍：『这血煞剑意何等霸道……所幸你未失神智。』"
       }
     },
@@ -5594,7 +5659,7 @@ const ART = {
       },
       postBattle: {
         righteous: "裴照拊掌大笑：『好一记浩然破势！这一战看得裴某热血沸腾！』",
-        neutral:   "裴照抱剑颔首：『招式衔接愈发老辣，下一章妖王怕也撑不过几合！』",
+        neutral:   "裴照抱剑颔首：『招式衔接愈发老辣，下一卷妖王怕也撑不过几合！』",
         demonic:   "裴照咧嘴一笑：『血煞漫天、一剑断魂！这等杀伐气魄，九州难逢敌手！』"
       }
     },
@@ -5678,9 +5743,9 @@ const ART = {
       demonic:   "古境剑傀红芒骤盛：『检测到绝世劫煞剑意——启封古冢灭魔剑阵！』"
     },
     shadow: {
-      righteous: "剑冢镇魂煞阴笑：『满口仁义道德，让我剖开你伪善的清虚假面！』",
-      neutral:   "剑冢镇魂煞幽影重重：『照影成魔，你敢直面自己最怕的执念吗？』",
-      demonic:   "剑冢镇魂煞狂喜大笑：『同源魔血！来吧，让我看看谁才是真正的煞剑之主！』"
+      righteous: "照影心魇阴笑：『满口仁义道德，让我剖开你伪善的清虚假面！』",
+      neutral:   "照影心魇幽影重重：『照影成魔，你敢直面自己最怕的执念吗？』",
+      demonic:   "照影心魇狂喜大笑：『同源魔血！来吧，让我看看谁才是真正的煞剑之主！』"
     },
     sentinel: {
       righteous: "云台守灵肃然拱手：『清虚正道，功德圆满——请以毕生剑道叩开天门！』",
@@ -5689,7 +5754,7 @@ const ART = {
     },
     trial_gate: {
       righteous: "天门道影垂眸：『以仁心护苍生，以正剑开天门——今日证你太清真仙果！』",
-      neutral:   "天门道影轰然回响：『凡尘百载皆为序章，拔剑斩断最后一重天障！』",
+      neutral:   "天门道影轰然回响：『凡尘百载皆为序卷，拔剑斩断最后一重天障！』",
       demonic:   "天门道影震怒雷鸣：『逆天魔胎竟踏碎云阶至此！既不跪天，便以血剑开天！』"
     }
   };
@@ -5875,7 +5940,7 @@ const ART = {
     },
     4: {
       sentinel:      { name: "巡天金甲卫", tag: "天雷阵", auraColor: "#ffd278", trait: "thunder_ward", wardRatio: 0.40 },
-      shadow:        { name: "劫雷道影",   tag: "雷瞬",   auraColor: "#d69eff", trait: "blink_swift", windupMult: 0.88 },
+      shadow:        { name: "劫雷心魇",   tag: "雷瞬",   auraColor: "#d69eff", trait: "blink_swift", windupMult: 0.88 },
       puppet:        { name: "天门剑卫",   tag: "天镜",   auraColor: "#ffe28a", trait: "mirror_pulse" },
       trial_heart:   { name: "天门心魇",   tag: "摄心",   auraColor: "#e89eff", trait: "blink_swift", windupMult: 0.90 },
       trial_thunder: { name: "九霄雷卫",   tag: "天雷",   auraColor: "#9ee8ff", trait: "thunder_ward", wardRatio: 0.30 }
@@ -6279,33 +6344,133 @@ const ART = {
 
   // ==================== 5C. CINEMATIC STORY DIALOGUE SCRIPTS ====================
   const CHAPTER_CUTSCENES = {
+    opening_scroll: [
+      { art: "item_ascension_seal", role: "太虚古卷 · 开篇", speaker: "九州纪事", text: "百年前九霄天门崩裂，一缕【天门道影】坠落九州；其残片四散浸染五境守关之灵，九州灵脉渐衰，仙途几近永闭。" },
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "照影古境的残碑记下了五处受染灵枢——青岚、青云、寒潭、古冢与九霄仙台；唯有循碑逐一斩碎残片，方能重叩九霄天门。" },
+      { art: "char_player", role: "青岚山野 · 问道少年", speaker: "顾长青", text: "我本青岚山野无名少年，唯怀断玉剑匣与一枚回春丹。纵无显赫灵根，亦愿以三尺青锋踏遍六卷尘缘、问开天门！" },
+      { art: "char_shen", role: "青云药庐 · 悬壶医修", speaker: "沈清禾", text: "破庙外骤雨倾盆，群狼瞳中竟泛起诡异暗金残光——『救命！青岚妖狼狂性大发，庙中可有道友相助？！』" },
+      { art: "char_player", role: "青岚山野 · 问道少年", speaker: "顾长青", text: "天门道影的残片之祸已至眼前——山雨破庙，便是此生问道第一剑！", finalBtnLabel: "拔剑入雨 ▸" }
+    ],
     prologue_rescue: [
-      { art: "char_shen", role: "青云药庐 · 医修", speaker: "沈清禾", text: "山雨湿寒，多谢道友拔剑退狼！清禾携药囊自青云宗下山采药，不想在此破庙遇袭。" },
-      { art: "char_player", role: "山野少年", speaker: "顾长青", text: "路见不平自当拔剑。姑娘伤势未愈，这枚随身回春丹且先服下稳住心脉。" },
-      { art: "char_shen", role: "青云药庐 · 医修", speaker: "沈清禾", text: "一丹之恩，清禾铭记于心！庙前两道古碑灵光已现，择一机缘后，可随时按【H键】回听雨洞府整备修行。" }
+      { art: "char_shen", role: "青云药庐 · 悬壶医修", speaker: "沈清禾", text: "山雨湿寒，多谢道友拔剑退狼！清禾携药囊自青云宗下山采药，不想在此破庙遇袭。" },
+      { art: "char_player", role: "青岚山野 · 问道少年", speaker: "顾长青", text: "路见不平自当拔剑。姑娘伤势未愈，这枚随身回春丹且先服下稳住心脉。" },
+      { art: "char_shen", role: "青云药庐 · 悬壶医修", speaker: "沈清禾", text: "一丹之恩，清禾铭记于心！庙前两道古碑灵光已现，择一机缘后，可随时按【H键】回听雨洞府整备修行。" }
     ],
     enter_sect: [
-      { art: "char_lu", role: "青云山门 · 传功执事", speaker: "陆玄松", text: "钟鸣云海，能凭一己剑气自青岚山野闯入青云仙台，足见道心坚韧。" },
-      { art: "char_lu", role: "青云山门 · 传功执事", speaker: "陆玄松", text: "秘境已启【五层分支星图】，随时按 9 键检视天候与奖励；善择前路、勤建洞府者，方得大道！" }
+      { art: "char_lu", role: "青云山门 · 传功执事", speaker: "陆玄松", text: "老夫青云传功执事陆玄松。能凭一己剑气自青岚破庙闯入青云外门，足见道心坚韧。" },
+      { art: "char_lu", role: "青云山门 · 传功执事", speaker: "陆玄松", text: "镇山石卫近来被天门残影侵染失控；秘境已启【五层分支星图】，随时按 9 键检视天候与奖励，善择前路者方得大道！" }
     ],
     enter_secret: [
-      { art: "char_pei", role: "青云剑阁 · 首座弟子", speaker: "裴照", text: "照影寒潭寒气刺骨，镇守妖王【寒潭玄蛇】半血便会布下玄冥冰域、散射连环霜弹——切记切换【Y键剑轮阵】斩碎弹幕，避开霜池！" },
-      { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "多谢裴兄指点剑理，且看今日剑意破寒潭、斩玄蛇！" }
+      { art: "char_pei", role: "青云剑阁 · 同辈剑首", speaker: "裴照", text: "前面那位道友留步！在下青云剑阁裴照。这照影寒潭寒气刺骨，镇守妖王【寒潭玄蛇】半血便会布下玄冥冰域、散射连环霜弹——切记切换【Y键剑轮阵】斩碎弹幕，避开霜池！" },
+      { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "多谢阁下出言相告！在下顾长青，且看今日剑意破寒潭、斩玄蛇！" }
     ],
     enter_sword_mound: [
-      { art: "char_yan", role: "古修剑冢 · 守碑老人", speaker: "砚尘", text: "此处便是上古剑修埋骨之地【古修剑冢】。残剑古傀与镇守首领【古境剑傀】皆通铜镜反震之法，轻剑直劈必遭弹反。" },
-      { art: "char_yan", role: "古修剑冢 · 守碑老人", speaker: "砚尘", text: "见铜镜浮空时，以【空格一闪】或【右键爆剑】正面碎镜，方能破开剑傀金身、夺取月华莲与元婴机缘！" },
-      { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "古剑未冷，道心不折——今日便在此剑冢问剑证婴！" }
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "老朽乃照影古境守碑人砚尘。此处便是上古剑修埋骨之地【古修剑冢】，残剑古傀与镇守首领【古境剑傀】皆通铜镜反震之法，轻剑直劈必遭弹反。" },
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "见铜镜浮空时，以【空格一闪】或【右键爆剑】正面碎镜，方能破开剑傀金身、夺取月华莲与元婴机缘！" },
+      { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "多谢前辈指点！古剑未冷，道心不折——今日便在此剑冢问剑证婴！" }
     ],
     enter_terrace: [
-      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "九霄星盘已在脚下。护阵能挡天雷，却替不得你斩开天门道影——拔剑吧，故人皆在云海为你护道！" }
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "行至九霄星盘，倒也无需再隐名讳——老朽照影古境守碑人砚尘。你一路斩破的四方异变，源头皆在此门之后的【天门道影】！" },
+      { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "自青岚山雨行至九霄云巅，凡尘百战只为今日——拔剑开天门！" }
+    ],
+    boss_pre_stage0: [
+      { art: "enemy_wolf", role: "青岚妖魁 · 雾隐狼王", speaker: "雾隐狼王", text: "嗷呜——天上坠落的暗金残片赐我无尽凶威！闯入青岚山雨的蝼蚁，化作吾之血食吧！" },
+      { art: "char_player", role: "青岚山野 · 问道少年", speaker: "顾长青", text: "它眉心果真嵌着天门道影的残片！拔剑吧，今日先斩青岚妖魁，护住山野安宁！", finalBtnLabel: "拔剑迎战 ▸" }
+    ],
+    boss_pre_stage1: [
+      { art: "enemy_warden", role: "镇山金卫 · 守山石卫", speaker: "守山石卫", text: "嗡——外来剑修止步！天门余影已覆吾石心，金阵所向，凡俗皆须俯首试道！" },
+      { art: "char_player", role: "炼气剑修", speaker: "顾长青", text: "连青云宗镇山石卫都被天门道影残片蒙蔽了灵智！前辈得罪了，且让晚辈以剑破阵、清此残影！", finalBtnLabel: "破阵迎战 ▸" }
+    ],
+    boss_pre_stage2: [
+      { art: "enemy_serpent", role: "寒鳞妖尊 · 寒潭玄蛇", speaker: "寒潭玄蛇", text: "嘶——天门坠落之影融吾寒髓，千年冰潭终将冻绝九州！区区筑基小修，也敢来触逆鳞？！" },
+      { art: "char_player", role: "筑基剑修", speaker: "顾长青", text: "寒潭灵脉岂容道影残片冻结！今日便借剑轮破霜，替这照影寒潭解封！", finalBtnLabel: "破霜迎战 ▸" }
+    ],
+    boss_pre_stage3: [
+      { art: "enemy_puppet", role: "镜阵剑祖 · 古境剑傀", speaker: "古境剑傀", text: "铮——古冢万剑奉天门道影之诏而鸣！铜镜照影，汝之剑道可敢与百年前飞升旧影一较高下？" },
+      { art: "char_player", role: "金丹剑修", speaker: "顾长青", text: "先贤遗剑不该沦为道影傀儡！待我碎镜破阵，还这古修剑冢一片清静！", finalBtnLabel: "碎镜迎战 ▸" }
+    ],
+    boss_pre_stage4: [
+      { art: "enemy_trial_gate", role: "九霄守门者 · 天门道影", speaker: "天门道影", text: "凡尘执剑者，汝斩尽吾落于四境之残片，循守碑人所录踏上星盘——既欲重开百年天门，便以毕生道果接我万劫神罚！" },
+      { art: "char_player", role: "问道剑主", speaker: "顾长青", text: "从青岚破庙到九霄仙台，一路故人相护、万剑同心——天门道影，今日便斩破这最后一道天障！", finalBtnLabel: "剑开天门 ▸" }
+    ],
+    clear_stage0: [
+      { art: "enemy_wolf", role: "青岚妖魁 · 雾隐狼王", speaker: "雾隐狼王", text: "呜……那缕灼魂的暗金碎影……终于从脑海散去了……" },
+      { art: "char_shen", role: "青云药庐 · 悬壶医修", speaker: "沈清禾", text: "好凌厉的一剑！你斩碎的暗金残片正飘向青云山门——外门镇山石卫近日亦有异动，待你渡劫炼气后，务必赴【青云外门】一探究竟。" },
+      { art: "char_player", role: "青岚山野 · 问道少年", speaker: "顾长青", text: "第一枚残片已破。回听雨洞府整备渡劫，下一程便往青云外门问剑！", finalBtnLabel: "收剑合卷 ▸" }
+    ],
+    clear_stage1: [
+      { art: "enemy_warden", role: "镇山金卫 · 守山石卫", speaker: "守山石卫", text: "轰……金阵浊影既散，青云石心重归清明……小友剑锋已足承筑基之重！" },
+      { art: "char_lu", role: "青云山门 · 传功执事", speaker: "陆玄松", text: "多亏道友破除石卫心障！老夫观残片气机，第三道裂隙已沉入【照影寒潭】，寒潭玄蛇恐已失控。快集妖核炼筑基丹，与裴照共探寒潭！" },
+      { art: "char_player", role: "炼气剑修", speaker: "顾长青", text: "青云山门已安。待我渡劫筑基，便赴照影寒潭斩蛇破影！", finalBtnLabel: "收剑合卷 ▸" }
+    ],
+    clear_stage2: [
+      { art: "enemy_serpent", role: "寒鳞妖尊 · 寒潭玄蛇", speaker: "寒潭玄蛇", text: "嘶……寒髓中的天门残印竟被剑意碾碎……潭底千年冰封，散了……" },
+      { art: "char_pei", role: "青云剑阁 · 同辈剑首", speaker: "裴照", text: "痛快！寒潭第三枚残片已毁，但残气顺地脉涌向了【古修剑冢】——照影古境的守碑人砚尘正在彼处查探，你凝结金丹后速往剑冢会合！" },
+      { art: "char_player", role: "筑基剑修", speaker: "顾长青", text: "多谢裴兄相告！凝结金丹、铸成本命法宝，下一卷直入古修剑冢！", finalBtnLabel: "收剑合卷 ▸" }
+    ],
+    clear_stage3: [
+      { art: "enemy_puppet", role: "镜阵剑祖 · 古境剑傀", speaker: "古境剑傀", text: "铮……残片既灭，旧剑归鞘……后世剑修，持此剑意去叩九霄吧……" },
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "四处灵枢残片俱已斩尽，照影石碑上只余最后一行铭文——【九霄天门】。碎丹成婴、参悟万法化神之后，真正的天门道影将在云巅候你。" },
+      { art: "char_player", role: "金丹剑修", speaker: "顾长青", text: "四境已明，万古残碑终见终卷之门。碎丹成婴、化神登霄，我必斩开天门！", finalBtnLabel: "收剑合卷 ▸" }
+    ],
+    clear_stage4: [
+      { art: "enemy_trial_gate", role: "九霄守门者 · 天门道影", speaker: "天门道影", text: "轰隆——百年残影尽散，九霄禁制已开！汝之剑心不染尘埃，确有资格登临仙门！" },
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "五境残片尽除，照影石碑终于补全最后一句。道友，你从山雨破庙走来，今日亲手替九州重开了天门。" },
+      { art: "char_shen", role: "青云药庐 · 悬壶医修", speaker: "沈清禾", text: "天门既现，听雨洞府的灯火永远为你长明——无论你择定何种飞升道果，此番红尘故人皆在云海遥祝！" },
+      { art: "char_player", role: "问道剑主", speaker: "顾长青", text: "尘缘未负，仙门在前。且去引动最终飞升天劫，证我万古大道！", finalBtnLabel: "合卷问仙 ▸" }
     ]
   };
+
+  const CHAPTER_CUTSCENES_VARIANTS = {
+    enter_sect_met: [
+      { art: "char_lu", role: "青云山门 · 传功执事", speaker: "陆玄松", text: "道友果然如约踏入青云外门！前番舆图所载的守山石卫已被天门残影侵染，还须小心应对。" },
+      { art: "char_lu", role: "青云山门 · 传功执事", speaker: "陆玄松", text: "秘境已启【五层分支星图】，随时按 9 键检视天候与奖励——老夫在山门候你捷音！" }
+    ],
+    enter_secret_met: [
+      { art: "char_pei", role: "青云剑阁 · 同辈剑首", speaker: "裴照", text: "哈哈，果然又碰上了！自山门论剑一别，你剑意愈发凌厉。前面【寒潭玄蛇】半血会布玄冥冰域、散射霜弹，切【Y键剑轮阵】斩弹幕最省力！" },
+      { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "多谢裴兄提醒！正巧让你瞧瞧今日剑意破寒潭、斩玄蛇！" }
+    ],
+    enter_sword_mound_met: [
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "残碑前留字之人，竟已一路行至【古修剑冢】了。碑文所记不差，此间镇守【古境剑傀】亦遭天门残影侵染，铜镜反震愈发凌厉。" },
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "见铜镜浮空时，仍以【空格一闪】或【右键爆剑】正面碎镜，破其金身方可夺月华莲证婴！" },
+      { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "有劳砚尘前辈再度相告，今日便斩此剑傀以正古冢！" }
+    ],
+    enter_terrace_met: [
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "从照影残碑走到九霄星盘，你一路清除四方残影，终于站到了【天门道影】正前。" },
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "此门之后再无借力之处，唯凭你这一路炼出的剑心破局——拔剑吧，道友！" },
+      { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "多谢前辈一路记碑相送，今日便以此剑叩开九霄天门！" }
+    ],
+    enter_terrace_after_gate: [
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "星盘已启，【天门道影】就在云海尽头。石阶前该叮嘱的话老朽已尽数言明——此去莫回头，亮剑吧！" },
+      { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "承前辈吉言，今日一剑斩道影，亲手写完碑卷最后一页！" }
+    ]
+  };
+
+  function resolveCutsceneLines(key, g) {
+    const ch = (g && g.choices) ? g.choices : {};
+    if (key === "enter_sect" && ch.lu_intro) return CHAPTER_CUTSCENES_VARIANTS.enter_sect_met;
+    if (key === "enter_secret" && ch.pei_meet) return CHAPTER_CUTSCENES_VARIANTS.enter_secret_met;
+    if (key === "enter_sword_mound" && ch.yan_stone) return CHAPTER_CUTSCENES_VARIANTS.enter_sword_mound_met;
+    if (key === "enter_terrace") {
+      if (ch.yan_gate) return CHAPTER_CUTSCENES_VARIANTS.enter_terrace_after_gate;
+      if (ch.yan_stone || ch.yan_mirror) return CHAPTER_CUTSCENES_VARIANTS.enter_terrace_met;
+    }
+    return CHAPTER_CUTSCENES[key] || null;
+  }
 
   function playCustomDialogueLines(lines, onFinish = null) {
     if (!lines || !lines.length) {
       if (onFinish) onFinish();
       return;
+    }
+    const bar = document.getElementById("story-dialogue-bar");
+    if (!cutscene.active) {
+      const ae = document.activeElement;
+      if (ae && ae !== document.body && !(bar && bar.contains(ae)) && isElementFocusable(ae)) {
+        cutscene.triggerEl = ae;
+      } else {
+        cutscene.triggerEl = null;
+      }
     }
     cutscene.active = true;
     cutscene.lines = lines;
@@ -6321,7 +6486,7 @@ const ART = {
       if (onFinish) onFinish();
       return;
     }
-    const seq = CHAPTER_CUTSCENES[key];
+    const seq = resolveCutsceneLines(key, game);
     if (!seq || !seq.length) {
       if (onFinish) onFinish();
       return;
@@ -6359,7 +6524,7 @@ const ART = {
     playCustomDialogueLines([
       {
         art: npc.art,
-        role: `${npc.role} · 《${stSpec.name}》`,
+        role: `${npc.role} · 第${stSpec.chapter}卷 · ${getStoryLocationLabel(stSpec.location)}`,
         speaker: npc.name,
         text: `${stSpec.body}${karmaNote ? " " + karmaNote : ""}`,
         storyId: stSpec.id,
@@ -6441,12 +6606,24 @@ const ART = {
     if (!cutscene.active || cutscene.idx >= cutscene.lines.length) {
       cutscene.active = false;
       bar.classList.remove("open");
+      if (document.activeElement && bar.contains(document.activeElement) && typeof document.activeElement.blur === "function") {
+        try { document.activeElement.blur(); } catch (e) {}
+      }
       const chBox = document.getElementById("dlg-choices-box");
       if (chBox) { chBox.innerHTML = ""; chBox.style.display = "none"; }
-      arena.paused = drawerOpen || document.getElementById("modal-backdrop").classList.contains("open");
+      const bd = document.getElementById("modal-backdrop");
+      arena.paused = drawerOpen || !!(bd && bd.classList.contains("open"));
       const cb = cutscene.onFinish;
+      const savedTrigger = cutscene.triggerEl;
       cutscene.onFinish = null;
+      cutscene.triggerEl = null;
       if (cb) cb();
+      renderOnboardingCoach();
+      const modalNowOpen = !!(bd && bd.classList.contains("open"));
+      if (!cutscene.active && !modalNowOpen && !drawerOpen) {
+        restoreTriggerFocus(savedTrigger);
+        setTimeout(flushDeferredChoiceModals, 0);
+      }
       return;
     }
     const line = cutscene.lines[cutscene.idx];
@@ -6462,10 +6639,10 @@ const ART = {
       chBox.style.display = "flex";
       chBox.innerHTML = line.choices.map(o => {
         const ok = canAffordStoryOpt(game, o);
-        return `<button type="button" class="dlg-choice-btn" data-story-bar-id="${line.storyId}" data-story-bar-opt="${o.id}" ${ok ? "" : "disabled"}>
+        return `<button type="button" class="dlg-choice-btn" data-story-bar-id="${escapeHtml(line.storyId)}" data-story-bar-opt="${escapeHtml(o.id)}" ${ok ? "" : "disabled"}>
           <div style="display:flex;flex-direction:column;gap:2px;">
-            <strong style="font-size:12.5px;color:#fff3c4;">${o.label}</strong>
-            <span style="font-size:10.5px;color:#80ffea;">${o.detail}</span>
+            <strong style="font-size:12.5px;color:#fff3c4;">${escapeHtml(o.label)}</strong>
+            <span style="font-size:10.5px;color:#80ffea;">${escapeHtml(o.detail)}</span>
           </div>
           <span class="tag-chip ${ok ? "done" : ""}">${ok ? "抉择 ▸" : "灵材不足"}</span>
         </button>`;
@@ -6481,6 +6658,17 @@ const ART = {
       if (skipBtn) skipBtn.textContent = "跳过";
     }
     bar.classList.add("open");
+    renderOnboardingCoach();
+    const firstChoice = (line.choices && line.choices.length && chBox)
+      ? chBox.querySelector(".dlg-choice-btn:not([disabled])")
+      : null;
+    if (firstChoice && typeof firstChoice.focus === "function") {
+      try { firstChoice.focus({ preventScroll: true }); } catch (e) {}
+    } else if (nextBtn && nextBtn.style.display !== "none" && !nextBtn.disabled) {
+      try { nextBtn.focus({ preventScroll: true }); } catch (e) {}
+    } else {
+      focusDialogSafely(bar);
+    }
   }
 
   function advanceCutscene(skipAll = false) {
@@ -6591,6 +6779,8 @@ const ART = {
   const arena = {
     paused: false,
     stageEpoch: 0,
+    stageClearHandledEpoch: -1,
+    stageClearPending: false,
     waveTransitioning: false,
     sourceCd: 0,
     hitStop: 0,
@@ -6723,11 +6913,11 @@ const ART = {
   ];
 
   const BOSS_RUSH_ROSTER = [
-    { bout: 1, id: "wolf",          title: "第一阵 · 血牙妖狼王",     art: "enemy_wolf",         mult: 0.48, atkMult: 0.76 },
-    { bout: 2, id: "warden",        title: "第二阵 · 覆海玄甲巨灵",   art: "enemy_warden",       mult: 0.56, atkMult: 0.82 },
-    { bout: 3, id: "serpent",       title: "第三阵 · 寒潭九幽冥蛇",   art: "enemy_serpent",      mult: 0.65, atkMult: 0.88 },
-    { bout: 4, id: "puppet",        title: "第四阵 · 守墓古剑魔",     art: "enemy_puppet",       mult: 0.74, atkMult: 0.94 },
-    { bout: 5, id: "sentinel",      title: "第五阵 · 九霄雷罚神将",   art: "enemy_sentinel",     mult: 0.84, atkMult: 1.00 },
+    { bout: 1, id: "wolf",          title: "第一阵 · 雾隐狼王",       art: "enemy_wolf",         mult: 0.48, atkMult: 0.76 },
+    { bout: 2, id: "warden",        title: "第二阵 · 守山石卫",       art: "enemy_warden",       mult: 0.56, atkMult: 0.82 },
+    { bout: 3, id: "serpent",       title: "第三阵 · 寒潭玄蛇",       art: "enemy_serpent",      mult: 0.65, atkMult: 0.88 },
+    { bout: 4, id: "puppet",        title: "第四阵 · 古境剑傀",       art: "enemy_puppet",       mult: 0.74, atkMult: 0.94 },
+    { bout: 5, id: "sentinel",      title: "第五阵 · 云台守灵",       art: "enemy_sentinel",     mult: 0.84, atkMult: 1.00 },
     { bout: 6, id: "inner_demon",   title: "第六阵 · 太虚心魔镜像",   art: "actor_inner_demon",  mult: 0.96, atkMult: 1.06, isDemon: true },
     { bout: 7, id: "zhulong_titan", title: "神话终阵 · 太古烛龙法相", art: "boss_zhulong_titan", mult: 1.24, atkMult: 1.15, isTitan: true }
   ];
@@ -7006,9 +7196,44 @@ const ART = {
     yan:  { keepsake: "照影太虚镜", tierTitles: ["未识", "一阶·残碑问名", "二阶·古镜照心", "三阶·忘机道友"], bonusDesc: "太虚凝时延长 +0.45秒，弱点碎核伤害 +30%", rightQuote: "砚尘拂碑含笑：『心如明镜无尘埃，天门道影亦奈何不得你。』", demonQuote: "砚尘静望古镜：『正邪一念间，能执劫火而不迷本真，亦是大自在。』" }
   };
 
+  const LEGACY_KARMA_DILEMMA_IDS = ["kd_cultivator", "kd_demon_blade", "kd_spirit_spring"];
+
   const KARMA_DILEMMAS = [
     {
+      id: "kd_rain_shrine",
+      chapter: 1,
+      title: "红尘问心 · 《山雨破庙孤灯》",
+      desc: "山雨夜荒庙外，一名负伤药农怀抱灵草囊求你庇护，身后三名黑衣散修正提刀追至。你当如何决断？",
+      rightOpt: { label: "☯ 拔剑护民 · 舍回春真气救下药农", detail: "清虚正道 +25 · 气血上限+16 · 获 45 灵石 · 沈清禾羁绊提升", karma: 25, hpBonus: 16, stones: 45, bond: "shen" },
+      demonOpt: { label: "🔥 坐山观虎 · 待两败俱伤尽收灵囊", detail: "劫煞魔心 -25 · 剑道攻击+8 · 获 75 灵石 · 裴照羁绊提升", karma: -25, atkBonus: 8, stones: 75, bond: "pei" }
+    },
+    {
+      id: "kd_outer_levy",
+      chapter: 2,
+      title: "红尘问心 · 《外门灵田苛税》",
+      desc: "青云外门灵田畔，管事执役借宗门名义私扣新弟子凝气草，见你剑气不凡便欲分润半数封口。",
+      rightOpt: { label: "☯ 秉公执剑 · 揭发私扣还草于同门", detail: "清虚正道 +25 · 常驻减伤+3 · 获 80 灵石 · 陆玄松羁绊提升", karma: 25, drBonus: 3, stones: 80, bond: "lu" },
+      demonOpt: { label: "🔥 强夺灵税 · 威慑管事尽取私藏灵石", detail: "劫煞魔心 -25 · 剑道攻击+10 · 获 130 灵石 · 裴照羁绊提升", karma: -25, atkBonus: 10, stones: 130, bond: "pei" }
+    },
+    {
+      id: "kd_spirit_spring",
+      chapter: 3,
+      title: "红尘问心 · 《灵泉怨魂阵眼》",
+      desc: "寒潭古阵中困着百缕山民残魂与千年妖煞，破阵之法唯在净度与血炼之间。",
+      rightOpt: { label: "☯ 九莲净度 · 布太清法阵超度残魂归乡", detail: "清虚正道 +40 · 气血全满且上限+38 · 获仙品护身宝衣", karma: 40, hpBonus: 38, gearSlot: "armor", bond: "shen" },
+      demonOpt: { label: "🔥 万煞归炉 · 聚千年妖煞铸无双凶兵", detail: "劫煞魔心 -40 · 剑道攻击+20 · 获仙品杀伐佩剑", karma: -40, atkBonus: 20, gearSlot: "weapon", bond: "pei" }
+    },
+    {
+      id: "kd_frost_merchant",
+      chapter: 3,
+      title: "红尘问心 · 《寒潭冻商遗玉》",
+      desc: "照影寒潭冰崖下，一名采玉商旅被寒雾封脉、命悬一线，脚畔散落着数枚极品地脉灵玉与乾坤戒。",
+      rightOpt: { label: "☯ 破冰救人 · 运剑气驱寒护其脱险", detail: "清虚正道 +30 · 气血上限+24 · 获 110 灵石 · 陆玄松羁绊提升", karma: 30, hpBonus: 24, stones: 110, bond: "lu" },
+      demonOpt: { label: "🔥 截玉炼锋 · 取走灵戒任寒雾吞没残生", detail: "劫煞魔心 -30 · 剑道攻击+12 · 获仙品乾坤灵佩 · 砚尘羁绊提升", karma: -30, atkBonus: 12, gearSlot: "ring", bond: "yan" }
+    },
+    {
       id: "kd_cultivator",
+      chapter: 4,
       title: "红尘问心 · 《古道走火散修》",
       desc: "秘境断崖边一名金丹散修经脉逆乱、元神将溃，身畔悬浮一枚狂暴血丹。你当如何决断？",
       rightOpt: { label: "☯ 太清渡厄 · 耗灵力为其抚平经脉", detail: "清虚正道 +35 · 气血上限+32 · 仙葫上限+1缕 · 沈清禾羁绊提升", karma: 35, hpBonus: 32, gourdMax: 1, bond: "shen" },
@@ -7016,17 +7241,35 @@ const ART = {
     },
     {
       id: "kd_demon_blade",
+      chapter: 4,
       title: "红尘问心 · 《古冢泣血魔剑》",
       desc: "残碑之下镇压着一柄饮尽万妖精血的古魔残剑，剑灵哀鸣求你解封共赴杀劫。",
       rightOpt: { label: "☯ 净世镇封 · 化去戾气凝为护身莲华", detail: "清虚正道 +35 · 常驻减伤+6 · 获 120 灵石 · 陆玄松羁绊提升", karma: 35, drBonus: 6, stones: 120, bond: "lu" },
       demonOpt: { label: "🔥 炼煞入鞘 · 引滔天凶煞融于双剑架势", detail: "劫煞魔心 -35 · 剑道攻击+18 · 无上剑意蓄满100% · 砚尘羁绊提升", karma: -35, atkBonus: 18, fillIntent: true, bond: "yan" }
     },
     {
-      id: "kd_spirit_spring",
-      title: "红尘问心 · 《灵泉怨魂阵眼》",
-      desc: "寒潭古阵中困着百缕山民残魂与千年妖煞，破阵之法唯在净度与血炼之间。",
-      rightOpt: { label: "☯ 九莲净度 · 布太清法阵超度残魂归乡", detail: "清虚正道 +40 · 气血全满且上限+38 · 获仙品护身宝衣", karma: 40, hpBonus: 38, gearSlot: "armor", bond: "shen" },
-      demonOpt: { label: "🔥 万煞归炉 · 聚千年妖煞铸无双凶兵", detail: "劫煞魔心 -40 · 剑道攻击+20 · 获仙品杀伐佩剑", karma: -40, atkBonus: 20, gearSlot: "weapon", bond: "pei" }
+      id: "kd_mirror_echo",
+      chapter: 5,
+      title: "红尘问心 · 《心魔残碑问名》",
+      desc: "元神初成之际，一块沾染天门残影的古碑映出你昔日最深的执念幻象，诱你吞噬残魂换取瞬息神通。",
+      rightOpt: { label: "☯ 照见本真 · 斩碎虚妄守住清明元神", detail: "清虚正道 +35 · 气血上限+36 · 常驻减伤+5 · 砚尘羁绊提升", karma: 35, hpBonus: 36, drBonus: 5, bond: "yan" },
+      demonOpt: { label: "🔥 吞噬心魔 · 将残碑执念炼为血煞剑意", detail: "劫煞魔心 -35 · 剑道攻击+18 · 无上剑意蓄满100% · 裴照羁绊提升", karma: -35, atkBonus: 18, fillIntent: true, bond: "pei" }
+    },
+    {
+      id: "kd_plague_cauldron",
+      chapter: 5,
+      title: "红尘问心 · 《瘴岭血鼎济世》",
+      desc: "荒岭古鼎正汲取百村毒瘴炼制血煞灵丹，若毁鼎散药可救苍生，若趁机封鼎炼化则煞威大涨。",
+      rightOpt: { label: "☯ 倾炉散药 · 化毒瘴为清露润泽百村", detail: "清虚正道 +35 · 气血上限+40 · 仙葫上限+1缕 · 沈清禾羁绊提升", karma: 35, hpBonus: 40, gourdMax: 1, bond: "shen" },
+      demonOpt: { label: "🔥 炼瘴凝煞 · 尽收血鼎毒火淬炼剑骨", detail: "劫煞魔心 -35 · 剑道攻击+20 · 获 180 灵石 · 陆玄松羁绊提升", karma: -35, atkBonus: 20, stones: 180, bond: "lu" }
+    },
+    {
+      id: "kd_heaven_tribute",
+      chapter: 6,
+      title: "红尘问心 · 《天门香火断念》",
+      desc: "临近九霄天门，云海浮现人间万家香火愿力。天门古音低语：焚断凡尘牵挂，可获无垢极道之力。",
+      rightOpt: { label: "☯ 护持凡火 · 携红尘众念共叩九霄天门", detail: "清虚正道 +40 · 气血上限+44 · 常驻减伤+6 · 砚尘羁绊提升", karma: 40, hpBonus: 44, drBonus: 6, bond: "yan" },
+      demonOpt: { label: "🔥 焚尽凡尘 · 断绝牵挂凝万古极道杀剑", detail: "劫煞魔心 -40 · 剑道攻击+22 · 无上剑意蓄满100% · 裴照羁绊提升", karma: -40, atkBonus: 22, fillIntent: true, bond: "pei" }
     }
   ];
 
@@ -7078,10 +7321,17 @@ const ART = {
     const icoEl = document.getElementById("karma-hud-icon");
     if (!pill || !titleEl || !game) return;
     const ks = getKarmaState(game);
+    const kp = getKarmaDilemmaProgress(game);
     pill.classList.toggle("karma-righteous", ks.mode === "righteous");
     pill.classList.toggle("karma-demonic", ks.mode === "demonic");
     if (icoEl) icoEl.textContent = ks.mode === "demonic" ? "🔥" : ks.mode === "righteous" ? "☯" : "✦";
     titleEl.textContent = ks.mode === "neutral" ? ks.label : `${ks.label} · ${ks.artName}`;
+    const tipSub = kp.allExhausted
+      ? `六卷因果劫数已尽（${kp.doneCount}/${kp.totalCount}），道心已定！`
+      : kp.chapterExhausted
+        ? `本卷因果已了（${kp.doneCount}/${kp.totalCount}），突破至第${kp.nextChapterUnlock}卷后再遇新劫！`
+        : `当前第${kp.currentChapter}卷尚余 ${kp.eligibleCount} 段红尘问心（总进度 ${kp.doneCount}/${kp.totalCount}），点击展开抉择！`;
+    pill.setAttribute("data-tip", escTip(`清虚正道 ↔ 劫煞魔心 (${ks.artName})`, tipSub));
   }
 
   // Active Z-Axis Sky Jump (`御风腾跃`) + Vault Counter (`踏剑借力`)!
@@ -7315,14 +7565,91 @@ const ART = {
     game.gourd.charges = game.gourd.maxCharges;
   }
 
-  // Interactive Karma Duality Dilemma Modal (`红尘因果奇遇抉择`)
+  function ensureCompletedKarmaIds(g) {
+    if (!g) return [];
+    const valid = new Set(KARMA_DILEMMAS.map(d => d.id));
+    const seen = new Set();
+    const out = [];
+    if (Array.isArray(g.completedKarmaIds)) {
+      for (const id of g.completedKarmaIds) {
+        if (typeof id === "string" && valid.has(id) && !seen.has(id)) {
+          seen.add(id);
+          out.push(id);
+        }
+      }
+    }
+    g.completedKarmaIds = out;
+    return out;
+  }
+
+  function getEligibleKarmaDilemmas(g) {
+    if (!g) return [];
+    const doneSet = new Set(ensureCompletedKarmaIds(g));
+    const curCh = getCurrentChapterIndex(g);
+    return KARMA_DILEMMAS.filter(d => d.chapter <= curCh && !doneSet.has(d.id));
+  }
+
+  function getNextAvailableKarmaDilemma(g) {
+    const list = getEligibleKarmaDilemmas(g);
+    return list.length ? list[0] : null;
+  }
+
+  function getKarmaDilemmaProgress(g) {
+    const totalCount = KARMA_DILEMMAS.length;
+    if (!g) {
+      return { doneCount: 0, totalCount, eligibleCount: 0, currentChapter: 1, allExhausted: false, chapterExhausted: false, nextChapterUnlock: 1, nextDilemma: null };
+    }
+    const done = ensureCompletedKarmaIds(g);
+    const doneSet = new Set(done);
+    const currentChapter = getCurrentChapterIndex(g);
+    const eligible = KARMA_DILEMMAS.filter(d => d.chapter <= currentChapter && !doneSet.has(d.id));
+    const future = KARMA_DILEMMAS.filter(d => d.chapter > currentChapter && !doneSet.has(d.id));
+    const nextChapterUnlock = future.length ? Math.min(...future.map(d => d.chapter)) : null;
+    const allExhausted = done.length >= totalCount || (!eligible.length && !future.length);
+    const chapterExhausted = !allExhausted && eligible.length === 0;
+    return {
+      doneCount: done.length,
+      totalCount,
+      eligibleCount: eligible.length,
+      currentChapter,
+      allExhausted,
+      chapterExhausted,
+      nextChapterUnlock,
+      nextDilemma: eligible[0] || null
+    };
+  }
+
+  // Interactive Karma Duality Dilemma Modal (`红尘因果奇遇抉择`) — Non-Repeating & Chapter-Gated (S10)
   function openKarmaDilemmaModal(forcedIdx = null) {
-    if (!game) return;
+    if (!game) return false;
+    const done = ensureCompletedKarmaIds(game);
+    const prog = getKarmaDilemmaProgress(game);
+    let kd = null;
+    if (forcedIdx !== null && forcedIdx !== undefined) {
+      if (typeof forcedIdx === "string") {
+        kd = KARMA_DILEMMAS.find(d => d.id === forcedIdx) || null;
+      } else {
+        const idx = ((Math.floor(num(forcedIdx, 0)) % KARMA_DILEMMAS.length) + KARMA_DILEMMAS.length) % KARMA_DILEMMAS.length;
+        kd = KARMA_DILEMMAS[idx] || null;
+      }
+      if (!kd || done.includes(kd.id)) {
+        showToast("☯ 此段红尘问心已了，因果不可重演");
+        return false;
+      }
+    } else {
+      if (!prog.nextDilemma) {
+        if (prog.allExhausted) {
+          showToast(`☯ 六卷因果劫数已尽（${prog.doneCount}/${prog.totalCount}），道心已定！`);
+        } else {
+          showToast(`☯ 本卷因果已了（${prog.doneCount}/${prog.totalCount}），突破至第${prog.nextChapterUnlock}卷后再遇新劫！`);
+        }
+        return false;
+      }
+      kd = prog.nextDilemma;
+    }
+
     closeDrawer();
     arena.paused = true;
-    const rawIdx = forcedIdx !== null ? forcedIdx : game.karmaEventsDone;
-    const idx = ((Math.floor(num(rawIdx, 0)) % KARMA_DILEMMAS.length) + KARMA_DILEMMAS.length) % KARMA_DILEMMAS.length;
-    const kd = KARMA_DILEMMAS[idx] || KARMA_DILEMMAS[0];
     const ks = getKarmaState(game);
     const dotPct = Math.round(((ks.score + 100) / 200) * 100);
 
@@ -7331,8 +7658,8 @@ const ART = {
         <img src="${ART.banner_karma_duality}" alt="清虚正道与劫煞魔心" />
         <div class="drawer-mural-overlay">
           <div>
-            <span class="cinnabar-seal">正魔一念 · 红尘因果</span>
-            <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">${kd.title}</h2>
+            <span class="cinnabar-seal">正魔一念 · 第${kd.chapter}卷因果（${prog.doneCount + 1}/${prog.totalCount}）</span>
+            <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">${escapeHtml(kd.title)}</h2>
           </div>
           <button type="button" class="btn-ghost" data-modal-close="1">暂缓问心 ✕</button>
         </div>
@@ -7341,35 +7668,45 @@ const ART = {
       <div class="jade-card" style="gap:6px;padding:9px 12px;">
         <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;">
           <span style="color:#ff6b81;font-weight:700;">🔥 劫煞魔心 (-100 · 血煞狂剑诀)</span>
-          <strong style="color:${ks.color};font-family:var(--font-serif);">${ks.label} · 【${ks.artName}】</strong>
+          <strong style="color:${ks.color};font-family:var(--font-serif);">${escapeHtml(ks.label)} · 【${escapeHtml(ks.artName)}】</strong>
           <span style="color:#70ffe6;font-weight:700;">☯ 清虚正道 (+100 · 太清镇世诀)</span>
         </div>
         <div class="karma-spectrum-track"><div class="karma-spectrum-dot" style="left:${dotPct}%;"></div></div>
       </div>
 
-      <p style="font-size:13px;color:var(--text-main);line-height:1.65;padding:2px 6px;">${kd.desc}</p>
+      <p style="font-size:13px;color:var(--text-main);line-height:1.65;padding:2px 6px;">${escapeHtml(kd.desc)}</p>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <button type="button" class="encounter-opt-btn" style="border-color:rgba(112,255,230,0.58);background:linear-gradient(155deg,rgba(10,36,42,0.94),rgba(6,18,24,0.96));flex-direction:column;align-items:flex-start;gap:6px;" data-karma-dilemma="${kd.id}" data-karma-side="right">
+        <button type="button" class="encounter-opt-btn" style="border-color:rgba(112,255,230,0.58);background:linear-gradient(155deg,rgba(10,36,42,0.94),rgba(6,18,24,0.96));flex-direction:column;align-items:flex-start;gap:6px;" data-karma-dilemma="${escapeHtml(kd.id)}" data-karma-side="right">
           <span class="tag-chip done">☯ 清虚正道之选</span>
-          <strong style="font-family:var(--font-serif);font-size:15px;color:#dffef8;">${kd.rightOpt.label}</strong>
-          <span style="font-size:11.5px;color:#80ffea;line-height:1.45;">${kd.rightOpt.detail}</span>
+          <strong style="font-family:var(--font-serif);font-size:15px;color:#dffef8;">${escapeHtml(kd.rightOpt.label)}</strong>
+          <span style="font-size:11.5px;color:#80ffea;line-height:1.45;">${escapeHtml(kd.rightOpt.detail)}</span>
         </button>
-        <button type="button" class="encounter-opt-btn" style="border-color:rgba(255,92,108,0.62);background:linear-gradient(155deg,rgba(48,12,22,0.94),rgba(22,8,16,0.96));flex-direction:column;align-items:flex-start;gap:6px;" data-karma-dilemma="${kd.id}" data-karma-side="demon">
+        <button type="button" class="encounter-opt-btn" style="border-color:rgba(255,92,108,0.62);background:linear-gradient(155deg,rgba(48,12,22,0.94),rgba(22,8,16,0.96));flex-direction:column;align-items:flex-start;gap:6px;" data-karma-dilemma="${escapeHtml(kd.id)}" data-karma-side="demon">
           <span class="tag-chip mythic" style="border-color:#ff6b81;color:#ffd2d8;">🔥 劫煞魔心之选</span>
-          <strong style="font-family:var(--font-serif);font-size:15px;color:#ffe0e4;">${kd.demonOpt.label}</strong>
-          <span style="font-size:11.5px;color:#ff9eaa;line-height:1.45;">${kd.demonOpt.detail}</span>
+          <strong style="font-family:var(--font-serif);font-size:15px;color:#ffe0e4;">${escapeHtml(kd.demonOpt.label)}</strong>
+          <span style="font-size:11.5px;color:#ff9eaa;line-height:1.45;">${escapeHtml(kd.demonOpt.detail)}</span>
         </button>
       </div>
     `, true);
+    return true;
   }
 
   function resolveKarmaDilemmaChoice(kdId, side) {
-    if (!game) return;
-    const kd = KARMA_DILEMMAS.find(x => x.id === kdId) || KARMA_DILEMMAS[0];
+    if (!game || typeof kdId !== "string") return false;
+    const kd = KARMA_DILEMMAS.find(x => x.id === kdId);
+    if (!kd) return false;
+    const done = ensureCompletedKarmaIds(game);
+    if (done.includes(kd.id)) {
+      showToast("☯ 此段红尘问心已了，因果不可重复抉择");
+      closeModal();
+      return false;
+    }
     const opt = side === "demon" ? kd.demonOpt : kd.rightOpt;
+    done.push(kd.id);
+    game.completedKarmaIds = done;
     game.karmaScore = Math.max(-100, Math.min(100, (game.karmaScore || 0) + opt.karma));
-    game.karmaEventsDone = (game.karmaEventsDone || 0) + 1;
+    game.karmaEventsDone = Math.max(Math.floor(num(game.karmaEventsDone, 0)) + 1, done.length);
     if (opt.hpBonus || opt.atkBonus) {
       grantPermanentStatBonus(game, { hp: opt.hpBonus || 0, atk: opt.atkBonus || 0, source: "general" });
     }
@@ -7401,12 +7738,17 @@ const ART = {
       game.cosmetics.trailSkin = "ink_jade";
       game.cosmetics.footAura = "lotus_step";
     }
+    if (Array.isArray(game.journal)) {
+      game.journal.unshift(`【红尘因果 · 第${kd.chapter}卷】${kd.title}：${opt.label}`);
+    }
     Sound.fanfare();
     spawnDistortionRing(arena.player.x, arena.player.y, 195, ks.color);
     showToast(`${ks.mode === "demonic" ? "🔥 劫煞魔心大成 · 激活【血煞狂剑诀】！" : ks.mode === "righteous" ? "☯ 清虚道心通明 · 激活【太清镇世诀】！" : "✦ 道心流转 · 因果已录"}`);
     closeModal();
     saveGame();
     updateHud();
+    if (drawerOpen) renderDrawerContent();
+    return true;
   }
 
   // `P` Key AAA Free Photo Mode (`太虚绘卷 · 自由摄影模式`)
@@ -7580,20 +7922,20 @@ const ART = {
   // ==================== V19 HALL-OF-FAME SYSTEMS: SOUL AVATARS, BLADE CLASH, 3-STATE EXECUTIONS, SSS STYLE METER, GHOST DOJO & 28-STAR ASTROLABE ====================
   const SOUL_SPIRITS = {
     blood_warden: {
-      id: "blood_warden", shortLbl: "血魔印", name: "赤渊血魔 · 裂地狂锤", bossId: "warden", art: "enemy_warden", elem: "fire", cd: 6.2,
-      color: "#ff6b57", desc: "召唤赤渊巨灵真身轰砸熔岩巨坑（340%范围重伤+64削韧+4秒霸体）；命中灵泉水洼触发【沸雾蒸云阵】，命中玄冰触发【融火晶爆】！"
+      id: "blood_warden", shortLbl: "石卫印", name: "守山石卫 · 裂地狂锤", bossId: "warden", art: "enemy_warden", elem: "fire", cd: 6.2,
+      color: "#ff6b57", desc: "召唤守山石卫真身轰砸熔岩巨坑（340%范围重伤+64削韧+4秒霸体）；命中灵泉水洼触发【沸雾蒸云阵】，命中玄冰触发【融火晶爆】！"
     },
     frost_phoenix: {
-      id: "frost_phoenix", shortLbl: "玄冥印", name: "玄冥冰魄 · 极寒吐息", bossId: "serpent", art: "enemy_serpent", elem: "frost", cd: 5.8,
-      color: "#80ecff", desc: "化现九幽寒蟒法相喷吐极寒冰暴（315%范围冰伤+4.5秒深度冻结）；冻结灵泉水洼，命中火域触发【冰火蒸汽核爆(+180%真伤)】！"
+      id: "frost_phoenix", shortLbl: "玄蛇印", name: "寒潭玄蛇 · 极寒吐息", bossId: "serpent", art: "enemy_serpent", elem: "frost", cd: 5.8,
+      color: "#80ecff", desc: "化现寒潭玄蛇法相喷吐极寒冰暴（315%范围冰伤+4.5秒深度冻结）；冻结灵泉水洼，命中火域触发【冰火蒸汽核爆(+180%真伤)】！"
     },
     sword_fiend: {
-      id: "sword_fiend", shortLbl: "剑魔印", name: "古冢剑魔 · 万刃破空", bossId: "puppet", art: "enemy_puppet", elem: "metal", cd: 5.5,
-      color: "#ffd166", desc: "召唤古冢剑傀法相齐射八方裂空古剑（330%穿甲重伤+叠4枚剑印+瞬破盾卫正面玄盾）！"
+      id: "sword_fiend", shortLbl: "剑傀印", name: "古境剑傀 · 万刃破空", bossId: "puppet", art: "enemy_puppet", elem: "metal", cd: 5.5,
+      color: "#ffd166", desc: "召唤古境剑傀法相齐射八方裂空古剑（330%穿甲重伤+叠4枚剑印+瞬破盾卫正面玄盾）！"
     },
     thunder_lord: {
-      id: "thunder_lord", shortLbl: "雷狱印", name: "雷狱剑魔 · 天罚剑罡", bossId: "sentinel", art: "enemy_sentinel", elem: "thunder", cd: 6.4,
-      color: "#d69eff", desc: "融汇九霄雷将法相劈落五重紫霄天罚雷柱（365%雷伤+58削韧）；直接引爆全场水洼【超导感电】与火域【雷火超载爆破】！"
+      id: "thunder_lord", shortLbl: "守灵印", name: "云台守灵 · 天罚剑罡", bossId: "sentinel", art: "enemy_sentinel", elem: "thunder", cd: 6.4,
+      color: "#d69eff", desc: "融汇云台守灵法相劈落五重紫霄天罚雷柱（365%雷伤+58削韧）；直接引爆全场水洼【超导感电】与火域【雷火超载爆破】！"
     },
     taixu_demon: {
       id: "taixu_demon", shortLbl: "心魔印", name: "太虚心魔 · 破界双斩", bossId: "trial_gate", art: "actor_inner_demon", elem: "void", cd: 6.8,
@@ -8575,6 +8917,21 @@ const ART = {
     );
   }
 
+  function isNormalCampaignStage() {
+    return Boolean(
+      game &&
+      !arena.sanctumMode &&
+      !arena.towerMode &&
+      !(arena.bossRush && arena.bossRush.active) &&
+      !(arena.celestialSpire && arena.celestialSpire.active) &&
+      !(arena.cloudFlight && arena.cloudFlight.active) &&
+      !(arena.sectDefense && arena.sectDefense.active) &&
+      !(arena.customSeedRun && arena.customSeedRun.active) &&
+      !isPracticeModeActive() &&
+      !sandboxMode
+    );
+  }
+
   // ==================== V17 MYRIAD SWORD GRAVEYARD BOSS RUSH & INNER DEMON MIRROR DUEL ====================
   function openBossRushModal() {
     if (!game) return;
@@ -8652,6 +9009,7 @@ const ART = {
   function startBossRushGauntlet(startBout = 1) {
     if (!game) return;
     if (!guardEcosystemAccess("sword_tomb_rush")) return;
+    resetStageTransitionState();
     closeModal();
     closeDrawer();
     const canvas = document.getElementById("fx-canvas");
@@ -8660,6 +9018,7 @@ const ART = {
     arena.stageEpoch += 1;
     arena.sanctumMode = false;
     arena.towerMode = false;
+    arena.dungeonMap = null;
     arena.celestialSpire = null;
     arena.sectDefense = null;
     arena.cloudFlight = null;
@@ -9280,6 +9639,7 @@ const ART = {
   function startSectDefenseSiege() {
     if (!game) return;
     if (!guardEcosystemAccess("sect_defense")) return;
+    resetStageTransitionState();
     closeModal();
     closeDrawer();
     const cv = document.getElementById("fx-canvas");
@@ -9700,6 +10060,7 @@ const ART = {
   function startCloudSeaAerialStage() {
     if (!game) return;
     if (!guardEcosystemAccess("cloud_sea_trial")) return;
+    resetStageTransitionState();
     closeModal();
     closeDrawer();
     const cv = document.getElementById("fx-canvas");
@@ -9708,6 +10069,7 @@ const ART = {
     arena.stageEpoch += 1;
     arena.sanctumMode = false;
     arena.towerMode = false;
+    arena.dungeonMap = null;
     arena.bossRush = null;
     arena.sectDefense = null;
     arena.celestialSpire = null;
@@ -9801,7 +10163,7 @@ const ART = {
       // Fire an immediate fan of 7 golden-violet thunder orbs so player can test Projectile Deflect right away!
       fireSkyGeneralOrbSalvo(rocBoss, 7);
       Sound.thunderCrack();
-      addFloat("⚡ 巡天金甲雷鹏王拦路！开右键/空格【太虚剑盾】反弹漫天雷球！", rocBoss.x - 90, rocBoss.y - 78, "#ffe28a", 19, true);
+      addFloat("⚡ 巡天金甲雷鹏将拦路！开右键/空格【太虚剑盾】反弹漫天雷球！", rocBoss.x - 90, rocBoss.y - 78, "#ffe28a", 19, true);
     } else {
       for (let i = 0; i < 3; i++) {
         const ey = h * (0.32 + i * 0.18);
@@ -10130,12 +10492,14 @@ const ART = {
 
   function startCelestialSpireRun(startFloor = 1) {
     if (!game) return;
+    resetStageTransitionState();
     closeModal();
     closeDrawer();
     if (!game.spireCurios) game.spireCurios = {};
     arena.stageEpoch += 1;
     arena.sanctumMode = false;
     arena.towerMode = false;
+    arena.dungeonMap = null;
     arena.bossRush = null;
     arena.sectDefense = null;
     arena.cloudFlight = null;
@@ -10224,7 +10588,7 @@ const ART = {
 
     if (sp.floor === 9) {
       // Floor 9 Apex Boss: Sky-Patrol Thunder-Roc Sovereign + Escort!
-      spawnSingleEnemy("sky_roc", w * 0.66, h * 0.48, 1.0, true, "登仙台九重帝君 · 九霄雷鹏神将");
+      spawnSingleEnemy("sky_roc", w * 0.66, h * 0.48, 1.0, true, "登仙台九重帝君 · 巡天金甲雷鹏将");
       applySpireStats(arena.enemies[arena.enemies.length - 1], rb.bossHp * 1.10, 1.06, 1.08);
       spawnSingleEnemy("sentinel", w * 0.60, h * 0.60, 1.0, false, "凌霄护殿金甲卫");
       applySpireStats(arena.enemies[arena.enemies.length - 1], rb.mobHp * 1.25, 0.78, 0.74);
@@ -10432,7 +10796,7 @@ const ART = {
   // ==================== PILLAR 4B: INTERACTIVE CODEX MOVE & WEAKNESS SHOWCASE (`万象博物志 · 招式动态鉴赏台`) ====================
   const CODEX_SHOWCASE_ITEMS = [
     { id: "zhulong",  cat: "首领", name: "太古烛龙·法相", art: "boss_zhulong_titan",    color: "#ffae33", moveName: "眉心竖眼·灭世横扫 & 覆海拍击", guide: "破招拆解：切 2 键【龙胆裂空剑枪】或玄重巨阙先破左右双臂护甲，趁其瘫痪伏地触发【御剑登天·踏躯逆鳞斩】贯碎天眼！" },
-    { id: "sky_roc",  cat: "首领", name: "巡天雷鹏神将", art: "enemy_roc_sky_general", color: "#80ecff", moveName: "天雷激光网 & 紫电七星弹幕",     guide: "破招拆解：九霄云海空战中按空格【滚筒侧闪】无伤穿过激光网，按右键开启【太虚剑盾】将漫天雷球 2.4 倍速原路震回！" },
+    { id: "sky_roc",  cat: "首领", name: "巡天金甲雷鹏将", art: "enemy_roc_sky_general", color: "#80ecff", moveName: "天雷激光网 & 紫电七星弹幕",     guide: "破招拆解：九霄云海空战中按空格【滚筒侧闪】无伤穿过激光网，按右键开启【太虚剑盾】将漫天雷球 2.4 倍速原路震回！" },
     { id: "demon",    cat: "首领", name: "太虚心魔镜像", art: "actor_inner_demon",     color: "#d69eff", moveName: "双姿态易剑斩 & 暗金【擒】投技", guide: "破招拆解：见暗金【⬢擒】字蓄力时切勿后退，直接出重击/易剑斩正面触发 1.2s【剑罡拼刀角力】崩碎其百点架势！" },
     { id: "player",   cat: "可控", name: "顾长青·六象剑主", art: "actor_player_battle", color: "#4ad2b8", moveName: "三器×双姿·六象神兵觉醒技",     guide: "操控精要：1/2/3 秒切飞剑/龙胆枪/回旋轮，配合 ` 疾剑/巨阙双姿派生【游龙刺/巨阙开天/百鸟朝凤/破军挑山/日月旋涡/乾坤重锯】！" },
     { id: "shen",     cat: "可控", name: "沈清禾·青莲剑", art: "actor_shen",           color: "#70ffe6", moveName: "青莲净世剑澜 & 双人合璧阵",     guide: "操控精要：残血时按 V 瞬切沈清禾立即触发净厄护心盾，同心满 100% 点【💞合璧】释放双立绘全屏【青莲万剑净世阵】！" },
@@ -11088,10 +11452,10 @@ const ART = {
     { idx: 0, id: "zhulong_titan", name: "太古烛龙·魔神法相 (跨屏巨神)" },
     { idx: 1, id: "sky_roc",       name: "巡天金甲雷鹏将 (空天妖帅)" },
     { idx: 2, id: "inner_demon",   name: "太虚心魔镜像 (双姿剑反)" },
-    { idx: 3, id: "sentinel",      name: "九霄雷罚神将 (护阵天雷)" },
-    { idx: 4, id: "puppet",        name: "守墓古剑魔 (镜反剑轮)" },
-    { idx: 5, id: "serpent",       name: "寒潭九幽冥蛇 (玄冰毒沼)" },
-    { idx: 6, id: "warden",        name: "覆海玄甲巨灵 (裂地重锤)" }
+    { idx: 3, id: "sentinel",      name: "云台守灵 (护阵天雷)" },
+    { idx: 4, id: "puppet",        name: "古境剑傀 (镜反剑轮)" },
+    { idx: 5, id: "serpent",       name: "寒潭玄蛇 (玄冰毒沼)" },
+    { idx: 6, id: "warden",        name: "守山石卫 (裂地重锤)" }
   ];
 
   const workshopState = {
@@ -11267,6 +11631,7 @@ const ART = {
       if (parsed) safeAssignPlain(workshopState, parsed);
     }
     const activeSeed = encodeWorkshopSeed(workshopState);
+    resetStageTransitionState();
     closeModal();
     closeDrawer();
 
@@ -11279,6 +11644,7 @@ const ART = {
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.celestialSpire = null;
+    arena.dungeonMap = null;
     arena.waveTransitioning = false;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
@@ -12237,7 +12603,7 @@ const ART = {
       c.fillStyle = "#ffe89e";
       c.font = "bold 15px serif";
       c.textAlign = "left";
-      c.fillText(`【第${chapterNumerals[idx]}幕】${fr.moveDesc}`, r.x + 12, r.y + r.h - 28);
+      c.fillText(`【第${chapterNumerals[idx]}格】${fr.moveDesc}`, r.x + 12, r.y + r.h - 28);
       c.fillStyle = "#80ffea";
       c.font = "bold 12.5px sans-serif";
       c.fillText(`天时：${fr.phaseName}${fr.dmgVal > 0 ? ` · 威能批注：${fr.dmgVal.toLocaleString()}` : ""}`, r.x + 14, r.y + r.h - 9);
@@ -12812,10 +13178,10 @@ const ART = {
   const EXPEDITION_BANKED_STARS_CAP = 5;
 
   const GARRISON_ROSTER = [
-    { id: "shen",    name: "沈清禾",   role: "青莲药仙" },
-    { id: "pei",     name: "裴照",     role: "惊鸿枪圣" },
-    { id: "lu",      name: "陆玄松",   role: "紫微雷师" },
-    { id: "yan",     name: "砚尘",     role: "太虚影卫" },
+    { id: "shen",    name: "沈清禾",   role: "青云药庐 · 悬壶医修" },
+    { id: "pei",     name: "裴照",     role: "青云剑阁 · 同辈剑首" },
+    { id: "lu",      name: "陆玄松",   role: "青云山门 · 传功执事" },
+    { id: "yan",     name: "砚尘",     role: "照影古境 · 守碑老人" },
     { id: "acolyte", name: "金甲丹童", role: "护法仙童" }
   ];
 
@@ -14626,6 +14992,7 @@ const ART = {
       titleUnlocked: metaState.taixuTrailUnlocked ? "踏天破妄剑尊" : null,
       karmaScore: 0,
       karmaEventsDone: 0,
+      completedKarmaIds: [],
       karmaDrBonus: 0,
       bondTiers: { shen: 1, pei: 0, lu: 0, yan: 0 },
       gourd: { charges: 5, maxCharges: 5, soaks: ["iron_lotus", "samadhi_fire", "parry_brew"], parryChargeProg: 0 },
@@ -14723,8 +15090,26 @@ const ART = {
     g.elapsedMonths = Math.max(0, Math.floor(num(g.elapsedMonths, 0)));
     g.startAgeMonths = Math.max(12, Math.floor(num(g.startAgeMonths, 216)));
     g.statMultBonus = Math.max(0.5, num(g.statMultBonus, base.statMultBonus));
-    g.karmaScore = num(g.karmaScore, 0);
+    g.karmaScore = Math.max(-100, Math.min(100, num(g.karmaScore, 0)));
     g.karmaDrBonus = Math.max(0, num(g.karmaDrBonus, 0));
+    const validKarmaIds = new Set(KARMA_DILEMMAS.map(d => d.id));
+    if (Array.isArray(raw.completedKarmaIds)) {
+      const seenKd = new Set();
+      g.completedKarmaIds = [];
+      for (const id of raw.completedKarmaIds) {
+        if (typeof id === "string" && validKarmaIds.has(id) && !seenKd.has(id)) {
+          seenKd.add(id);
+          g.completedKarmaIds.push(id);
+        }
+      }
+    } else {
+      const legacyCount = Math.min(LEGACY_KARMA_DILEMMA_IDS.length, g.karmaEventsDone);
+      g.completedKarmaIds = LEGACY_KARMA_DILEMMA_IDS.slice(0, legacyCount);
+    }
+    g.karmaEventsDone = Math.max(g.karmaEventsDone, g.completedKarmaIds.length);
+    if (typeof g.location !== "string" || !hasOwn(STORY_LOCATIONS, g.location)) {
+      g.location = "wilderness";
+    }
     g.inventory = safeAssignPlain({}, base.inventory, raw.inventory);
     Object.keys(g.inventory).forEach(k => {
       g.inventory[k] = Math.max(0, Math.floor(num(g.inventory[k], 0)));
@@ -14798,7 +15183,15 @@ const ART = {
     if (migratedRank >= 3) g.defeatedStageBosses[2] = true;
     if (migratedRank >= 4) g.defeatedStageBosses[3] = true;
     if (migratedRank >= 6 || g.status === "ascended") g.defeatedStageBosses[4] = true;
-    if (!Array.isArray(g.claimedStepIds)) g.claimedStepIds = [];
+    if (!Array.isArray(g.claimedStepIds)) {
+      g.claimedStepIds = [];
+    } else {
+      g.claimedStepIds = Array.from(new Set(
+        g.claimedStepIds
+          .map(id => canonicalizeStepId(id))
+          .filter(Boolean)
+      ));
+    }
     if (!Array.isArray(g.claimedStarChests)) g.claimedStarChests = [];
     g.bountyTiers = safeAssignPlain({ slay: 1, tech: 1, craft: 1 }, raw.bountyTiers);
     Object.keys(g.bountyTiers).forEach(k => { g.bountyTiers[k] = Math.max(1, Math.floor(num(g.bountyTiers[k], 1))); });
@@ -14954,6 +15347,7 @@ const ART = {
     arena.stageEpoch += 1;
     arena.waveTransitioning = false;
     clearTransientChoiceQueues();
+    resetStageTransitionState();
     closeModal();
     closeDrawer();
     arena.bossRush = null;
@@ -15882,6 +16276,7 @@ const ART = {
   let activeSoulUnlockId = null;
   let pendingAlchemyCraft = null;
   let pendingSoulRefineId = null;
+  let pendingVolumeRecapOnDismiss = null;
   let temperUseCoreDiscount = false;
 
   function clearTransientChoiceQueues() {
@@ -15892,9 +16287,38 @@ const ART = {
     pendingSandboxEntry = null;
     pendingAlchemyCraft = null;
     pendingSoulRefineId = null;
+    pendingVolumeRecapOnDismiss = null;
+    arena.stageClearPending = false;
     pendingCompareGear = null;
     temperUseCoreDiscount = false;
     renderGearCompareCard();
+  }
+
+  function resetStageTransitionState() {
+    const wasCutscene = cutscene.active;
+    cutscene.active = false;
+    cutscene.onFinish = null;
+    cutscene.triggerEl = null;
+    const dlgBar = document.getElementById("story-dialogue-bar");
+    if (dlgBar) {
+      if (document.activeElement && dlgBar.contains(document.activeElement) && typeof document.activeElement.blur === "function") {
+        try { document.activeElement.blur(); } catch (e) {}
+      }
+      dlgBar.classList.remove("open");
+    }
+    const chBox = document.getElementById("dlg-choices-box");
+    if (chBox) {
+      chBox.innerHTML = "";
+      chBox.style.display = "none";
+    }
+    if (wasCutscene) {
+      const bd = document.getElementById("modal-backdrop");
+      arena.paused = Boolean(drawerOpen || (bd && bd.classList.contains("open")));
+      if (typeof renderOnboardingCoach === "function") renderOnboardingCoach();
+    }
+    arena.stageClearHandledEpoch = -1;
+    arena.stageClearPending = false;
+    pendingVolumeRecapOnDismiss = null;
   }
 
   function openGearBagFullModal(newItem) {
@@ -15962,6 +16386,7 @@ const ART = {
     if (!game) return;
     const ws = document.getElementById("welcome-screen");
     if (ws && ws.style.display !== "none") return;
+    if (cutscene.active || pendingVolumeRecapOnDismiss || arena.stageClearPending) return;
     if (activeGearOverflowItem || activeSoulUnlockId) return;
     const bd = document.getElementById("modal-backdrop");
     if (bd && bd.classList.contains("open")) return;
@@ -16417,14 +16842,14 @@ const ART = {
       ${availStory ? `
         <div class="jade-card" style="border-color:rgba(255,226,138,0.68);flex-direction:row;justify-content:space-between;align-items:center;gap:10px;">
           <div>
-            <strong style="font-size:13.5px;color:var(--gold-bright);">🎭 可触发专属立绘剧情 · 《${availStory.name}》</strong>
+            <strong style="font-size:13.5px;color:var(--gold-bright);">🎭 第${availStory.chapter}卷故人线 · 《${escapeHtml(availStory.name)}》 · 📍${escapeHtml(getStoryLocationLabel(availStory.location))}</strong>
             <div style="font-size:11px;color:var(--text-sub);margin-top:2px;">进入半身立绘叙事舞台，亲手抉择故人机缘并推进三阶羁绊！</div>
           </div>
-          <button type="button" class="btn-gold" style="white-space:nowrap;" data-play-story-bar="${availStory.id}">🎭 立绘演绎 ▸</button>
+          <button type="button" class="btn-gold" style="white-space:nowrap;" data-play-story-bar="${escapeHtml(availStory.id)}">🎭 立绘演绎 ▸</button>
         </div>
       ` : nextLockedStory ? `
         <div class="pity-bar-card">
-          <span>下一段专属剧情：《${nextLockedStory.name}》</span>
+          <span>下一段故人线（第${nextLockedStory.chapter}卷 · 📍${escapeHtml(getStoryLocationLabel(nextLockedStory.location))}）：《${escapeHtml(nextLockedStory.name)}》</span>
           <span style="color:var(--gold-bright);">晋升【${REALMS[nextLockedStory.min].name}期】解锁</span>
         </div>
       ` : `
@@ -17082,6 +17507,31 @@ const ART = {
     return { ch: CHAPTERS[CHAPTERS.length - 1], step: null, claimReady: false, allDone: true };
   }
 
+  function getCurrentChapterIndex(g) {
+    if (!g) return 1;
+    const byRealm = Math.max(1, Math.min(CHAPTERS.length, rankOf(g.realm) + 1));
+    const nextM = findNextMainlineStep(g);
+    if (nextM && nextM.allDone) return CHAPTERS.length;
+    const byMainline = (nextM && nextM.ch && nextM.ch.index) ? nextM.ch.index : byRealm;
+    return Math.max(1, Math.min(CHAPTERS.length, Math.max(byRealm, byMainline)));
+  }
+
+  function getAvailableCompanionStories(g, opts = {}) {
+    if (!g) return [];
+    const allAvail = STORIES.filter(s =>
+      !g.choices[s.id] &&
+      rankOf(g.realm) >= rankOf(s.min) &&
+      (!s.requires || !!g.choices[s.requires])
+    );
+    if (opts && opts.chapterOnly) {
+      const chIdx = typeof opts.chapterIdx === "number" ? opts.chapterIdx : getCurrentChapterIndex(g);
+      const exact = allAvail.filter(s => s.chapter === chIdx);
+      if (exact.length) return exact;
+      return allAvail.filter(s => s.chapter <= chIdx);
+    }
+    return allAvail;
+  }
+
   function hasAnyClaimableGoalReward(g) {
     if (!g) return false;
     for (const ch of CHAPTERS) {
@@ -17097,19 +17547,21 @@ const ART = {
 
   function claimMainlineStepReward(stepId) {
     if (!game) return;
+    const resolvedId = canonicalizeStepId(stepId);
+    if (!resolvedId) return;
     let found = null;
     for (const ch of CHAPTERS) {
       for (const s of ch.steps) {
-        if (s.id === stepId) { found = s; break; }
+        if (s.id === resolvedId) { found = s; break; }
       }
     }
-    if (!found || !found.check(game) || game.claimedStepIds.includes(stepId)) return;
-    game.claimedStepIds.push(stepId);
+    if (!found || !found.check(game) || game.claimedStepIds.includes(resolvedId)) return;
+    game.claimedStepIds.push(resolvedId);
     const rw = found.reward || {};
     if (rw.stones) game.stones += rw.stones;
     if (rw.herb) game.inventory.herb = (game.inventory.herb || 0) + rw.herb;
     if (rw.core) game.inventory.core = (game.inventory.core || 0) + rw.core;
-    if (rw.pill) game.inventory[rw.pill] = (game.inventory[rw.pill] || 0) + (stepId === "s3_skill" || stepId === "s6_pacts" ? 2 : 1);
+    if (rw.pill) game.inventory[rw.pill] = (game.inventory[rw.pill] || 0) + (rw.pillQty || (resolvedId === "s3_serpent" || resolvedId === "s6_pacts" ? 2 : 1));
     if (rw.bonusSword) { game.bonusSwords = (game.bonusSwords || 0) + rw.bonusSword; syncFlyingSwords(); }
     if (rw.gearMin !== undefined) acquireGearItem(rollGearItem(Math.max(1, arena.stageIdx), rw.gearMin));
     Sound.fanfare();
@@ -17182,7 +17634,7 @@ const ART = {
     const pct = computeOverallCompletionPct(game);
     const totalStars = getTotalStageStars(game);
     const activeInfo = findNextMainlineStep(game);
-    const activeChIdx = activeInfo && activeInfo.ch ? activeInfo.ch.index : 7;
+    const activeChIdx = activeInfo && activeInfo.ch ? activeInfo.ch.index : CHAPTERS.length;
 
     let tabBody = "";
     if (currentGoalTab === "mainline") {
@@ -17211,31 +17663,54 @@ const ART = {
           }).join("")}
         </div>
         <div style="max-height:330px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px;">
-          ${CHAPTERS.filter(ch => ch.index <= activeChIdx + 1).map(ch => `
+          ${CHAPTERS.filter(ch => ch.index <= activeChIdx + 1).map(ch => {
+            const volStories = STORIES.filter(st => st.chapter === ch.index);
+            const compFooter = volStories.length ? `
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:4px;border-top:1px dashed rgba(244,196,255,0.22);font-size:10.5px;">
+                <span style="color:#f4c4ff;font-weight:700;">♥ 本卷可选故人线：</span>
+                ${volStories.map(st => {
+                  const npc = NPC_META[st.npc];
+                  const locLbl = getStoryLocationLabel(st.location);
+                  const isDone = !!(game.choices && game.choices[st.id]);
+                  const isAvail = !isDone && rankOf(game.realm) >= rankOf(st.min) && (!st.requires || !!(game.choices && game.choices[st.requires]));
+                  if (isDone) {
+                    return `<span class="tag-chip done">✓ ${escapeHtml(npc.name)}·《${escapeHtml(st.name)}》</span>`;
+                  }
+                  if (isAvail) {
+                    return `<button type="button" class="btn-ghost" style="padding:2px 8px;font-size:10.5px;border-color:rgba(244,196,255,0.55);color:#f4c4ff;" data-open-companion-story="${escapeHtml(st.id)}">♥ ${escapeHtml(npc.name)}·《${escapeHtml(st.name)}》·📍${escapeHtml(locLbl)} ▸</button>`;
+                  }
+                  return `<span class="tag-chip" style="opacity:0.78;">○ ${escapeHtml(npc.name)}·《${escapeHtml(st.name)}》·📍${escapeHtml(locLbl)}</span>`;
+                }).join("")}
+              </div>
+            ` : "";
+            return `
             <div class="jade-card" style="gap:6px;">
               <div style="display:flex;justify-content:space-between;align-items:center;">
-                <strong style="font-family:var(--font-serif);font-size:14px;color:var(--gold-bright);">${ch.vol} · 《${ch.title}》</strong>
+                <strong style="font-family:var(--font-serif);font-size:14px;color:var(--gold-bright);">${escapeHtml(ch.vol)} · 《${escapeHtml(ch.title)}》</strong>
                 <span style="font-size:11px;color:var(--text-sub);">${ch.steps.filter(s => s.check(game)).length}/${ch.steps.length} 已达成</span>
               </div>
+              <p style="font-size:11px;color:var(--text-sub);line-height:1.45;margin:0;">${escapeHtml(ch.desc)}</p>
               ${ch.steps.map(s => {
                 const ok = s.check(game);
                 const claimed = game.claimedStepIds.includes(s.id);
                 return `
                   <div class="visual-tile ${ok && !claimed ? "rarity-4" : ""}" style="justify-content:space-between;padding:7px 10px;">
                     <div style="display:flex;flex-direction:column;gap:2px;">
-                      <span style="font-size:12px;font-weight:700;color:${claimed ? "var(--jade)" : "var(--text-main)"};">${claimed ? "✓ " : ok ? "★ " : "○ "}${s.text}</span>
-                      <span style="font-size:10.5px;color:var(--gold);">道标赏赐：${s.rewardTxt}</span>
+                      <span style="font-size:12px;font-weight:700;color:${claimed ? "var(--jade)" : "var(--text-main)"};">${claimed ? "✓ " : ok ? "★ " : "○ "}${escapeHtml(s.text)}</span>
+                      <span style="font-size:10.5px;color:var(--gold);">道标赏赐：${escapeHtml(s.rewardTxt)}</span>
                     </div>
                     ${claimed
                       ? `<span class="tag-chip done">已领赏</span>`
                       : ok
-                        ? `<button type="button" class="btn-gold" style="padding:4px 12px;font-size:11.5px;" data-claim-step="${s.id}">领取道赏</button>`
-                        : `<button type="button" class="btn-jade" style="padding:4px 11px;font-size:11.5px;" data-route-goal="${s.route}">前往推进 ▸</button>`}
+                        ? `<button type="button" class="btn-gold" style="padding:4px 12px;font-size:11.5px;" data-claim-step="${escapeHtml(s.id)}">领取道赏</button>`
+                        : `<button type="button" class="btn-jade" style="padding:4px 11px;font-size:11.5px;" data-route-goal="${escapeHtml(s.route)}">前往推进 ▸</button>`}
                   </div>
                 `;
               }).join("")}
+              ${compFooter}
             </div>
-          `).join("")}
+          `;
+          }).join("")}
         </div>
       `;
     } else if (currentGoalTab === "bounties") {
@@ -17365,7 +17840,7 @@ const ART = {
         </div>
       </div>
       <div style="display:flex;gap:8px;">
-        <button type="button" class="btn-ghost ${currentGoalTab === "mainline" ? "active-pill" : ""}" data-goal-tab="mainline">📜 七卷天命主线</button>
+        <button type="button" class="btn-ghost ${currentGoalTab === "mainline" ? "active-pill" : ""}" data-goal-tab="mainline">📜 六卷天命主线</button>
         <button type="button" class="btn-ghost ${currentGoalTab === "bounties" ? "active-pill" : ""}" data-goal-tab="bounties">⚔ 宗门悬赏 & 15星秘宝</button>
         <button type="button" class="btn-ghost ${currentGoalTab === "endgame"  ? "active-pill" : ""}" data-goal-tab="endgame">🏆 飞升终极天命</button>
       </div>
@@ -17465,6 +17940,22 @@ const ART = {
       `);
     }
 
+    const optCompStories = !isPrologueFocus ? getAvailableCompanionStories(game, { chapterOnly: true }) : [];
+    if (optCompStories.length > 0) {
+      const lead = optCompStories[0];
+      const leadNpc = NPC_META[lead.npc];
+      const locLbl = getStoryLocationLabel(lead.location);
+      rows.push(`
+        <button type="button" class="qt-goal-row qt-companion-row" data-open-companion-story="${escapeHtml(lead.id)}" data-tip="${escTip(`第${lead.chapter}卷 · 故人线（可选）`, `${leadNpc.name}《${lead.name}》 · ${locLbl}（可选支线，不阻塞主线；点击打开故人卷轴）`)}">
+          <div class="qt-row-top">
+            <span class="qt-tag-companion">♥ 故人线（可选）· 第${lead.chapter}卷</span>
+            <span class="qt-action-pill">${optCompStories.length > 1 ? `共${optCompStories.length}段 ▸` : "赴约 ▸"}</span>
+          </div>
+          <div class="qt-desc-line">${escapeHtml(leadNpc.name)} · 《${escapeHtml(lead.name)}》 · 📍${escapeHtml(locLbl)}</div>
+        </button>
+      `);
+    }
+
     bodyEl.innerHTML = rows.join("");
   }
 
@@ -17513,7 +18004,7 @@ const ART = {
     game.tutorialStep = Math.min(4, cur + 1);
     Sound.qiOrb(4 + cur);
     if (game.tutorialStep >= 4) {
-      showToast("🎉 入道教学圆满！已掌握挥剑、爆印识破、洞府整备与渡劫，正式踏上五幕仙途！");
+      showToast("🎉 入道教学圆满！已掌握挥剑、爆印识破、洞府整备与渡劫，正式踏上六卷仙途！");
     } else {
       const nextStep = ONBOARDING_STEPS[game.tutorialStep];
       if (nextStep) showToast(`✦ 入道进阶 (${game.tutorialStep + 1}/4 · ${nextStep.title})`);
@@ -17635,6 +18126,7 @@ const ART = {
     const w = canvas.width || window.innerWidth;
     const h = canvas.height || window.innerHeight;
 
+    resetStageTransitionState();
     arena.stageEpoch += 1;
     arena.waveTransitioning = false;
     arena.sanctumMode = true;
@@ -17678,6 +18170,7 @@ const ART = {
     arena.witchTime = 0;
     arena.bossDomain = null;
     arena.camFocusT = 0;
+    if (game) game.location = "cave";
     document.getElementById("stage-bg-img").src = ART.arena_sanctum_hub;
     showRegionCinemaCard("hub");
     initAmbientEcosystem();
@@ -17806,6 +18299,7 @@ const ART = {
     const w = canvas.width || window.innerWidth;
     const h = canvas.height || window.innerHeight;
 
+    resetStageTransitionState();
     arena.stageEpoch += 1;
     arena.waveTransitioning = false;
     arena.sanctumMode = false;
@@ -18079,7 +18573,7 @@ const ART = {
 
   function openDungeonMapModal() {
     if (!game || !arena.dungeonMap || arena.sanctumMode || arena.towerMode) {
-      showToast("进入任意章节秘境后可按 9 查看 5 层秘境分支星图！");
+      showToast("进入任意一卷秘境后可按 9 查看 5 层秘境分支星图！");
       return;
     }
     const dm = arena.dungeonMap;
@@ -18094,7 +18588,7 @@ const ART = {
         <img src="${ART[stg.arenaArt]}" alt="${stg.name}" />
         <div class="drawer-mural-overlay">
           <div>
-            <span class="cinnabar-seal">秘境星图 · 第 ${dm.stageIdx + 1} 章</span>
+            <span class="cinnabar-seal">秘境星图 · ${(CAMPAIGN_ACTS[dm.stageIdx] || CAMPAIGN_ACTS[0]).actLabel}</span>
             <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:4px;">${stg.name} · 五层探索星图</h2>
           </div>
           <button type="button" class="btn-ghost" data-modal-close="1">返回秘境 ✕</button>
@@ -18231,6 +18725,154 @@ const ART = {
     spawnCurrentWave();
   }
 
+  function computeVolumeEndNextObjective(stageIdx, g) {
+    if (!g) return "继续踏破九州秘境，问鼎九霄天门。";
+    const nextM = findNextMainlineStep(g);
+    const nextStepText = (nextM && !nextM.allDone && nextM.step) ? nextM.step.text : "";
+    if (stageIdx < STAGES.length - 1) {
+      const nextIdx = stageIdx + 1;
+      const nextAct = CAMPAIGN_ACTS[nextIdx] || CAMPAIGN_ACTS[STAGES.length - 1];
+      const nextStg = STAGES[nextIdx];
+      const reqRealm = nextStg ? nextStg.min : "mortal";
+      if (rankOf(g.realm) < rankOf(reqRealm)) {
+        return `修为圆满后按 B 渡劫晋升【${REALMS[reqRealm].name}期】，开启${nextAct.actLabel} · ${nextStg.name}传送阵。${nextStepText ? `（当前道标：${nextStepText}）` : ""}`;
+      }
+      return `境界已足！合卷后踏入传送阵前往【${nextAct.actLabel} · ${nextStg.name}】，或先返听雨洞府整备丹器。${nextStepText ? `（当前道标：${nextStepText}）` : ""}`;
+    }
+    if (g.status === "ascended") {
+      return "本世已白日飞升证道！可查阅【道果金榜】，或开启更高劫火周目、勇闯太虚锁妖内坛刷新纪录。";
+    }
+    if (g.realm !== "spirit") {
+      return `修为圆满后踏入【九霄化神台】或按 B 渡劫晋升【化神期】，再启【九霄仙门】引动终极飞升天劫！${nextStepText ? `（当前道标：${nextStepText}）` : ""}`;
+    }
+    return "踏入眼前【九霄仙门】引动终极飞升天劫，择定三大证道结局！";
+  }
+
+  function openVolumeEndRecapModal(stageIdx, payload, onDismiss) {
+    if (!game) {
+      if (onDismiss) onDismiss();
+      return;
+    }
+    const act = CAMPAIGN_ACTS[stageIdx] || CAMPAIGN_ACTS[0];
+    const meta = VOLUME_RECAP_META[stageIdx] || VOLUME_RECAP_META[0];
+    const earned = Math.max(1, Math.min(3, Math.floor(num(payload && payload.earned, 1))));
+    const prevStars = Math.max(0, Math.min(3, Math.floor(num(payload && payload.prevStars, 0))));
+    const bestStars = Math.max(prevStars, earned);
+    const newRecord = !!(payload && payload.newRecord);
+    const gotTech = !!(payload && payload.gotTech);
+    const gotHp = !!(payload && payload.gotHp);
+    const totalStars = getTotalStageStars(game);
+    const starIcons = `${"★".repeat(earned)}${"☆".repeat(3 - earned)}`;
+    const bestIcons = `${"★".repeat(bestStars)}${"☆".repeat(3 - bestStars)}`;
+    const realmName = (REALMS[game.realm] && REALMS[game.realm].name) || "凡人";
+    const nextObjective = computeVolumeEndNextObjective(stageIdx, game);
+
+    pendingVolumeRecapOnDismiss = typeof onDismiss === "function" ? onDismiss : null;
+    openModal(`
+      <div class="drawer-mural-banner" style="height:106px;">
+        <img src="${ART[act.arenaArt] || ART.arena_wilderness}" alt="${escapeHtml(meta.title)}" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">${escapeHtml(meta.volEndLabel)}</span>
+            <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">《${escapeHtml(meta.title)}》</h2>
+            <div style="font-size:11.5px;color:#dffef8;margin-top:2px;">${escapeHtml(act.bossTitle)} · 已破</div>
+          </div>
+          <span class="tag-chip ${newRecord ? "mythic" : "done"}">${newRecord ? "★ 星级刷新！" : `历史最高 ${bestIcons}`}</span>
+        </div>
+      </div>
+
+      <div class="jade-card" style="gap:6px;padding:10px 12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+          <strong style="font-family:var(--font-serif);font-size:14px;color:var(--gold-bright);">📜 本卷纪事</strong>
+          <span style="font-size:11px;color:var(--jade);">${escapeHtml(game.name)} · ${escapeHtml(realmName)}期 · 九州星辉 ${totalStars}/15 ★</span>
+        </div>
+        <p style="font-size:12.5px;color:var(--text-main);line-height:1.6;margin:0;">${escapeHtml(meta.chronicle)}</p>
+      </div>
+
+      <div class="jade-card" style="gap:7px;padding:10px 12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+          <strong style="font-family:var(--font-serif);font-size:14px;color:var(--gold-bright);">★ 秘境星级评定</strong>
+          <span style="font-size:14px;color:#ffd970;font-weight:700;">本次 ${starIcons}（${earned}/3）· 最高 ${bestIcons}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;font-size:11.5px;">
+          <div class="visual-tile equipped" style="padding:6px 8px;justify-content:center;"><span style="color:#ffd970;font-weight:700;">✓ 斩破镇守首领</span></div>
+          <div class="visual-tile ${gotTech ? "equipped" : ""}" style="padding:6px 8px;justify-content:center;"><span style="color:${gotTech ? "#ffd970" : "var(--text-sub)"};font-weight:700;">${gotTech ? "✓" : "○"} 识破/破势或12连击</span></div>
+          <div class="visual-tile ${gotHp ? "equipped" : ""}" style="padding:6px 8px;justify-content:center;"><span style="color:${gotHp ? "#ffd970" : "var(--text-sub)"};font-weight:700;">${gotHp ? "✓" : "○"} 气血保留≥35%</span></div>
+        </div>
+      </div>
+
+      <div class="jade-card" style="gap:5px;padding:10px 12px;border-color:rgba(112,255,230,0.48);">
+        <strong style="font-family:var(--font-serif);font-size:13.5px;color:#80ffea;">🧭 下一步目标</strong>
+        <p style="font-size:12px;color:var(--text-main);line-height:1.55;margin:0;">${escapeHtml(nextObjective)}</p>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button type="button" id="btn-volume-recap-confirm" class="btn-gold" style="padding:8px 20px;font-size:13px;" data-action="confirm-volume-recap">合卷前行 · 开启传送阵 ▸</button>
+      </div>
+    `, true, { kind: "volume_recap" });
+  }
+
+  function spawnStageClearPortals(stageIdx, payload = {}) {
+    if (!game) return;
+    const canvas = document.getElementById("fx-canvas");
+    const w = (canvas && canvas.width) || window.innerWidth || 1440;
+    const h = (canvas && canvas.height) || window.innerHeight || 900;
+    const stg = STAGES[stageIdx] || STAGES[0];
+    const earned = Math.max(1, Math.min(3, Math.floor(num(payload.earned, (game.stageStars && game.stageStars[stageIdx]) || 1))));
+    const starStr = `${"★".repeat(earned)}${"☆".repeat(3 - earned)}`;
+
+    if (stageIdx === STAGES.length - 1) {
+      if (!arena.props.some(p => p.kind === "ascend_gate")) {
+        const gatePos = clampToPlaza(w * 0.66, h * 0.48, w, h);
+        const towPos = clampToPlaza(w * 0.64, h * 0.64, w, h);
+        const isAscended = game.status === "ascended";
+        const isSpirit = game.realm === "spirit";
+        arena.props.push({
+          id: "ascend_gate", kind: "ascend_gate", art: "item_ascension_seal",
+          name: isAscended ? "道果金榜 · 仙途总览" : isSpirit ? "九霄仙门 · 叩天飞升" : "九霄化神台 · 破境化神",
+          badge: isAscended ? "查看本世五维道果" : isSpirit ? "点击/Enter 引动终极飞升天劫!" : "元婴圆满后点击/Enter 引动化神劫（化神后再叩仙门）",
+          x: gatePos.x, y: gatePos.y, r: 50, progress: 0
+        });
+        arena.props.push({
+          id: "portal_tower_end", kind: "portal", name: "无尽试剑 · 太虚锁妖内坛", badge: "点击/Enter 挑战镇妖古塔",
+          nextIdx: 3, toTower: true, x: towPos.x, y: towPos.y, r: 44, progress: 0
+        });
+        showToast(isSpirit
+          ? `${starStr} 天门道影已破！点击/Enter【九霄仙门】飞升证道！`
+          : `${starStr} 天门道影已破！元婴圆满后点击【九霄化神台】晋升化神，再登仙门飞升！`);
+      }
+      return;
+    }
+
+    if (!arena.props.some(p => p.kind === "portal")) {
+      addFloat(`${"★".repeat(earned)} 秘境荡平！(${stg.name})`, arena.player.x, arena.player.y - 72, "#ffe28a", 21, true);
+      showToast(`✦ 【${stg.name}】达成 ${starStr}！按 T 可开启星辉秘宝`);
+      renderStageDamageRecap(true);
+      const nextIdx = Math.min(STAGES.length - 1, stageIdx + 1);
+      const nextAct = CAMPAIGN_ACTS[nextIdx] || CAMPAIGN_ACTS[STAGES.length - 1];
+      const nextStg = STAGES[nextIdx];
+      const nextReqRealm = nextStg ? nextStg.min : "mortal";
+      const nextUnlocked = rankOf(game.realm) >= rankOf(nextReqRealm);
+      const nextLabel = (nextAct && nextAct.actLabel) || `第 ${nextIdx + 1} 卷`;
+      const pPos = clampToPlaza(w * 0.66, h * 0.46, w, h);
+      const hPos = clampToPlaza(w * 0.66, h * 0.64, w, h);
+      arena.props.push({
+        id: "portal_next", kind: "portal",
+        name: nextUnlocked
+          ? `前往${nextLabel} · ${nextStg.name}`
+          : `🔒 ${nextLabel} · ${nextStg.name}（需${REALMS[nextReqRealm].name}期）`,
+        badge: nextUnlocked
+          ? "点击/Enter 贯通下一卷秘境"
+          : `境界结界封锁 · 需先渡劫晋升【${REALMS[nextReqRealm].name}期】`,
+        nextIdx, toTower: false, x: pPos.x, y: pPos.y, r: 48, progress: 0
+      });
+      arena.props.push({
+        id: "portal_sanctum", kind: "sanctum_portal", name: "返回 · 听雨洞府主城", badge: "点击/Enter 炼丹铸器休整",
+        x: hPos.x, y: hPos.y, r: 42, progress: 0
+      });
+    }
+  }
+
   function spawnCurrentWave() {
     if (!game || arena.sanctumMode) return;
     arena.waveTransitioning = false;
@@ -18284,91 +18926,76 @@ const ART = {
     const roomType = curNode ? curNode.type : (arena.waveIdx >= 4 ? "boss" : "outpost");
     const stageScale = STAGE_SCALING[arena.stageIdx] || 1.0;
 
-    // Chapter Boss already beaten (waveIdx > 4) -> spawn progression portals cleanly (0->1->2->3->4!)
+    // Volume Boss beaten (waveIdx > 4) -> Phase A (Immediate Persistence) -> Phase B (clear_stage* -> Volume-End Recap Card -> Portals!)
     if (arena.waveIdx > 4) {
+      if (arena.stageClearHandledEpoch === arena.stageEpoch) {
+        updateHud();
+        return;
+      }
+      arena.stageClearHandledEpoch = arena.stageEpoch;
+      const stageIdx = arena.stageIdx;
+      const act = CAMPAIGN_ACTS[stageIdx] || CAMPAIGN_ACTS[0];
+      const meta = VOLUME_RECAP_META[stageIdx] || VOLUME_RECAP_META[0];
+      const wasAlreadyDefeated = isStageBossDefeated(game, stageIdx);
+      const prevStars = Math.max(0, Math.min(3, Math.floor(num(game.stageStars && game.stageStars[stageIdx], 0))));
+      const stClear = getCombatStats(game);
+      const gotTech = Boolean(arena.stageTechDone || (arena.maxStageCombo || 0) >= 12);
+      const gotHp = game.hp >= stClear.maxHp * 0.35;
+      const earned = 1 + (gotTech ? 1 : 0) + (gotHp ? 1 : 0);
+      const bestStars = Math.max(prevStars, earned);
+      const newRecord = earned > prevStars;
+      const starStr = `${"★".repeat(earned)}${"☆".repeat(3 - earned)}`;
+
+      // Phase A: Immediate persistence BEFORE cutscene & recap modal so reload never loses Boss kill or soft-locks progression
       unlockAchievement("ach_exp");
-      if (arena.stageIdx === STAGES.length - 1) {
-        game.trialCompleted = true;
-        if (!game.defeatedStageBosses) game.defeatedStageBosses = {};
-        game.defeatedStageBosses[4] = true;
-        if (!arena.props.some(p => p.kind === "ascend_gate")) {
-          const gatePos = clampToPlaza(w * 0.66, h * 0.48, w, h);
-          const towPos = clampToPlaza(w * 0.64, h * 0.64, w, h);
-          const isAscended = game.status === "ascended";
-          const isSpirit = game.realm === "spirit";
-          arena.props.push({
-            id: "ascend_gate", kind: "ascend_gate", art: "item_ascension_seal",
-            name: isAscended ? "道果金榜 · 仙途总览" : isSpirit ? "九霄仙门 · 叩天飞升" : "九霄化神台 · 破境化神",
-            badge: isAscended ? "查看本世五维道果" : isSpirit ? "点击/Enter 引动终极飞升天劫!" : "元婴圆满后点击/Enter 引动化神劫（化神后再叩仙门）",
-            x: gatePos.x, y: gatePos.y, r: 50, progress: 0
-          });
-          arena.props.push({
-            id: "portal_tower_end", kind: "portal", name: "无尽试剑 · 太虚锁妖内坛", badge: "点击/Enter 挑战镇妖古塔",
-            nextIdx: 3, toTower: true, x: towPos.x, y: towPos.y, r: 44, progress: 0
-          });
-          let earned4 = 1;
-          if (game && game.stageStars) {
-            const stClear4 = getCombatStats(game);
-            const gotTech4 = arena.stageTechDone || (arena.maxStageCombo || 0) >= 12;
-            const gotHp4   = game.hp >= stClear4.maxHp * 0.35;
-            earned4 = 1 + (gotTech4 ? 1 : 0) + (gotHp4 ? 1 : 0);
-            game.stageStars[4] = Math.max(game.stageStars[4] || 0, earned4);
-          }
-          const starStr4 = `${"★".repeat(earned4)}${"☆".repeat(3 - earned4)}`;
-          if (game) game.elapsedMonths = (game.elapsedMonths || 0) + 6;
-          spawnGearDrop(w * 0.56, h * 0.53, 4);
-          showToast(isSpirit
-            ? `${starStr4} 天门道影已破！点击/Enter【九霄仙门】飞升证道！`
-            : `${starStr4} 天门道影已破！元婴圆满后点击【九霄化神台】晋升化神，再登仙门飞升！`);
-          saveGame();
-        }
-      } else if (!arena.props.some(p => p.kind === "portal")) {
-        if (game) {
-          game.elapsedMonths = (game.elapsedMonths || 0) + 6;
-          if (!game.defeatedStageBosses) game.defeatedStageBosses = {};
-          game.defeatedStageBosses[arena.stageIdx] = true;
-        }
-        if (game && game.stageStars) {
-          const stClear = getCombatStats(game);
-          const gotTech = arena.stageTechDone || (arena.maxStageCombo || 0) >= 12;
-          const gotHp   = game.hp >= stClear.maxHp * 0.35;
-          const earned  = 1 + (gotTech ? 1 : 0) + (gotHp ? 1 : 0);
-          const prevS   = game.stageStars[arena.stageIdx] || 0;
-          game.stageStars[arena.stageIdx] = Math.max(prevS, earned);
-          addFloat(`${"★".repeat(earned)} 秘境荡平！(${stg.name})`, arena.player.x, arena.player.y - 72, "#ffe28a", 21, true);
-          showToast(`✦ 【${stg.name}】达成 ${"★".repeat(earned)}${"☆".repeat(3 - earned)}！按 T 可开启星辉秘宝`);
-          renderStageDamageRecap(true);
-        }
-        // Continuous 5-chapter progression: 0 -> 1 -> 2 -> 3 (古修剑冢) -> 4 (九霄天门)!
-        const nextIdx = Math.min(STAGES.length - 1, arena.stageIdx + 1);
-        const nextStg = STAGES[nextIdx];
-        const nextReqRealm = nextStg ? nextStg.min : "mortal";
-        const nextUnlocked = rankOf(game.realm) >= rankOf(nextReqRealm);
-        const pPos = clampToPlaza(w * 0.66, h * 0.46, w, h);
-        const hPos = clampToPlaza(w * 0.66, h * 0.64, w, h);
-        arena.props.push({
-          id: "portal_next", kind: "portal",
-          name: nextUnlocked
-            ? `前往第 ${nextIdx + 1} 章 · ${nextStg.name}`
-            : `🔒 第 ${nextIdx + 1} 章 · ${nextStg.name}（需${REALMS[nextReqRealm].name}期）`,
-          badge: nextUnlocked
-            ? "点击/Enter 贯通下一章秘境"
-            : `境界结界封锁 · 需先渡劫晋升【${REALMS[nextReqRealm].name}期】`,
-          nextIdx, toTower: false, x: pPos.x, y: pPos.y, r: 48, progress: 0
-        });
-        arena.props.push({
-          id: "portal_sanctum", kind: "sanctum_portal", name: "返回 · 听雨洞府主城", badge: "点击/Enter 炼丹铸器休整",
-          x: hPos.x, y: hPos.y, r: 42, progress: 0
-        });
-        const clearAct = CAMPAIGN_ACTS[arena.stageIdx] || CAMPAIGN_ACTS[0];
-        if (clearAct && clearAct.bossMats) {
-          clearAct.bossMats.forEach((mk, mi) => spawnDrop(mk, w * 0.53 + mi * 18, h * 0.52, 1));
+      if (!game.defeatedStageBosses) game.defeatedStageBosses = {};
+      game.defeatedStageBosses[stageIdx] = true;
+      if (stageIdx === STAGES.length - 1) game.trialCompleted = true;
+      if (!game.stageStars) game.stageStars = {};
+      game.stageStars[stageIdx] = bestStars;
+      game.elapsedMonths = (game.elapsedMonths || 0) + 6;
+      if (Array.isArray(game.journal)) {
+        game.journal.unshift(`【${meta.volEndLabel}】斩破【${act.bossName}】（${starStr}）`);
+      }
+      if (stageIdx === STAGES.length - 1) {
+        spawnGearDrop(w * 0.56, h * 0.53, 4);
+      } else {
+        if (act && act.bossMats) {
+          act.bossMats.forEach((mk, mi) => spawnDrop(mk, w * 0.53 + mi * 18, h * 0.52, 1));
         } else {
           spawnDrop("herb", w * 0.54, h * 0.52);
         }
-        spawnDrop("stone", w * 0.57, h * 0.55, 48 + arena.stageIdx * 16);
-        saveGame();
+        spawnDrop("stone", w * 0.57, h * 0.55, 48 + stageIdx * 16);
       }
+      saveGame();
+
+      const clearPayload = { stageIdx, earned, prevStars, bestStars, newRecord, gotTech, gotHp, wasAlreadyDefeated, starStr };
+
+      // Non-campaign modes (e.g. sandboxMode) bypass volume-end cutscene & recap card
+      if (!isNormalCampaignStage()) {
+        arena.stageClearPending = false;
+        spawnStageClearPortals(stageIdx, clearPayload);
+        updateHud();
+        return;
+      }
+
+      // Phase B: Normal campaign volume-end cutscene -> Volume-End Recap Card -> Portals ONLY AFTER dismissal
+      arena.stageClearPending = true;
+      const clearEpoch = arena.stageEpoch;
+      const finalize = () => {
+        arena.stageClearPending = false;
+        if (!game || arena.stageEpoch !== clearEpoch || !isNormalCampaignStage()) return;
+        spawnStageClearPortals(stageIdx, clearPayload);
+        updateHud();
+      };
+      playCutscene(`clear_stage${stageIdx}`, () => {
+        if (!game || arena.stageEpoch !== clearEpoch || !isNormalCampaignStage()) {
+          arena.stageClearPending = false;
+          return;
+        }
+        saveGame();
+        openVolumeEndRecapModal(stageIdx, clearPayload, finalize);
+      });
       updateHud();
       return;
     }
@@ -18444,9 +19071,20 @@ const ART = {
       Sound.drum(0.24);
       const bMono = getBossKarmaMonologue(bId);
       const cutSub = bMono ? `${bMono} ｜ ${getBossMechLabel(bId)}` : getBossMechLabel(bId);
-      showBossCutIn(ENEMIES[bId].art, stg.bossTitle || ENEMIES[bId].name, cutSub);
-      if (bMono) {
-        addFloat(bMono, w * 0.64, h * 0.43, getKarmaState(game).color, 15, true);
+      const launchBossBanner = () => {
+        showBossCutIn(ENEMIES[bId].art, stg.bossTitle || ENEMIES[bId].name, cutSub);
+        if (bMono) {
+          addFloat(bMono, w * 0.64, h * 0.43, getKarmaState(game).color, 15, true);
+        }
+      };
+      const preKey = `boss_pre_stage${arena.stageIdx}`;
+      if (isNormalCampaignStage() && CHAPTER_CUTSCENES[preKey] && !(game.seenCutscenes && game.seenCutscenes[preKey])) {
+        playCutscene(preKey, () => {
+          saveGame();
+          launchBossBanner();
+        });
+      } else {
+        launchBossBanner();
       }
       updateHud();
       return;
@@ -20228,7 +20866,7 @@ const ART = {
 
   function openEncounterModal(forcedSecretIdx = null) {
     if (!game) return;
-    if (forcedSecretIdx === null && ((game.karmaEventsDone || 0) < 2 || Math.random() < 0.65)) {
+    if (forcedSecretIdx === null && getNextAvailableKarmaDilemma(game) && ((game.karmaEventsDone || 0) < 2 || Math.random() < 0.65)) {
       openKarmaDilemmaModal();
       return;
     }
@@ -20779,6 +21417,13 @@ const ART = {
         if (isStarNight) {
           addFloat("🌌 极夜星河赐福 · 额外掉落稀有【鸿蒙星魄 +1】！", e.x, e.y - 68, "#b8c8ff", 20, true);
         }
+        const isCampaignBossFinish = Boolean(
+          e.isBoss && isNormalCampaignStage() && arena.dungeonMap &&
+          arena.dungeonMap.nodes[arena.dungeonMap.currentNodeId] &&
+          (!arena.dungeonMap.nodes[arena.dungeonMap.currentNodeId].next || arena.dungeonMap.nodes[arena.dungeonMap.currentNodeId].next.length === 0) &&
+          arena.enemies.filter(x => !x.isTreasure).length === 0
+        );
+        if (isCampaignBossFinish) arena.stageClearPending = true;
         const unlockMap = { warden: "blood_warden", serpent: "frost_phoenix", puppet: "sword_fiend", sentinel: "thunder_lord", trial_gate: "taixu_demon", shadow: "taixu_demon" };
         const sKey = e.isInnerDemon ? "taixu_demon" : unlockMap[e.id];
         if (sKey && Array.isArray(game.unlockedSouls) && !game.unlockedSouls.includes(sKey)) {
@@ -20940,6 +21585,8 @@ const ART = {
             spawnBossRushBout();
           }, 750);
         }
+      } else if ((arena.sectDefense && arena.sectDefense.active) || (arena.customSeedRun && arena.customSeedRun.active)) {
+        // Handled by sect defense / custom seed encounter logic
       } else if (arena.towerMode) {
         arena.waveTransitioning = true;
         const fl = game.towerFloor;
@@ -22859,7 +23506,7 @@ const ART = {
     arena.props.push({
       id: "portal_act1_wilderness", kind: "portal",
       name: "踏入青岚荒野 · 追击雾隐狼王",
-      badge: "点击/Enter 开启第一幕五层秘境",
+      badge: "点击/Enter 开启第一卷五层秘境",
       nextIdx: 0, toTower: false, x: act1Pos.x, y: act1Pos.y, r: 46, progress: 0
     });
     arena.props.push({
@@ -25585,7 +26232,7 @@ const ART = {
     else if (arena.towerMode) subTag.textContent = hostiles > 0 ? `余妖 ×${hostiles}` : "点击/Enter 进下一层";
     else if (arena.stageIdx === 0 && !game.openingChoice) subTag.textContent = hostiles > 0 ? `救沈清禾 (${hostiles})` : "点击/Enter 择玉莲仙缘";
     else if (arena.props.some(x => x.kind === "ascend_gate")) subTag.textContent = game.realm === "spirit" ? "点击/Enter 叩九霄仙门" : "点击/Enter 登九霄化神台";
-    else if (arena.props.some(x => x.kind === "portal")) subTag.textContent = "点击/Enter 启下章传送阵";
+    else if (arena.props.some(x => x.kind === "portal")) subTag.textContent = "点击/Enter 启下卷传送阵";
     else if (selectableHud.length > 0) subTag.textContent = "本层已清 · 按 9 择路";
     else if (curRoomSpec) subTag.textContent = `${curRoomSpec.icon} ${curRoomSpec.name}`;
     else subTag.textContent = "秘境试剑";
@@ -25886,6 +26533,8 @@ const ART = {
   function isElementFocusable(cand) {
     if (!cand || !cand.isConnected || cand.disabled || typeof cand.focus !== "function") return false;
     try {
+      const dlgBar = document.getElementById("story-dialogue-bar");
+      if (dlgBar && dlgBar.contains(cand) && !dlgBar.classList.contains("open")) return false;
       const style = window.getComputedStyle(cand);
       if (style.display === "none" || style.visibility === "hidden") return false;
       return cand.offsetParent !== null || style.position === "fixed";
@@ -25896,8 +26545,10 @@ const ART = {
 
   function restoreTriggerFocus(el) {
     try {
-      if (isElementFocusable(el)) {
-        el.focus({ preventScroll: true });
+      const dlgBar = document.getElementById("story-dialogue-bar");
+      const safeEl = (el && !(dlgBar && dlgBar.contains(el) && !dlgBar.classList.contains("open"))) ? el : null;
+      if (isElementFocusable(safeEl)) {
+        safeEl.focus({ preventScroll: true });
         return;
       }
       const ws = document.getElementById("welcome-screen");
@@ -25915,6 +26566,11 @@ const ART = {
 
   function openModal(html, closeable = true, opts = {}) {
     const modalKind = (opts && opts.kind) || "";
+    if (pendingVolumeRecapOnDismiss && modalKind !== "volume_recap") {
+      const orphanRecapCb = pendingVolumeRecapOnDismiss;
+      pendingVolumeRecapOnDismiss = null;
+      orphanRecapCb();
+    }
     if (activeGearOverflowItem && modalKind !== "gear_overflow") {
       pendingGearOverflowQueue.unshift(activeGearOverflowItem);
       activeGearOverflowItem = null;
@@ -25932,9 +26588,15 @@ const ART = {
     const box = document.getElementById("modal-content");
     if (!bd || !box) return;
     if (!bd.classList.contains("open")) {
+      const dlgBar = document.getElementById("story-dialogue-bar");
+      const explicitTrig = opts && opts.triggerEl;
       const ae = document.activeElement;
-      if (ae && ae !== document.body && !bd.contains(ae)) {
+      if (explicitTrig && isElementFocusable(explicitTrig) && !(dlgBar && dlgBar.contains(explicitTrig))) {
+        lastModalTriggerEl = explicitTrig;
+      } else if (ae && ae !== document.body && !bd.contains(ae) && !(dlgBar && dlgBar.contains(ae)) && isElementFocusable(ae)) {
         lastModalTriggerEl = ae;
+      } else {
+        lastModalTriggerEl = null;
       }
     }
     modalCloseable = closeable;
@@ -25963,6 +26625,8 @@ const ART = {
     if (bd) bd.classList.remove("open");
     arena.paused = drawerOpen || cutscene.active;
     renderPropInteractHud();
+    const recapCb = pendingVolumeRecapOnDismiss;
+    pendingVolumeRecapOnDismiss = null;
     const target = lastModalTriggerEl;
     lastModalTriggerEl = null;
     if (wasOpen && drawerOpen) {
@@ -25975,6 +26639,7 @@ const ART = {
     } else if (wasOpen && !drawerOpen) {
       restoreTriggerFocus(target);
     }
+    if (recapCb) recapCb();
     setTimeout(flushDeferredChoiceModals, 0);
   }
 
@@ -25986,7 +26651,7 @@ const ART = {
     const panel = document.getElementById("jade-panel");
     if (!drawerOpen) {
       const ae = document.activeElement;
-      if (ae && ae !== document.body && panel && !panel.contains(ae)) {
+      if (ae && ae !== document.body && panel && !panel.contains(ae) && isElementFocusable(ae)) {
         lastDrawerTriggerEl = ae;
       }
     }
@@ -26016,6 +26681,32 @@ const ART = {
       lastDrawerTriggerEl = null;
       restoreTriggerFocus(target);
     }
+  }
+
+  function openCompanionStoryDrawer(storyId = null) {
+    if (!game) return false;
+    const bd = document.getElementById("modal-backdrop");
+    if (bd && bd.classList.contains("open")) closeModal();
+    if (!drawerOpen || currentTab !== "story") {
+      toggleDrawer("story");
+    } else {
+      renderDrawerContent();
+    }
+    if (storyId && typeof storyId === "string") {
+      const safeSid = storyId.replace(/[^a-zA-Z0-9_-]/g, "");
+      if (safeSid) {
+        const panel = document.getElementById("jade-panel");
+        const card = panel ? panel.querySelector(`[data-story-card="${safeSid}"]`) : null;
+        if (card) {
+          try { card.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {}
+          const btn = card.querySelector(`[data-play-story-bar="${safeSid}"]`) || card.querySelector("button:not([disabled])");
+          if (btn && typeof btn.focus === "function") {
+            try { btn.focus({ preventScroll: true }); } catch (e) {}
+          }
+        }
+      }
+    }
+    return true;
   }
 
   function muralHeader(artKey, sealTxt, titleTxt) {
@@ -26364,17 +27055,24 @@ const ART = {
         </div>` : ""}
       `;
     } else if (currentTab === "story") {
-      const avail = STORIES.filter(s => !game.choices[s.id] && rankOf(game.realm) >= rankOf(s.min) && (!s.requires || !!game.choices[s.requires]));
+      const avail = getAvailableCompanionStories(game);
       const nextLocked = STORIES.find(s => !game.choices[s.id] && (!s.requires || !!game.choices[s.requires]) && rankOf(game.realm) < rankOf(s.min));
+      const kProg = getKarmaDilemmaProgress(game);
+      const karmaBtnCls = kProg.eligibleCount > 0 ? "btn-gold" : "btn-ghost";
+      const karmaBtnTxt = kProg.eligibleCount > 0
+        ? `☯ 红尘问心 (${kProg.doneCount}/${kProg.totalCount})`
+        : kProg.chapterExhausted
+          ? `☯ 本卷因果已了 (第${kProg.nextChapterUnlock}卷新劫)`
+          : `☯ 因果已尽 (${kProg.doneCount}/${kProg.totalCount})`;
       body.innerHTML = `
         ${muralHeader("banner_karma_duality", "正魔因果 · 红尘三阶羁绊", `${getKarmaState(game).label} · 合击 ×${countBondedAllies(game)}`)}
         <div class="jade-card" style="gap:6px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
             <div>
-              <strong style="font-size:12.5px;color:${getKarmaState(game).color};">☯ 道心谱系：【${getKarmaState(game).artName}】</strong>
+              <strong style="font-size:12.5px;color:${getKarmaState(game).color};">☯ 道心谱系：【${escapeHtml(getKarmaState(game).artName)}】</strong>
               <div style="font-size:10.5px;color:var(--text-sub);">${getKarmaState(game).mode === "demonic" ? "攻击燃血狂斩+26%剑威，斩妖/碎核噬血归元" : getKarmaState(game).mode === "righteous" ? "常驻减伤+10，周期凝结太清净世莲盾，仙葫震退群妖" : "抉择红尘奇遇偏向±25即可觉醒正宗仙法或燃血魔功！"}</div>
             </div>
-            <button type="button" class="btn-gold" style="padding:5px 11px;font-size:11px;white-space:nowrap;" data-action="open-karma-dilemma">☯ 红尘问心</button>
+            <button type="button" class="${karmaBtnCls}" style="padding:5px 11px;font-size:11px;white-space:nowrap;" data-action="open-karma-dilemma">${escapeHtml(karmaBtnTxt)}</button>
           </div>
           <div class="karma-spectrum-track"><div class="karma-spectrum-dot" style="left:${Math.round(((getKarmaState(game).score + 100) / 200) * 100)}%;"></div></div>
         </div>
@@ -26388,42 +27086,47 @@ const ART = {
               <div class="visual-tile ${tier >= 3 ? "rarity-4" : tier >= 1 ? "equipped" : ""}" style="flex-direction:column;align-items:stretch;gap:5px;padding:8px 10px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
                   <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-                    <img src="${ART[npc.art]}" alt="${npc.name}" style="width:38px;height:38px;border-radius:50%;flex-shrink:0;" />
+                    <img src="${ART[npc.art]}" alt="${escapeHtml(npc.name)}" style="width:38px;height:38px;border-radius:50%;flex-shrink:0;" />
                     <div style="min-width:0;">
-                      <div style="font-size:12.5px;font-weight:700;color:var(--gold-bright);">${npc.name} <span class="tag-chip ${tier >= 3 ? "mythic" : "done"}">${kp.tierTitles[tier]}</span></div>
-                      <div style="font-size:10.5px;color:#80ffea;">三阶信物【${kp.keepsake}】：${kp.bonusDesc}</div>
+                      <div style="font-size:12.5px;font-weight:700;color:var(--gold-bright);">${escapeHtml(npc.name)} <span class="tag-chip ${tier >= 3 ? "mythic" : "done"}">${escapeHtml(kp.tierTitles[tier])}</span></div>
+                      <div style="font-size:10px;color:var(--text-sub);">${escapeHtml(npc.role)}</div>
+                      <div style="font-size:10.5px;color:#80ffea;">三阶信物【${escapeHtml(kp.keepsake)}】：${escapeHtml(kp.bonusDesc)}</div>
                     </div>
                   </div>
                   <div style="display:flex;gap:4px;flex-shrink:0;">
-                    <button type="button" class="btn-gold" style="padding:4px 8px;font-size:10.5px;white-space:nowrap;" data-open-comp-modal="${npc.id}">🍵 雅集叙话</button>
+                    <button type="button" class="btn-gold" style="padding:4px 8px;font-size:10.5px;white-space:nowrap;" data-open-comp-modal="${escapeHtml(npc.id)}">🍵 雅集叙话</button>
                     ${tier < 3
-                      ? `<button type="button" class="btn-jade" style="padding:4px 8px;font-size:10.5px;white-space:nowrap;" data-gift-npc="${npc.id}">🎁 晋阶</button>`
+                      ? `<button type="button" class="btn-jade" style="padding:4px 8px;font-size:10.5px;white-space:nowrap;" data-gift-npc="${escapeHtml(npc.id)}">🎁 晋阶</button>`
                       : `<span class="tag-chip mythic">★ 信物</span>`}
                   </div>
                 </div>
-                <div style="font-size:10.5px;color:var(--text-sub);font-style:italic;">『${quote}』</div>
+                <div style="font-size:10.5px;color:var(--text-sub);font-style:italic;">『${escapeHtml(quote)}』</div>
               </div>`;
           }).join("")}
         </div>
-        ${avail.length > 0 ? avail.slice(0, 3).map(stItem => `
-          <div class="jade-card">
+        ${avail.length > 0 ? avail.map(stItem => `
+          <div class="jade-card" data-story-card="${escapeHtml(stItem.id)}">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-              <strong style="color:var(--gold-bright);">${NPC_META[stItem.npc].name} · 《${stItem.name}》</strong>
-              <button type="button" class="btn-gold" style="padding:3px 10px;font-size:10.5px;white-space:nowrap;" data-play-story-bar="${stItem.id}">🎭 立绘演绎 ▸</button>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
+                <strong style="color:var(--gold-bright);">${escapeHtml(NPC_META[stItem.npc].name)} · 《${escapeHtml(stItem.name)}》</strong>
+                <span class="tag-chip">第${stItem.chapter}卷 · 📍${escapeHtml(getStoryLocationLabel(stItem.location))}</span>
+                ${game.location === stItem.location ? `<span class="tag-chip done">同处此境</span>` : ""}
+              </div>
+              <button type="button" class="btn-gold" style="padding:3px 10px;font-size:10.5px;white-space:nowrap;" data-play-story-bar="${escapeHtml(stItem.id)}">🎭 立绘演绎 ▸</button>
             </div>
-            <p style="font-size:11.5px;color:var(--text-sub);line-height:1.45;">${stItem.body}</p>
+            <p style="font-size:11.5px;color:var(--text-sub);line-height:1.45;">${escapeHtml(stItem.body)}</p>
             ${stItem.options.map(o => `
-              <button class="visual-tile" style="flex-direction:column;align-items:flex-start;gap:3px;" data-story-id="${stItem.id}" data-opt-id="${o.id}">
+              <button class="visual-tile" style="flex-direction:column;align-items:flex-start;gap:3px;" data-story-id="${escapeHtml(stItem.id)}" data-opt-id="${escapeHtml(o.id)}">
                 <div style="width:100%;display:flex;justify-content:space-between;align-items:center;">
-                  <span style="font-size:12px;font-weight:700;color:var(--text-main);">${o.label}</span>
+                  <span style="font-size:12px;font-weight:700;color:var(--text-main);">${escapeHtml(o.label)}</span>
                   <span class="tag-chip done">抉择</span>
                 </div>
-                <span style="font-size:10.5px;color:var(--gold);">${o.detail}</span>
+                <span style="font-size:10.5px;color:var(--gold);">${escapeHtml(o.detail)}</span>
               </button>`).join("")}
           </div>
         `).join("") : `
           <div class="jade-card" style="text-align:center;color:var(--text-sub);padding:16px;">
-            ${nextLocked ? `晋升至【${REALMS[nextLocked.min].name}】后解锁《${nextLocked.name}》（${NPC_META[nextLocked.npc].name}）` : "本世故人机缘皆已圆满缔结！"}
+            ${nextLocked ? `晋升至【${escapeHtml(REALMS[nextLocked.min].name)}】后解锁第${nextLocked.chapter}卷 · 📍${escapeHtml(getStoryLocationLabel(nextLocked.location))} 《${escapeHtml(nextLocked.name)}》（${escapeHtml(NPC_META[nextLocked.npc].name)}）` : "本世故人机缘皆已圆满缔结！"}
           </div>
         `}
       `;
@@ -26481,7 +27184,7 @@ const ART = {
             <span style="font-size:10.5px;color:var(--jade);">秘境实打掉落全七阶灵材</span>
           </div>
           <div style="font-size:10.8px;color:var(--text-sub);line-height:1.45;">
-            一幕产<b>凝气草/灵露</b> · 二幕产<b>妖核/灵露</b> · 三幕产<b>地脉灵玉</b> · 四幕产<b>月华莲</b> · 五幕产<b>凝魂晶/道蕴砂</b>。
+            第一卷产<b>凝气草/灵露</b> · 第二卷产<b>妖核/灵露</b> · 第三卷产<b>地脉灵玉</b> · 第四卷产<b>月华莲</b> · 第五至六卷产<b>凝魂晶/道蕴砂</b>。
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <button type="button" class="btn-jade" style="padding:5px 10px;font-size:11px;" data-action="open-bounties">📜 宗门悬赏令 (T)</button>
@@ -27391,13 +28094,12 @@ const ART = {
     }
     if (!game) game = createFreshGame("顾长青", "sword_bone");
     game.unlockAllArcana = true;
-    cutscene.active = false;
-    document.getElementById("story-dialogue-bar").classList.remove("open");
+    resetStageTransitionState();
     closeModal();
     closeDrawer();
     game.openingChoice = "help";
     game.aids.shen = true;
-    game.seenCutscenes = { prologue_rescue: true, enter_sect: true, enter_secret: true, enter_sword_mound: true, enter_terrace: true };
+    game.seenCutscenes = { opening_scroll: true, prologue_rescue: true, enter_sect: true, enter_secret: true, enter_sword_mound: true, enter_terrace: true };
     game.choices = { shen_return: "warm", pei_meet: "cooperate", lu_intro: "listen" };
     if (preset === "judge_showcase") {
       game.realm = "golden";
@@ -27593,8 +28295,27 @@ const ART = {
 
     // 2. Cutscene overlay
     if (cutscene.active) {
-      if (ev.code === "Space" || ev.code === "Enter") { ev.preventDefault(); advanceCutscene(false); return; }
-      if (ev.code === "Escape") { ev.preventDefault(); advanceCutscene(true); return; }
+      if (ev.code === "Tab") {
+        trapFocusInContainer(ev, document.getElementById("story-dialogue-bar"));
+        return;
+      }
+      const curLine = cutscene.lines && cutscene.lines[cutscene.idx];
+      const hasChoices = !!(curLine && curLine.choices && curLine.choices.length);
+      if (!hasChoices && (ev.code === "Space" || ev.code === "Enter")) {
+        ev.preventDefault();
+        const ae = document.activeElement;
+        if (ae && ae.id === "btn-dlg-skip") {
+          advanceCutscene(true);
+        } else {
+          advanceCutscene(false);
+        }
+        return;
+      }
+      if (ev.code === "Escape") {
+        ev.preventDefault();
+        advanceCutscene(true);
+        return;
+      }
       return;
     }
 
@@ -28085,6 +28806,7 @@ const ART = {
       document.getElementById("welcome-screen").style.display = "none";
       Sound.fanfare();
       initArenaStage(0, false);
+      playCutscene("opening_scroll");
       const saved = saveGame({ forceOverwrite: true });
       renderHudSaveAlert();
       return saved;
@@ -28376,10 +29098,10 @@ const ART = {
       }
       game = null;
       lastSavedPayloadChecksum = null;
-      cutscene.active = false;
+      arena.stageEpoch += 1;
+      resetStageTransitionState();
       arena.nearbyProp = null;
       arena.defeatPending = null;
-      document.getElementById("story-dialogue-bar").classList.remove("open");
       const sbBadge = document.getElementById("hud-sandbox-badge");
       if (sbBadge) sbBadge.style.display = "none";
       closeModal();
@@ -28507,10 +29229,10 @@ const ART = {
       saveConflictState = null;
       storageWriteError = null;
       storageReadError = null;
-      cutscene.active = false;
+      arena.stageEpoch += 1;
+      resetStageTransitionState();
       arena.nearbyProp = null;
       arena.defeatPending = null;
-      document.getElementById("story-dialogue-bar").classList.remove("open");
       closeModal();
       closeDrawer();
       document.getElementById("welcome-screen").style.display = "flex";
@@ -29518,6 +30240,14 @@ const ART = {
       routeToGoalTarget(t.getAttribute("data-route-goal"));
       return;
     }
+    if (t.hasAttribute("data-open-companion-story")) {
+      openCompanionStoryDrawer(t.getAttribute("data-open-companion-story"));
+      return;
+    }
+    if (t.getAttribute("data-action") === "confirm-volume-recap") {
+      closeModal();
+      return;
+    }
     if (t.hasAttribute("data-claim-bounty")) {
       const bSlot = t.getAttribute("data-claim-bounty");
       const chain = SECT_BOUNTY_CHAINS.find(c => c.slot === bSlot);
@@ -29936,8 +30666,8 @@ const ART = {
       saveReadOnlyMode = false;
       saveConflictState = null;
       storageWriteError = null;
-      cutscene.active = false;
-      document.getElementById("story-dialogue-bar").classList.remove("open");
+      arena.stageEpoch += 1;
+      resetStageTransitionState();
       closeModal(); closeDrawer();
       if (metaState.ascensions >= 1) selectedPerkId = "immortal_echo";
       renderWelcomeScreen();
@@ -30238,7 +30968,26 @@ const ART = {
     exitSandboxMode,
     getTemperUseCoreDiscount: () => temperUseCoreDiscount,
     getPendingOverflowCount: () => (activeGearOverflowItem ? 1 : 0) + pendingGearOverflowQueue.length,
-    getPendingSoulUnlockCount: () => (activeSoulUnlockId ? 1 : 0) + pendingSoulUnlockQueue.length
+    getPendingSoulUnlockCount: () => (activeSoulUnlockId ? 1 : 0) + pendingSoulUnlockQueue.length,
+    LEGACY_STEP_ID_MAP,
+    VOLUME_RECAP_META,
+    isNormalCampaignStage,
+    NPC_META,
+    STORIES,
+    STORY_LOCATIONS,
+    KARMA_DILEMMAS,
+    LEGACY_KARMA_DILEMMA_IDS,
+    CHAPTER_CUTSCENES_VARIANTS,
+    getCurrentChapterIndex,
+    getAvailableCompanionStories,
+    getStoryLocationLabel,
+    openCompanionStoryDrawer,
+    resolveCutsceneLines,
+    playCutscene,
+    openKarmaDilemmaModal,
+    getEligibleKarmaDilemmas,
+    getNextAvailableKarmaDilemma,
+    getKarmaDilemmaProgress
   };
   window.__CHENYUAN_V24__ = {
     getState: () => ({
