@@ -3623,6 +3623,148 @@ try {
       assert.equal(corruptGuardRes.hasGameAfter, true, "Blocked reset/reincarnate under storageReadError must keep active game");
       await ctx.close();
     }
+
+    // ---- (e) N1–N5: {"toString":1,"valueOf":2} primitive conversion, float counters, v2 empty checksum, own __proto__ strip & quota overwrite toast ----
+    {
+      const ctx = await newIsolatedContext(browser);
+      const page = await ctx.newPage();
+      attachErrorListeners(page, "R2-7e-N1-N5");
+      await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
+
+      // N1-meta + N1-realm: poisoned hallOfLives[0].name in META_KEY + poisoned realm in STORAGE_KEY must boot cleanly and show corrupt banner
+      await page.evaluate(({ sk, mk }) => {
+        localStorage.clear();
+        localStorage.setItem(mk, '{"metaRev":1,"hallOfLives":[{"lifeNum":1,"name":{"toString":1,"valueOf":2}}]}');
+        localStorage.setItem(sk, '{"game":{"realm":{"toString":1,"valueOf":2}}}');
+      }, { sk: STORAGE_KEY, mk: META_KEY });
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.waitForSelector("#save-status-banner", { state: "visible" });
+      await page.waitForSelector("#welcome-perk-grid .perk-card", { state: "attached" });
+      const n1BootRealm = await page.evaluate(() => ({
+        v25: !!window.__CHENYUAN_V25__,
+        perkCount: document.querySelectorAll("#welcome-perk-grid .perk-card").length,
+        bannerVisible: getComputedStyle(document.getElementById("save-status-banner")).display === "flex",
+        continueHidden: getComputedStyle(document.getElementById("btn-continue-save")).display === "none",
+        hallName: window.__CHENYUAN_V25__?.getMetaState?.().hallOfLives?.[0]?.name || ""
+      }));
+      assert.equal(n1BootRealm.v25, true, "N1: META_KEY poisoned hallOfLives name must not kill page boot");
+      assert.ok(n1BootRealm.perkCount > 0, "N1: welcome screen perk grid must render cleanly");
+      assert.equal(n1BootRealm.bannerVisible, true, "N1: poisoned STORAGE_KEY realm must show corrupt-save banner");
+      assert.equal(n1BootRealm.continueHidden, true, "N1: poisoned STORAGE_KEY realm must hide continue button");
+      assert.equal(n1BootRealm.hallName, "顾长青", "N1: poisoned hallOfLives name must fall back to default");
+
+      // N1-checksum + N1-envelopeVersion + N4 empty checksum on envelope v2 must ALL be rejected as corrupt
+      const badEnvelopes = [
+        { label: "poisoned-checksum", raw: '{"envelopeVersion":2,"checksum":{"toString":1,"valueOf":2},"game":{"realm":"mortal"}}' },
+        { label: "poisoned-envVer", raw: '{"envelopeVersion":{"toString":1,"valueOf":2},"game":{"realm":"mortal"}}' },
+        { label: "empty-checksum-v2", raw: JSON.stringify({ envelopeVersion: 2, saveRev: 5, tabId: "tab_tamper", updatedAt: Date.now(), checksum: "", game: { realm: "mortal", name: "篡改测试", stones: 999999 }, stageIdx: 0, stanceIdx: 0, towerMode: false, sanctumMode: false }) }
+      ];
+      for (const item of badEnvelopes) {
+        await page.evaluate(({ sk, raw }) => { localStorage.setItem(sk, raw); }, { sk: STORAGE_KEY, raw: item.raw });
+        await page.reload({ waitUntil: "domcontentloaded" });
+        await page.waitForSelector("#save-status-banner", { state: "visible" });
+        await page.waitForSelector("#welcome-perk-grid .perk-card", { state: "attached" });
+        const chk = await page.evaluate(() => ({
+          bannerVisible: getComputedStyle(document.getElementById("save-status-banner")).display === "flex",
+          continueHidden: getComputedStyle(document.getElementById("btn-continue-save")).display === "none"
+        }));
+        assert.equal(chk.bannerVisible, true, `N1/N4 (${item.label}): corrupt banner must be visible`);
+        assert.equal(chk.continueHidden, true, `N1/N4 (${item.label}): continue button must be hidden`);
+      }
+
+      // Polish: confirm-overwrite-corrupt-new under QuotaExceededError must preserve corrupt raw & omit false overwrite-success toast
+      const corruptRawBeforeOverwrite = badEnvelopes[2].raw;
+      await page.click('[data-action="prompt-overwrite-corrupt"]');
+      await page.waitForSelector('#modal-backdrop.open [data-action="confirm-overwrite-corrupt-new"]');
+      await page.evaluate((sk) => {
+        window.__origSetCorrupt = Storage.prototype.setItem;
+        Storage.prototype.setItem = function (k, v) {
+          if (k === sk) {
+            const err = new Error("Quota full on corrupt overwrite");
+            err.name = "QuotaExceededError";
+            throw err;
+          }
+          return window.__origSetCorrupt.call(this, k, v);
+        };
+      }, STORAGE_KEY);
+      await page.click('[data-action="confirm-overwrite-corrupt-new"]');
+      await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      const corruptOverwriteCheck = await page.evaluate((sk) => {
+        Storage.prototype.setItem = window.__origSetCorrupt;
+        return {
+          rawAfter: localStorage.getItem(sk),
+          toastTxt: document.getElementById("toast-container")?.textContent || "",
+          hasWriteErr: !!window.__CHENYUAN_V25__.getPersistenceState().storageWriteError
+        };
+      }, STORAGE_KEY);
+      assert.equal(corruptOverwriteCheck.rawAfter, corruptRawBeforeOverwrite, "Failed corrupt overwrite must preserve original raw payload");
+      assert.equal(corruptOverwriteCheck.hasWriteErr, true, "Failed corrupt overwrite must set storageWriteError");
+      assert.equal(corruptOverwriteCheck.toastTxt.includes("已确认覆盖旧损坏存档"), false, `Failed corrupt overwrite must not emit false success toast, got: ${corruptOverwriteCheck.toastTxt}`);
+
+      // N1-continue + N2 (bonusSwords: 1.5, stones: 42.7) + N3 (karmaEventsDone: 1.5) + N5 (own __proto__ in customComboSeq/primordialCrafts/pity)
+      await page.evaluate((sk) => {
+        localStorage.clear();
+        const rawLegacy = '{"game":{"realm":"qi","name":{"toString":1,"valueOf":2},"stones":42.7,"bonusSwords":1.5,"karmaEventsDone":1.5,"equippedGear":{"weapon":{"slot":"weapon","name":{"toString":1,"valueOf":2},"atk":10}},"customComboSeq":{"__proto__":{"polluted":1},"enabled":true,"slots":["sword_crescent","spear_flurry","chakram_vortex","greatsword_cleave"],"morphCount":0},"primordialCrafts":{"__proto__":{"polluted":1},"goldenAcolyte":false,"voidSwordRift":false,"pillBatches":0,"forgedBlades":0},"pity":{"__proto__":{"polluted":1},"epic":0,"mythic":0,"critAcc":0,"vampHits":0,"thunderHits":0,"gearDrops":0}},"stageIdx":0,"stanceIdx":0,"towerMode":false,"sanctumMode":false}';
+        localStorage.setItem(sk, rawLegacy);
+      }, LEGACY_V10_KEY);
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.waitForSelector("#btn-continue-save");
+      await page.click("#btn-continue-save");
+      await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      const n235State = await page.evaluate(() => {
+        const g = window.__CHENYUAN_V25__.getState().game;
+        return {
+          hudName: (document.getElementById("hud-name")?.textContent || "").trim(),
+          hudAge: (document.getElementById("hud-age-school")?.textContent || "").trim(),
+          hudStones: (document.getElementById("hud-stones")?.textContent || "").trim(),
+          weaponName: g.equippedGear?.weapon?.name || "",
+          bonusSwords: g.bonusSwords,
+          karmaEventsDone: g.karmaEventsDone,
+          seqOwnProto: Object.prototype.hasOwnProperty.call(g.customComboSeq, "__proto__"),
+          pcOwnProto: Object.prototype.hasOwnProperty.call(g.primordialCrafts, "__proto__"),
+          pityOwnProto: Object.prototype.hasOwnProperty.call(g.pity, "__proto__")
+        };
+      });
+      assert.equal(n235State.hudName, "顾长青", `N1: poisoned legacy game.name must fall back to 顾长青, got: ${n235State.hudName}`);
+      assert.equal(n235State.weaponName, "灵器", `N1: poisoned gear.name must fall back to 灵器, got: ${n235State.weaponName}`);
+      assert.ok(n235State.hudAge.includes("飞剑×"), `N2: HUD must update after continue with bonusSwords:1.5, got: ${n235State.hudAge}`);
+      assert.equal(n235State.hudStones, "42", `N2: float stones:42.7 must floor to 42, got: ${n235State.hudStones}`);
+      assert.equal(n235State.bonusSwords, 1, `N2: bonusSwords:1.5 must floor to 1, got: ${n235State.bonusSwords}`);
+      assert.equal(n235State.karmaEventsDone, 1, `N3: karmaEventsDone:1.5 must floor to 1, got: ${n235State.karmaEventsDone}`);
+      assert.equal(n235State.seqOwnProto, false, "N5: customComboSeq must not retain own __proto__ key");
+      assert.equal(n235State.pcOwnProto, false, "N5: primordialCrafts must not retain own __proto__ key");
+      assert.equal(n235State.pityOwnProto, false, "N5: pity must not retain own __proto__ key");
+
+      // N3 UI check: open Karma Dilemma modal cleanly even if karmaEventsDone is mutated to 1.5 in memory
+      await page.evaluate(() => { window.__CHENYUAN_V25__.getState().game.karmaEventsDone = 1.5; });
+      await page.click("#nav-btn-story");
+      await page.waitForSelector('#jade-panel.drawer-open [data-action="open-karma-dilemma"]');
+      await page.click('#jade-panel [data-action="open-karma-dilemma"]');
+      await page.waitForSelector("#modal-backdrop.open [data-karma-dilemma]");
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+
+      // N1-cross-tab: valid v2 envelope with poisoned game.name={"toString":1,"valueOf":2} must open conflict modal cleanly
+      const crossTabRes = await page.evaluate((sk) => {
+        const payloadObj = {
+          game: { realm: "mortal", name: { toString: 1, valueOf: 2 }, stones: 99 },
+          stageIdx: 0, stanceIdx: 0, towerMode: false, sanctumMode: false
+        };
+        const canon = JSON.stringify(payloadObj);
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < canon.length; i++) { h ^= canon.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+        const checksum = h.toString(16).toUpperCase().padStart(8, "0");
+        const env = Object.assign({ envelopeVersion: 2, saveRev: 50, tabId: "other_tab_n1", updatedAt: Date.now(), checksum }, payloadObj);
+        window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: JSON.stringify(env) }));
+        return {
+          modalOpen: document.getElementById("modal-backdrop")?.classList.contains("open") || false,
+          modalTxt: document.getElementById("modal-content")?.textContent || ""
+        };
+      }, STORAGE_KEY);
+      assert.equal(crossTabRes.modalOpen, true, "N1: cross-tab conflict with poisoned game.name must open conflict modal cleanly");
+      assert.ok(crossTabRes.modalTxt.includes("顾长青"), "N1: conflict modal must fall back poisoned externalName to 顾长青");
+      await ctx.close();
+    }
   });
 
   assert.equal(allErrors.length, 0, `Expected 0 console/page errors, got:\n${allErrors.join("\n")}`);

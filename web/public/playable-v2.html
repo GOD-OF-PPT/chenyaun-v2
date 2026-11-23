@@ -4911,25 +4911,25 @@ const ART = {
   let metaState = createDefaultMetaState();
   function sanitizeHallEntry(entry) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
-    const rawKarma = typeof entry.karmaMode === "string" ? entry.karmaMode : "neutral";
+    const rawKarma = safeText(entry.karmaMode, "neutral");
     const safeKarma = ["righteous", "demonic", "neutral"].includes(rawKarma) ? rawKarma : "neutral";
     return {
       lifeNum: Math.max(1, Math.floor(num(entry.lifeNum, 1))),
-      name: String(entry.name == null ? "顾长青" : entry.name),
+      name: safeText(entry.name, "顾长青") || "顾长青",
       endingId: typeof entry.endingId === "string" ? entry.endingId : "",
-      endingName: entry.endingName != null ? String(entry.endingName) : "",
+      endingName: safeText(entry.endingName, ""),
       karmaMode: safeKarma,
-      karmaLabel: entry.karmaLabel != null ? String(entry.karmaLabel) : "本真中正",
-      epithet: entry.epithet != null ? String(entry.epithet) : "",
-      poem: entry.poem != null ? String(entry.poem) : "",
-      grade: entry.grade != null ? String(entry.grade) : "B",
+      karmaLabel: safeText(entry.karmaLabel, "本真中正") || "本真中正",
+      epithet: safeText(entry.epithet, ""),
+      poem: safeText(entry.poem, ""),
+      grade: safeText(entry.grade, "B") || "B",
       score: Math.max(0, num(entry.score, 0)),
       towerBest: Math.max(0, Math.floor(num(entry.towerBest, 0))),
-      rushGrade: entry.rushGrade != null ? String(entry.rushGrade) : "未挑战",
+      rushGrade: safeText(entry.rushGrade, "未挑战") || "未挑战",
       spireBest: Math.max(0, Math.floor(num(entry.spireBest, 0))),
       sanctumLv: Math.max(0, Math.floor(num(entry.sanctumLv, 5))),
       codexPct: Math.max(0, Math.min(100, Math.floor(num(entry.codexPct, 0)))),
-      perkId: entry.perkId != null ? String(entry.perkId) : "sword_bone",
+      perkId: safeText(entry.perkId, "sword_bone") || "sword_bone",
       calamityTier: Math.max(0, Math.floor(num(entry.calamityTier, 0))),
       swordAura: typeof entry.swordAura === "string" ? entry.swordAura : "azure_jade",
       recordedAt: Math.max(0, num(entry.recordedAt, 0))
@@ -4980,7 +4980,7 @@ const ART = {
     try {
       parsed = JSON.parse(raw);
     } catch (e) {
-      return { ok: false, empty: false, sourceKey, reason: `JSON 解析失败（${e && e.message ? e.message : "格式损坏"}）`, raw };
+      return { ok: false, empty: false, sourceKey, reason: `JSON 解析失败（${safeText(e && e.message, "格式损坏") || "格式损坏"}）`, raw };
     }
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return { ok: false, empty: false, sourceKey, reason: "元存档根结构非法（非对象）", raw };
@@ -5073,7 +5073,7 @@ const ART = {
     } catch (e) {
       metaReadError = {
         key: META_KEY,
-        reason: `无法访问本地存储（${e && e.message ? e.message : String(e)}）`,
+        reason: `无法访问本地存储（${safeText(e && e.message, safeDiag(e)) || safeDiag(e)}）`,
         raw: null,
         at: Date.now()
       };
@@ -5838,12 +5838,14 @@ const ART = {
 
   function ensureDeterministicPity(g) {
     if (!g) return { epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 };
-    const cleanPity = safeAssignPlain({ epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 }, g.pity);
+    const rawPity = (g.pity && typeof g.pity === "object" && !Array.isArray(g.pity)) ? g.pity : null;
+    const pityHasUnsafeKey = !!(rawPity && (hasOwn(rawPity, "__proto__") || hasOwn(rawPity, "constructor") || hasOwn(rawPity, "prototype")));
+    const cleanPity = safeAssignPlain({ epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 }, rawPity);
     const keys = ["epic", "mythic", "critAcc", "vampHits", "thunderHits", "gearDrops"];
     keys.forEach(k => {
       cleanPity[k] = Math.max(0, num(cleanPity[k], 0));
     });
-    if (!g.pity || typeof g.pity !== "object" || Array.isArray(g.pity) || Object.getPrototypeOf(g.pity) !== Object.prototype || keys.some(k => g.pity[k] !== cleanPity[k])) {
+    if (!rawPity || Object.getPrototypeOf(rawPity) !== Object.prototype || pityHasUnsafeKey || keys.some(k => rawPity[k] !== cleanPity[k])) {
       g.pity = cleanPity;
     }
     return g.pity;
@@ -7137,8 +7139,9 @@ const ART = {
     if (!game) return;
     closeDrawer();
     arena.paused = true;
-    const idx = forcedIdx !== null ? forcedIdx : ((game.karmaEventsDone || 0) % KARMA_DILEMMAS.length);
-    const kd = KARMA_DILEMMAS[idx % KARMA_DILEMMAS.length];
+    const rawIdx = forcedIdx !== null ? forcedIdx : game.karmaEventsDone;
+    const idx = ((Math.floor(num(rawIdx, 0)) % KARMA_DILEMMAS.length) + KARMA_DILEMMAS.length) % KARMA_DILEMMAS.length;
+    const kd = KARMA_DILEMMAS[idx] || KARMA_DILEMMAS[0];
     const ks = getKarmaState(game);
     const dotPct = Math.round(((ks.score + 100) / 200) * 100);
 
@@ -11434,13 +11437,14 @@ const ART = {
   function ensurePrimordialCrafts(g) {
     if (!g) return { goldenAcolyte: false, voidSwordRift: false, pillBatches: 0, forgedBlades: 0 };
     const rawPc = (g.primordialCrafts && typeof g.primordialCrafts === "object" && !Array.isArray(g.primordialCrafts)) ? g.primordialCrafts : null;
+    const pcHasUnsafeKey = !!(rawPc && (hasOwn(rawPc, "__proto__") || hasOwn(rawPc, "constructor") || hasOwn(rawPc, "prototype")));
     const cleanPc = {
       goldenAcolyte: !!(rawPc && rawPc.goldenAcolyte),
       voidSwordRift: !!(rawPc && rawPc.voidSwordRift),
       pillBatches: Math.max(0, Math.floor(num(rawPc && rawPc.pillBatches, 0))),
       forgedBlades: Math.max(0, Math.floor(num(rawPc && rawPc.forgedBlades, 0)))
     };
-    if (!rawPc || Object.getPrototypeOf(rawPc) !== Object.prototype ||
+    if (!rawPc || Object.getPrototypeOf(rawPc) !== Object.prototype || pcHasUnsafeKey ||
         rawPc.goldenAcolyte !== cleanPc.goldenAcolyte || rawPc.voidSwordRift !== cleanPc.voidSwordRift ||
         rawPc.pillBatches !== cleanPc.pillBatches || rawPc.forgedBlades !== cleanPc.forgedBlades) {
       g.primordialCrafts = cleanPc;
@@ -11723,7 +11727,7 @@ const ART = {
 
       const dataUrl = comicSnapBuf.toDataURL("image/jpeg", 0.84);
       const entry = {
-        sealTag: String(sealTag).slice(0, 4),
+        sealTag: safeText(sealTag, "剑影").slice(0, 4),
         moveDesc,
         dmgVal: Math.max(0, Math.round(Number(dmgVal) || 0)),
         priority,
@@ -12005,11 +12009,12 @@ const ART = {
   function ensureCustomComboSeq(g) {
     if (!g) return { enabled: false, slots: DEFAULT_COMBO_SEQ_SLOTS.slice(), morphCount: 0 };
     const rawSeq = (g.customComboSeq && typeof g.customComboSeq === "object" && !Array.isArray(g.customComboSeq)) ? g.customComboSeq : null;
+    const seqHasUnsafeKey = !!(rawSeq && (hasOwn(rawSeq, "__proto__") || hasOwn(rawSeq, "constructor") || hasOwn(rawSeq, "prototype")));
     const rawSlots = (rawSeq && Array.isArray(rawSeq.slots) && rawSeq.slots.length === 4) ? rawSeq.slots : DEFAULT_COMBO_SEQ_SLOTS;
     const safeSlots = rawSlots.map((modId, idx) => hasOwn(COMBO_SEQ_MODULES, modId) ? modId : DEFAULT_COMBO_SEQ_SLOTS[idx]);
     const enabled = !!(rawSeq && rawSeq.enabled);
     const morphCount = Math.max(0, Math.floor(num(rawSeq && rawSeq.morphCount, 0)));
-    if (!rawSeq || Object.getPrototypeOf(rawSeq) !== Object.prototype ||
+    if (!rawSeq || Object.getPrototypeOf(rawSeq) !== Object.prototype || seqHasUnsafeKey ||
         rawSeq.enabled !== enabled || rawSeq.morphCount !== morphCount ||
         !Array.isArray(rawSeq.slots) || rawSeq.slots.length !== 4 ||
         rawSlots.some((m, i) => m !== safeSlots[i])) {
@@ -12632,8 +12637,25 @@ const ART = {
     return `CY24SAVE-${chk}-${utf8ToBase64(jsonStr)}`;
   }
 
+  function safeText(v, fallback = "") {
+    if (typeof v === "string") return v;
+    if (typeof v === "number" && Number.isFinite(v)) return String(v);
+    return fallback;
+  }
+  function safeDiag(v) {
+    if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
+    if (v === null) return "null";
+    if (v === undefined) return "undefined";
+    return "[" + typeof v + "]";
+  }
   function escapeHtml(s) {
-    return String(s == null ? "" : s)
+    let str;
+    try {
+      str = s == null ? "" : String(s);
+    } catch (e) {
+      str = "";
+    }
+    return str
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
@@ -12688,7 +12710,7 @@ const ART = {
         return { ok: false, reason: "云码缺少核心存档数据" };
       }
       if (typeof parsed.game.realm !== "string" || !hasOwn(REALMS, parsed.game.realm)) {
-        return { ok: false, reason: `云码境界字段非法（${String(parsed.game.realm)}）` };
+        return { ok: false, reason: `云码境界字段非法（${safeDiag(parsed.game.realm)}）` };
       }
       const normalizedGame = normalizeLoadedGame(parsed.game);
       const impRealmSpec = REALMS[normalizedGame.realm];
@@ -12840,7 +12862,7 @@ const ART = {
       applyReducedMotionClass();
       safeAssignPlain(Sound.stems, prevStems);
       if (game) updateHud();
-      const reason = e && e.message ? e.message : "导入过程异常，已回滚";
+      const reason = safeText(e && e.message, "导入过程异常，已回滚") || "导入过程异常，已回滚";
       showToast(`⚠ 云码导入失败：${reason}`);
       return { ok: false, reason };
     }
@@ -13965,15 +13987,15 @@ const ART = {
     const dragonSwords = hasStarCore(g, "azure_dragon") ? 1 : 0;
     const curioSw = Math.min(2, getCurioStacks(g, "curio_hongmeng_omni"));
     const realmSw = Math.min(3, Math.floor((rankOf(g.realm) + 1) / 2));
-    const bonusSw = Math.min(3, g.bonusSwords || 0);
+    const bonusSw = Math.min(3, Math.max(0, Math.floor(num(g.bonusSwords, 0))));
     const extraSw = Math.min(3, gearSwords + fruitSwords + dragonSwords + curioSw + (hasLaw(g, "wanjian") ? 1 : 0) + (g.loadout.relic === "frost_sword" ? 1 : 0) + starSwords);
-    return Math.min(10, 2 + realmSw + bonusSw + extraSw);
+    return Math.max(1, Math.min(10, Math.floor(2 + realmSw + bonusSw + extraSw)));
   }
 
   function createFreshGame(playerName, perkId, calamityTier = 0) {
     const requestedPerk = PERKS.find(p => p.id === perkId);
     const effectivePerk = (requestedPerk && isPerkUnlocked(requestedPerk)) ? requestedPerk.id : "sword_bone";
-    const effCalamity = isCalamityTierUnlocked(calamityTier) ? Math.max(0, Math.min(CALAMITY_CYCLES.length - 1, Math.floor(Number(calamityTier) || 0))) : 0;
+    const effCalamity = isCalamityTierUnlocked(calamityTier) ? Math.max(0, Math.min(CALAMITY_CYCLES.length - 1, Math.floor(num(calamityTier, 0)))) : 0;
     const inv = {};
     Object.keys(ITEMS).forEach(k => { inv[k] = 0; });
     inv.healing_pill = effectivePerk === "mortal_grit" ? 4 : 2;
@@ -14012,7 +14034,7 @@ const ART = {
 
     const g = {
       version: 11,
-      name: String(playerName == null ? "" : playerName).replace(/[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/g, "").trim().slice(0, 12) || "顾长青",
+      name: safeText(playerName, "").replace(/[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/g, "").trim().slice(0, 12) || "顾长青",
       perk: effectivePerk,
       calamityTier: effCalamity,
       realm: "mortal",
@@ -14110,7 +14132,7 @@ const ART = {
     const defArt = slot === "armor" ? "icon_heart" : slot === "ring" ? "item_jade" : "icon_blade";
     const out = safeAssignPlain({}, item, {
       slot,
-      name: String(item.name == null ? "灵器" : item.name),
+      name: safeText(item.name, "灵器") || "灵器",
       rarity: rarityNum(item.rarity),
       lvl: Math.max(0, Math.min(10, Math.floor(num(item.lvl, 0)))),
       atk: Math.max(0, num(item.atk, 0)),
@@ -14124,30 +14146,32 @@ const ART = {
       art: hasOwn(ART, item.art) ? item.art : defArt
     });
     if (hasOwn(item, "power")) out.power = Math.max(0, num(item.power, 0));
+    if (hasOwn(out, "uid") && typeof out.uid !== "string") out.uid = safeText(out.uid, "");
+    if (hasOwn(out, "affix") && typeof out.affix !== "string") out.affix = null;
+    if (hasOwn(out, "awakenedAffix") && typeof out.awakenedAffix !== "string") out.awakenedAffix = null;
     return out;
   }
 
   function normalizeLoadedGame(raw) {
-    const rawCal = raw && typeof raw.calamityTier === "number" ? raw.calamityTier : 0;
-    const base = createFreshGame(raw && raw.name != null ? raw.name : "顾长青", raw && raw.perk ? raw.perk : "sword_bone", rawCal);
+    const rawCal = num(raw && raw.calamityTier, 0);
+    const base = createFreshGame(safeText(raw && raw.name, "顾长青"), raw && typeof raw.perk === "string" ? raw.perk : "sword_bone", rawCal);
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return base;
     const g = safeAssignPlain({}, base, raw);
-    if (typeof g.name !== "string") {
-      g.name = (typeof raw.name === "number" && Number.isFinite(raw.name)) ? String(raw.name) : "顾长青";
-    }
-    g.name = g.name.replace(/[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/g, "").trim() || "顾长青";
+    g.name = safeText(raw.name, "顾长青").replace(/[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/g, "").trim() || "顾长青";
+    if (typeof g.perk !== "string" || !PERKS.some(p => p.id === g.perk)) g.perk = base.perk;
+    if (typeof g.titleUnlocked !== "string" && typeof g.titleUnlocked !== "boolean") g.titleUnlocked = null;
     if (typeof g.realm !== "string" || !hasOwn(REALMS, g.realm)) g.realm = "mortal";
     g.calamityTier = Math.max(0, Math.min(CALAMITY_CYCLES.length - 1, Math.floor(num(raw.calamityTier, 0))));
     g.cloudSeaCleared = !!raw.cloudSeaCleared;
     g.lifeRecorded = !!raw.lifeRecorded;
     g.rushBestGrade = hasOwn(RUSH_GRADE_RANK, raw.rushBestGrade) ? raw.rushBestGrade : null;
     ["stones", "xp", "overflowXp", "wins", "towerBest", "bestSpireFloor", "tribShield", "bonusStarPts", "bonusSwords", "omenIndex", "jadeCuts", "immortalPills", "karmaEventsDone", "atkFlatBonus", "maxHpBonus", "retreats", "tribulationFails", "defiantBreakthroughs", "lifespanBonusMonths"].forEach(k => {
-      g[k] = Math.max(0, num(g[k], base[k] != null ? base[k] : 0));
+      g[k] = Math.max(0, Math.floor(num(g[k], base[k] != null ? base[k] : 0)));
     });
-    g.omenIndex = Math.floor(Math.max(0, num(g.omenIndex, 0))) % CELESTIAL_OMENS.length;
+    g.omenIndex = g.omenIndex % CELESTIAL_OMENS.length;
     g.towerFloor = Math.max(1, Math.floor(num(g.towerFloor, 1)));
-    g.elapsedMonths = Math.max(0, num(g.elapsedMonths, 0));
-    g.startAgeMonths = Math.max(12, num(g.startAgeMonths, 216));
+    g.elapsedMonths = Math.max(0, Math.floor(num(g.elapsedMonths, 0)));
+    g.startAgeMonths = Math.max(12, Math.floor(num(g.startAgeMonths, 216)));
     g.statMultBonus = Math.max(0.5, num(g.statMultBonus, base.statMultBonus));
     g.karmaScore = num(g.karmaScore, 0);
     g.karmaDrBonus = Math.max(0, num(g.karmaDrBonus, 0));
@@ -14247,6 +14271,7 @@ const ART = {
     g.sanctumChatStage = safeAssignPlain({}, raw.sanctumChatStage);
     g.karmaMarketBought = safeAssignPlain({}, raw.karmaMarketBought);
     if (!Array.isArray(g.journal)) g.journal = base.journal.slice();
+    else g.journal = g.journal.filter(entry => typeof entry === "string");
     const st = getCombatStats(g);
     g.hp = num(g.hp, st.maxHp);
     if (g.hp <= 0) g.hp = st.maxHp;
@@ -14320,13 +14345,13 @@ const ART = {
     try {
       parsed = JSON.parse(raw);
     } catch (e) {
-      return { ok: false, empty: false, sourceKey, reason: `JSON 解析失败（${e && e.message ? e.message : "格式损坏"}）`, raw };
+      return { ok: false, empty: false, sourceKey, reason: `JSON 解析失败（${safeText(e && e.message, "格式损坏") || "格式损坏"}）`, raw };
     }
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || !parsed.game || typeof parsed.game !== "object" || Array.isArray(parsed.game)) {
       return { ok: false, empty: false, sourceKey, reason: "存档缺少核心 game 数据结构", raw };
     }
     if (typeof parsed.game.realm !== "string" || !hasOwn(REALMS, parsed.game.realm)) {
-      return { ok: false, empty: false, sourceKey, reason: `存档境界字段非法（${String(parsed.game.realm)}）`, raw };
+      return { ok: false, empty: false, sourceKey, reason: `存档境界字段非法（${safeDiag(parsed.game.realm)}）`, raw };
     }
     if (parsed.saveRev !== undefined && (
       parsed.saveRev === null || typeof parsed.saveRev === "boolean" || typeof parsed.saveRev === "object" ||
@@ -14335,10 +14360,21 @@ const ART = {
     )) {
       return { ok: false, empty: false, sourceKey, reason: "存档版本号字段非法", raw };
     }
-    if (parsed.envelopeVersion >= 2 && parsed.checksum) {
+    if (parsed.envelopeVersion !== undefined && (
+      parsed.envelopeVersion === null || typeof parsed.envelopeVersion === "boolean" || typeof parsed.envelopeVersion === "object" ||
+      (typeof parsed.envelopeVersion === "string" && parsed.envelopeVersion.trim() === "") ||
+      !Number.isFinite(Number(parsed.envelopeVersion)) || Number(parsed.envelopeVersion) < 1
+    )) {
+      return { ok: false, empty: false, sourceKey, reason: "存档封装版本字段非法", raw };
+    }
+    const envVer = parsed.envelopeVersion !== undefined ? Number(parsed.envelopeVersion) : 0;
+    if (envVer >= 2) {
+      if (typeof parsed.checksum !== "string" || !parsed.checksum.trim()) {
+        return { ok: false, empty: false, sourceKey, reason: "存档校验和字段缺失或非法", raw };
+      }
       const expected = computeSaveChecksum(buildCanonicalSavePayload(parsed));
       if (expected !== parsed.checksum) {
-        return { ok: false, empty: false, sourceKey, reason: `存档校验和不匹配（期望 ${expected}，实得 ${parsed.checksum}）`, raw };
+        return { ok: false, empty: false, sourceKey, reason: `存档校验和不匹配（期望 ${expected}，实得 ${safeDiag(parsed.checksum)}）`, raw };
       }
     }
     return {
@@ -14349,7 +14385,7 @@ const ART = {
       rev: Math.max(0, Math.floor(num(parsed.saveRev, 0))),
       tabId: typeof parsed.tabId === "string" ? parsed.tabId : null,
       updatedAt: Math.max(0, Math.floor(num(parsed.updatedAt, 0))),
-      legacy: sourceKey !== STORAGE_KEY || !parsed.envelopeVersion
+      legacy: sourceKey !== STORAGE_KEY || !envVer
     };
   }
 
@@ -14360,7 +14396,7 @@ const ART = {
     } catch (e) {
       storageReadError = {
         key: STORAGE_KEY,
-        reason: `无法访问本地存储（${e && e.message ? e.message : String(e)}）`,
+        reason: `无法访问本地存储（${safeText(e && e.message, safeDiag(e)) || safeDiag(e)}）`,
         raw: null,
         at: Date.now()
       };
@@ -14613,7 +14649,7 @@ const ART = {
         </div>
       </div>
       <div style="font-size:12.5px;color:var(--text-main);line-height:1.6;">
-        另一标签页于 <b>${tsStr}</b> 保存了更新进度（道号 <b>${escapeHtml(info.externalName)}</b> · <b>${escapeHtml(info.externalRealm)}</b>，灵石 ${escapeHtml(String(info.externalStones))}，本页原为 v${loadedSaveRev}）。<br/>
+        另一标签页于 <b>${tsStr}</b> 保存了更新进度（道号 <b>${escapeHtml(info.externalName)}</b> · <b>${escapeHtml(info.externalRealm)}</b>，灵石 ${escapeHtml(safeText(info.externalStones, "0"))}，本页原为 v${loadedSaveRev}）。<br/>
         为防止误覆盖较新进度，本页已暂停自动写入，请选择处理方式：
       </div>
       <div class="defeat-decision-grid">
@@ -14637,11 +14673,11 @@ const ART = {
     const g = res.bundle.game;
     return {
       externalRev: Math.max(0, Math.floor(num(res.rev, 0))),
-      externalTabId: res.tabId,
+      externalTabId: safeText(res.tabId, "未知标签页") || "未知标签页",
       externalUpdatedAt: Math.max(0, Math.floor(num(res.updatedAt, 0))),
-      externalName: g.name || "顾长青",
-      externalRealm: (hasOwn(REALMS, g.realm) && REALMS[g.realm].name) || g.realm,
-      externalStones: Math.max(0, Math.floor(num(g.stones, 0)))
+      externalName: safeText(g && g.name, "顾长青") || "顾长青",
+      externalRealm: (g && hasOwn(REALMS, g.realm) && REALMS[g.realm].name) || safeText(g && g.realm, "练气期") || "练气期",
+      externalStones: Math.max(0, Math.floor(num(g && g.stones, 0)))
     };
   }
 
@@ -14740,7 +14776,7 @@ const ART = {
       return true;
     } catch (e) {
       storageWriteError = {
-        message: (e && e.name === "QuotaExceededError") ? "存储空间已满 (QuotaExceededError)" : (e && e.message ? e.message : String(e)),
+        message: (e && e.name === "QuotaExceededError") ? "存储空间已满 (QuotaExceededError)" : (safeText(e && e.message, safeDiag(e)) || safeDiag(e)),
         at: Date.now()
       };
       saveAlertDismissed = false;
@@ -14793,7 +14829,7 @@ const ART = {
       return true;
     } catch (e) {
       metaWriteError = {
-        message: (e && e.name === "QuotaExceededError") ? "存储空间已满 (QuotaExceededError)" : (e && e.message ? e.message : String(e)),
+        message: (e && e.name === "QuotaExceededError") ? "存储空间已满 (QuotaExceededError)" : (safeText(e && e.message, safeDiag(e)) || safeDiag(e)),
         at: Date.now()
       };
       saveAlertDismissed = false;
@@ -15703,8 +15739,8 @@ const ART = {
 
   function getCalamityCycleSpec(tierOrGame) {
     const rawTier = (typeof tierOrGame === "object" && tierOrGame !== null)
-      ? (tierOrGame.calamityTier || 0)
-      : Number(tierOrGame || 0);
+      ? num(tierOrGame.calamityTier, 0)
+      : num(tierOrGame, 0);
     const clamped = Math.max(0, Math.min(CALAMITY_CYCLES.length - 1, Math.floor(rawTier) || 0));
     return CALAMITY_CYCLES[clamped] || CALAMITY_CYCLES[0];
   }
@@ -16587,7 +16623,7 @@ const ART = {
 
   function syncFlyingSwords() {
     if (!game) return;
-    const targetCount = getSwordCount(game);
+    const targetCount = Math.max(0, Math.floor(num(getSwordCount(game), 2)));
     while (arena.swords.length < targetCount) {
       arena.swords.push({
         idx: arena.swords.length,
@@ -25847,7 +25883,7 @@ const ART = {
           </div>
         </div>`;
     } else {
-      const padStatus = GamepadSystem.connectedName ? `🎮 已连接手柄 (${escapeHtml(String(GamepadSystem.connectedName).slice(0, 20))})` : "🎮 支持 W3C 手柄即插即用与双马达震动";
+      const padStatus = GamepadSystem.connectedName ? `🎮 已连接手柄 (${escapeHtml(safeText(GamepadSystem.connectedName, "").slice(0, 20))})` : "🎮 支持 W3C 手柄即插即用与双马达震动";
       tabBody = `
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
           <span style="font-size:11.5px;color:var(--jade);font-weight:700;">${padStatus} · 140ms 动作预输入已启用</span>
@@ -26488,8 +26524,9 @@ const ART = {
       document.getElementById("welcome-screen").style.display = "none";
       Sound.fanfare();
       initArenaStage(0, false);
-      saveGame({ forceOverwrite: true });
+      const saved = saveGame({ forceOverwrite: true });
       renderHudSaveAlert();
+      return saved;
     }
 
     if (t.id === "btn-start-new") {
@@ -26589,8 +26626,9 @@ const ART = {
       return;
     }
     if (m1Act === "confirm-overwrite-corrupt-new") {
-      startFreshGameSession(true);
-      showToast("已确认覆盖旧损坏存档并开启全新道途！");
+      if (startFreshGameSession(true)) {
+        showToast("已确认覆盖旧损坏存档并开启全新道途！");
+      }
       return;
     }
     if (m1Act === "copy-corrupt-meta-raw") {
