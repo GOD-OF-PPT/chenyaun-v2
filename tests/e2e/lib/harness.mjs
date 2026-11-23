@@ -378,6 +378,8 @@ export async function getHudState(page) {
     const stonesNum = parseInt(stonesRaw.replace(/[^\d-]/g, ""), 10);
     const hpRaw = text("#hud-hp-txt");
     const hpMatch = hpRaw.match(/(\d+)\s*\/\s*(\d+)/);
+    const hpBarWidth = document.querySelector("#hud-hp-bar")?.style.width || "";
+    const hpBarPct = parseFloat(hpBarWidth);
     return {
       name: text("#hud-name"),
       realm: text("#hud-realm"),
@@ -386,6 +388,7 @@ export async function getHudState(page) {
       hpRaw,
       hpCur: hpMatch ? Number(hpMatch[1]) : NaN,
       hpMax: hpMatch ? Number(hpMatch[2]) : NaN,
+      hpBarPct: Number.isFinite(hpBarPct) ? hpBarPct : NaN,
       astralText: text("#lbl-astral-pct"),
       soulName: text("#lbl-soul-name")
     };

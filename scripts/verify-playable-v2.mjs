@@ -69,12 +69,13 @@ function parseCliArgs(argv) {
     if (valueFlags.has(flag)) {
       let val = inlineVal;
       if (val === null) {
-        if (i + 1 >= argv.length || argv[i + 1].startsWith("--")) {
+        if (i + 1 >= argv.length || argv[i + 1].startsWith("--") || argv[i + 1] === "-h") {
           console.error(`Missing value for ${flag}`);
           process.exit(2);
         }
         val = argv[++i];
-      } else if (val === "") {
+      }
+      if (val === "") {
         console.error(`Empty value for ${flag}`);
         process.exit(2);
       }
@@ -359,20 +360,28 @@ async function runSuite(id, title, fn) {
 }
 
 async function newIsolatedContext(browser, extraOpts = {}) {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...extraOpts });
   const tracker = currentSuiteTracker;
-  if (tracker && !tracker.aborted) {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...extraOpts });
+  if (tracker && tracker.aborted) {
+    try {
+      await ctx.close();
+    } catch (_) {}
+    return ctx;
+  }
+  if (tracker) {
     tracker.contexts.add(ctx);
     const origNewPage = ctx.newPage.bind(ctx);
     ctx.newPage = async (...pageArgs) => {
       const page = await origNewPage(...pageArgs);
-      tracker.pages.add(page);
-      page.on("close", () => tracker.pages.delete(page));
+      if (!tracker.aborted) {
+        tracker.pages.add(page);
+        page.on("close", () => tracker.pages.delete(page));
+      }
       return page;
     };
     const origClose = ctx.close.bind(ctx);
     ctx.close = async (...closeArgs) => {
-      if (SHOTS_DIR && tracker.runtimeErrors.length > 0 && tracker.runtimeErrorShots.length === 0) {
+      if (SHOTS_DIR && !tracker.aborted && tracker.runtimeErrors.length > 0 && tracker.runtimeErrorShots.length === 0) {
         const shots = await captureFailureScreenshots(tracker.id, tracker);
         tracker.runtimeErrorShots.push(...shots);
       }
@@ -918,6 +927,14 @@ try {
     );
     assert.equal(portalBeforeRecap2, false, "portal_next must wait until Volume-End Recap modal is confirmed (Stage 2)");
     await page.click("#btn-volume-recap-confirm");
+    await page.waitForFunction(() => !document.querySelector("#modal-backdrop.open #btn-volume-recap-confirm"));
+    await page.waitForTimeout(80);
+    for (let k = 0; k < 3; k++) {
+      const keepSoulBtn = await page.$("#modal-backdrop.open #btn-soul-keep-current");
+      if (!keepSoulBtn) break;
+      await keepSoulBtn.click();
+      await page.waitForTimeout(120);
+    }
     await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
     const p2 = await page.evaluate(() => {
       const p = window.__CHENYUAN_V25__.getState().arena.props.find(x => x.id === "portal_next");
@@ -962,6 +979,14 @@ try {
     );
     assert.equal(portalBeforeRecap3, false, "portal_next must wait until Volume-End Recap modal is confirmed (Stage 3)");
     await page.click("#btn-volume-recap-confirm");
+    await page.waitForFunction(() => !document.querySelector("#modal-backdrop.open #btn-volume-recap-confirm"));
+    await page.waitForTimeout(80);
+    for (let k = 0; k < 3; k++) {
+      const keepSoulBtn = await page.$("#modal-backdrop.open #btn-soul-keep-current");
+      if (!keepSoulBtn) break;
+      await keepSoulBtn.click();
+      await page.waitForTimeout(120);
+    }
     await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
     assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.props.find(x => x.id === "portal_next")?.nextIdx), 4);
     await ctx.close();
@@ -1263,6 +1288,8 @@ try {
     await maybeShot(page, "m4_01_ascension_roadmap_locked.png");
 
     // 3. Toggle 【全神通演武】 inside Roadmap -> requires explicit confirmation modal (#btn-confirm-enter-sandbox) & isolates live save
+    // Flush paused live state once before snapshotting so enterSandboxMode()'s pre-sandbox saveGame() matches the canonical checksum
+    await page.evaluate(() => window.__CHENYUAN_V25__.saveGame());
     const beforeSandboxSnap = await page.evaluate((sk) => {
       const raw = localStorage.getItem(sk);
       const parsed = raw ? JSON.parse(raw) : null;

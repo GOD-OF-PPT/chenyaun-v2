@@ -1082,9 +1082,25 @@ export const tests = [
       );
 
       const hudBefore = await getHudState(page);
-      const hpBefore = hudBefore.hpCur;
-      const hpMax = hudBefore.hpMax;
-      assert.ok(hpBefore > 0 && hpMax > 0, `Player HP must be positive before hit test (${hudBefore.hpRaw})`);
+      const hpSnapBefore = await page.evaluate(() => {
+        const v25 = window.__CHENYUAN_V25__;
+        const { game } = v25.getState();
+        return {
+          hpCur: game.hp,
+          hpMax: v25.getCombatStats(game).maxHp
+        };
+      });
+      const hpBefore = hpSnapBefore.hpCur;
+      const hpMax = hpSnapBefore.hpMax;
+      const hpBarPctBefore = hudBefore.hpBarPct;
+      assert.ok(
+        hpBefore > 0 && hpMax > 400,
+        `Nascent player HP must be >400 before hit test (hp=${hpBefore}, maxHp=${hpMax})`
+      );
+      assert.ok(
+        Number.isFinite(hpBarPctBefore) && hpBarPctBefore > 0,
+        `HUD #hud-hp-bar width must be positive before hit test (${hpBarPctBefore}%)`
+      );
 
       // Trigger one real boss heavy projectile directly onto the player so damage passes through hurtPlayer()
       await page.evaluate((heavyDmg) => {
@@ -1109,12 +1125,14 @@ export const tests = [
       }, setup.bossHeavy);
 
       let hpAfter = hpBefore;
+      let hpBarPctAfter = hpBarPctBefore;
       const deadline = Date.now() + 1500;
       while (Date.now() < deadline) {
         await page.waitForTimeout(80);
-        const cur = (await getHudState(page)).hpCur;
+        const cur = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.hp);
         if (cur < hpBefore) {
           hpAfter = cur;
+          hpBarPctAfter = (await getHudState(page)).hpBarPct;
           break;
         }
       }
@@ -1122,8 +1140,12 @@ export const tests = [
       const actualHitDmg = hpBefore - hpAfter;
       assert.ok(actualHitDmg > 0, `Boss heavy hit must register damage on player (before=${hpBefore}, after=${hpAfter})`);
       assert.ok(
-        hpAfter > 0 && actualHitDmg <= hpMax * 0.65,
-        `Stage 4 boss single heavy hit (${actualHitDmg} dmg, hpAfter=${hpAfter}) must not one-shot nascent player maxHp (${hpMax})`
+        hpAfter > 0 && actualHitDmg <= Math.ceil(hpMax * 0.45) + 1 && actualHitDmg <= hpMax * 0.65,
+        `Stage 4 boss single heavy hit (${actualHitDmg} dmg, hpAfter=${hpAfter}) must respect 45% cap and not one-shot nascent player maxHp (${hpMax})`
+      );
+      assert.ok(
+        Number.isFinite(hpBarPctAfter) && hpBarPctAfter < hpBarPctBefore,
+        `HUD #hud-hp-bar width must reflect boss heavy hit (before=${hpBarPctBefore}%, after=${hpBarPctAfter}%)`
       );
     }
   },
