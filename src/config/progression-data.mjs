@@ -31,7 +31,7 @@ export const RELICS = {
 };
 
 export const DAO_LAWS = {
-  wanjian:         { id: "wanjian", name: "万剑归宗", rarity: "仙品", cat: "剑符神通", desc: "环身飞剑永久 +2，出剑额外激发追踪飞剑与剑雨弧光！" },
+  wanjian:         { id: "wanjian", name: "万剑归宗", rarity: "仙品", cat: "剑符神通", desc: "环身飞剑 +1（额外飞剑来源上限 +3），出剑额外激发追踪飞剑与剑雨弧光！" },
   yinyang:         { id: "yinyang", name: "阴阳剑符", rarity: "鸿蒙", cat: "跨派神通", desc: "打通剑符界限！剑招附带灼魂符印，爆剑与连携引动额外雷火爆发！" },
   pill_fire:       { id: "pill_fire", name: "丹火不息", rarity: "仙品", cat: "丹战神通", desc: "按 Q 饮仙葫或服回春丹时瞬间引爆大范围丹火震波，重创周围群妖！" },
   wealth_power:    { id: "wealth_power", name: "聚宝乾坤", rarity: "仙品", cat: "财道气运", desc: `每持有 ${COMBAT_RULE_PARAMS.laws.wealth_power.perStones} 灵石提供 +${Math.round(COMBAT_RULE_PARAMS.laws.wealth_power.pctPerStep * 100)}% 攻击加成（上限 +${Math.round(COMBAT_RULE_PARAMS.laws.wealth_power.maxPct * 100)}%，计入常驻增伤池并受 ${Math.round(COMBAT_RULE_PARAMS.passiveSoftCapKnee * 100)}%～${Math.round(COMBAT_RULE_PARAMS.passiveSoftCapMax * 100)}% 软上限约束）。` },
@@ -165,7 +165,7 @@ export const ACTION_REALM_REQ = {
   slash: 0, recall: 0, dash: 0, meditate: 0, pill: 0, hub: 0, photo: 0, telemetry: 0,
   stance: 1, jump: 1, ult: 1, ally: 1, pet: 1,
   posture: 2, soul: 2, swordBlink: 2, finisher: 2, tagSwitch: 2, weapon_form: 2,
-  mount: 3, qimen: 3, sequencer: 3,
+  mount: 3, qimen: 3, sequencer: 3, coop_2p: 3, celestial_time: 3,
   sanqing: 4, astral: 4,
   shanhe: 5, warship: 5
 };

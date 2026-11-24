@@ -11,6 +11,41 @@
 
 ---
 
+## Q7 — 阶段二全量测试环境验证、遗留边界收口与发布证据包（F38）
+
+- **7 项 Q1–Q5 遗留边界打磨收口**：
+  - `startSectDefenseSiege()` 清理演武坪残留 `isDojoProp`（阵眼柱/玄冰晶）与 `waterPools`/`fireZones`；`spawnDojoDummy()` 非法模式回退 `"static"`。
+  - 寒池正道延寿选项（`karma_r_spring`）脱离大限后同步重置 `lifespanExhaustedPromptDismissed` 与 `pendingLifespanExhaustedPrompt`。
+  - `load-latest-save` 失败分支仅在 `save_conflict`/`save_corrupt` 弹窗打开时关闭，避免误关无关弹窗。
+  - `closeDrawer()` 移除抽屉残留隐藏 `#btn-mat-source-return`，洞府多建筑材料来源返焦优先匹配 `data-source-origin`。
+  - 对齐 `DAO_LAWS.wanjian` / `LAW_SHORT_BADGE.wanjian` 文案为 `+1`（与 `getSwordCount()` 一致）；`formatGearStats()` 增加 `num()` 守卫；`scripts/build-playable.mjs` 收紧 ESM `import` 正则并显式拒绝裸副作用 `import`（补入 `tests/unit/build-parity.test.mjs`）。
+- **1440×900 桌面 Chromium 阶段二全量实测证据（[validation/q7-release/SUMMARY.md](analysis/validation/q7-release/SUMMARY.md)）**：
+  - `npm run build:check` PASS、`npm run art:manifest:check` PASS、`npm run test:unit` **32/32 PASS**。
+  - 静态 HTTP 全量回归 **77/77 PASS**（0 运行时错误）+ 全量 E2E Tier 1–4 **56/56 PASS**（0 运行时错误）。
+  - 直接 `file://` 入口启动（`firstInteractiveMs = 1197ms`，0 运行时错误）与无头 `eval-combat-matrix`（84/84 PASS）/`audit-economy`（0 违规）全部通过。
+  - 诚实边界保留：`F29 = NOT_RUN`（`0 / 5~8` 真人试玩）、`F37 = DEFERRED`（D08）。
+
+---
+
+## Q6 — 后续卷次品质、第五卷共鸣与高阶模式整合（F34–F36；F37=`DEFERRED`）
+
+- **F34 后续卷次（2–6 卷）叙事、敌招读招、分层景深与故人回响**：
+  - 新增纯 ESM 模块 `src/rules/campaign-q6.mjs`（构建模块 `9 → 10`），导出 6 卷 `VOLUME_CAMPAIGN_GUIDE`、`VOL5_RESONANCE_PILLARS`、`HIGH_TIER_MODE_REGISTRY`、`EXPEDITION_NODE_STAGE_MAP` 及纯共鸣计算函数。
+  - 3 层视差景深扩展至全部 5 张主线秘境（`vol1`–`vol5` + `sanctum`），严格遵守 `fgMarginPct ≤ 0.11` 不遮危招与 `reducedMotion` 冻结。
+  - 补齐 `serpent`（扇形霜弹+霜池）、`puppet`（十字剑波+铜镜）、`trial_gate`（九霄天雷 `r=76` 锁点环）及 `shadow`/`sentinel` 的读招、受击归因与动作反馈。
+  - 在九霄问道录与九州舆图预览条展示逐卷敌招考题与成长收益；扩展 `clear_stage1..4` 故人羁绊过场分支、卷终回顾 `#volume-recap-companion-echo` 与结局 `companionEpilogues`（保持 `STORIES.length === 11`、`KARMA_DILEMMAS.length === 9`）。
+- **F35 第五卷保守基线（D01/D04）与 5 项终局模式修复**：
+  - 保持 `REALM_BOSS_GATE` 与既往 `CHAPTERS` 必做步骤不变；新增 `openVol5ResonanceModal()`（`ch5_resonance` 与问道录入口）、`enter_vol5_resonance`、`enter_terrace_vol5`、元婴期第五卷合卷回顾、渡劫窗第五卷→第六卷说明与元婴仙门修为提示修复。
+  - 修复 5 项实机侧边模式缺陷：1) 造化工坊胜利结算弹窗、`resetEncounterTelemetry()` 与临时 Lv.2 奇物离场还原/`saveGame()` 隔离；2) 九霄云海首破 3 阶仙装移至 `initArenaStage` 后 `acquireGearItem` 发放；3) 护山大阵免费初援、波次 `stageEpoch` 隔离与战报结算窗；4) 万剑冢修正七阵文案；5) 破云证道印 `+15%` 灵石收益实装登仙台结算与实时徽章。
+- **F36 高阶系统三分组、跨系统共鸣与 D07 解锁一致**：
+  - `ACTION_REALM_REQ` 新增 `coop_2p: 3`、`celestial_time: 3`（金丹期解封，`setCelestialTimePhase` 保持开放供自动流转与 `Q0-2`）；`]`/`[`/`\` 增加暂停与欢迎页屏蔽；退出沙盒重置 `arena.coop2P.active = false`；2P 名单按故人结缘扩展；`Digit8` 先校验 `vein_expedition` 解锁再战中双击确认；同步太虚秘匣分组与演武坪锁标。
+  - 问道阶梯与终局页新增三分组总览（`主线内嵌`/`终局试炼`/`演武与工具`）与 6 柱【诸天道果共鸣】（保持 `SYSTEM_ECOSYSTEM_LADDER` 14 项 `.roadmap-sys-btn` 不变，0 柱对既往数值零漂移）；远征节点接入秘境通关 `+15%` / 三星 `+30%` 共鸣与周天星图直达入口；周天星图新增实时天时横幅与受控流转按钮。
+  - 在 `window.__CHENYUAN_DEBUG__.q6` 暴露增量调试接口，保持 `version: "q5-compat-1"` 与 `V18–V25` 全部 382 项契约零改动。
+- **F37 非核心扩展边界（D08）**：新建 [docs/analysis/q6-decisions-and-boundary.md](analysis/q6-decisions-and-boundary.md)，明确登记扫荡、9:16 移动端适配、长按自动连升为 **`DEFERRED`**，保留显式批量确认；F29 真人试玩维持 **`NOT_RUN`**。
+- **测试覆盖**：新增 `tests/unit/campaign-q6.test.mjs`（单元测试 `27 → 32`，8 个测试文件）与 `Q6-1..Q6-4` 回归套件（总回归套件 `73 → 77`，原有 73 项断言零删改）。
+
+---
+
 ## Q5 — 模块化编辑源、确定性独立构建与分层测试（F30–F33 · D06 保守基线）
 
 - **F30 运行资产提取与确定性构建**：

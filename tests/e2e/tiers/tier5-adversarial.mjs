@@ -520,9 +520,16 @@ export const tests = [
       await page.selectOption("#sel-ws-curio", "16");
       await page.click("#btn-launch-workshop");
       await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
-      const wsMid = await page.evaluate(() => {
+      const wsMid = await page.evaluate((sk) => {
         const api = window.__CHENYUAN_V25__;
+        const v24 = window.__CHENYUAN_V24__;
         const s = api.getState();
+        api.saveGame();
+        const diskDuring = JSON.parse(localStorage.getItem(sk) || "{}");
+        const diskCuriosDuring = (diskDuring && diskDuring.game && diskDuring.game.spireCurios) || {};
+        const cloudCode = v24.exportFullCloudSaveCode();
+        const cloudParsed = v24.parseCloudSaveCode(cloudCode);
+        const cloudCuriosDuring = (cloudParsed && cloudParsed.ok && cloudParsed.normalizedGame && cloudParsed.normalizedGame.spireCurios) || {};
         const boss = s.arena.enemies.find((e) => e.isBoss) || s.arena.enemies[0];
         if (boss) {
           boss.hp = 1;
@@ -531,19 +538,25 @@ export const tests = [
         return {
           isPractice: api.isPracticeModeActive(),
           effective: api.getCurioStacks(s.game, "curio_hongmeng_omni"),
-          formalKeys: Object.keys(s.game.spireCurios || {}),
+          diskCuriosDuring,
+          cloudExportOk: Boolean(cloudParsed && cloudParsed.ok),
+          cloudCuriosDuring,
           wins: s.game.wins,
           starPts: s.game.bonusStarPts
         };
-      });
+      }, STORAGE_KEY);
       assert.equal(wsMid.isPractice, true, "Custom Workshop must run in practice isolation (B-2)");
-      assert.equal(wsMid.effective, 2, "Workshop must provide Lv.2 test curio via overlay (B-2)");
-      assert.deepEqual(wsMid.formalKeys, [], "Formal game.spireCurios must not be mutated (B-2)");
+      assert.equal(wsMid.effective, 2, "Workshop must provide Lv.2 test curio during the run (B-2)");
+      assert.deepEqual(wsMid.diskCuriosDuring, {}, "Disk STORAGE_KEY spireCurios must remain empty during workshop (B-2)");
+      assert.equal(wsMid.cloudExportOk, true, "Cloud save export during workshop must remain valid (B-2)");
+      assert.deepEqual(wsMid.cloudCuriosDuring, {}, "Cloud export spireCurios must remain empty during workshop (B-2)");
       assert.equal(wsMid.wins, 0, "Workshop boss kill must not leak formal wins (B-2)");
       assert.equal(wsMid.starPts, 0, "Workshop boss kill must not leak formal starPts (B-2)");
 
       await page.keyboard.press("KeyH");
       await page.waitForTimeout(160);
+      const afterExitCurios = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.spireCurios || {});
+      assert.deepEqual(afterExitCurios, {}, "In-memory formal spireCurios must restore to empty after leaving workshop (B-2)");
       const disk = (await readStorageJson(page, STORAGE_KEY)).parsed;
       assert.deepEqual(disk?.game?.spireCurios || {}, {}, "Disk spireCurios must remain empty (B-2)");
       assert.equal(disk?.game?.wins, 0, "Disk wins must remain 0 (B-2)");
@@ -760,12 +773,21 @@ export const tests = [
       assert.equal(inPhoto.shield, 0, "\\ blocked in Photo Mode (B-7)");
       await closeModalEsc(page);
 
-      // Unpaused Mortal + unbonded blocked; Foundation + shen bonded allowed
+      // Unpaused Mortal + Foundation blocked under D07; Golden Core + shen bonded allowed
       await page.keyboard.press("BracketRight");
       assert.equal(await page.evaluate(() => window.__CHENYUAN_V23__.getState().coop2P.active), false, "Mortal unbonded 2P Co-Op blocked (B-7)");
       await page.evaluate(() => {
         const s = window.__CHENYUAN_V25__.getState();
         s.game.realm = "foundation";
+        s.game.aids = { shen: true, pei: false, lu: false, yan: false };
+        s.game.bondTiers = { shen: 1, pei: 0, lu: 0, yan: 0 };
+        window.__CHENYUAN_V25__.focusBattlefield();
+      });
+      await page.keyboard.press("BracketRight");
+      assert.equal(await page.evaluate(() => window.__CHENYUAN_V23__.getState().coop2P.active), false, "Foundation 2P Co-Op blocked under D07 (B-7)");
+      await page.evaluate(() => {
+        const s = window.__CHENYUAN_V25__.getState();
+        s.game.realm = "golden";
         s.game.aids = { shen: true, pei: false, lu: false, yan: false };
         s.game.bondTiers = { shen: 1, pei: 0, lu: 0, yan: 0 };
         s.arena.player.shieldHp = 0;
@@ -775,7 +797,7 @@ export const tests = [
       await page.keyboard.press("BracketRight");
       await page.keyboard.press("BracketLeft");
       const coopBonded = await page.evaluate(() => window.__CHENYUAN_V23__.getState().coop2P);
-      assert.equal(coopBonded.active, true, "Bonded Foundation 2P Co-Op allowed (B-7)");
+      assert.equal(coopBonded.active, true, "Bonded Golden Core 2P Co-Op allowed under D07 (B-7)");
       assert.equal(coopBonded.partnerId, "shen", "Only bonded companions cycled by [ (B-7)");
 
       // Righteous dawn shield spam cooldown

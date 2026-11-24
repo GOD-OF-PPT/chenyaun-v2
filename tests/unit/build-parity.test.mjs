@@ -239,6 +239,11 @@ test("build-playable negative guards reject orphan runtime assets, unquoted exte
       /Forbidden external URL\(s\) in <script>/
     );
     fs.writeFileSync(mainJsPath, origMainJs, "utf8");
+    // (d) Bare side-effect ESM import must be rejected
+    assert.throws(
+      () => transformEsmForIife('import "./side-effect.mjs";\nexport const X = 1;\n', "test.mjs"),
+      /Unsupported bare side-effect import/
+    );
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }

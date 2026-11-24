@@ -1539,9 +1539,9 @@
     if (it.atk) parts.push(`攻+${effectiveGearVal(it, "atk")}`);
     if (it.hp) parts.push(`血+${effectiveGearVal(it, "hp")}`);
     if (it.dr) parts.push(`减伤+${effectiveGearVal(it, "dr")}`);
-    if (it.crit) parts.push(`暴+${Math.round(it.crit * 100)}%`);
-    if (it.spd) parts.push(`速+${Math.round(it.spd * 100)}%`);
-    if (it.bonusSword) parts.push(`飞剑+${it.bonusSword}`);
+    if (num(it.crit, 0)) parts.push(`暴+${Math.round(num(it.crit, 0) * 100)}%`);
+    if (num(it.spd, 0)) parts.push(`速+${Math.round(num(it.spd, 0) * 100)}%`);
+    if (num(it.bonusSword, 0)) parts.push(`飞剑+${Math.floor(num(it.bonusSword, 0))}`);
     if (it.affix) {
       const af = SACRED_AFFIXES.find(a => a.id === it.affix);
       if (af) parts.push(`【${af.name}】`);
@@ -1759,6 +1759,11 @@
       { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "五境残片尽除，照影石碑终于补全最后一句。道友，你从山雨破庙走来，今日亲手替九州重开了天门。" },
       { art: "char_shen", role: "青云药庐 · 悬壶医修", speaker: "沈清禾", text: "天门既现，听雨洞府的灯火永远为你长明——无论你择定何种飞升道果，此番红尘故人皆在云海遥祝！" },
       { art: "char_player", role: "问道剑主", speaker: "顾长青", text: "尘缘未负，仙门在前。且去引动最终飞升天劫，证我万古大道！", finalBtnLabel: "合卷问仙 ▸" }
+    ],
+    enter_vol5_resonance: [
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "碎丹成婴之后，单靠蛮力已难撼九霄天障。第五卷【法则共鸣 · 元神试剑】重在以万法印心、淬炼本命法宝，亦可在云海、星图与登仙台试剑磨砺元神。" },
+      { art: "char_shen", role: "青云药庐 · 悬壶医修", speaker: "沈清禾", text: "若备有【化神丹】可稳渡化神天劫，若欲效古剑修无丹逆天强渡，听雨洞府与我皆会为你护法——切莫被丹炉所困，只需守住本心剑意！" },
+      { art: "char_player", role: "元婴剑修", speaker: "顾长青", text: "四法通明或器成三星，再破化神天劫、直登九霄天门——第五卷元神之道，便从今日启程！", finalBtnLabel: "观览共鸣 ▸" }
     ]
   };
 
@@ -1776,6 +1781,10 @@
       { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "见铜镜浮空时，仍以【空格一闪】或【右键爆剑】正面碎镜，破其金身方可夺月华莲证婴！" },
       { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "有劳砚尘前辈再度相告，今日便斩此剑傀以正古冢！" }
     ],
+    enter_terrace_vol5: [
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "你以元婴之身先临九霄星盘，恰合第五卷【元神试剑】之旨！先探【天门道影】虚实、积攒修为与法则共鸣，待渡过化神天劫后再行最终飞升！" },
+      { art: "char_player", role: "元婴剑修", speaker: "顾长青", text: "正合我意！先以元婴剑心试探天门道影，再破化神重开仙门！" }
+    ],
     enter_terrace_met: [
       { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "从照影残碑走到九霄星盘，你一路清除四方残影，终于站到了【天门道影】正前。" },
       { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "此门之后再无借力之处，唯凭你这一路炼出的剑心破局——拔剑吧，道友！" },
@@ -1784,18 +1793,45 @@
     enter_terrace_after_gate: [
       { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "星盘已启，【天门道影】就在云海尽头。石阶前该叮嘱的话老朽已尽数言明——此去莫回头，亮剑吧！" },
       { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "承前辈吉言，今日一剑斩道影，亲手写完碑卷最后一页！" }
+    ],
+    clear_stage1_bonded: [
+      { art: "enemy_warden", role: "镇山金卫 · 守山石卫", speaker: "守山石卫", text: "轰……青云钟声与剑意同鸣，石心浊影尽散！小友道基已成！" },
+      { art: "char_lu", role: "青云山门 · 传功执事", speaker: "陆玄松", text: "好一记破阵剑！你既已谙熟山门天时筹备之道，此去【照影寒潭】应对玄蛇寒煞必能从容周旋。老夫已修书予剑阁裴照在潭畔相迎！" },
+      { art: "char_player", role: "炼气剑修", speaker: "顾长青", text: "多谢陆执事托付！渡劫筑基之后，便往照影寒潭与裴兄会合！", finalBtnLabel: "收剑合卷 ▸" }
+    ],
+    clear_stage2_bonded: [
+      { art: "enemy_serpent", role: "寒鳞妖尊 · 寒潭玄蛇", speaker: "寒潭玄蛇", text: "嘶……剑阁双锋合流，千年寒髓竟也压不住你们的剑意……" },
+      { art: "char_pei", role: "青云剑阁 · 同辈剑首", speaker: "裴照", text: "痛快！自山门论剑之后，我就知道寒潭困不住你！第三枚残片已破，地脉异动直指【古修剑冢】——凝结金丹后，我们剑冢寒池再见！" },
+      { art: "char_player", role: "筑基剑修", speaker: "顾长青", text: "一言为定！凝结金丹、铸成法宝，剑冢再并肩破阵！", finalBtnLabel: "收剑合卷 ▸" }
+    ],
+    clear_stage3_bonded: [
+      { art: "enemy_puppet", role: "镜阵剑祖 · 古境剑傀", speaker: "古境剑傀", text: "铮……碑前赤诚未改，铜镜残片既碎，旧剑甘愿归鞘……" },
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "好孩子，四方残片俱已斩尽。你当年留在照影碑上的初心，如今已足够支撑碎丹成婴、踏入第五卷【法则共鸣】与九霄天门之约。" },
+      { art: "char_player", role: "金丹剑修", speaker: "顾长青", text: "不忘山雨来处，亦敢叩问九霄！碎丹成婴，下一程共赴天门！", finalBtnLabel: "收剑合卷 ▸" }
+    ],
+    clear_stage4_bonded: [
+      { art: "enemy_trial_gate", role: "九霄守门者 · 天门道影", speaker: "天门道影", text: "轰隆——红尘同心之剑竟真能斩碎百年天障！九霄仙门，为汝敞开！" },
+      { art: "char_shen", role: "青云药庐 · 悬壶医修", speaker: "沈清禾", text: "从破庙雨夜到九霄星盘，药阵灯火一路伴你至此——今日天门重开，清禾与裴兄、陆执事、砚尘前辈皆在云下为你贺道！" },
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "照影碑终页已落墨。去吧，引动最终飞升天劫，亲手写下你的证道结局！" },
+      { art: "char_player", role: "问道剑主", speaker: "顾长青", text: "幸得诸位故人同行，此剑不负尘缘！且去渡劫飞升！", finalBtnLabel: "合卷问仙 ▸" }
     ]
   };
 
   function resolveCutsceneLines(key, g) {
     const ch = (g && g.choices) ? g.choices : {};
+    const aids = (g && g.aids) ? g.aids : {};
     if (key === "enter_sect" && ch.lu_intro) return CHAPTER_CUTSCENES_VARIANTS.enter_sect_met;
     if (key === "enter_secret" && ch.pei_meet) return CHAPTER_CUTSCENES_VARIANTS.enter_secret_met;
     if (key === "enter_sword_mound" && ch.yan_stone) return CHAPTER_CUTSCENES_VARIANTS.enter_sword_mound_met;
     if (key === "enter_terrace") {
+      if (g && g.realm === "nascent" && !ch.yan_gate) return CHAPTER_CUTSCENES_VARIANTS.enter_terrace_vol5;
       if (ch.yan_gate) return CHAPTER_CUTSCENES_VARIANTS.enter_terrace_after_gate;
       if (ch.yan_stone || ch.yan_mirror) return CHAPTER_CUTSCENES_VARIANTS.enter_terrace_met;
     }
+    if (key === "clear_stage1" && (ch.lu_intro || aids.lu)) return CHAPTER_CUTSCENES_VARIANTS.clear_stage1_bonded;
+    if (key === "clear_stage2" && (ch.pei_meet || aids.pei)) return CHAPTER_CUTSCENES_VARIANTS.clear_stage2_bonded;
+    if (key === "clear_stage3" && (ch.yan_stone || ch.yan_mirror || aids.yan)) return CHAPTER_CUTSCENES_VARIANTS.clear_stage3_bonded;
+    if (key === "clear_stage4" && countBondedAllies(g) >= 2) return CHAPTER_CUTSCENES_VARIANTS.clear_stage4_bonded;
     return CHAPTER_CUTSCENES[key] || null;
   }
 
@@ -2091,7 +2127,7 @@
   }
 
   const LAW_SHORT_BADGE = {
-    wanjian: "飞剑 +2", yinyang: "雷火链电", crit_lotus: `暴击 +${Math.round(COMBAT_RULE_PARAMS.laws.crit_lotus.crit * 100)}%`,
+    wanjian: "飞剑 +1", yinyang: "雷火链电", crit_lotus: `暴击 +${Math.round(COMBAT_RULE_PARAMS.laws.crit_lotus.crit * 100)}%`,
     stagger_surge: "破势绞杀+", pill_fire: "服丹震爆", nine_pill: "双倍仙丹",
     wealth_power: "灵石增威", thunder_body: "周身落雷", eternal_spring: "常驻回血",
     void_haste: "幻影剑分身", beast_soul: "灵兽狂暴", relic_awake: "大招减CD",
@@ -2285,7 +2321,7 @@
     combatNoticeLevel: "lite" // "full" | "lite" | "minimal"
   };
   function isReducedMotionActive() {
-    return Boolean(a11ySettings && a11ySettings.reducedMotion);
+    return Boolean((a11ySettings && a11ySettings.reducedMotion) || (reducedMotionMq && reducedMotionMq.matches));
   }
   function clearTransientMotionEffects() {
     arena.shake = 0;
@@ -4043,6 +4079,9 @@
     if (!Array.isArray(game.litStars)) game.litStars = [];
     const freePts = getAvailableStarPoints(game);
     const sb = getStarChartBonuses(game);
+    const celPh = getCurrentCelestialPhase();
+    const isStarNight = celPh.id === "star_night";
+    const celUnlocked = isActionUnlockedByRealm(game, "celestial_time");
 
     openModal(`
       <div class="drawer-mural-banner" style="height:104px;">
@@ -4062,6 +4101,14 @@
           <span style="color:var(--text-sub);margin-left:8px;">星盘总加成：攻+${sb.atk} · 血+${sb.hp} · 减伤+${sb.dr} · 暴+${Math.round(sb.crit * 100)}% · 暴伤+${Math.round(sb.critMult * 100)}%</span>
         </div>
         <button type="button" class="btn-gold" style="padding:4px 12px;font-size:11.5px;" data-action="buy-star-point">✨ 凝炼星魂 +1 (60灵石)</button>
+      </div>
+
+      <div id="star-chart-celestial-banner" class="jade-card" style="flex-direction:row;justify-content:space-between;align-items:center;padding:7px 11px;flex-wrap:wrap;gap:8px;border-color:${isStarNight ? "rgba(168,184,255,0.72)" : "rgba(216,179,106,0.34)"};">
+        <div style="font-size:11px;color:#dff7f2;">
+          当前太虚天时：<strong style="color:${celPh.color};">${escapeHtml(celPh.short)}</strong>
+          <span class="tag-chip ${isStarNight ? "mythic" : ""}" style="margin-left:6px;">${isStarNight ? "★ 极夜星河联动生效 · 全部星宿被动 ×2.0！" : "切换至【极夜星河】可令全部星宿被动翻倍 (×2.0)"}</span>
+        </div>
+        <button type="button" id="btn-star-chart-cycle-celestial" class="${celUnlocked ? "btn-jade" : "btn-ghost eco-locked-btn"}" style="padding:3px 10px;font-size:11px;" data-action="cycle-celestial-time-in-modal">${celUnlocked ? "☯ 流转天时 (\\)" : "🔒 需金丹期解封天时"}</button>
       </div>
 
       <div class="star-quad-grid">
@@ -4705,7 +4752,7 @@
         <div class="drawer-mural-overlay">
           <div>
             <span class="cinnabar-seal">终局巅峰试炼</span>
-            <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">万剑冢 · 踏天六阵连战 & 心魔镜像论剑</h2>
+            <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">万剑冢 · 踏天七阵连战 & 心魔镜像论剑</h2>
           </div>
           <button type="button" class="btn-ghost" data-modal-close="1">返回道场 ✕</button>
         </div>
@@ -4723,7 +4770,7 @@
 
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:12px;color:var(--gold-bright);">☯ 自选【问道劫律】试炼词缀（当前积分倍率 ×${affMult.toFixed(2)}）：</strong>
-        <span style="font-size:11px;color:var(--jade);">${metaState.bestRushGrade ? `历史最高评级：${escapeHtml(metaState.bestRushGrade)} (${num(metaState.bestRushTime).toFixed(1)}s)` : "通关第6阵解锁【太虚劫光】飞剑幻化"}</span>
+        <span style="font-size:11px;color:var(--jade);">${metaState.bestRushGrade ? `历史最高评级：${escapeHtml(metaState.bestRushGrade)} (${num(metaState.bestRushTime).toFixed(1)}s)` : "完整通关七阵解锁【太虚劫光】飞剑幻化"}</span>
       </div>
 
       <div class="rush-affix-grid">
@@ -4764,6 +4811,7 @@
     if (!game) return;
     if (!guardNotInTribulation("万剑冢连战")) return;
     if (!guardEcosystemAccess("sword_tomb_rush")) return;
+    restoreCustomSeedTempCurio();
     flushAndEndMeditation();
     const clampedStart = Math.max(1, Math.min(7, Math.floor(num(startBout, 1))));
     const isPractice = clampedStart > 1;
@@ -5401,6 +5449,7 @@
     if (!game) return;
     if (!guardNotInTribulation("护山大阵守卫战")) return;
     if (!guardEcosystemAccess("sect_defense")) return;
+    restoreCustomSeedTempCurio();
     flushAndEndMeditation();
     if (practiceFormalSnapshot) endPracticeModeIsolation();
     resetStageTransitionState();
@@ -5446,12 +5495,51 @@
       name: `听雨灵脉大阵中枢 · Lv.${getSanctumLevel(game, "guard_array")}`, badge: "守护灵脉免遭三波百鬼夜行攻破！",
       x: corePos.x, y: corePos.y, r: 46, progress: 0
     });
-    // Summon companions automatically to defend the sect together!
+    // Summon companions automatically for free to defend the sect together!
+    arena.player.allyCd = 0;
+    const prevMp = game.mp;
+    game.mp = Math.max(game.mp || 0, 24);
     summonAllyCoop();
+    game.mp = prevMp;
+    arena.player.allyCd = 0;
     spawnSectDefenseWave(1);
     showBossCutIn("prop_guardian_sword_pylon", "护山大阵 · 百鬼夜行守卫战", `协同 ${towers.length} 座【护山剑阵灵塔】与道侣抵御三波立体妖潮，赢取鸿蒙星魄与护宗功勋！`);
     updateBossBannerAndRecallOrb();
     updateHud();
+  }
+
+  function openSectDefenseResultModal(summary) {
+    if (!game || !summary) return;
+    const isWin = !!summary.victory;
+    const corePct = summary.maxCoreHp > 0 ? Math.max(0, Math.round((summary.coreHp / summary.maxCoreHp) * 100)) : 0;
+    openModal(`
+      <div class="drawer-mural-banner" style="height:88px;">
+        <img src="${ART.arena_sanctum_hub}" alt="护山大阵战报" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">${isWin ? "护宗大捷" : "结界重整"}</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:${isWin ? "var(--gold-bright)" : "#ffb4ae"};margin-top:3px;">${isWin ? "🛡 护山大阵守卫战 · 三波妖潮全歼！" : "⚠ 护山灵脉受创 · 洞府结界已重整"}</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-modal-close="1">返回洞府 ✕</button>
+        </div>
+      </div>
+      <div class="jade-card" style="gap:6px;padding:10px 12px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11.5px;">
+          <span class="tag-chip ${isWin ? "mythic" : ""}">抵御波次：${summary.wavesCleared}/${summary.maxWaves}</span>
+          <span class="tag-chip done">灵脉余量：${Math.max(0, Math.round(summary.coreHp))}/${Math.round(summary.maxCoreHp)} (${corePct}%)</span>
+          ${isWin ? `<span class="tag-chip mythic">护宗功勋：×${num(game.sectMerits, 1)}</span>` : ""}
+        </div>
+        <div style="font-size:12px;color:#dff7f2;line-height:1.55;">
+          ${isWin
+            ? `已获赐 <b>鸿蒙星魄 +${summary.starPtsGained}</b>、<b>灵石 +${summary.stonesGained}</b>${summary.atkGranted > 0 ? `、<b>永久剑攻 +${summary.atkGranted}</b>` : "（本境永久剑攻已达上限）"}，并点亮【诸天道果共鸣 · 护山大阵】柱！`
+            : "灵脉受损后听雨洞府已自动恢复安全休整状态，可升级【护山大阵】增筑北护山剑塔或整备丹药神兵后再战！"}
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="btn-jade" data-action="start-sect-defense">🛡 再启护山守卫战</button>
+        <button type="button" class="btn-gold" data-modal-close="1">留守听雨洞府 ▸</button>
+      </div>
+    `, true, { kind: "sect_defense_result", tier: "info" });
   }
 
   function spawnSectDefenseWave(waveNum) {
@@ -5501,10 +5589,12 @@
       }
     }
     if (sd.coreHp <= 0) {
+      const failSummary = { victory: false, wavesCleared: Math.max(0, sd.wave - 1), maxWaves: sd.maxWaves, coreHp: 0, maxCoreHp: sd.maxCoreHp, stonesGained: 0, starPtsGained: 0, atkGranted: 0 };
       sd.active = false;
       arena.sectDefense = null;
       showToast("⚠ 护山灵脉受损！已自动重整洞府结界，可随时再战！");
       enterSanctumHub();
+      openSectDefenseResultModal(failSummary);
       return;
     }
 
@@ -5513,11 +5603,16 @@
         sd.wave += 1;
         arena.waveTransitioning = true;
         Sound.fanfare();
+        const sdEpoch = arena.stageEpoch;
         setTimeout(() => {
+          if (!game || arena.stageEpoch !== sdEpoch || !arena.sectDefense || !arena.sectDefense.active) return;
           arena.waveTransitioning = false;
-          if (arena.sectDefense && arena.sectDefense.active) spawnSectDefenseWave(sd.wave);
+          spawnSectDefenseWave(sd.wave);
         }, 520);
       } else {
+        const winCoreHp = sd.coreHp;
+        const winMaxCoreHp = sd.maxCoreHp;
+        const winMaxWaves = sd.maxWaves;
         sd.active = false;
         arena.sectDefense = null;
         game.bonusStarPts = (game.bonusStarPts || 0) + 2;
@@ -5530,6 +5625,16 @@
           ? `🏆 护山大阵大捷！获赐【鸿蒙星魄×2（星魂点+2）】、剑攻永久+${sdAtkRes.grantedAtk}${sdAtkRes.atkCapped ? `（已达本境上限 ${game.atkFlatBonus}/${sdAtkRes.caps.atkFlatBonus}）` : ""} 与 260 灵石！`
           : `🏆 护山大阵大捷！获赐【鸿蒙星魄×2（星魂点+2）】与 260 灵石（本境永久剑攻已达上限 ${game.atkFlatBonus}/${sdAtkRes.caps.atkFlatBonus}）！`);
         enterSanctumHub();
+        openSectDefenseResultModal({
+          victory: true,
+          wavesCleared: winMaxWaves,
+          maxWaves: winMaxWaves,
+          coreHp: winCoreHp,
+          maxCoreHp: winMaxCoreHp,
+          stonesGained: 260,
+          starPtsGained: 2,
+          atkGranted: sdAtkRes.grantedAtk
+        });
       }
     }
   }
@@ -5836,6 +5941,7 @@
     if (!game) return;
     if (!guardNotInTribulation("九霄云海空战")) return;
     if (!guardEcosystemAccess("cloud_sea_trial")) return;
+    restoreCustomSeedTempCurio();
     flushAndEndMeditation();
     if (practiceFormalSnapshot) endPracticeModeIsolation();
     resetStageTransitionState();
@@ -6187,16 +6293,17 @@
           if (Array.isArray(game.journal)) game.journal.unshift(`金丹御剑破开九霄云海防线，获【破云证道印】(+${cloudAtkGranted}攻 · 远征/登仙台收益+15%)！`);
         }
         arena.swordIntent = 100; arena.bondSynergy = 100; arena.astralEnergy = 100;
-        spawnGearDrop(w * 0.52, h * 0.52, 3);
         Sound.fanfare();
         triggerRadialChromaticBurst(1.35, "#ffe28a", w * 0.5, h * 0.5);
         if (!sandboxMode) saveMeta();
-        saveGame();
         const descendStage = rankOf(game.realm) >= 4 ? 4 : 3;
         initArenaStage(descendStage, false);
+        const cloudGear = rollGearItem(descendStage, 3);
+        acquireGearItem(cloudGear);
+        saveGame();
         showToast(firstClear
-          ? `☁ 九霄云海首破功成！获【破云证道印】(常驻攻+${cloudAtkGranted} · 星魂+1 · 远征/登仙台收益+15% · 灵石+180)！`
-          : `☁ 九霄云海破阵功成！已御剑俯冲降临【${STAGES[descendStage].name}】（剑意全满+180灵石）！`);
+          ? `☁ 九霄云海首破功成！获【破云证道印】(常驻攻+${cloudAtkGranted} · 星魂+1 · 远征/登仙台收益+15% · 灵石+180 · 仙品【${cloudGear.name}】)！`
+          : `☁ 九霄云海破阵功成！已御剑俯冲降临【${STAGES[descendStage].name}】（剑意全满+180灵石 · 仙品【${cloudGear.name}】）！`);
       }
     }
   }
@@ -6232,7 +6339,10 @@
 
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
         <span style="font-size:11.5px;color:#b8dcd5;">连续闯荡随机生成的九重天宫秘境（妖王房/灵脉房/混沌赌局/天工秘宝），每重天三选一叠加 <b style="color:#ffe28a;">16 种跨系统天道法则奇物</b>！</span>
-        <span class="tag-chip mythic">登仙榜最高：第 ${bestFl}/9 重天 · 已叠奇物 ${curEntries.reduce((s, [cid]) => s + getCurioStacks(game, cid), 0)} 层</span>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <span id="spire-cloud-sea-chip" class="tag-chip ${game.cloudSeaCleared ? "mythic" : ""}">${game.cloudSeaCleared ? "☁ 破云证道印 · 登仙台灵石 +15%" : "☁ 破云印未启（先破九霄云海 +15%）"}</span>
+          <span class="tag-chip mythic">登仙榜最高：第 ${bestFl}/9 重天 · 已叠奇物 ${curEntries.reduce((s, [cid]) => s + getCurioStacks(game, cid), 0)} 层</span>
+        </div>
       </div>
 
       <div class="spire-room-grid">
@@ -6275,6 +6385,7 @@
     if (!game) return;
     if (!guardNotInTribulation("太虚登仙台")) return;
     if (!guardEcosystemAccess("celestial_spire")) return;
+    restoreCustomSeedTempCurio();
     flushAndEndMeditation();
     const clampedStart = Math.max(1, Math.min(9, Math.floor(num(startFloor, 1))));
     const isPractice = clampedStart > 1;
@@ -6511,9 +6622,11 @@
     }
     if (!game.spireCurios) game.spireCurios = {};
     const maxLv = PERM_GROWTH_CAPS.spireCurioMaxStack;
+    const cloudMult = getSpireCloudSeaYieldMult(game);
     const spec = SPIRE_CURIOS.find(x => x.id === curioId);
+    const allCappedStones = Math.round(120 * cloudMult);
     if (curioId === "__all_capped__") {
-      game.stones += 120;
+      game.stones += allCappedStones;
     } else if (spec) {
       const prev = getCurioStacks(game, curioId);
       const step = Math.max(1, Math.floor(num(gainLv, 1)));
@@ -6523,7 +6636,8 @@
       PERM_GROWTH_CAPS.curioStoneAlchemyFloorStoneCap,
       getCurioStacks(game, "curio_stone_alchemy") * PERM_GROWTH_CAPS.curioStoneAlchemyFloorStonePerLv
     );
-    game.stones += 75 + stoneBonus;
+    const floorStones = Math.round((75 + stoneBonus) * cloudMult);
+    game.stones += floorStones;
     syncFlyingSwords();
     Sound.fanfare();
     closeModal();
@@ -6543,7 +6657,8 @@
       sp.active = false;
       arena.celestialSpire = null;
       game.bonusStarPts = (game.bonusStarPts || 0) + 3;
-      game.stones += 420;
+      const clearStones = Math.round(420 * cloudMult);
+      game.stones += clearStones;
       saveGame(); updateHud();
       openModal(`
         <div class="drawer-mural-banner" style="height:94px;">
@@ -6560,7 +6675,7 @@
           <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
             <span class="tag-chip mythic">制霸层数：9 / 9 重天</span>
             <span class="tag-chip done">奇物总层数：${Object.values(game.spireCurios || {}).reduce((a, b) => a + Math.min(maxLv, num(b, 0)), 0)} 层</span>
-            <span class="tag-chip">赏赐：420 灵石 + 周天星魂点 +3</span>
+            <span class="tag-chip">赏赐：${clearStones} 灵石${cloudMult > 1 ? "（含破云印+15%）" : ""} + 周天星魂点 +3</span>
           </div>
           <div style="font-size:12px;color:#9effec;">本局参悟的全部【太古天道奇物】已永久铭刻入本世命盘（单项上限 Lv.${maxLv}），可携奇物神威继续征战太古烛龙与九霄云海！</div>
           <div style="display:flex;justify-content:center;gap:10px;">
@@ -6574,8 +6689,8 @@
 
     sp.floor += 1;
     showToast(curioId === "__all_capped__"
-      ? `☯ 奇物皆已圆满 · 获赐 120 灵石，踏入第 ${sp.floor}/9 重天！`
-      : `☯ 已铭刻奇物【${spec ? spec.name : curioId} Lv.${getCurioStacks(game, curioId)}/${maxLv}】· 踏入第 ${sp.floor}/9 重天！`);
+      ? `☯ 奇物皆已圆满 · 获赐 ${allCappedStones + floorStones} 灵石${cloudMult > 1 ? "（破云印+15%）" : ""}，踏入第 ${sp.floor}/9 重天！`
+      : `☯ 已铭刻奇物【${spec ? spec.name : curioId} Lv.${getCurioStacks(game, curioId)}/${maxLv}】· 灵石 +${floorStones}${cloudMult > 1 ? "（破云印+15%）" : ""} · 踏入第 ${sp.floor}/9 重天！`);
     spawnCelestialSpireFloor();
     saveGame();
   }
@@ -7412,9 +7527,82 @@
     return arena.enemies[arena.enemies.length - 1];
   }
 
+  let activeCustomSeedTempCurio = null;
+
+  function getActiveCustomSeedTempCurio() {
+    if (!activeCustomSeedTempCurio) return null;
+    return {
+      cid: activeCustomSeedTempCurio.cid,
+      hadKey: !!activeCustomSeedTempCurio.hadKey,
+      prevLv: activeCustomSeedTempCurio.prevLv
+    };
+  }
+
+  function getSanitizedGameForPersistence(g = game) {
+    if (!g) return g;
+    const rec = activeCustomSeedTempCurio;
+    if (rec && rec.targetGame === g && g.spireCurios && rec.cid) {
+      const cleanCurios = Object.assign({}, g.spireCurios);
+      if (rec.hadKey) {
+        cleanCurios[rec.cid] = rec.prevLv;
+      } else {
+        delete cleanCurios[rec.cid];
+      }
+      return Object.assign({}, g, { spireCurios: cleanCurios });
+    }
+    return g;
+  }
+
+  function restoreCustomSeedTempCurio() {
+    const rec = activeCustomSeedTempCurio;
+    activeCustomSeedTempCurio = null;
+    if (!rec || !game || rec.targetGame !== game || !game.spireCurios || !rec.cid) return false;
+    if (rec.hadKey) {
+      game.spireCurios[rec.cid] = rec.prevLv;
+    } else {
+      delete game.spireCurios[rec.cid];
+    }
+    syncFlyingSwords();
+    return true;
+  }
+
+  function openCustomSeedVictoryModal(summary) {
+    if (!game || !summary) return;
+    const bossList = Array.isArray(summary.bosses) && summary.bosses.length ? summary.bosses.join(" + ") : "造化双王";
+    const elapsedTxt = `${num(summary.elapsedSec, 0).toFixed(1)}s`;
+    openModal(`
+      <div class="drawer-mural-banner" style="height:88px;">
+        <img src="${ART.arena_wanjian_tomb}" alt="造化试剑凯旋" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">造化工坊 · 试剑圆满</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:3px;">⚔ 太虚造化试剑大捷！</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-modal-close="1">收卷 ✕</button>
+        </div>
+      </div>
+      <div class="jade-card" style="gap:6px;padding:10px 12px;">
+        <div style="display:flex;gap:7px;flex-wrap:wrap;font-size:11.5px;">
+          <span class="tag-chip mythic">论剑码：${escapeHtml(summary.seed || "")}</span>
+          <span class="tag-chip done">耗时：${escapeHtml(elapsedTxt)}</span>
+          <span class="tag-chip">已破首领：${escapeHtml(bossList)}</span>
+        </div>
+        <div style="font-size:11.5px;color:#b8dcd5;line-height:1.5;">
+          ${summary.tempCurioRestored ? "✓ 工坊测试奇物 Lv.2 已安全还原，绝不污染正式档奇物进度。" : "本次试剑为独立构筑演武，未改写正式主线与奇物进度。"}
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
+        <button type="button" id="btn-ws-victory-replay" class="btn-gold" data-action="ws-replay-seed" data-ws-seed="${escapeHtml(summary.seed || "")}">🔁 再战此种子</button>
+        <button type="button" id="btn-ws-victory-workshop" class="btn-jade" data-action="open-workshop">🛠 返回造化工坊</button>
+        <button type="button" id="btn-ws-victory-sanctum" class="btn-ghost" data-action="enter-sanctum">🏠 返回听雨洞府</button>
+      </div>
+    `, true, { kind: "custom_seed_victory", tier: "info" });
+  }
+
   function launchCustomSeedEncounter(seedOverride = null) {
     if (!game) return false;
     if (!guardNotInTribulation("太虚造化工坊")) return false;
+    restoreCustomSeedTempCurio();
     flushAndEndMeditation();
     beginPracticeModeIsolation();
     if (seedOverride) {
@@ -7439,24 +7627,28 @@
     arena.waveTransitioning = false;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
+    resetEncounterTelemetry();
     arena.nearbyProp = null;
     renderPropInteractHud();
-    const wsBonusCurioId = (workshopState.curioIdx > 0 && SPIRE_CURIOS[workshopState.curioIdx - 1])
-      ? SPIRE_CURIOS[workshopState.curioIdx - 1].id
-      : null;
-    arena.customSeedRun = {
-      active: true,
-      seed: activeSeed,
-      practiceMode: true,
-      bonusCurios: wsBonusCurioId ? { [wsBonusCurioId]: 2 } : {}
-    };
-    hideDojoControlBar();
-
     // Apply selected affixes
     arena.rushAffixes = [];
     RUSH_AFFIX_SPECS.forEach((af, idx) => {
       if ((workshopState.affixes & (1 << idx)) !== 0) arena.rushAffixes.push(af.id);
     });
+    // Grant selected starter Curio Lv.2 strictly for this build-test encounter (restored on exit & omitted from formal saves!)
+    let tempCurioRestore = null;
+    if (workshopState.curioIdx > 0 && SPIRE_CURIOS[workshopState.curioIdx - 1]) {
+      if (!game.spireCurios) game.spireCurios = {};
+      const cid = SPIRE_CURIOS[workshopState.curioIdx - 1].id;
+      const hadKey = hasOwn(game.spireCurios, cid);
+      const prevLv = hadKey ? game.spireCurios[cid] : 0;
+      const nextLv = Math.min(PERM_GROWTH_CAPS.spireCurioMaxStack, Math.max(getCurioStacks(game, cid), 2));
+      if (!hadKey || nextLv !== prevLv) {
+        tempCurioRestore = { cid, hadKey, prevLv, targetGame: game };
+        activeCustomSeedTempCurio = tempCurioRestore;
+        game.spireCurios[cid] = nextLv;
+      }
+    }
 
     arena.enemies = [];
     arena.projectiles = [];
@@ -7482,10 +7674,24 @@
       }
     }
 
-    spawnWorkshopBossBySpecIdx(workshopState.boss1, w * 0.68, h * 0.46, 1.5);
+    const spawnedBossNames = [];
+    const b1 = spawnWorkshopBossBySpecIdx(workshopState.boss1, w * 0.68, h * 0.46, 1.5);
+    if (b1 && b1.name) spawnedBossNames.push(b1.name);
     if (workshopState.boss2 !== 7) {
-      spawnWorkshopBossBySpecIdx(workshopState.boss2, w * 0.58, h * 0.62, 1.35);
+      const b2 = spawnWorkshopBossBySpecIdx(workshopState.boss2, w * 0.58, h * 0.62, 1.35);
+      if (b2 && b2.name) spawnedBossNames.push(b2.name);
     }
+
+    arena.customSeedRun = {
+      active: true,
+      seed: activeSeed,
+      practiceMode: true,
+      startedAt: Date.now(),
+      elapsedSec: 0,
+      bosses: spawnedBossNames,
+      tempCurioRestore
+    };
+    hideDojoControlBar();
 
     const st = getCombatStats(game);
     game.hp = st.maxHp; game.mp = st.maxMp;
@@ -7582,18 +7788,21 @@
     return ph;
   }
 
-  function cycleCelestialTimePhase() {
-    if (!game || photoMode.active || arena.paused) return false;
+  function cycleCelestialTimePhase(opts = {}) {
+    if (!game || photoMode.active) return null;
+    if (arena.paused && !(opts && opts.allowInModal)) return null;
+    if (!guardActionRealm("celestial_time")) return null;
     return setCelestialTimePhase(celestialState.idx + 1, false);
   }
 
   // 2. Local 2-Player Same-Screen Co-Op (`太虚同游 · 1P+2P同屏双剑联机 + 同心剑网切割线 + 2.5x同步处决 + 渡气救援`)
   const COOP_PARTNER_ORDER = ["shen", "pei", "lu", "yan"];
 
-  function getEligibleCoop2PPartners(g) {
-    if (!g) return [];
+  function getUnlockedCoop2PRoster(g = game) {
+    if (!g) return ["shen"];
     if (sandboxMode || g.unlockAllArcana) return COOP_PARTNER_ORDER.slice();
-    return COOP_PARTNER_ORDER.filter(id => Boolean((g.aids && g.aids[id]) || getCompanionBondTier(g, id) >= 1));
+    const bonded = COOP_PARTNER_ORDER.filter(id => getCompanionBondTier(g, id) >= 1 || Boolean(g.aids && g.aids[id]));
+    return bonded.length > 0 ? bonded : ["shen"];
   }
 
   function ensureCoop2PState() {
@@ -7624,28 +7833,17 @@
   }
 
   function toggleLocalCoop2P(forceState = null, partnerOverride = null) {
-    if (!game || photoMode.active || arena.paused) return false;
+    if (!game) return false;
     const c2 = ensureCoop2PState();
-    const st = getCombatStats(game);
     const nextOn = forceState !== null ? !!forceState : !c2.active;
-    if (nextOn) {
-      if (!sandboxMode && !game.unlockAllArcana && !isEcosystemSystemUnlocked(game, "tag_team")) {
-        showToast("🔒 【本地双人同屏共斗】将于【筑基期】随道侣同心解封；亦可于演武沙盒提前体验！");
-        return false;
-      }
-      const allEligible = getEligibleCoop2PPartners(game);
-      if (!allEligible.length) {
-        showToast("🔒 尚未与任何故人结契羁绊，请先在主线或听雨洞府与故人缔结羁绊后再开启双人同游！");
-        return false;
-      }
-      const curChar = arena.playableCharId || "player";
-      const eligible = allEligible.filter(id => id !== curChar);
-      const pool = eligible.length ? eligible : allEligible;
-      if (partnerOverride && PLAYABLE_COMPANIONS[partnerOverride] && partnerOverride !== "player" && pool.includes(partnerOverride)) {
-        c2.partnerId = partnerOverride;
-      } else if (!pool.includes(c2.partnerId)) {
-        c2.partnerId = pool[0];
-      }
+    if (nextOn && (photoMode.active || arena.paused)) return false;
+    if (nextOn && !guardActionRealm("coop_2p")) return false;
+    const roster = getUnlockedCoop2PRoster(game);
+    const st = getCombatStats(game);
+    if (partnerOverride && PLAYABLE_COMPANIONS[partnerOverride] && partnerOverride !== "player" && roster.includes(partnerOverride)) {
+      c2.partnerId = partnerOverride;
+    } else if (!roster.includes(c2.partnerId) || c2.partnerId === (arena.playableCharId || "player")) {
+      c2.partnerId = roster.find(id => id !== (arena.playableCharId || "player")) || roster[0] || "shen";
     }
     c2.active = nextOn;
     if (nextOn) {
@@ -7661,7 +7859,7 @@
       Sound.fanfare();
       spawnDistortionRing(c2.x, c2.y, 170, sp.color);
       addFloat(`👥 太虚同游开启 · 2P【${sp.name}】同屏参战！`, c2.x, c2.y - 58, sp.color, 19, true);
-      showToast(`👥 已开启【本地双人同屏共斗】！2P【${sp.name}】支持 IJKL/方向键/小键盘移动，P/;/小键盘0出招（松手自动智能拉剑网协战），按 [ 键切换 2P 角色！`);
+      showToast(`👥 已开启【本地双人同屏共斗】！2P【${sp.name}】支持 IJKL/方向键/小键盘移动，P/;/小键盘0出招（松手自动智能拉剑网协战），按 [ 键切换已结缘 2P 伙伴（共 ${roster.length} 位）！`);
     } else {
       showToast("已切回单人操控模式（按 ] 键可随时重开 1P+2P 双人同屏共斗）");
     }
@@ -7672,25 +7870,21 @@
 
   function cycleCoop2PPartner() {
     if (!game || photoMode.active || arena.paused) return false;
-    if (!sandboxMode && !game.unlockAllArcana && !isEcosystemSystemUnlocked(game, "tag_team")) {
-      showToast("🔒 【本地双人同屏共斗】将于【筑基期】随道侣同心解封；亦可于演武沙盒提前体验！");
-      return;
-    }
-    const allEligible = getEligibleCoop2PPartners(game);
-    if (!allEligible.length) {
-      showToast("🔒 尚未与任何故人结契羁绊，请先与故人缔结羁绊后再切换 2P 助战角色！");
-      return;
-    }
-    const curChar = arena.playableCharId || "player";
-    const eligible = allEligible.filter(id => id !== curChar);
-    const pool = eligible.length ? eligible : allEligible;
+    if (!guardActionRealm("coop_2p")) return false;
     const c2 = ensureCoop2PState();
+    const roster = getUnlockedCoop2PRoster(game);
+    const eligible = roster.filter(id => id !== (arena.playableCharId || "player"));
+    const pool = eligible.length > 0 ? eligible : roster;
     const curIdx = pool.indexOf(c2.partnerId);
-    const nextId = pool[(curIdx + 1) % pool.length];
+    const nextId = pool[(curIdx + 1) % pool.length] || pool[0] || "shen";
     c2.partnerId = nextId;
     if (!c2.active) {
-      toggleLocalCoop2P(true, nextId);
-      return;
+      return toggleLocalCoop2P(true, nextId);
+    }
+    if (pool.length <= 1) {
+      showToast(`👥 当前 2P 可选已结缘伙伴仅【${(PLAYABLE_COMPANIONS[nextId] || PLAYABLE_COMPANIONS.shen).name}】1 位，结识更多红尘故人即可切换！`);
+      syncV23EpochDock();
+      return true;
     }
     const sp = PLAYABLE_COMPANIONS[nextId];
     c2.hp = c2.maxHp;
@@ -7699,6 +7893,7 @@
     spawnDistortionRing(c2.x, c2.y, 150, sp.color);
     addFloat(`👥 2P 换将 · 【${sp.name}】接剑入阵！`, c2.x, c2.y - 54, sp.color, 18, true);
     syncV23EpochDock();
+    return true;
   }
 
   function triggerCoop2PAttack(isHeavy = false) {
@@ -9182,10 +9377,11 @@
       <div class="jade-card" style="flex-direction:row;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
         <div>
           <strong style="font-size:13px;color:#80ffea;">驻防队伍：${activeCnt} / 5 处灵脉 · 待领军资：<span style="color:#ffe28a;">${num(ex.bankedStones)} / ${EXPEDITION_BANKED_STONES_CAP} 灵石</span> + <span style="color:#d69eff;">${num(ex.bankedStars)} / ${EXPEDITION_BANKED_STARS_CAP} 鸿蒙星魄</span>${vaultFull ? ` <span class="tag-chip done" style="font-size:9.5px;">已满仓</span>` : ""}${game.cloudSeaCleared ? ` <span class="tag-chip mythic" style="font-size:9.5px;">☁ 破云印 +15%</span>` : ""}</strong>
-          <div style="font-size:10.5px;color:var(--text-sub);">仅在非洞府秘境战斗中累积产出（仓库上限 ${EXPEDITION_BANKED_STONES_CAP} 灵石 / ${EXPEDITION_BANKED_STARS_CAP} 星魄）；仅可派遣已结缘故人，每位故人限驻守 1 处灵脉，并在战中每 8.5 秒降下【仙门护道雷援】。</div>
+          <div style="font-size:10.5px;color:var(--text-sub);">仅在非洞府秘境战斗中累积产出（仓库上限 ${EXPEDITION_BANKED_STONES_CAP} 灵石 / ${EXPEDITION_BANKED_STARS_CAP} 星魄）；对应秘境通关 +15%、三星 +30% 灵脉共鸣（不锁节点），每 8.5 秒降下【仙门护道雷援】。</div>
         </div>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button type="button" id="btn-claim-expedition" class="btn-gold" style="padding:6px 13px;font-size:11.5px;" data-action="claim-expedition" ${vaultEmpty ? "disabled" : ""}>🎁 一键征收远征军资</button>
+          <button type="button" id="btn-exp-goto-starchart" class="btn-ghost" style="padding:6px 11px;font-size:11.5px;border-color:rgba(214,158,255,0.55);color:#e8c8ff;" data-action="open-star-chart">🌟 周天星图</button>
           <button type="button" class="btn-jade" style="padding:6px 12px;font-size:11.5px;" data-action="cast-warship-from-modal">⛵ 呼叫仙舟轰炸</button>
         </div>
       </div>
@@ -9193,12 +9389,16 @@
       <div class="expedition-grid">
         ${EXPEDITION_NODES.map(nd => {
           const curHero = (ex.assignments && ex.assignments[nd.id]) || "";
+          const syn = getExpeditionNodeStageSynergy(game, nd.id);
           return `<div class="expedition-node-card">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
               <div style="display:flex;align-items:center;gap:7px;">
                 <img src="${ART[nd.art]}" alt="${nd.name}" style="width:34px;height:34px;border-radius:7px;object-fit:cover;" />
                 <div>
-                  <strong style="font-size:12px;color:var(--gold-bright);">${nd.name}</strong>
+                  <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                    <strong style="font-size:12px;color:var(--gold-bright);">${nd.name}</strong>
+                    <span class="tag-chip ${syn.tier === "full_star" ? "mythic" : syn.tier === "cleared" ? "done" : ""}" style="font-size:9px;" data-exp-synergy="${nd.id}">${escapeHtml(syn.label)}</span>
+                  </div>
                   <div style="font-size:9.8px;color:#9effec;">${nd.desc}</div>
                 </div>
               </div>
@@ -9274,10 +9474,15 @@
 
   function exportFullCloudSaveCode() {
     if (!game || sandboxMode) return "";
+    const useFormalSnap = isPracticeModeActive() && practiceFormalSnapshot && practiceFormalSnapshot.game;
+    const exportGame = useFormalSnap
+      ? getSanitizedGameForPersistence(practiceFormalSnapshot.game)
+      : getSanitizedGameForPersistence(game);
+    const exportMeta = (useFormalSnap && practiceFormalSnapshot.meta) ? practiceFormalSnapshot.meta : metaState;
     const payload = {
       v: 24,
-      game,
-      metaState,
+      game: exportGame,
+      metaState: exportMeta,
       a11ySettings,
       stems: Sound.stems
     };
@@ -9459,6 +9664,7 @@
         showToast(`⚠ 云码导入失败：${reason}`);
         return { ok: false, reason };
       }
+      activeCustomSeedTempCurio = null;
       practiceFormalSnapshot = null;
       clearTransientChoiceQueues();
       saveA11ySettings();
@@ -9610,7 +9816,7 @@
         ex.tickTimer = curTick - dt;
         if (ex.tickTimer <= 0) {
           ex.tickTimer = 8.5;
-          const tickStones = activeNodes.reduce((s, n) => s + Math.round(n.stoneRate * 0.35), 0);
+          const tickStones = activeNodes.reduce((s, n) => s + Math.round(n.stoneRate * 0.35 * getExpeditionNodeStageSynergy(game, n.id).mult), 0);
           ex.bankedStones = Math.min(EXPEDITION_BANKED_STONES_CAP, (ex.bankedStones || 0) + tickStones);
           if (Math.random() < 0.25) {
             ex.bankedStars = Math.min(EXPEDITION_BANKED_STARS_CAP, (ex.bankedStars || 0) + 1);
@@ -9817,7 +10023,8 @@
     posture: "双剑意姿态 (`)", soul: "镇妖魂印 (C)", swordBlink: "缩地瞬身 (F)", finisher: "流派奥义 (X)",
     tagSwitch: "道侣瞬切 (V)", weapon_form: "太虚剑匣 (1/2/3)",
     astral: "法天象地 (O)", mount: "山海灵骑 (J)", qimen: "奇门八门阵 (U)",
-    sanqing: "一气化三清 (4)", shanhe: "山河社稷图 (5)", warship: "凌霄仙舟 (6)", sequencer: "自创剑谱 (7)"
+    sanqing: "一气化三清 (4)", shanhe: "山河社稷图 (5)", warship: "凌霄仙舟 (6)", sequencer: "自创剑谱 (7)",
+    coop_2p: "双人同游 (]/ [)", celestial_time: "太虚天时 (\\)"
   };
 
   // S11+G7: Once-per-unlock crisp 2-line "新神通" tutorial cards
@@ -10543,7 +10750,7 @@
   // Sanctum Sword-Trial Dojo (`演武论剑坪 · 机关试剑木人桩`)
   function spawnDojoDummy(mode = null) {
     if (mode) {
-      arena.dojoMode = hasOwn(DOJO_MODE_META, mode) ? mode : mode;
+      arena.dojoMode = hasOwn(DOJO_MODE_META, mode) ? mode : "static";
       if (!arena.dojoSession || arena.dojoSession.mode !== arena.dojoMode) {
         arena.dojoSession = createFreshDojoSession(arena.dojoMode);
       }
@@ -11620,6 +11827,7 @@
     if (!sandboxMode) {
       flushAndEndMeditation();
       if (isPracticeModeActive() || practiceFormalSnapshot) {
+        restoreCustomSeedTempCurio();
         arena.bossRush = null;
         arena.celestialSpire = null;
         arena.customSeedRun = null;
@@ -11628,8 +11836,9 @@
       if (game && !saveReadOnlyMode && !saveConflictState && !storageReadError) {
         saveGame();
       }
+      const sanitizedFormalGame = game ? getSanitizedGameForPersistence(game) : null;
       preSandboxSnapshot = {
-        game: game ? JSON.parse(JSON.stringify(game)) : null,
+        game: sanitizedFormalGame ? JSON.parse(JSON.stringify(sanitizedFormalGame)) : null,
         meta: JSON.parse(JSON.stringify(ensureMetaState())),
         arenaSnap: {
           stageIdx: arena.stageIdx,
@@ -11643,7 +11852,8 @@
         loadedSaveUpdatedAt,
         lastSavedPayloadChecksum
       };
-      game = game ? JSON.parse(JSON.stringify(game)) : createFreshGame("顾长青", "sword_bone");
+      activeCustomSeedTempCurio = null;
+      game = sanitizedFormalGame ? JSON.parse(JSON.stringify(sanitizedFormalGame)) : createFreshGame("顾长青", "sword_bone");
       sandboxMode = true;
       game.unlockAllArcana = true;
       game.pendingRewards = [];
@@ -11690,8 +11900,11 @@
     arena.celestialSpire = null;
     arena.sectDefense = null;
     arena.cloudFlight = null;
+    restoreCustomSeedTempCurio();
     arena.customSeedRun = null;
     arena.bladeClash = null;
+    if (arena.coop2P) arena.coop2P.active = false;
+    syncV23EpochDock();
     arena.tribulation = null;
     practiceFormalSnapshot = null;
 
@@ -11820,7 +12033,7 @@
 
   function computeCurrentPayloadChecksum() {
     if (!game) return null;
-    const gameSnap = safeAssignPlain({}, game);
+    const gameSnap = safeAssignPlain({}, getSanitizedGameForPersistence(game));
     if (gameSnap.expeditions && typeof gameSnap.expeditions === "object" && !Array.isArray(gameSnap.expeditions)) {
       const exSnap = safeAssignPlain({}, gameSnap.expeditions);
       delete exSnap.tickTimer;
@@ -12174,7 +12387,8 @@
   }
 
   function saveGame(opts = {}) {
-    if (!game || sandboxMode || isPracticeModeActive()) return false;
+    if (!game || sandboxMode) return false;
+    const inPractice = isPracticeModeActive();
     const force = !!(opts && opts.forceOverwrite);
     if (saveReadOnlyMode && !force) {
       renderHudSaveAlert();
@@ -12231,10 +12445,12 @@
       } catch (e) {}
     }
 
+    if (inPractice) return false;
     const nextRev = Math.max(Math.max(0, Math.floor(num(loadedSaveRev, 0))), Math.max(0, Math.floor(num(externalMaxRev, 0)))) + 1;
     const activeLineage = loadedSaveLineage || generateSaveLineageId();
+    const gameForSave = getSanitizedGameForPersistence(game);
     const payloadObj = {
-      game,
+      game: gameForSave,
       stageIdx: arena.stageIdx,
       stanceIdx: arena.stanceIdx,
       towerMode: !!arena.towerMode,
@@ -14251,6 +14467,7 @@
     }
 
     clearTransientChoiceQueues();
+    activeCustomSeedTempCurio = null;
     game = null;
     practiceFormalSnapshot = null;
     clearLoadedSaveMeta();
@@ -14753,6 +14970,18 @@
       ? endingMap[ed.id]
       : "。九霄天门既开，静候择定本世最终证道之途。";
 
+    const companionEchoLines = {
+      shen: "沈清禾悬壶青云药庐，听雨洞府檐下灯火岁岁长明。",
+      pei:  "裴照执剑镇守青云剑阁，仍常于云海试剑忆及当年并肩破阵。",
+      lu:   "陆玄松于传功堂立碑记你问道始末，青云后辈皆诵其名。",
+      yan:  "砚尘阖卷收笔，将你自破庙至九霄的剑痕永铭照影古碑。"
+    };
+    const companionEpilogues = bondedIds.map(id => ({
+      id,
+      name: NPC_META[id].name,
+      line: companionEchoLines[id] || `${NPC_META[id].name}与你共证红尘剑缘。`
+    }));
+
     return {
       mode: ks.mode,
       seal: base.seal,
@@ -14762,7 +14991,8 @@
       epilogue: `${karmaClause}${journeyClause}${allyClause}${petClause}${endClause}`,
       clearedStages: clearedIdxs.length,
       totalStars,
-      bondedNames
+      bondedNames,
+      companionEpilogues
     };
   }
 
@@ -14924,6 +15154,53 @@
     else if (actionId === "open_workshop") openCustomWorkshopModal();
   }
 
+  function renderMasteryResonanceCardHtml(g) {
+    const mr = computeEndgameMasteryResonance(g);
+    const atkPctTxt = mr.passiveAtkPct > 0 ? `+${(mr.passiveAtkPct * 100).toFixed(1)}% 常驻攻击池` : "+0%";
+    const drTxt = mr.drBonus > 0 ? `+${mr.drBonus} 护体减伤` : "+0";
+    const critTxt = mr.critBonus > 0 ? ` · +${Math.round(mr.critBonus * 100)}% 暴击` : "";
+    return `
+      <div class="q6-mastery-strip" data-mastery-active="${mr.activeCount}">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
+          <strong style="font-size:12px;color:#80ffea;">☯ 诸天道果共鸣 · ${escapeHtml(mr.tierLabel)}</strong>
+          <span class="tag-chip ${mr.activeCount >= 4 ? "mythic" : mr.activeCount > 0 ? "done" : ""}" style="font-size:10px;">当前联动：${atkPctTxt} · ${drTxt}${critTxt}</span>
+        </div>
+        <div class="q6-mastery-grid">
+          ${mr.pillars.map(p => `
+            <div class="q6-mastery-pill ${p.active ? "lit" : ""}" data-mastery-pillar="${escapeHtml(p.id)}">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+                <strong style="color:${p.active ? "#ffe28a" : "#9db8b2"};">${p.active ? "✦ " : "○ "}${escapeHtml(p.name)}</strong>
+                <span style="font-size:9.2px;color:${p.active ? "#70ffe6" : "#8ea9a4"};">${escapeHtml(p.progressText)}</span>
+              </div>
+              <span style="font-size:9.2px;color:#9cc2ba;">${escapeHtml(p.short)}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderHighTierModeGroupStripHtml(g) {
+    return `
+      <div class="q6-mode-group-strip" data-high-tier-groups="3">
+        ${HIGH_TIER_MODE_REGISTRY.map(grp => {
+          const unlockedCnt = grp.items.filter(it => it.kind === "action"
+            ? isActionUnlockedByRealm(g, it.id)
+            : isEcosystemSystemUnlocked(g, it.id)).length;
+          return `
+            <div class="q6-mode-group-card" data-mode-group="${escapeHtml(grp.groupId)}">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+                <strong style="color:#ffe28a;font-size:11px;">${escapeHtml(grp.groupTitle.split(" · ")[0])}</strong>
+                <span class="tag-chip ${unlockedCnt === grp.items.length ? "done" : ""}" style="font-size:9px;">${unlockedCnt}/${grp.items.length}</span>
+              </div>
+              <span style="font-size:9.5px;color:#a8cac3;line-height:1.3;">${escapeHtml(grp.desc)}</span>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }
+
   function openAscensionRoadmapModal() {
     if (!game) return;
     closeDrawer();
@@ -14954,6 +15231,9 @@
         </div>
         <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;border-color:rgba(248,220,144,0.52);color:#ffe8a3;" data-action="open-hall-of-lives">🏛 历世道果殿堂</button>
       </div>
+
+      ${renderHighTierModeGroupStripHtml(game)}
+      ${renderMasteryResonanceCardHtml(game)}
 
       <div style="display:flex;flex-direction:column;gap:7px;max-height:64vh;overflow-y:auto;padding-right:2px;">
         ${SYSTEM_ECOSYSTEM_LADDER.map(tier => {
@@ -15319,6 +15599,19 @@
                 }).join("")}
               </div>
             ` : "";
+            const volGuide = VOLUME_CAMPAIGN_GUIDE.find(v => v.volIndex === ch.index) || null;
+            const volBriefHtml = volGuide ? `
+              <div class="q6-vol-brief-box" data-vol-brief="${ch.index}">
+                <div><strong>⚔ 敌招考题（${escapeHtml(volGuide.enemyExam.bossName)}）：</strong>${escapeHtml(volGuide.enemyExam.telegraph)} → ${escapeHtml(volGuide.enemyExam.counter)}</div>
+                <div><strong>✦ 成长收益：</strong>${escapeHtml(volGuide.growthPayoff)}</div>
+                <div style="color:var(--text-sub);">${escapeHtml(volGuide.optionalRouteNote)}</div>
+              </div>
+            ` : "";
+            const vol5Cta = ch.index === 5 ? `
+              <div style="display:flex;justify-content:flex-end;">
+                <button type="button" class="btn-secondary btn-jade" style="padding:3px 10px;font-size:var(--fs-xs);" data-action="open-vol5-resonance">✦ 展开第五卷 · 法则共鸣与元神试剑总览 ▸</button>
+              </div>
+            ` : "";
             return `
             <div class="jade-card" style="gap:6px;">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -15329,6 +15622,8 @@
                 <span style="font-size:var(--fs-xs);color:var(--text-sub);">${ch.steps.filter(s => s.check(game)).length}/${ch.steps.length} 已达成</span>
               </div>
               <p style="font-size:var(--fs-xs);color:var(--text-sub);line-height:1.45;margin:0;">${escapeHtml(ch.desc)}</p>
+              ${volBriefHtml}
+              ${vol5Cta}
               ${ch.steps.map(s => {
                 const ok = s.check(game);
                 const claimed = game.claimedStepIds.includes(s.id);
@@ -15498,6 +15793,8 @@
               <span class="tag-chip mythic">完成度 ${pct}%</span>
             </div>
           </div>
+          ${renderMasteryResonanceCardHtml(game)}
+          ${renderHighTierModeGroupStripHtml(game)}
           <div style="padding:8px 10px;border-radius:10px;background:rgba(28,12,18,0.68);border:1px solid rgba(255,120,110,0.35);display:flex;flex-direction:column;gap:6px;${pactsOk ? "" : "opacity:0.78;"}">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
               <strong style="font-size:var(--fs-sm);color:#ffb3ae;">🔥 天道劫印 · 巅峰难度契约（已启 ${getActivePactCount(game)}/5 劫${pactsOk ? "" : ` · 🔒${pactMinName}期解封`}）</strong>
@@ -15563,6 +15860,90 @@
         <span style="font-size:var(--fs-xs);color:var(--jade);">当前境界：${REALMS[game.realm].name}</span>
       </div>
     `, true, { tier: "info" });
+  }
+
+  function openVol5ResonanceModal() {
+    if (!game) return false;
+    closeDrawer();
+    const snap = buildVol5ResonanceSnapshot(game);
+    const guide = VOLUME_CAMPAIGN_GUIDE.find(v => v.volIndex === 5) || VOLUME_CAMPAIGN_GUIDE[4];
+    return openModal(`
+      <div class="modal-header">
+        <div class="drawer-mural-banner" style="height:94px;width:100%;">
+          <img src="${ART.arena_terrace}" alt="第五卷 · 法则共鸣" />
+          <div class="drawer-mural-overlay">
+            <div>
+              ${renderSemanticTag("main", "第五卷 · 元神试剑")}
+              <h2 style="font-family:var(--font-serif);font-size:var(--fs-xl);color:var(--gold-bright);margin-top:3px;">法则共鸣 · 元婴破虚化神总览</h2>
+            </div>
+            <button type="button" class="btn-tertiary btn-ghost" data-modal-close="1">收卷 ✕</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body" id="vol5-resonance-modal-body">
+        <div class="jade-card" style="gap:6px;padding:9px 11px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <strong style="font-family:var(--font-serif);font-size:14px;color:var(--gold-bright);">📜 第五卷叙事与核心目标（D01/D04 保守基线）</strong>
+            <span class="tag-chip ${snap.s5LawsDone ? "done" : "mythic"}">${snap.s5LawsDone ? "✓ 万法共鸣已达标" : "待聚四法或法宝★3"}</span>
+          </div>
+          <p style="font-size:12px;color:var(--text-main);line-height:1.55;margin:0;">${escapeHtml(guide.goalSummary)}</p>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;font-size:11.5px;">
+            <div class="visual-tile ${snap.s5LawsDone ? "equipped" : ""}" style="padding:7px 9px;justify-content:space-between;">
+              <span>大道法则 / 法宝淬星</span>
+              <strong style="color:#ffe28a;">法则 ${snap.lawCount}/${snap.lawNeed} 或 法宝 ★${snap.relicStars}/${snap.relicNeed}</strong>
+            </div>
+            <div class="visual-tile ${snap.isSpiritOrAbove || snap.readyForSpiritTribulation ? "equipped" : ""}" style="padding:7px 9px;justify-content:space-between;">
+              <span>化神天劫进度</span>
+              <strong style="color:#70ffe6;">${snap.isSpiritOrAbove ? "已证化神+" : snap.xpReady ? `修为圆满 (${snap.xp}/${snap.xpCap})` : `修为 ${snap.xp}/${snap.xpCap}`}</strong>
+            </div>
+          </div>
+          <div id="vol5-d01-dual-note" style="font-size:11px;color:#ffd8a8;background:rgba(44,26,12,0.52);border:1px solid rgba(255,196,102,0.34);border-radius:8px;padding:6px 9px;line-height:1.45;">
+            ☯ <b>双轨破境说明（化神丹持有 ×${snap.spiritPillCount}）</b>：${escapeHtml(snap.dualBreakthroughNote)}
+          </div>
+        </div>
+
+        ${renderMasteryResonanceCardHtml(game)}
+
+        <div class="jade-card" style="gap:6px;padding:9px 11px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
+            <strong style="font-size:12.5px;color:#f4c4ff;">♥ 第五卷故人终章前奏（可选加分，不硬锁主线）</strong>
+            <button type="button" class="btn-ghost" style="padding:2px 8px;font-size:10.5px;" data-route-goal="drawer_story">前往【故人】抽屉 ▸</button>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${snap.companionStatus.map(cs => `
+              <span class="tag-chip ${cs.done ? "done" : ""}">${cs.done ? "✓ " : "○ "}${escapeHtml(cs.name)}</span>
+            `).join("")}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="flex-wrap:wrap;gap:6px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button type="button" class="btn-primary btn-gold" style="padding:5px 12px;font-size:11.5px;" data-route-goal="stage_4">⚔ 前往九霄天门试剑</button>
+          <button type="button" class="btn-secondary btn-jade" style="padding:5px 12px;font-size:11.5px;" data-route-goal="tribulate">⚡ 前往渡劫化神</button>
+          <button type="button" class="btn-tertiary btn-ghost" style="padding:5px 10px;font-size:11px;" data-action="open-ascension-roadmap">📊 问道阶梯</button>
+          <button type="button" class="btn-tertiary btn-ghost" style="padding:5px 10px;font-size:11px;" data-action="open-star-chart">🌟 周天星图</button>
+          <button type="button" class="btn-tertiary btn-ghost" style="padding:5px 10px;font-size:11px;" data-action="open-world-map">🗺 九州舆图</button>
+        </div>
+      </div>
+    `, true, { kind: "vol5_resonance", tier: "info" });
+  }
+
+  function openVol5ResonanceFlow() {
+    if (!game) return false;
+    const canPlayIntro = Boolean(
+      rankOf(game.realm) >= 4
+      && !(game.seenCutscenes && game.seenCutscenes.enter_vol5_resonance)
+      && !arena.enemies.some(e => e.hp > 0 && !e.isDummy && !e.isTreasure)
+      && !arena.tribulation
+      && !arena.defeatPending
+    );
+    if (canPlayIntro) {
+      closeModal();
+      closeDrawer();
+      playCutscene("enter_vol5_resonance", () => { openVol5ResonanceModal(); });
+      return true;
+    }
+    return openVol5ResonanceModal();
   }
 
   function renderQuestTrackerHud() {
@@ -16114,6 +16495,7 @@
     arena.cloudFlight = null;
     arena.sectDefense = null;
     arena.celestialSpire = null;
+    restoreCustomSeedTempCurio();
     arena.customSeedRun = null;
     arena.bladeClash = null;
     if (wasPractice || practiceFormalSnapshot) {
@@ -16318,6 +16700,7 @@
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.celestialSpire = null;
+    restoreCustomSeedTempCurio();
     arena.customSeedRun = null;
     arena.bladeClash = null;
     if (wasPractice || practiceFormalSnapshot) {
@@ -16794,7 +17177,15 @@
       return;
     }
     const act = CAMPAIGN_ACTS[stageIdx] || CAMPAIGN_ACTS[0];
-    const meta = VOLUME_RECAP_META[stageIdx] || VOLUME_RECAP_META[0];
+    const isVol5NascentTrial = stageIdx === 4 && game.realm === "nascent";
+    const meta = isVol5NascentTrial
+      ? {
+          stageIdx: 4,
+          volEndLabel: "第五卷 · 元神试剑",
+          title: "法则共鸣 · 元神试剑圆满",
+          chronicle: "你以元婴剑心先登九霄星盘，一剑震退【天门道影】试剑分神！万法共鸣渐趋圆满，只需修为圆融并渡过化神天劫，便可于第六卷真正叩开九霄天门、白日飞升。"
+        }
+      : (VOLUME_RECAP_META[stageIdx] || VOLUME_RECAP_META[0]);
     const earned = Math.max(1, Math.min(3, Math.floor(num(payload && payload.earned, 1))));
     const prevStars = Math.max(0, Math.min(3, Math.floor(num(payload && payload.prevStars, 0))));
     const bestStars = Math.max(prevStars, earned);
@@ -16806,6 +17197,13 @@
     const bestIcons = `${"★".repeat(bestStars)}${"☆".repeat(3 - bestStars)}`;
     const realmName = (REALMS[game.realm] && REALMS[game.realm].name) || "凡人";
     const nextObjective = computeVolumeEndNextObjective(stageIdx, game);
+    const ksRecap = getKarmaState(game);
+    const bondedRecapIds = getBondedCompanionIds(game);
+    const bondedRecapNames = bondedRecapIds.map(id => NPC_META[id].name);
+    const volEchoGuide = VOLUME_CAMPAIGN_GUIDE.find(v => v.volIndex === (isVol5NascentTrial ? 5 : (stageIdx === 4 ? 6 : stageIdx + 1))) || VOLUME_CAMPAIGN_GUIDE[0];
+    const companionEchoText = bondedRecapNames.length > 0
+      ? `同心故人（${bondedRecapNames.join("、")}）回应此战 · 当前道心【${ksRecap.label}】 · ${volEchoGuide.companionPrompt}`
+      : `独行问道 · 当前道心【${ksRecap.label}】 · ${volEchoGuide.companionPrompt}`;
 
     const onDismissFn = typeof onDismiss === "function" ? onDismiss : null;
     const recapArgs = { stageIdx, payload, onDismiss: onDismissFn, stageEpoch: arena.stageEpoch };
@@ -16830,6 +17228,11 @@
           <span style="font-size:11px;color:var(--jade);">${escapeHtml(game.name)} · ${escapeHtml(realmName)}期 · 九州星辉 ${totalStars}/15 ★</span>
         </div>
         <p style="font-size:12.5px;color:var(--text-main);line-height:1.6;margin:0;">${escapeHtml(meta.chronicle)}</p>
+      </div>
+
+      <div id="volume-recap-companion-echo" class="jade-card" style="gap:4px;padding:8px 12px;border-color:rgba(244,196,255,0.42);">
+        <strong style="font-family:var(--font-serif);font-size:12.5px;color:#f4c4ff;">♥ 红尘故人与道心回响</strong>
+        <p style="font-size:11.5px;color:#e6daf5;line-height:1.5;margin:0;">${escapeHtml(companionEchoText)}</p>
       </div>
 
       <div class="jade-card" style="gap:7px;padding:10px 12px;">
@@ -18788,6 +19191,12 @@
           ? `<span>① <b>破境丹稳渡</b>：3 重天雷 + 3 层护脉丹障 + 延寿 +10 载，弹反 ≥1 次或护脉丹障存留即成【天道一品】；② <b>无丹强渡</b>：5 重强化天雷，需 <b>空格一闪弹反 ≥2 次</b> 方成【天道一品】，功成另赐灵石。</span>`
           : `<span><b>凡人引气初劫（无需破境丹）</b>：3 重紫霄天雷；落雷瞬间按 <b>空格一闪弹反 ≥1 次</b> → 铸就【天道一品】（全属性倍率 +14%）；零弹反稳过 → 【地道上品】（全属性倍率 +9%）。炼气期后将开启「破境丹稳渡 vs 无丹强渡」双路线。</span>`}
       </div>
+      ${game.realm === "nascent" ? `
+        <div id="trib-vol5-bridge-note" class="trib-rule-box" style="border-color:rgba(112,255,230,0.48);color:#d6f9f2;">
+          <strong style="color:#80ffea;">✦ 第五卷 → 第六卷过渡指引：</strong>
+          <span>化神丹稳渡与无丹逆天强渡皆可破境化神（D01 不硬锁炼丹）；证道化神后将立即解封第六卷【山河社稷图 (5)】【凌霄仙舟 (6)】【天道劫印】【造化工坊】，直指【九霄天门】终极飞升！</span>
+        </div>
+      ` : ""}
       ${pathBody}
     `, true);
   }
@@ -19177,6 +19586,17 @@
             </div>
             <div style="font-size:var(--fs-sm);color:var(--text-main);">产出与机缘：${escapeHtml(sel.drop)}</div>
             <div style="font-size:var(--fs-xs);color:var(--text-sub);">解锁/路径：${escapeHtml(sel.reqText || sel.sub)}${sel.isMainTarget && navSnap.nextMainline && navSnap.nextMainline.stepText ? ` ｜ 当前主线：${escapeHtml(navSnap.nextMainline.stepText)}` : ""}</div>
+            ${(() => {
+              const guide = sel.chapterIdx ? VOLUME_CAMPAIGN_GUIDE.find(v => v.volIndex === sel.chapterIdx) : null;
+              if (!guide) return "";
+              const vol5Extra = sel.id === "ch5_resonance"
+                ? (() => {
+                    const snap5 = buildVol5ResonanceSnapshot(game);
+                    return ` ｜ 实时进度：法则 ${snap5.lawCount}/${snap5.lawNeed} · 法宝★${snap5.relicStars}/${snap5.relicNeed} · 诸天共鸣 ${snap5.resonance.activeCount}/6`;
+                  })()
+                : "";
+              return `<div id="world-map-vol-brief" style="font-size:var(--fs-xs);color:#9effec;line-height:1.4;">⚔ 考题（${escapeHtml(guide.enemyExam.bossName)}）：${escapeHtml(guide.enemyExam.counter)} ｜ 收益：${escapeHtml(guide.growthPayoff)}${escapeHtml(vol5Extra)}</div>`;
+            })()}
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
             <button type="button" id="btn-map-enter-node" class="${sel.unlocked ? "btn-primary btn-gold" : "btn-tertiary btn-ghost is-locked"}" data-map-enter="${escapeHtml(sel.id)}" ${sel.unlocked ? "" : "disabled"}>${escapeHtml(enterBtnLabel)}</button>
@@ -19921,8 +20341,26 @@
             spawnBossRushBout();
           }, 750);
         }
-      } else if ((arena.sectDefense && arena.sectDefense.active) || (arena.customSeedRun && arena.customSeedRun.active)) {
-        // Handled by sect defense / custom seed encounter logic
+      } else if (arena.sectDefense && arena.sectDefense.active) {
+        // Handled by stepSectDefenseSiege
+      } else if (arena.customSeedRun && arena.customSeedRun.active) {
+        arena.waveTransitioning = true;
+        Sound.fanfare();
+        const csEpoch = arena.stageEpoch;
+        const csSeed = arena.customSeedRun.seed || "";
+        const csBosses = Array.isArray(arena.customSeedRun.bosses) ? arena.customSeedRun.bosses.slice() : [];
+        const csStartedAt = arena.customSeedRun.startedAt || Date.now();
+        setTimeout(() => {
+          if (!game || arena.stageEpoch !== csEpoch || !arena.customSeedRun || !arena.customSeedRun.active) return;
+          arena.waveTransitioning = false;
+          const elapsedSec = Math.max(0.1, (Date.now() - csStartedAt) / 1000);
+          arena.customSeedRun.elapsedSec = elapsedSec;
+          arena.customSeedRun.active = false;
+          const tempCurioRestored = restoreCustomSeedTempCurio();
+          if (practiceFormalSnapshot) endPracticeModeIsolation();
+          updateHud();
+          openCustomSeedVictoryModal({ seed: csSeed, elapsedSec, bosses: csBosses, tempCurioRestored });
+        }, 420);
       } else if (arena.towerMode) {
         arena.waveTransitioning = true;
         const fl = game.towerFloor;
@@ -21524,6 +21962,9 @@
     }
     if (game.realm === "spirit" || (REALMS[game.realm].xpCap > 0 && game.xp >= REALMS[game.realm].xpCap)) {
       startLiveTribulation();
+    } else if (game.realm === "nascent") {
+      const cap = REALMS.nascent.xpCap;
+      showToast(`元婴期修为尚未圆满（${Math.floor(num(game.xp, 0))}/${cap}），请先周天吐纳或历练攒满修为，再引动化神天劫晋升化神期！`);
     } else {
       showToast("需晋升化神期方可叩开九霄仙门！");
     }
@@ -22264,9 +22705,65 @@
     const isPeril = !!e.perilous;
     const isGrab = !!e.grabWindup;
     const isLow = !!e.lowSweepWindup;
+    const tx = Number.isFinite(e.aimX) && (e.aimX !== 0 || e.aimY !== 0) ? e.aimX : (e.x + (e.facing || 1) * 180);
+    const ty = Number.isFinite(e.aimY) && (e.aimX !== 0 || e.aimY !== 0) ? e.aimY : e.y;
+    const aimAng = Math.atan2(ty - e.y, tx - e.x);
+
+    if (e.id === "serpent" && !isGrab && !isLow) {
+      if (isPeril) {
+        return {
+          kind: "frost_barrage",
+          shape: "cone",
+          ang: aimAng,
+          spread: 0.50,
+          len: e.isBoss ? 250 : 210,
+          originYOff: 10,
+          frostPoolR: e.partSevered ? 0 : 92,
+          aimX: tx,
+          aimY: ty,
+          moveName: "幽潭寒煞弹"
+        };
+      }
+      if (e.attackType === "shot") {
+        return {
+          kind: "shot_fan",
+          shape: "cone",
+          ang: aimAng,
+          spread: e.enraged ? 0.44 : 0.26,
+          len: 225,
+          originYOff: 10,
+          frostPoolR: 0,
+          aimX: tx,
+          aimY: ty,
+          moveName: "寒霜妖弹"
+        };
+      }
+    }
+    if (e.id === "puppet" && isPeril && !isGrab && !isLow) {
+      return {
+        kind: "cross_crescent",
+        shape: "cross",
+        ang: aimAng,
+        len: e.isBoss ? 220 : 180,
+        halfW: 18,
+        arms: e.partSevered ? 2 : 4,
+        originYOff: 10,
+        moveName: "十字剑波"
+      };
+    }
+    if (e.id === "trial_gate" && isPeril && !isGrab && !isLow) {
+      return {
+        kind: "sky_bolt",
+        shape: "target_ellipse",
+        x: tx,
+        y: ty,
+        r: 76,
+        ellY: 0.56,
+        originYOff: 0,
+        moveName: "九霄天雷"
+      };
+    }
     if (e.attackType === "charge" && !isPeril && !isGrab && !isLow) {
-      const tx = Number.isFinite(e.aimX) && (e.aimX !== 0 || e.aimY !== 0) ? e.aimX : (e.x + (e.facing || 1) * 180);
-      const ty = Number.isFinite(e.aimY) && (e.aimX !== 0 || e.aimY !== 0) ? e.aimY : e.y;
       return {
         kind: "charge",
         shape: "rect",
@@ -22274,7 +22771,8 @@
         halfW: e.isBoss ? 24 : 18,
         dur: e.enraged ? 0.26 : 0.30,
         originYOff: 12,
-        ang: Math.atan2(ty - e.y, tx - e.x)
+        ang: aimAng,
+        moveName: e.id === "shadow" ? "噬影疾冲" : "疾冲扑咬"
       };
     }
     return {
@@ -22282,7 +22780,8 @@
       shape: "ellipse",
       r: isPeril ? (e.r + 92) : (e.r + 74),
       ellY: 0.56,
-      originYOff: 14
+      originYOff: 14,
+      moveName: e.id === "sentinel" ? "雷戟镇岳劈" : (isPeril ? "陨岳重击" : "重劈震地")
     };
   }
 
@@ -22797,31 +23296,61 @@
     const fCtx = farC.getContext("2d");
     const mCtx = midC.getContext("2d");
     const nCtx = fgC.getContext("2d");
-    const isSanctum = modeKey === "sanctum";
 
-    // Far Layer: Atmospheric ink-wash mountain ridge & mist haze
+    const BIOME_STYLES = {
+      sanctum: {
+        farTop: "rgba(18, 42, 46, 0.34)", farMid: "rgba(38, 86, 84, 0.12)", ridge: "rgba(14, 34, 38, 0.24)",
+        spots: [[0.24, 0.44, 140, "rgba(255, 224, 146, 0.13)"], [0.76, 0.46, 140, "rgba(255, 224, 146, 0.13)"], [0.50, 0.32, 165, "rgba(112, 255, 230, 0.09)"]],
+        fgFill: "rgba(8, 24, 26, 0.46)", fgStroke: "rgba(74, 168, 152, 0.24)", motif: "bamboo"
+      },
+      vol1: {
+        farTop: "rgba(10, 24, 30, 0.42)", farMid: "rgba(32, 68, 76, 0.14)", ridge: "rgba(8, 20, 26, 0.30)",
+        spots: [[0.20, 0.40, 145, "rgba(255, 198, 108, 0.11)"], [0.80, 0.42, 135, "rgba(128, 228, 240, 0.09)"], [0.52, 0.62, 220, "rgba(148, 224, 236, 0.07)"]],
+        fgFill: "rgba(5, 14, 18, 0.56)", fgStroke: "rgba(92, 152, 162, 0.22)", motif: "bamboo"
+      },
+      vol2: {
+        farTop: "rgba(14, 40, 36, 0.38)", farMid: "rgba(52, 114, 98, 0.14)", ridge: "rgba(10, 32, 28, 0.28)",
+        spots: [[0.22, 0.36, 155, "rgba(160, 246, 212, 0.10)"], [0.78, 0.38, 150, "rgba(255, 226, 152, 0.11)"], [0.50, 0.58, 200, "rgba(112, 255, 224, 0.06)"]],
+        fgFill: "rgba(7, 24, 20, 0.50)", fgStroke: "rgba(96, 188, 152, 0.26)", motif: "pine"
+      },
+      vol3: {
+        farTop: "rgba(8, 28, 44, 0.44)", farMid: "rgba(58, 148, 182, 0.15)", ridge: "rgba(6, 22, 36, 0.30)",
+        spots: [[0.26, 0.44, 160, "rgba(128, 236, 255, 0.12)"], [0.74, 0.48, 155, "rgba(148, 226, 255, 0.11)"], [0.50, 0.66, 230, "rgba(112, 255, 236, 0.08)"]],
+        fgFill: "rgba(5, 18, 28, 0.52)", fgStroke: "rgba(136, 234, 255, 0.28)", motif: "frost"
+      },
+      vol4: {
+        farTop: "rgba(28, 20, 34, 0.44)", farMid: "rgba(132, 96, 62, 0.14)", ridge: "rgba(22, 16, 28, 0.32)",
+        spots: [[0.20, 0.42, 150, "rgba(224, 178, 108, 0.10)"], [0.80, 0.42, 150, "rgba(186, 134, 255, 0.10)"], [0.50, 0.60, 210, "rgba(255, 210, 138, 0.06)"]],
+        fgFill: "rgba(14, 10, 18, 0.54)", fgStroke: "rgba(216, 179, 106, 0.26)", motif: "swords"
+      },
+      vol5: {
+        farTop: "rgba(22, 18, 42, 0.40)", farMid: "rgba(246, 206, 118, 0.14)", ridge: "rgba(28, 24, 48, 0.26)",
+        spots: [[0.24, 0.34, 170, "rgba(255, 232, 152, 0.13)"], [0.76, 0.34, 170, "rgba(196, 164, 255, 0.11)"], [0.50, 0.50, 240, "rgba(255, 242, 188, 0.08)"]],
+        fgFill: "rgba(14, 12, 26, 0.48)", fgStroke: "rgba(255, 224, 136, 0.28)", motif: "eaves"
+      }
+    };
+    const stBiome = BIOME_STYLES[modeKey] || BIOME_STYLES.vol1;
+
+    // Far Layer: Atmospheric ink-wash mountain ridge & biome mist haze
     const farGrad = fCtx.createLinearGradient(0, 0, 0, h * 0.42);
-    farGrad.addColorStop(0, isSanctum ? "rgba(18, 42, 46, 0.34)" : "rgba(10, 24, 30, 0.42)");
-    farGrad.addColorStop(0.65, isSanctum ? "rgba(38, 86, 84, 0.12)" : "rgba(32, 68, 76, 0.14)");
+    farGrad.addColorStop(0, stBiome.farTop);
+    farGrad.addColorStop(0.65, stBiome.farMid);
     farGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
     fCtx.fillStyle = farGrad;
     fCtx.fillRect(0, 0, w, h * 0.44);
-    fCtx.fillStyle = isSanctum ? "rgba(14, 34, 38, 0.24)" : "rgba(8, 20, 26, 0.30)";
+    fCtx.fillStyle = stBiome.ridge;
     fCtx.beginPath();
     fCtx.moveTo(0, h * 0.24);
-    fCtx.quadraticCurveTo(w * 0.18, h * 0.11, w * 0.38, h * 0.20);
-    fCtx.quadraticCurveTo(w * 0.62, h * 0.08, w * 0.84, h * 0.19);
+    fCtx.quadraticCurveTo(w * 0.18, h * (modeKey === "vol2" || modeKey === "vol5" ? 0.09 : 0.11), w * 0.38, h * 0.20);
+    fCtx.quadraticCurveTo(w * 0.62, h * (modeKey === "vol4" ? 0.12 : 0.08), w * 0.84, h * 0.19);
     fCtx.lineTo(w, h * 0.14);
     fCtx.lineTo(w, 0);
     fCtx.lineTo(0, 0);
     fCtx.closePath();
     fCtx.fill();
 
-    // Mid Layer: Wet bluestone rain sheen (Vol 1) or warm courtyard lantern pools (Sanctum)
-    const lanternSpots = isSanctum
-      ? [[0.24, 0.44, 140, "rgba(255, 224, 146, 0.13)"], [0.76, 0.46, 140, "rgba(255, 224, 146, 0.13)"], [0.50, 0.32, 165, "rgba(112, 255, 230, 0.09)"]]
-      : [[0.20, 0.40, 145, "rgba(255, 198, 108, 0.11)"], [0.80, 0.42, 135, "rgba(128, 228, 240, 0.09)"], [0.52, 0.62, 220, "rgba(148, 224, 236, 0.07)"]];
-    for (const [rx, ry, rad, col] of lanternSpots) {
+    // Mid Layer: Biome atmospheric pools (rain sheen / jade mist / frost glow / bronze haze / celestial cloud gold)
+    for (const [rx, ry, rad, col] of stBiome.spots) {
       const g = mCtx.createRadialGradient(w * rx, h * ry, 6, w * rx, h * ry, rad);
       g.addColorStop(0, col);
       g.addColorStop(1, "rgba(0, 0, 0, 0)");
@@ -22831,11 +23360,10 @@
       mCtx.fill();
     }
 
-    // Near Foreground Layer: Corner bamboo fronds / temple eave silhouettes strictly clamped to outer 10-11% bottom corners!
+    // Near Foreground Layer: Biome silhouettes strictly clamped to outer 10-11% bottom corners (fgMarginPct <= 0.11, never occludes danger telegraphs!)
     const marginW = w * 0.108;
     const cornerTop = h * 0.77;
-    nCtx.fillStyle = isSanctum ? "rgba(8, 24, 26, 0.46)" : "rgba(5, 14, 18, 0.56)";
-    // Bottom-left silhouette cluster
+    nCtx.fillStyle = stBiome.fgFill;
     nCtx.beginPath();
     nCtx.moveTo(0, h);
     nCtx.lineTo(0, cornerTop);
@@ -22843,7 +23371,6 @@
     nCtx.lineTo(marginW, h);
     nCtx.closePath();
     nCtx.fill();
-    // Bottom-right silhouette cluster
     nCtx.beginPath();
     nCtx.moveTo(w, h);
     nCtx.lineTo(w, cornerTop + 8);
@@ -22851,18 +23378,46 @@
     nCtx.lineTo(w - marginW, h);
     nCtx.closePath();
     nCtx.fill();
-    // Delicate bamboo leaf strokes inside outer 10.5% corners
-    nCtx.strokeStyle = isSanctum ? "rgba(74, 168, 152, 0.24)" : "rgba(92, 152, 162, 0.22)";
+
+    nCtx.strokeStyle = stBiome.fgStroke;
     nCtx.lineWidth = 2.0;
-    for (let b = 0; b < 3; b++) {
-      nCtx.beginPath();
-      nCtx.moveTo(10 + b * 24, h);
-      nCtx.quadraticCurveTo(22 + b * 28, h - 54 - b * 14, 48 + b * 26, h - 88 - b * 10);
-      nCtx.stroke();
-      nCtx.beginPath();
-      nCtx.moveTo(w - 10 - b * 24, h);
-      nCtx.quadraticCurveTo(w - 22 - b * 28, h - 50 - b * 14, w - 48 - b * 26, h - 84 - b * 10);
-      nCtx.stroke();
+    if (stBiome.motif === "swords") {
+      // Vol 4 Ancient Sword Mound: slanted broken sword hilts inside outer 10.5% corners
+      for (let b = 0; b < 3; b++) {
+        const lx = 18 + b * 28;
+        const rx = w - 18 - b * 28;
+        nCtx.beginPath(); nCtx.moveTo(lx, h); nCtx.lineTo(lx + 18, h - 78 - b * 10); nCtx.stroke();
+        nCtx.beginPath(); nCtx.moveTo(lx + 6, h - 54 - b * 8); nCtx.lineTo(lx + 24, h - 48 - b * 8); nCtx.stroke();
+        nCtx.beginPath(); nCtx.moveTo(rx, h); nCtx.lineTo(rx - 18, h - 74 - b * 10); nCtx.stroke();
+        nCtx.beginPath(); nCtx.moveTo(rx - 6, h - 52 - b * 8); nCtx.lineTo(rx - 24, h - 46 - b * 8); nCtx.stroke();
+      }
+    } else if (stBiome.motif === "frost") {
+      // Vol 3 Cold Pond: crystalline frost spires in outer corners
+      for (let b = 0; b < 3; b++) {
+        const lx = 14 + b * 26;
+        const rx = w - 14 - b * 26;
+        nCtx.beginPath(); nCtx.moveTo(lx, h); nCtx.lineTo(lx + 12, h - 72 - b * 12); nCtx.lineTo(lx + 24, h); nCtx.stroke();
+        nCtx.beginPath(); nCtx.moveTo(rx, h); nCtx.lineTo(rx - 12, h - 68 - b * 12); nCtx.lineTo(rx - 24, h); nCtx.stroke();
+      }
+    } else if (stBiome.motif === "eaves") {
+      // Vol 5 Nine-Heavens Gate: upturned celestial pavilion eaves
+      for (let b = 0; b < 2; b++) {
+        const yOff = h - 34 - b * 28;
+        nCtx.beginPath(); nCtx.moveTo(0, yOff + 14); nCtx.quadraticCurveTo(marginW * 0.55, yOff + 8, marginW * 0.92, yOff - 10); nCtx.stroke();
+        nCtx.beginPath(); nCtx.moveTo(w, yOff + 14); nCtx.quadraticCurveTo(w - marginW * 0.55, yOff + 8, w - marginW * 0.92, yOff - 10); nCtx.stroke();
+      }
+    } else {
+      // Sanctum / Vol 1 bamboo fronds / Vol 2 Qingyun pine boughs
+      for (let b = 0; b < 3; b++) {
+        nCtx.beginPath();
+        nCtx.moveTo(10 + b * 24, h);
+        nCtx.quadraticCurveTo(22 + b * 28, h - 54 - b * 14, 48 + b * 26, h - 88 - b * 10);
+        nCtx.stroke();
+        nCtx.beginPath();
+        nCtx.moveTo(w - 10 - b * 24, h);
+        nCtx.quadraticCurveTo(w - 22 - b * 28, h - 50 - b * 14, w - 48 - b * 26, h - 84 - b * 10);
+        nCtx.stroke();
+      }
     }
 
     _sceneLayerCache.key = modeKey;
@@ -22881,7 +23436,8 @@
     const rm = isReducedMotionActive();
     const degLvl = getEffectivePerfDegradeLevel();
     const layersOn = Boolean(a11ySettings && a11ySettings.enhancedVisualLayers) && degLvl < 2;
-    const isDepthScene = Boolean(arena.sanctumMode || (!arena.towerMode && arena.stageIdx === 0));
+    const isDepthScene = Boolean(arena.sanctumMode || (!arena.towerMode && arena.stageIdx >= 0 && arena.stageIdx < STAGES.length));
+    const depthModeKey = arena.sanctumMode ? "sanctum" : `vol${Math.max(1, Math.min(STAGES.length, (arena.stageIdx || 0) + 1))}`;
 
     const bgEl = document.getElementById("stage-bg-img");
     const effZoom = photoMode.active ? photoMode.zoom : (rm ? 1.0 : (arena.camZoom || 1));
@@ -22892,6 +23448,7 @@
     visualLayersRuntime.enabled = Boolean(a11ySettings && a11ySettings.enhancedVisualLayers);
     visualLayersRuntime.reducedMotion = rm;
     visualLayersRuntime.stageMode = arena.sanctumMode ? "sanctum" : `stage_${arena.stageIdx}`;
+    visualLayersRuntime.biomeKey = depthModeKey;
     visualLayersRuntime.bgParallaxX = Number(bgPx.toFixed(2));
     visualLayersRuntime.bgParallaxY = Number(bgPy.toFixed(2));
     visualLayersRuntime.fgOffsetX = rm ? 0 : Number(Math.max(-18, Math.min(18, bgPx * -1.25)).toFixed(2));
@@ -22940,10 +23497,10 @@
       ctx.translate((Math.random() - 0.5) * effShake, (Math.random() - 0.5) * effShake);
     }
 
-    // F25 Vol 1 & Sanctum Offscreen-Cached Far & Mid Depth Layers
+    // F25 + F34 All 5 Campaign Biomes & Sanctum Offscreen-Cached Far & Mid Depth Layers
     let depthCache = null;
     if (layersOn && isDepthScene) {
-      depthCache = getOrBuildSceneDepthLayers(arena.sanctumMode ? "sanctum" : "vol1", w, h);
+      depthCache = getOrBuildSceneDepthLayers(depthModeKey, w, h);
       ctx.drawImage(depthCache.far, bgPx * 0.65, bgPy * 0.65);
       ctx.drawImage(depthCache.mid, bgPx * 0.25, bgPy * 0.25);
     }
@@ -23309,6 +23866,59 @@
           ctx.strokeRect(0, -atkSpec.halfW, atkSpec.len, atkSpec.halfW * 2);
           ctx.fillStyle = "rgba(255, 244, 180, 0.45)";
           ctx.fillRect(0, -atkSpec.halfW, atkSpec.len * prog, atkSpec.halfW * 2);
+        } else if (atkSpec.shape === "cone") {
+          ctx.translate(e.x, e.y + atkSpec.originYOff);
+          ctx.fillStyle = isPeril ? `rgba(96, 224, 255, ${0.16 + prog * 0.24})` : mainFill;
+          ctx.strokeStyle = isPeril ? "#80ecff" : mainStroke;
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.arc(0, 0, atkSpec.len, atkSpec.ang - atkSpec.spread, atkSpec.ang + atkSpec.spread);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.arc(0, 0, atkSpec.len * prog, atkSpec.ang - atkSpec.spread, atkSpec.ang + atkSpec.spread);
+          ctx.closePath();
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 1.6;
+          ctx.stroke();
+          if (atkSpec.frostPoolR > 0 && Number.isFinite(atkSpec.aimX) && Number.isFinite(atkSpec.aimY)) {
+            ctx.restore();
+            ctx.save();
+            ctx.translate(atkSpec.aimX, atkSpec.aimY);
+            ctx.scale(1, 0.56);
+            ctx.fillStyle = `rgba(112, 236, 255, ${0.14 + prog * 0.22})`;
+            ctx.strokeStyle = "#80ecff";
+            ctx.lineWidth = 2.6;
+            ctx.beginPath(); ctx.arc(0, 0, atkSpec.frostPoolR, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          }
+        } else if (atkSpec.shape === "cross") {
+          ctx.translate(e.x, e.y + atkSpec.originYOff);
+          ctx.fillStyle = mainFill;
+          ctx.strokeStyle = "#ff7875";
+          ctx.lineWidth = 2.2;
+          const armCount = atkSpec.arms || 4;
+          for (let q = 0; q < armCount; q++) {
+            ctx.save();
+            ctx.rotate(atkSpec.ang + (q * Math.PI) / 2);
+            ctx.fillRect(0, -atkSpec.halfW, atkSpec.len, atkSpec.halfW * 2);
+            ctx.strokeRect(0, -atkSpec.halfW, atkSpec.len, atkSpec.halfW * 2);
+            ctx.fillStyle = "rgba(255, 224, 210, 0.42)";
+            ctx.fillRect(0, -atkSpec.halfW, atkSpec.len * prog, atkSpec.halfW * 2);
+            ctx.restore();
+          }
+        } else if (atkSpec.shape === "target_ellipse") {
+          ctx.translate(atkSpec.x, atkSpec.y);
+          ctx.scale(1, atkSpec.ellY);
+          ctx.fillStyle = `rgba(214, 158, 255, ${0.18 + prog * 0.30})`;
+          ctx.strokeStyle = "#ff5e57";
+          ctx.lineWidth = 3.2;
+          ctx.beginPath(); ctx.arc(0, 0, atkSpec.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.strokeStyle = "#ffe28a";
+          ctx.lineWidth = 2.2;
+          ctx.beginPath(); ctx.arc(0, 0, atkSpec.r * prog, 0, Math.PI * 2); ctx.stroke();
         } else {
           const maxR = atkSpec.r;
           ctx.translate(e.x, e.y + atkSpec.originYOff);
@@ -23924,14 +24534,25 @@
           const eFacing = e.facing !== undefined ? e.facing : (e.x > arena.player.x ? -1 : 1);
           const eFlip = eFacing < 0;
           const eSize = e.isBoss ? 132 : e.isTreasure ? 58 : 90;
-          const eFootY = e.y + e.r * 0.68 - liftZ + (e.id === "warden" && e.state === "windup" ? -7 : 0);
-          const eRot = (e.state === "recover" && e.id === "warden") ? (eFacing * 0.08) : (e.state === "lunge" && e.id === "wolf" ? eFacing * 0.10 : 0);
+          const eFootY = e.y + e.r * 0.68 - liftZ + ((e.id === "warden" || e.id === "sentinel" || e.id === "trial_gate") && e.state === "windup" ? -7 : 0);
+          const eRot = (e.state === "recover" && (e.id === "warden" || e.id === "sentinel")) ? (eFacing * 0.08)
+            : (e.state === "lunge" && (e.id === "wolf" || e.id === "shadow")) ? (eFacing * 0.10)
+            : (e.state === "windup" && e.id === "serpent") ? (Math.sin(nowSec * 12) * 0.07)
+            : (e.state === "windup" && e.id === "puppet") ? (-eFacing * 0.09) : 0;
           drawSprite(e.art, e.x, eFootY, eSize, eFlip, e.hitFlash > 0, 1.0, e.sx, e.sy, eRot, true);
-          // Distinct readable cues for Wolf (muzzle glint) vs Warden (amber hammer sparks) vs Recover (stagger aura)
+          // Distinct readable windup & recovery cues across all Vol 1-6 archetypes
           if (e.state === "windup" && e.id === "wolf") {
             drawPointLight(e.x + eFacing * (e.isBoss ? 34 : 22), e.y - 16 - liftZ, e.isBoss ? 36 : 24, e.perilous ? "rgba(255, 82, 82, 0.72)" : "rgba(255, 226, 122, 0.68)");
-          } else if (e.state === "windup" && e.id === "warden") {
-            drawPointLight(e.x, e.y - (e.isBoss ? 54 : 38) - liftZ, e.isBoss ? 52 : 34, "rgba(255, 184, 72, 0.58)");
+          } else if (e.state === "windup" && (e.id === "warden" || e.id === "sentinel")) {
+            drawPointLight(e.x, e.y - (e.isBoss ? 54 : 38) - liftZ, e.isBoss ? 52 : 34, e.id === "sentinel" ? "rgba(214, 158, 255, 0.62)" : "rgba(255, 184, 72, 0.58)");
+          } else if (e.state === "windup" && e.id === "serpent") {
+            drawPointLight(e.x + eFacing * 28, e.y - 24 - liftZ, e.isBoss ? 44 : 28, "rgba(112, 236, 255, 0.70)");
+          } else if (e.state === "windup" && e.id === "puppet") {
+            drawPointLight(e.x + eFacing * 20, e.y - 22 - liftZ, e.isBoss ? 42 : 28, e.mirrorTimer > 0 ? "rgba(255, 214, 102, 0.72)" : "rgba(255, 118, 118, 0.70)");
+          } else if (e.state === "windup" && e.id === "trial_gate") {
+            drawPointLight(e.x, e.y - 62 - liftZ, 58, "rgba(214, 158, 255, 0.74)");
+          } else if (e.state === "windup" && e.id === "shadow") {
+            drawPointLight(e.x + eFacing * 24, e.y - 18 - liftZ, 30, "rgba(186, 120, 255, 0.68)");
           } else if (e.state === "recover") {
             ctx.save();
             ctx.strokeStyle = "rgba(112, 255, 230, 0.68)";
@@ -25447,7 +26068,7 @@
         ? (arcWrap && arcWrap.classList.contains("open") ? "收起秘匣" : "太虚秘匣")
         : "太虚秘匣 · 金丹启";
     }
-    document.querySelectorAll("#arcana-vault-drawer [data-arcana-act]").forEach(btn => {
+    document.querySelectorAll("#arcana-vault-drawer [data-arcana-act], #dojo-control-bar [data-arcana-act]").forEach(btn => {
       const actKey = btn.getAttribute("data-arcana-act");
       const ok = isActionUnlockedByRealm(game, actKey);
       btn.classList.toggle("eco-locked-btn", !ok);
@@ -25897,7 +26518,11 @@
 
   function closeDrawer() {
     clearTransientInputs();
-    if (activeMatSourceJump && !activeMatSourceJump.inModal) activeMatSourceJump = null;
+    if (activeMatSourceJump && !activeMatSourceJump.inModal) {
+      activeMatSourceJump = null;
+      const staleDrawerRet = document.querySelector("#jade-panel #btn-mat-source-return");
+      if (staleDrawerRet) staleDrawerRet.remove();
+    }
     const wasOpen = drawerOpen;
     furnaceGame.active = false;
     drawerOpen = false;
@@ -28249,7 +28874,7 @@
       dismissActiveUnlockCard();
       return;
     }
-    if (!game || arena.paused) return;
+    if (!game || arena.paused || onWelcomeKey) return;
 
     const ae = document.activeElement;
     const aeTag = ae && ae.tagName;
@@ -28319,6 +28944,7 @@
       else if (confirmCombatHotkeyArm("Digit7", "连招编排")) openComboSequencerModal();
     } else if (ev.code === "Digit8" && game) {
       if (document.getElementById("modal-backdrop").classList.contains("open")) closeModal();
+      else if (!isEcosystemSystemUnlocked(game, "vein_expedition")) guardEcosystemAccess("vein_expedition");
       else if (confirmCombatHotkeyArm("Digit8", "宗门远征")) openExpeditionSandboxModal();
     } else if (ev.code === "KeyN") {
       if (document.getElementById("modal-backdrop").classList.contains("open")) closeModal();
@@ -29252,8 +29878,11 @@
         saveReadOnlyMode = true;
         saveConflictState = null;
         saveAlertDismissed = false;
+        const modalBd = document.getElementById("modal-backdrop");
+        if (modalBd && modalBd.classList.contains("open") && (activeModalKind === "save_conflict" || activeModalKind === "save_corrupt")) {
+          closeModal();
+        }
         renderHudSaveAlert();
-        closeModal();
         const bdNow = document.getElementById("modal-backdrop");
         if (!(bdNow && bdNow.classList.contains("open"))) {
           focusSaveAlertOrFallback(storageReadError ? "overwrite-with-current-save" : "load-latest-save");
@@ -29261,6 +29890,7 @@
         return;
       }
       clearTransientChoiceQueues();
+      activeCustomSeedTempCurio = null;
       sandboxMode = false;
       preSandboxSnapshot = null;
       practiceFormalSnapshot = null;
@@ -29326,8 +29956,10 @@
           practiceSnap: practiceFormalSnapshot ? JSON.parse(JSON.stringify(practiceFormalSnapshot)) : null,
           practiceGame: game ? JSON.parse(JSON.stringify(game)) : null,
           practiceMeta: JSON.parse(JSON.stringify(ensureMetaState())),
+          tempCurio: activeCustomSeedTempCurio ? Object.assign({}, activeCustomSeedTempCurio) : null,
           lastSavedPayloadChecksum
         };
+        restoreCustomSeedTempCurio();
         const snapRef = practiceFormalSnapshot;
         arena.bossRush = null;
         arena.celestialSpire = null;
@@ -29379,6 +30011,9 @@
               game = restoredPractice;
             }
           }
+          activeCustomSeedTempCurio = prevPracticeRollback.tempCurio
+            ? Object.assign({}, prevPracticeRollback.tempCurio, { targetGame: game })
+            : null;
           if (prevPracticeRollback.practiceMeta) {
             Object.keys(metaState).forEach(k => { if (!(k in prevPracticeRollback.practiceMeta)) delete metaState[k]; });
             safeAssignPlain(metaState, prevPracticeRollback.practiceMeta);
@@ -29426,6 +30061,7 @@
         saveGame();
       }
       clearTransientChoiceQueues();
+      activeCustomSeedTempCurio = null;
       game = null;
       practiceFormalSnapshot = null;
       lastSavedPayloadChecksum = null;
@@ -29586,6 +30222,7 @@
         return;
       }
       clearTransientChoiceQueues();
+      activeCustomSeedTempCurio = null;
       game = null;
       practiceFormalSnapshot = null;
       clearLoadedSaveMeta();
@@ -29977,6 +30614,18 @@
     if (t.id === "btn-celestial-time" || t.getAttribute("data-action") === "cycle-celestial-time") {
       if (photoMode.active || arena.paused) return;
       cycleCelestialTimePhase();
+      return;
+    }
+    if (t.getAttribute("data-action") === "cycle-celestial-time-in-modal") {
+      if (cycleCelestialTimePhase({ allowInModal: true })) openStarChartModal();
+      return;
+    }
+    if (t.getAttribute("data-action") === "open-vol5-resonance") {
+      openVol5ResonanceFlow();
+      return;
+    }
+    if (t.getAttribute("data-action") === "ws-replay-seed") {
+      launchCustomSeedEncounter(t.getAttribute("data-ws-seed") || null);
       return;
     }
     if (t.id === "btn-comic-scroll" || t.getAttribute("data-action") === "open-comic-scroll") {
@@ -30899,7 +31548,7 @@
       if (nd.kind === "hub") { focusBattlefield(); enterSanctumHub(); }
       else if (nd.kind === "boss_rush") openBossRushModal();
       else if (nd.kind === "tower") { focusBattlefield(); initArenaStage(3, true); }
-      else if (nd.kind === "chapter5_marker") { routeToGoalTarget(nd.routeKey || "stage_4"); }
+      else if (nd.kind === "chapter5_marker") { openVol5ResonanceFlow(); }
       else { focusBattlefield(); initArenaStage(nd.stageIdx, false); }
       saveGame();
       return;
@@ -30921,7 +31570,7 @@
         };
         openSanctumUpgradeModal();
         if (box) box.scrollTop = 0;
-        const retBtn = document.getElementById("btn-mat-source-return");
+        const retBtn = box ? box.querySelector("#btn-mat-source-return") : document.getElementById("btn-mat-source-return");
         if (retBtn && isElementFocusable(retBtn)) {
           try { retBtn.focus({ preventScroll: true }); } catch (e) {}
         }
@@ -30936,7 +31585,7 @@
         };
         renderDrawerContent();
         if (bodyEl) bodyEl.scrollTop = 0;
-        const retBtn = document.getElementById("btn-mat-source-return");
+        const retBtn = bodyEl ? bodyEl.querySelector("#btn-mat-source-return") : document.getElementById("btn-mat-source-return");
         if (retBtn && isElementFocusable(retBtn)) {
           try { retBtn.focus({ preventScroll: true }); } catch (e) {}
         }
@@ -30952,6 +31601,17 @@
         if (box) {
           box.scrollTop = prev.scrollTop || 0;
           let orig = prev.originSelector ? box.querySelector(prev.originSelector) : null;
+          if (!orig || !isElementFocusable(orig)) {
+            if (prev.matId && prev.originSelector) {
+              const chips = box.querySelectorAll(`[data-mat-source="${prev.matId}"]`);
+              for (const ch of chips) {
+                if (ch.getAttribute("data-source-origin") === prev.originSelector && isElementFocusable(ch)) {
+                  orig = ch;
+                  break;
+                }
+              }
+            }
+          }
           if (!orig || !isElementFocusable(orig)) {
             orig = prev.matId ? box.querySelector(`[data-mat-source="${prev.matId}"]`) : null;
           }
@@ -31095,7 +31755,13 @@
         if (kOpt.longevityPill) game.inventory.longevity_pill = (game.inventory.longevity_pill || 0) + kOpt.longevityPill;
         if (kOpt.healPills) game.inventory.healing_pill = (game.inventory.healing_pill || 0) + kOpt.healPills;
         if (kOpt.cores) game.inventory.core = (game.inventory.core || 0) + kOpt.cores;
-        if (kOpt.lifespanMonths) game.lifespanBonusMonths = (game.lifespanBonusMonths || 0) + kOpt.lifespanMonths;
+        if (kOpt.lifespanMonths) {
+          game.lifespanBonusMonths = (game.lifespanBonusMonths || 0) + kOpt.lifespanMonths;
+          if (!getLifespanInfo(game).isExhausted) {
+            game.lifespanExhaustedPromptDismissed = false;
+            pendingLifespanExhaustedPrompt = false;
+          }
+        }
         if (kOpt.fillIntent) arena.swordIntent = 100;
         if (kOpt.fullHeal) { const st2 = getCombatStats(game); game.hp = st2.maxHp; game.mp = st2.maxMp; }
         if (kOpt.bond) {

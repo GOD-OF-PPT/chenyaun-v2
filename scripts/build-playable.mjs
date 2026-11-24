@@ -43,6 +43,7 @@ export const ESM_MODULE_ORDER = [
   "src/config/realms-items.mjs",
   "src/config/progression-data.mjs",
   "src/rules/gear-rules.mjs",
+  "src/rules/campaign-q6.mjs",
   "src/rules/combat-stats.mjs",
   "src/rules/economy-rules.mjs",
   "src/rules/scoring-rules.mjs",
@@ -121,8 +122,12 @@ export function transformEsmForIife(source, relPath) {
   if (/<\/script/i.test(text)) {
     throw new Error(`Forbidden "</script" sequence found in ${relPath}`);
   }
+  // Reject bare side-effect imports (`import "./x.mjs";`)
+  if (/^import\s+["'][^"']+["']\s*;?/m.test(text)) {
+    throw new Error(`Unsupported bare side-effect import in ${relPath}`);
+  }
   // Remove top-level single-line or multi-line `import ... from "...";` statements (fail closed on aliased `as` imports)
-  text = text.replace(/^import\b([\s\S]*?)from\s+["'][^"']+["'];?\s*\n?/gm, (match, clause) => {
+  text = text.replace(/^import\b([^;]*?)from\s+["'][^"']+["'];?\s*\n?/gm, (match, clause) => {
     if (/\bas\b/.test(clause)) {
       throw new Error(`Unsupported aliased import ("as") in ${relPath}: ${match.trim()}`);
     }

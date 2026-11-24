@@ -1,0 +1,37 @@
+{
+  "generatedAt": "2026-11-24T12:22:37.920Z",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "fileEntry": {
+    "passed": true,
+    "firstInteractiveMs": 1197,
+    "frameStats": {
+      "samples": 60,
+      "p50Ms": 50.1,
+      "p95Ms": 100,
+      "maxMs": 100
+    },
+    "runtimeErrors": 0,
+    "hasV18ToV25": true,
+    "debugVer": "q5-compat-1",
+    "scriptCount": 1
+  },
+  "httpPolishAndPerf": {
+    "passed": true,
+    "runtimeErrors": 0,
+    "checks": {
+      "fallbackMode": "static",
+      "hadDojoPropsBefore": true,
+      "dojoPropsAfterSect": false,
+      "waterPoolsAfterSect": 0,
+      "wanjianDesc": "环身飞剑 +1（额外飞剑来源上限 +3），出剑额外激发追踪飞剑与剑雨弧光！",
+      "staleDrawerBtnAfterClose": false,
+      "secondChipOrigin": "[data-upgrade-sanctum='cauldron']",
+      "multiBldReturnMatched": true,
+      "unrelatedModalStayedOpen": true
+    }
+  },
+  "allPassed": true
+}
