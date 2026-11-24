@@ -165,7 +165,7 @@ export const ACTION_REALM_REQ = {
   slash: 0, recall: 0, dash: 0, meditate: 0, pill: 0, hub: 0, photo: 0, telemetry: 0,
   stance: 1, jump: 1, ult: 1, ally: 1, pet: 1,
   posture: 2, soul: 2, swordBlink: 2, finisher: 2, tagSwitch: 2, weapon_form: 2,
-  mount: 3, qimen: 3, sequencer: 3,
+  mount: 3, qimen: 3, sequencer: 3, coop_2p: 3, celestial_time: 3,
   sanqing: 4, astral: 4,
   shanhe: 5, warship: 5
 };
