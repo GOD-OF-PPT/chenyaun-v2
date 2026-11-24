@@ -7,6 +7,9 @@
     "node": ">=20"
   },
   "scripts": {
+    "build": "node scripts/build-playable.mjs",
+    "build:check": "node scripts/build-playable.mjs --check",
+    "test:unit": "node --test tests/unit/*.test.mjs",
     "test:regression": "node scripts/verify-playable-v2.mjs",
     "test:e2e": "node tests/e2e/run.mjs",
     "art:manifest": "node scripts/art-manifest.mjs",
