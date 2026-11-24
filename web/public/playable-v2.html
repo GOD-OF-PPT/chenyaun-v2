@@ -16755,7 +16755,7 @@ const ART = {
       el.classList.remove("readonly-mode");
       return;
     }
-    if (saveAlertDismissed && !saveConflictState && !storageReadError && !metaReadError) {
+    if (saveAlertDismissed && !saveConflictState && !storageReadError && !metaReadError && !saveReadOnlyMode) {
       el.style.display = "none";
       return;
     }
@@ -16777,6 +16777,19 @@ const ART = {
         <span>⚠ <b>本地存档写入失败</b>（${escapeHtml(storageWriteError.message)}）且<b>原受损存档仍保留</b>（${escapeHtml(storageReadError.reason)}）· 自动保存已暂停，请先备份或确认覆写。</span>
         <div style="display:flex;gap:6px;flex-shrink:0;">
           ${storageReadError.raw ? `<button type="button" class="btn-ghost" style="padding:3px 9px;font-size:11px;" data-action="copy-corrupt-save-raw">复制受损原文</button>` : ""}
+          <button type="button" class="btn-gold" style="padding:3px 9px;font-size:11px;" data-action="overwrite-with-current-save">以本页覆盖</button>
+          <button type="button" class="btn-ghost" style="padding:3px 9px;font-size:11px;" data-action="open-cloud-backup">备份云码</button>
+        </div>
+      `;
+      return;
+    }
+    if (storageWriteError && saveReadOnlyMode) {
+      el.classList.add("readonly-mode");
+      el.style.display = "flex";
+      el.innerHTML = `
+        <span>⚠ <b>本地存档写入失败</b>（${escapeHtml(storageWriteError.message)}）· 当前仍处于<b>只读观览态</b>，可载入最新档、重试覆盖或备份云码。</span>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button type="button" class="btn-jade" style="padding:3px 9px;font-size:11px;" data-action="load-latest-save">载入最新档</button>
           <button type="button" class="btn-gold" style="padding:3px 9px;font-size:11px;" data-action="overwrite-with-current-save">以本页覆盖</button>
           <button type="button" class="btn-ghost" style="padding:3px 9px;font-size:11px;" data-action="open-cloud-backup">备份云码</button>
         </div>
@@ -17052,7 +17065,8 @@ const ART = {
       };
       saveAlertDismissed = false;
       renderHudSaveAlert();
-      showToast(`⚠ 本地存档写入失败：${storageWriteError.message}`, { critical: true, key: "save_write_err", throttleMs: 6000 });
+      const writeToastThrottleMs = (opts && opts.userInitiated) ? 0 : 6000;
+      showToast(`⚠ 本地存档写入失败：${storageWriteError.message}`, { critical: true, key: "save_write_err", throttleMs: writeToastThrottleMs });
       return false;
     }
   }
@@ -17135,26 +17149,41 @@ const ART = {
         return;
       }
       if (res.meta.metaTabId && res.meta.metaTabId === TAB_ID) return;
+      let liveRaw = null;
+      let liveReadFailed = false;
+      try { liveRaw = localStorage.getItem(META_KEY); } catch (e) { liveReadFailed = true; }
+      let liveRes = null;
+      if (liveRaw !== null && liveRaw !== "") {
+        liveRes = parseAndValidateMetaRaw(liveRaw, META_KEY);
+        if (!liveRes.ok) {
+          metaReadError = {
+            key: META_KEY,
+            reason: liveRes.reason || "元存档结构异常",
+            raw: liveRaw,
+            rawLength: liveRaw.length,
+            at: Date.now()
+          };
+          saveAlertDismissed = false;
+          renderWelcomeSaveStatusBanner();
+          renderHudSaveAlert();
+          return;
+        }
+      }
       const localWasWriter = Boolean(metaState && metaState.metaTabId === TAB_ID);
       const merged = mergeMetaStates(metaState, res.meta);
       safeAssignPlain(metaState, merged);
       metaState.metaRev = Math.max(Math.max(0, Math.floor(num(metaState.metaRev, 0))), Math.max(0, Math.floor(num(res.metaRev, 0))));
-      metaReadError = null;
+      if (!liveReadFailed && liveRes && liveRes.ok) {
+        metaReadError = null;
+      }
       ensureMetaState();
-      if (localWasWriter && isMetaBehind(res.meta, merged) && !saveReadOnlyMode && !sandboxMode) {
-        let liveRaw = null;
-        try { liveRaw = localStorage.getItem(META_KEY); } catch (e) { liveRaw = null; }
-        if (liveRaw) {
-          const liveRes = parseAndValidateMetaRaw(liveRaw, META_KEY);
-          if (liveRes.ok) {
-            const targetMerged = mergeMetaStates(liveRes.meta, merged);
-            safeAssignPlain(metaState, targetMerged);
-            metaState.metaRev = Math.max(Math.max(0, Math.floor(num(metaState.metaRev, 0))), Math.max(0, Math.floor(num(liveRes.metaRev, 0))));
-            ensureMetaState();
-            if (isMetaBehind(liveRes.meta, targetMerged)) {
-              saveMeta();
-            }
-          }
+      if (localWasWriter && isMetaBehind(res.meta, merged) && !saveReadOnlyMode && !sandboxMode && liveRes && liveRes.ok) {
+        const targetMerged = mergeMetaStates(liveRes.meta, merged);
+        safeAssignPlain(metaState, targetMerged);
+        metaState.metaRev = Math.max(Math.max(0, Math.floor(num(metaState.metaRev, 0))), Math.max(0, Math.floor(num(liveRes.metaRev, 0))));
+        ensureMetaState();
+        if (isMetaBehind(liveRes.meta, targetMerged)) {
+          saveMeta();
         }
       }
       const ws = document.getElementById("welcome-screen");
@@ -33142,12 +33171,42 @@ const ART = {
       return;
     }
     if (m1Act === "retry-save-now") {
+      const alertEl = document.getElementById("hud-save-alert");
+      const modalBackdrop = document.getElementById("modal-backdrop");
       if (storageReadError) {
         renderHudSaveAlert();
         showToast("⚠ 原受损存档仍保留，请点击【以本页覆盖】确认覆写，或先【复制受损原文】备份。", { critical: true });
+        if (alertEl && alertEl.style.display !== "none" && document.activeElement === document.body) {
+          const ovBtn = alertEl.querySelector('[data-action="overwrite-with-current-save"]');
+          if (ovBtn && typeof ovBtn.focus === "function") ovBtn.focus({ preventScroll: true });
+          else focusDialogSafely(alertEl);
+        }
         return;
       }
-      if (saveGame()) showToast(`本地存档已恢复写入（v${loadedSaveRev}）！`);
+      if (saveReadOnlyMode) {
+        renderHudSaveAlert();
+        showToast("⚠ 当前处于只读观览态，请点击【以本页覆盖】或【载入最新档】。", { critical: true });
+        if (alertEl && alertEl.style.display !== "none" && document.activeElement === document.body) {
+          const ovBtn = alertEl.querySelector('[data-action="overwrite-with-current-save"]');
+          if (ovBtn && typeof ovBtn.focus === "function") ovBtn.focus({ preventScroll: true });
+          else focusDialogSafely(alertEl);
+        }
+        return;
+      }
+      const savedOk = saveGame({ userInitiated: true });
+      const isModalOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
+      if (savedOk) {
+        showToast(`本地存档已恢复写入（v${loadedSaveRev}）！`);
+        if (!isModalOpen) {
+          if (cutscene.active) focusDialogSafely(document.getElementById("story-dialogue-bar"));
+          else if (drawerOpen) focusDialogSafely(document.getElementById("jade-panel"));
+          else restoreTriggerFocus(null);
+        }
+      } else if (!isModalOpen && alertEl && alertEl.style.display !== "none") {
+        const retryBtn = alertEl.querySelector('[data-action="retry-save-now"]');
+        if (retryBtn && typeof retryBtn.focus === "function") retryBtn.focus({ preventScroll: true });
+        else focusDialogSafely(alertEl);
+      }
       return;
     }
     if (m1Act === "retry-meta-save") {
@@ -33162,6 +33221,14 @@ const ART = {
     if (m1Act === "dismiss-save-alert") {
       saveAlertDismissed = true;
       renderHudSaveAlert();
+      const alertEl = document.getElementById("hud-save-alert");
+      const modalBackdrop = document.getElementById("modal-backdrop");
+      const isModalOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
+      if (!isModalOpen && (!alertEl || alertEl.style.display === "none")) {
+        if (cutscene.active) focusDialogSafely(document.getElementById("story-dialogue-bar"));
+        else if (drawerOpen) focusDialogSafely(document.getElementById("jade-panel"));
+        else restoreTriggerFocus(null);
+      }
       return;
     }
     if (m1Act === "load-latest-save") {
@@ -33213,21 +33280,39 @@ const ART = {
         showToast("🧪 演武沙盒模式禁止覆盖正式存档，请先点击【退出沙盒】！");
         return;
       }
-      saveReadOnlyMode = false;
-      saveConflictState = null;
-      saveAlertDismissed = false;
+      const prevReadOnly = saveReadOnlyMode;
+      const prevConflict = saveConflictState;
       const modalBackdrop = document.getElementById("modal-backdrop");
       const isModalOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
-      const shouldCloseModal = !isModalOpen || activeModalKind === "save_conflict" || activeModalKind === "save_corrupt";
-      const savedOk = saveGame({ forceOverwrite: true });
+      const shouldCloseModal = isModalOpen && (activeModalKind === "save_conflict" || activeModalKind === "save_corrupt");
+      const savedOk = saveGame({ forceOverwrite: true, userInitiated: true });
       if (savedOk) {
+        saveAlertDismissed = false;
         showToast(`已以本页进度强制覆盖存档（v${loadedSaveRev}）！`);
-      }
-      if (shouldCloseModal) closeModal();
-      if (savedOk && !isModalOpen && !(modalBackdrop && modalBackdrop.classList.contains("open"))) {
-        if (cutscene.active) focusDialogSafely(document.getElementById("story-dialogue-bar"));
-        else if (drawerOpen) focusDialogSafely(document.getElementById("jade-panel"));
-        else restoreTriggerFocus(null);
+        if (shouldCloseModal) closeModal();
+        if (!isModalOpen && !(modalBackdrop && modalBackdrop.classList.contains("open"))) {
+          if (cutscene.active) focusDialogSafely(document.getElementById("story-dialogue-bar"));
+          else if (drawerOpen) focusDialogSafely(document.getElementById("jade-panel"));
+          else restoreTriggerFocus(null);
+        }
+      } else {
+        saveReadOnlyMode = prevReadOnly;
+        saveConflictState = prevConflict;
+        saveAlertDismissed = false;
+        renderHudSaveAlert();
+        const modalStillOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
+        if (modalStillOpen) {
+          if (document.activeElement === document.body) {
+            focusDialogSafely(document.getElementById("modal-content") || modalBackdrop);
+          }
+        } else {
+          const alertEl = document.getElementById("hud-save-alert");
+          if (alertEl && alertEl.style.display !== "none") {
+            const ovBtn = alertEl.querySelector('[data-action="overwrite-with-current-save"]');
+            if (ovBtn && typeof ovBtn.focus === "function") ovBtn.focus({ preventScroll: true });
+            else focusDialogSafely(alertEl);
+          }
+        }
       }
       return;
     }

@@ -7396,6 +7396,38 @@ try {
     assert.equal(quotaFailedState.actions.includes("retry-save-now"), false, `DEFECT-1: Dual-error banner must omit dead retry-save-now button, got: ${quotaFailedState.actions}`);
     assert.equal(quotaFailedState.actions.includes("dismiss-save-alert"), false, `DEFECT-1: Dual-error banner must omit dead dismiss-save-alert button, got: ${quotaFailedState.actions}`);
 
+    // DEFECT-R2-1: Persistent-quota within-6s click on #hud-save-alert [data-action="overwrite-with-current-save"] MUST emit immediate failure toast (not throttled) and preserve off-BODY focus
+    await pageB.evaluate(() => {
+      window.__CHENYUAN_V25__.enterSanctumHub({ skipSave: true });
+      const tc = document.getElementById("toast-container");
+      if (tc) tc.innerHTML = "";
+    });
+    await pageB.click('#hud-save-alert [data-action="overwrite-with-current-save"]');
+    await pageB.waitForTimeout(60);
+    const persistentQuotaOverwrite = await pageB.evaluate((sk) => {
+      const ps = window.__CHENYUAN_V25__.getPersistenceState();
+      const alertEl = document.getElementById("hud-save-alert");
+      const ae = document.activeElement;
+      return {
+        raw: localStorage.getItem(sk),
+        hasReadErr: Boolean(ps.storageReadError),
+        hasWriteErr: Boolean(ps.storageWriteError),
+        toastAfter: document.getElementById("toast-container")?.textContent || "",
+        alertDisplay: getComputedStyle(alertEl).display,
+        isBody: ae === document.body,
+        inAlert: Boolean(alertEl && alertEl.contains(ae)),
+        activeAction: ae ? (ae.getAttribute("data-action") || "") : ""
+      };
+    }, STORAGE_KEY);
+    assert.equal(persistentQuotaOverwrite.raw, corruptRaw, "DEFECT-R2-1: Failed within-6s overwrite must keep corrupt raw intact");
+    assert.equal(persistentQuotaOverwrite.hasReadErr, true, "DEFECT-R2-1: Failed within-6s overwrite must keep storageReadError active");
+    assert.equal(persistentQuotaOverwrite.hasWriteErr, true, "DEFECT-R2-1: Failed within-6s overwrite must keep storageWriteError active");
+    assert.ok(persistentQuotaOverwrite.toastAfter.includes("写入失败"), `DEFECT-R2-1: Within-6s user-initiated overwrite failure must emit immediate failure toast (not throttled), got: ${persistentQuotaOverwrite.toastAfter}`);
+    assert.equal(persistentQuotaOverwrite.alertDisplay, "flex", "DEFECT-R2-1: #hud-save-alert must remain visible after failed overwrite");
+    assert.equal(persistentQuotaOverwrite.isBody, false, "DEFECT-R2-1: Focus must never drop to BODY after failed overwrite");
+    assert.equal(persistentQuotaOverwrite.inAlert, true, "DEFECT-R2-1: Focus must stay inside #hud-save-alert after failed overwrite");
+    assert.equal(persistentQuotaOverwrite.activeAction, "overwrite-with-current-save", `DEFECT-R2-1: Focus must return to overwrite-with-current-save, got: ${persistentQuotaOverwrite.activeAction}`);
+
     // Restore storage writability and verify synthetic retry-save-now emits explicit critical toast while preserving corruptRaw + non-forced guards
     await pageB.evaluate(() => {
       Storage.prototype.setItem = window.__r7OrigSetItem;
@@ -7493,7 +7525,68 @@ try {
     assert.equal(inGameRecovered.stones, 456, "DEFECT-1: In-game overwrite-with-current-save must save active session progress (stones === 456)");
     assert.equal(inGameRecovered.isBody, false, `DEFECT-1: In-game overwrite-with-current-save must restore focus off BODY, got tag=${inGameRecovered.activeTag}`);
 
-    // Multi-tab contention on recovered save
+    // DEFECT-R2-1: Pure storageWriteError within-6s retry-save-now failure (immediate toast + off-BODY focus) AND recovery focus restoration
+    await pageB.evaluate((sk) => {
+      const api = window.__CHENYUAN_V25__;
+      api.enterSanctumHub({ skipSave: true });
+      window.__r7OrigSetItemPure = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) {
+        if (k === sk) {
+          const err = new Error("Pure Retry QuotaExceededError");
+          err.name = "QuotaExceededError";
+          throw err;
+        }
+        return window.__r7OrigSetItemPure.call(this, k, v);
+      };
+      api.saveGame();
+      const tc = document.getElementById("toast-container");
+      if (tc) tc.innerHTML = "";
+    }, STORAGE_KEY);
+    await pageB.waitForSelector('#hud-save-alert [data-action="retry-save-now"]');
+    await pageB.click('#hud-save-alert [data-action="retry-save-now"]');
+    await pageB.waitForTimeout(60);
+    const pureRetryFail = await pageB.evaluate(() => {
+      const ps = window.__CHENYUAN_V25__.getPersistenceState();
+      const alertEl = document.getElementById("hud-save-alert");
+      const ae = document.activeElement;
+      return {
+        hasWriteErr: Boolean(ps.storageWriteError),
+        hasReadErr: Boolean(ps.storageReadError),
+        toastAfter: document.getElementById("toast-container")?.textContent || "",
+        alertDisplay: getComputedStyle(alertEl).display,
+        isBody: ae === document.body,
+        activeAction: ae ? (ae.getAttribute("data-action") || "") : ""
+      };
+    });
+    assert.equal(pureRetryFail.hasWriteErr, true, "DEFECT-R2-1: Pure retry-save-now quota failure must keep storageWriteError");
+    assert.equal(pureRetryFail.hasReadErr, false, "DEFECT-R2-1: Pure retry-save-now must not set storageReadError");
+    assert.ok(pureRetryFail.toastAfter.includes("写入失败"), `DEFECT-R2-1: Pure within-6s retry-save-now failure must emit immediate failure toast, got: ${pureRetryFail.toastAfter}`);
+    assert.equal(pureRetryFail.alertDisplay, "flex", "DEFECT-R2-1: #hud-save-alert must remain visible on retry failure");
+    assert.equal(pureRetryFail.isBody, false, "DEFECT-R2-1: Pure retry-save-now failure must keep focus off BODY");
+    assert.equal(pureRetryFail.activeAction, "retry-save-now", `DEFECT-R2-1: Pure retry-save-now failure must refocus retry-save-now, got: ${pureRetryFail.activeAction}`);
+
+    await pageB.evaluate(() => {
+      Storage.prototype.setItem = window.__r7OrigSetItemPure;
+    });
+    await pageB.click('#hud-save-alert [data-action="retry-save-now"]');
+    await pageB.waitForFunction(() => getComputedStyle(document.getElementById("hud-save-alert")).display === "none", null, { timeout: 3000 });
+    const pureRetryRecovered = await pageB.evaluate(() => {
+      const ps = window.__CHENYUAN_V25__.getPersistenceState();
+      const ae = document.activeElement;
+      return {
+        writeErr: ps.storageWriteError,
+        alertDisplay: getComputedStyle(document.getElementById("hud-save-alert")).display,
+        toastAfter: document.getElementById("toast-container")?.textContent || "",
+        isBody: ae === document.body,
+        activeId: ae ? (ae.id || ae.tagName) : ""
+      };
+    });
+    assert.equal(pureRetryRecovered.writeErr, null, "DEFECT-R2-1: Successful retry-save-now must clear storageWriteError");
+    assert.equal(pureRetryRecovered.alertDisplay, "none", "DEFECT-R2-1: Successful retry-save-now must hide #hud-save-alert");
+    assert.ok(pureRetryRecovered.toastAfter.includes("已恢复写入"), `DEFECT-R2-1: Successful retry-save-now must show recovery toast, got: ${pureRetryRecovered.toastAfter}`);
+    assert.equal(pureRetryRecovered.isBody, false, `DEFECT-R2-1: Successful retry-save-now must restore focus off BODY, got: ${pureRetryRecovered.activeId}`);
+
+    // Multi-tab contention on recovered save + DEFECT-R2-2 save_conflict modal overwrite-with-current-save under QuotaExceededError atomicity
     const pageB2 = await ctxB.newPage();
     attachErrorListeners(pageB2, "R7-1-MultiTab");
     await pageB2.goto(targetUrl, { waitUntil: "domcontentloaded" });
@@ -7510,6 +7603,86 @@ try {
       const ps = window.__CHENYUAN_V25__.getPersistenceState();
       return Boolean(ps.saveConflictState || ps.saveReadOnlyMode);
     }, { timeout: 3000 });
+    await pageB.waitForSelector('#modal-backdrop.open [data-action="overwrite-with-current-save"]', { timeout: 3000 });
+    await pageB.evaluate((sk) => {
+      window.__r7OrigSetItemConflict = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) {
+        if (k === sk) {
+          const err = new Error("Conflict Modal QuotaExceededError");
+          err.name = "QuotaExceededError";
+          throw err;
+        }
+        return window.__r7OrigSetItemConflict.call(this, k, v);
+      };
+      const tc = document.getElementById("toast-container");
+      if (tc) tc.innerHTML = "";
+    }, STORAGE_KEY);
+    await pageB.click('#modal-backdrop.open [data-action="overwrite-with-current-save"]');
+    await pageB.waitForTimeout(60);
+    const conflictQuotaFail = await pageB.evaluate((sk) => {
+      const ps = window.__CHENYUAN_V25__.getPersistenceState();
+      const alertEl = document.getElementById("hud-save-alert");
+      const alertActions = Array.from(alertEl.querySelectorAll("[data-action]")).map(b => b.getAttribute("data-action"));
+      const modalBackdrop = document.getElementById("modal-backdrop");
+      const ae = document.activeElement;
+      return {
+        modalStillOpen: Boolean(modalBackdrop && modalBackdrop.classList.contains("open")),
+        hasConflictState: Boolean(ps.saveConflictState),
+        saveReadOnlyMode: ps.saveReadOnlyMode,
+        hasWriteErr: Boolean(ps.storageWriteError),
+        diskStones: JSON.parse(localStorage.getItem(sk)).game.stones,
+        toastAfter: document.getElementById("toast-container")?.textContent || "",
+        alertActions,
+        isBody: ae === document.body,
+        inModal: Boolean(modalBackdrop && modalBackdrop.contains(ae))
+      };
+    }, STORAGE_KEY);
+    assert.equal(conflictQuotaFail.modalStillOpen, true, "DEFECT-R2-2: Failed conflict overwrite under QuotaExceededError MUST keep save_conflict modal open");
+    assert.equal(conflictQuotaFail.hasConflictState, true, "DEFECT-R2-2: Failed conflict overwrite MUST preserve saveConflictState");
+    assert.equal(conflictQuotaFail.hasWriteErr, true, "DEFECT-R2-2: Failed conflict overwrite MUST set storageWriteError");
+    assert.equal(conflictQuotaFail.diskStones, 777, "DEFECT-R2-2: Failed conflict overwrite MUST preserve cross-tab disk save (stones === 777)");
+    assert.ok(conflictQuotaFail.toastAfter.includes("写入失败"), `DEFECT-R2-2: Failed conflict overwrite MUST emit immediate failure toast, got: ${conflictQuotaFail.toastAfter}`);
+    assert.equal(conflictQuotaFail.alertActions.includes("open-save-conflict"), true, `DEFECT-R2-2: #hud-save-alert must stay on conflict state rather than downgrading, got: ${conflictQuotaFail.alertActions}`);
+    assert.equal(conflictQuotaFail.isBody, false, "DEFECT-R2-2: Focus must stay off BODY after failed conflict modal overwrite");
+    assert.equal(conflictQuotaFail.inModal, true, "DEFECT-R2-2: Focus must stay inside open save_conflict modal after failed overwrite");
+
+    // Also verify stay-readonly-save -> overwrite-with-current-save under QuotaExceededError preserves saveReadOnlyMode + dual read-only banner + off-BODY focus
+    await pageB.click('#modal-backdrop.open [data-action="stay-readonly-save"]');
+    await pageB.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"), null, { timeout: 3000 });
+    await pageB.evaluate(() => {
+      const tc = document.getElementById("toast-container");
+      if (tc) tc.innerHTML = "";
+    });
+    await pageB.waitForSelector('#hud-save-alert [data-action="overwrite-with-current-save"]', { timeout: 3000 });
+    await pageB.click('#hud-save-alert [data-action="overwrite-with-current-save"]');
+    await pageB.waitForTimeout(60);
+    const readonlyQuotaFail = await pageB.evaluate((sk) => {
+      const ps = window.__CHENYUAN_V25__.getPersistenceState();
+      const alertEl = document.getElementById("hud-save-alert");
+      const alertActions = Array.from(alertEl.querySelectorAll("[data-action]")).map(b => b.getAttribute("data-action"));
+      const ae = document.activeElement;
+      return {
+        saveReadOnlyMode: ps.saveReadOnlyMode,
+        hasWriteErr: Boolean(ps.storageWriteError),
+        diskStones: JSON.parse(localStorage.getItem(sk)).game.stones,
+        toastAfter: document.getElementById("toast-container")?.textContent || "",
+        alertActions,
+        isBody: ae === document.body,
+        activeAction: ae ? (ae.getAttribute("data-action") || "") : ""
+      };
+    }, STORAGE_KEY);
+    assert.equal(readonlyQuotaFail.saveReadOnlyMode, true, "DEFECT-R2-2: Failed read-only overwrite MUST preserve saveReadOnlyMode === true");
+    assert.equal(readonlyQuotaFail.hasWriteErr, true, "DEFECT-R2-2: Failed read-only overwrite MUST set storageWriteError");
+    assert.equal(readonlyQuotaFail.diskStones, 777, "DEFECT-R2-2: Failed read-only overwrite MUST preserve disk save (stones === 777)");
+    assert.ok(readonlyQuotaFail.toastAfter.includes("写入失败"), `DEFECT-R2-2: Failed read-only overwrite MUST emit immediate failure toast, got: ${readonlyQuotaFail.toastAfter}`);
+    assert.equal(readonlyQuotaFail.alertActions.includes("overwrite-with-current-save"), true, `DEFECT-R2-2: Read-only write-error banner must keep overwrite-with-current-save, got: ${readonlyQuotaFail.alertActions}`);
+    assert.equal(readonlyQuotaFail.alertActions.includes("load-latest-save"), true, `DEFECT-R2-2: Read-only write-error banner must keep load-latest-save, got: ${readonlyQuotaFail.alertActions}`);
+    assert.equal(readonlyQuotaFail.isBody, false, "DEFECT-R2-2: Failed read-only overwrite must keep focus off BODY");
+    assert.equal(readonlyQuotaFail.activeAction, "overwrite-with-current-save", `DEFECT-R2-2: Failed read-only overwrite must refocus overwrite-with-current-save, got: ${readonlyQuotaFail.activeAction}`);
+
+    await pageB.evaluate(() => {
+      Storage.prototype.setItem = window.__r7OrigSetItemConflict;
+    });
     const contention = await pageB.evaluate((sk) => {
       const api = window.__CHENYUAN_V25__;
       const savedFromStale = api.saveGame();
@@ -8027,6 +8200,85 @@ try {
     assert.equal(d4Res.metaWriteCount, 0, `CRDT D4: 3 stale behind StorageEvents while live META_KEY is converged must trigger 0 extra writes, got: ${d4Res.metaWriteCount}`);
     assert.equal(d4Res.revUnchanged, true, "CRDT D4: live metaRev must remain unchanged when no redundant healing write occurs");
     assert.equal(d4Res.stillHasSerpent, true, "CRDT D4: live converged state must remain intact");
+
+    // R2-D1: Corrupt live META_KEY in-game + delayed valid StorageEvent (BOTH active writer & non-writer) MUST preserve exact corrupt bytes (0 writes), keep metaReadError active, and keep #hud-save-alert visible (display === "flex")
+    await tabB.close();
+    await tabA.click("#btn-start-new");
+    await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none", null, { timeout: 4000 });
+    await dismissOpeningScroll(tabA);
+    await tabA.evaluate(() => {
+      window.__CHENYUAN_V25__.enterSanctumHub({ skipSave: true });
+    });
+    for (const writerCase of [
+      { label: "active-writer", isWriter: true, corruptRaw: "{CORRUPT_LIVE_META_R2D1_WRITER###" },
+      { label: "non-writer", isWriter: false, corruptRaw: "{CORRUPT_LIVE_META_R2D1_NONWRITER###" }
+    ]) {
+      const r2d1Res = await tabA.evaluate(({ mk, isWriter, corruptRaw }) => {
+        const api = window.__CHENYUAN_V25__;
+        const m = api.getMetaState();
+        m.ascensions = 5;
+        if (isWriter) {
+          api.saveMeta({ forceReset: true });
+          m.ascensions = 5;
+          api.saveMeta();
+        } else {
+          api.saveMeta({ forceReset: true });
+          m.metaTabId = "other_session_tab_r2d1";
+        }
+        // Corrupt live META_KEY on disk and notify tabA so metaReadError + #hud-save-alert are active
+        localStorage.setItem(mk, corruptRaw);
+        window.dispatchEvent(new StorageEvent("storage", {
+          key: mk,
+          newValue: corruptRaw,
+          oldValue: null,
+          storageArea: localStorage
+        }));
+        const beforeHasErr = Boolean(api.getPersistenceState().metaReadError);
+        const beforeAlertDisplay = getComputedStyle(document.getElementById("hud-save-alert")).display;
+
+        let metaWrites = 0;
+        const origSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function (k, v) {
+          if (k === mk) metaWrites += 1;
+          return origSet.call(this, k, v);
+        };
+        try {
+          const delayedValidPayload = JSON.stringify({
+            ascensions: 1,
+            bestScore: 100,
+            bestTower: 1,
+            metaRev: 1,
+            metaTabId: "tab_delayed_stale_r2d1"
+          });
+          window.dispatchEvent(new StorageEvent("storage", {
+            key: mk,
+            newValue: delayedValidPayload,
+            oldValue: null,
+            storageArea: localStorage
+          }));
+        } finally {
+          Storage.prototype.setItem = origSet;
+        }
+        const ps = api.getPersistenceState();
+        return {
+          beforeHasErr,
+          beforeAlertDisplay,
+          metaWrites,
+          diskRaw: localStorage.getItem(mk),
+          afterHasErr: Boolean(ps.metaReadError),
+          afterErrRaw: ps.metaReadError ? ps.metaReadError.raw : null,
+          afterAlertDisplay: getComputedStyle(document.getElementById("hud-save-alert")).display
+        };
+      }, { mk: META_KEY, isWriter: writerCase.isWriter, corruptRaw: writerCase.corruptRaw });
+
+      assert.equal(r2d1Res.beforeHasErr, true, `R2-D1 (${writerCase.label}): pre-condition metaReadError must be active`);
+      assert.equal(r2d1Res.beforeAlertDisplay, "flex", `R2-D1 (${writerCase.label}): pre-condition #hud-save-alert must be visible`);
+      assert.equal(r2d1Res.metaWrites, 0, `R2-D1 (${writerCase.label}): delayed valid StorageEvent while live META_KEY is corrupt must perform 0 writes, got: ${r2d1Res.metaWrites}`);
+      assert.equal(r2d1Res.diskRaw, writerCase.corruptRaw, `R2-D1 (${writerCase.label}): exact corrupt META_KEY bytes must be preserved`);
+      assert.equal(r2d1Res.afterHasErr, true, `R2-D1 (${writerCase.label}): delayed valid StorageEvent MUST NOT clear metaReadError while live META_KEY is corrupt`);
+      assert.equal(r2d1Res.afterErrRaw, writerCase.corruptRaw, `R2-D1 (${writerCase.label}): metaReadError.raw must retain live corrupt bytes`);
+      assert.equal(r2d1Res.afterAlertDisplay, "flex", `R2-D1 (${writerCase.label}): #hud-save-alert MUST remain visible (display === 'flex') in-game, got: ${r2d1Res.afterAlertDisplay}`);
+    }
     await ctxE.close();
   });
 
