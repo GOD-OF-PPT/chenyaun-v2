@@ -8028,8 +8028,16 @@ try {
     await tabB.waitForFunction(() => Boolean(window.__CHENYUAN_V25__));
 
     // D1: bestCalamityTier / cloudSeaClears / taixuTrailUnlocked / karmaAscensions
+    await tabB.waitForFunction((mk) => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(mk) || "null");
+        return Boolean(parsed && Number(parsed.metaRev) >= 1);
+      } catch {
+        return false;
+      }
+    }, META_KEY, { timeout: 4000 });
     const d1StaleRaw = await tabB.evaluate((mk) => localStorage.getItem(mk), META_KEY);
-    await tabA.evaluate(() => {
+    const d1BaseRev = await tabA.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const m = api.getMetaState();
       m.bestCalamityTier = 2;
@@ -8037,26 +8045,42 @@ try {
       m.taixuTrailUnlocked = true;
       m.karmaAscensions = { righteous: 1, neutral: 2, demonic: 3 };
       api.saveMeta();
+      return Number(api.getMetaState().metaRev) || 1;
     });
-    await tabB.evaluate(({ mk, raw }) => {
+    await tabB.waitForFunction(({ mk, minRev }) => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(mk) || "null");
+        return Boolean(parsed && Number(parsed.metaRev) >= minRev);
+      } catch {
+        return false;
+      }
+    }, { mk: META_KEY, minRev: d1BaseRev }, { timeout: 4000 });
+    const d1StaleRev = d1BaseRev + 1;
+    await tabB.evaluate(({ mk, raw, staleRev }) => {
       const stale = JSON.parse(raw);
       stale.bestCalamityTier = 0;
       stale.cloudSeaClears = 0;
       stale.taixuTrailUnlocked = false;
       stale.karmaAscensions = { righteous: 0, neutral: 0, demonic: 0 };
       stale.metaTabId = "tab_b_stale_d1";
-      stale.metaRev = (Number(stale.metaRev) || 1) + 1;
+      stale.metaRev = staleRev;
       localStorage.setItem(mk, JSON.stringify(stale));
-    }, { mk: META_KEY, raw: d1StaleRaw });
-    await tabA.waitForFunction((mk) => {
-      const parsed = JSON.parse(localStorage.getItem(mk) || "{}");
-      return parsed.bestCalamityTier === 2
-        && parsed.cloudSeaClears === 3
-        && parsed.taixuTrailUnlocked === true
-        && parsed.karmaAscensions?.righteous === 1
-        && parsed.karmaAscensions?.neutral === 2
-        && parsed.karmaAscensions?.demonic === 3;
-    }, META_KEY, { timeout: 4000 });
+    }, { mk: META_KEY, raw: d1StaleRaw, staleRev: d1StaleRev });
+    await tabA.waitForFunction(({ mk, staleRev }) => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(mk) || "{}");
+        return Number(parsed.metaRev) > staleRev
+          && parsed.metaTabId !== "tab_b_stale_d1"
+          && parsed.bestCalamityTier === 2
+          && parsed.cloudSeaClears === 3
+          && parsed.taixuTrailUnlocked === true
+          && parsed.karmaAscensions?.righteous === 1
+          && parsed.karmaAscensions?.neutral === 2
+          && parsed.karmaAscensions?.demonic === 3;
+      } catch {
+        return false;
+      }
+    }, { mk: META_KEY, staleRev: d1StaleRev }, { timeout: 4000 });
     await tabA.reload({ waitUntil: "domcontentloaded" });
     await tabA.waitForFunction(() => Boolean(window.__CHENYUAN_V25__));
     const d1AfterReload = await tabA.evaluate(() => {
@@ -8078,7 +8102,7 @@ try {
     );
 
     // D2: hallOfLives 19th newer life preserved at 18-entry cap
-    await tabA.evaluate(() => {
+    const d2InitRev = await tabA.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const m = api.getMetaState();
       m.hallOfLives = Array.from({ length: 18 }, (_, i) => ({
@@ -8093,9 +8117,18 @@ try {
         recordedAt: 1018 - i
       }));
       api.saveMeta();
+      return Number(api.getMetaState().metaRev) || 1;
     });
+    await tabB.waitForFunction(({ mk, minRev }) => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(mk) || "null");
+        return Boolean(parsed && Number(parsed.metaRev) >= minRev && Array.isArray(parsed.hallOfLives) && parsed.hallOfLives.length === 18);
+      } catch {
+        return false;
+      }
+    }, { mk: META_KEY, minRev: d2InitRev }, { timeout: 4000 });
     const d2StaleRaw = await tabB.evaluate((mk) => localStorage.getItem(mk), META_KEY);
-    await tabA.evaluate(() => {
+    const d2BaseRev = await tabA.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const m = api.getMetaState();
       m.hallOfLives = [
@@ -8113,17 +8146,35 @@ try {
         ...m.hallOfLives
       ].slice(0, 18);
       api.saveMeta();
+      return Number(api.getMetaState().metaRev) || 1;
     });
-    await tabB.evaluate(({ mk, raw }) => {
+    await tabB.waitForFunction(({ mk, minRev }) => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(mk) || "null");
+        return Boolean(parsed && Number(parsed.metaRev) >= minRev && Array.isArray(parsed.hallOfLives) && parsed.hallOfLives[0]?.recordedAt === 9999);
+      } catch {
+        return false;
+      }
+    }, { mk: META_KEY, minRev: d2BaseRev }, { timeout: 4000 });
+    const d2StaleRev = d2BaseRev + 1;
+    await tabB.evaluate(({ mk, raw, staleRev }) => {
       const stale = JSON.parse(raw);
       stale.metaTabId = "tab_b_stale_d2";
-      stale.metaRev = (Number(stale.metaRev) || 1) + 1;
+      stale.metaRev = staleRev;
       localStorage.setItem(mk, JSON.stringify(stale));
-    }, { mk: META_KEY, raw: d2StaleRaw });
-    await tabA.waitForFunction((mk) => {
-      const parsed = JSON.parse(localStorage.getItem(mk) || "{}");
-      return Array.isArray(parsed.hallOfLives) && parsed.hallOfLives.length === 18 && parsed.hallOfLives[0]?.recordedAt === 9999;
-    }, META_KEY, { timeout: 4000 });
+    }, { mk: META_KEY, raw: d2StaleRaw, staleRev: d2StaleRev });
+    await tabA.waitForFunction(({ mk, staleRev }) => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(mk) || "{}");
+        return Number(parsed.metaRev) > staleRev
+          && parsed.metaTabId !== "tab_b_stale_d2"
+          && Array.isArray(parsed.hallOfLives)
+          && parsed.hallOfLives.length === 18
+          && parsed.hallOfLives[0]?.recordedAt === 9999;
+      } catch {
+        return false;
+      }
+    }, { mk: META_KEY, staleRev: d2StaleRev }, { timeout: 4000 });
     await tabA.reload({ waitUntil: "domcontentloaded" });
     await tabA.waitForFunction(() => Boolean(window.__CHENYUAN_V25__));
     const d2AfterReload = await tabA.evaluate(() => {
@@ -8135,24 +8186,41 @@ try {
     assert.equal(d2AfterReload.topLifeNum, 19, "CRDT D2: 19th newer life (lifeNum=19) must remain at index 0 after reload");
 
     // D3: seenEnemies duplicate-length set union (["wolf","wolf"] vs ["wolf","jade_serpent"])
-    await tabA.evaluate(() => {
+    const d3BaseRev = await tabA.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const m = api.getMetaState();
       m.seenEnemies = ["wolf", "jade_serpent"];
       api.saveMeta();
+      return Number(api.getMetaState().metaRev) || 1;
     });
+    await tabB.waitForFunction(({ mk, minRev }) => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(mk) || "null");
+        return Boolean(parsed && Number(parsed.metaRev) >= minRev && Array.isArray(parsed.seenEnemies) && parsed.seenEnemies.includes("jade_serpent"));
+      } catch {
+        return false;
+      }
+    }, { mk: META_KEY, minRev: d3BaseRev }, { timeout: 4000 });
     const d3CurRaw = await tabB.evaluate((mk) => localStorage.getItem(mk), META_KEY);
-    await tabB.evaluate(({ mk, raw }) => {
+    const d3StaleRev = d3BaseRev + 1;
+    await tabB.evaluate(({ mk, raw, staleRev }) => {
       const stale = JSON.parse(raw);
       stale.seenEnemies = ["wolf", "wolf"];
       stale.metaTabId = "tab_b_stale_d3";
-      stale.metaRev = (Number(stale.metaRev) || 1) + 1;
+      stale.metaRev = staleRev;
       localStorage.setItem(mk, JSON.stringify(stale));
-    }, { mk: META_KEY, raw: d3CurRaw });
-    await tabA.waitForFunction((mk) => {
-      const parsed = JSON.parse(localStorage.getItem(mk) || "{}");
-      return Array.isArray(parsed.seenEnemies) && parsed.seenEnemies.includes("jade_serpent");
-    }, META_KEY, { timeout: 4000 });
+    }, { mk: META_KEY, raw: d3CurRaw, staleRev: d3StaleRev });
+    await tabA.waitForFunction(({ mk, staleRev }) => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(mk) || "{}");
+        return Number(parsed.metaRev) > staleRev
+          && parsed.metaTabId !== "tab_b_stale_d3"
+          && Array.isArray(parsed.seenEnemies)
+          && parsed.seenEnemies.includes("jade_serpent");
+      } catch {
+        return false;
+      }
+    }, { mk: META_KEY, staleRev: d3StaleRev }, { timeout: 4000 });
     await tabA.reload({ waitUntil: "domcontentloaded" });
     await tabA.waitForFunction(() => Boolean(window.__CHENYUAN_V25__));
     const d3AfterReload = await tabA.evaluate(() => window.__CHENYUAN_V25__.getMetaState().seenEnemies);

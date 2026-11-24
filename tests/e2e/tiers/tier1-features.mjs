@@ -243,8 +243,62 @@ export const tests = [
         window.__CHENYUAN_V25__.saveMeta();
       });
 
-      const { parsed } = await readStorageJson(pageA, META_KEY);
-      assert.ok(parsed && typeof parsed.metaRev === "number" && parsed.metaRev >= 1, "Meta save must store monotonic metaRev");
+      // Wait for Chromium's multi-process StorageArea Mojo IPC replication (and CRDT storage-event healing
+      // when Tab A & Tab B race concurrently) to converge on BOTH renderers before asserting the merged state.
+      const waitForConvergedMeta = async (page) => {
+        await page
+          .waitForFunction(
+            (key) => {
+              try {
+                const raw = localStorage.getItem(key);
+                if (!raw) return false;
+                const m = JSON.parse(raw);
+                return (
+                  typeof m.metaRev === "number" &&
+                  m.metaRev >= 2 &&
+                  m.bestScore >= 4500 &&
+                  m.ascensions >= 3 &&
+                  m.bestTower >= 9 &&
+                  Array.isArray(m.seenEnemies) &&
+                  m.seenEnemies.includes("wolf_king") &&
+                  m.seenEnemies.includes("stone_warden")
+                );
+              } catch {
+                return false;
+              }
+            },
+            META_KEY,
+            { timeout: 3000 }
+          )
+          .catch(() => {});
+      };
+      await waitForConvergedMeta(pageA);
+      await waitForConvergedMeta(pageB);
+
+      let { parsed } = await readStorageJson(pageA, META_KEY);
+      let { parsed: parsedB } = await readStorageJson(pageB, META_KEY);
+      if (parsed && parsedB && parsed.metaRev !== parsedB.metaRev) {
+        const maxRev = Math.max(Number(parsed.metaRev) || 0, Number(parsedB.metaRev) || 0);
+        const laggingPage = (Number(parsed.metaRev) || 0) < maxRev ? pageA : pageB;
+        await laggingPage
+          .waitForFunction(
+            ({ key, targetRev }) => {
+              try {
+                const m = JSON.parse(localStorage.getItem(key) || "{}");
+                return typeof m.metaRev === "number" && m.metaRev >= targetRev;
+              } catch {
+                return false;
+              }
+            },
+            { key: META_KEY, targetRev: maxRev },
+            { timeout: 2000 }
+          )
+          .catch(() => {});
+        ({ parsed } = await readStorageJson(pageA, META_KEY));
+        ({ parsed: parsedB } = await readStorageJson(pageB, META_KEY));
+      }
+
+      assert.ok(parsed && typeof parsed.metaRev === "number" && parsed.metaRev >= 2, `Meta save must store monotonic metaRev >= 2, got ${parsed?.metaRev}`);
       assert.ok(parsed.bestScore >= 4500, `Expected bestScore >= 4500 after cross-tab merge, got ${parsed.bestScore}`);
       assert.ok(parsed.ascensions >= 3, `Expected ascensions >= 3 after cross-tab merge, got ${parsed.ascensions}`);
       assert.ok(parsed.bestTower >= 9, `Expected bestTower >= 9 after cross-tab merge, got ${parsed.bestTower}`);
@@ -253,6 +307,16 @@ export const tests = [
           parsed.seenEnemies.includes("wolf_king") &&
           parsed.seenEnemies.includes("stone_warden"),
         `Expected union of seenEnemies across tabs, got ${JSON.stringify(parsed.seenEnemies)}`
+      );
+      assert.ok(parsedB && parsedB.metaRev === parsed.metaRev, `Expected both tabs to converge to identical metaRev (${parsed.metaRev} vs ${parsedB?.metaRev})`);
+      assert.equal(parsedB.bestScore, parsed.bestScore, `Expected both tabs to agree on bestScore (${parsed.bestScore} vs ${parsedB.bestScore})`);
+      assert.equal(parsedB.ascensions, parsed.ascensions, `Expected both tabs to agree on ascensions (${parsed.ascensions} vs ${parsedB.ascensions})`);
+      assert.equal(parsedB.bestTower, parsed.bestTower, `Expected both tabs to agree on bestTower (${parsed.bestTower} vs ${parsedB.bestTower})`);
+      assert.ok(
+        Array.isArray(parsedB.seenEnemies) &&
+          parsedB.seenEnemies.includes("wolf_king") &&
+          parsedB.seenEnemies.includes("stone_warden"),
+        `Expected Tab B to hold union of seenEnemies across tabs, got ${JSON.stringify(parsedB.seenEnemies)}`
       );
     }
   },
