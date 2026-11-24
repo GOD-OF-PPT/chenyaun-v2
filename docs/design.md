@@ -106,4 +106,9 @@ Q4 围绕「第一卷破庙→救援→择道→洞府整备→狼王→渡劫�
 - **高阶系统三分组、跨模式共鸣与 D07 解锁一致（F36 · D07）**：保持 `SYSTEM_ECOSYSTEM_LADDER` 14 项不变，在问道阶梯与终局页增补三分组总览（`主线内嵌` / `终局试炼` / `演武与工具`）及 6 柱【诸天道果共鸣】（0 柱时对既往数值零漂移）；将 `coop_2p` 与 `celestial_time` 纳入 `ACTION_REALM_REQ` 金丹期（rank 3）校验（保留 `setCelestialTimePhase` 供自动流转与 `Q0-2`）、屏蔽暂停/欢迎页快捷键、退出沙盒重置 2P、2P 名单按故人结缘扩展、`Digit8` 先校验解锁再战中确认，并打通远征秘境通关/三星共鸣与周天星图天时联动。
 - **非核心扩展边界（F37 · D08）**：扫荡、9:16 移动端适配与长按自动连升明确标记为 **`DEFERRED`**，保留显式批量确认；F29 真人试玩保持 **`NOT_RUN`**。
 
+## 11. Round 3 · D06 运行时深度拆分与统一调试门面（R3-M1：R3-F02 / R3-F03）
 
+在 Q5 完成 10 个纯 ESM 规则模块抽离与确定性单文件构建后，R3-M1 按定稿决策 **D06** 进一步拆解运行时单体并收口测试调试入口（零玩法/平衡语义改动）：
+
+- **15+1 有序运行时子系统（`RUNTIME_MODULE_ORDER`）**：将原 `src/runtime/main.js` 按连续拓扑顺序拆分为 15 个职责清晰的子系统文件（`world-data`、`narrative-state`、`flagship-systems`、`endgame-modes`、`primordial-systems`、`genesis-dojo`、`persistence-sandbox`、`scheduler-rewards`、`sanctum-ecosystem`、`stage-expedition`、`combat-skills`、`combat-step`、`renderer`、`ui-modals-drawer`、`input-handlers`）与 20 行薄 `src/runtime/main.js` 主循环外壳；保持 2 空格顶层声明缩进与同步初始化顺序，零 TDZ 且 `docs/art-manifest.md` 零漂移。原交错于尾部调试导出之间的 3 处 DOM 监听（`input`、`#panel-scroll-body` `toggle`、`change`）完整收归 `src/runtime/input-handlers.js`。
+- **单一调试门面 `window.__CHENYUAN_DEBUG__`（`version: "d06-unified-1"`）**：重写 `src/runtime/debug-facade.js`，彻底删除历史 8 个分版本全局钩子及过渡性 `namespaces`/`getNamespace`；顶层暴露 370 键（`version`、无副作用统一 `getState()`、5 组直接绑定的结构化域 `rules`/`q6`/`persistence`/`art`/`telemetry`，以及原 363 个去重子系统绑定）。全部单元单测（34 项）、78 项桌面 Chromium 回归（新增 `R3-D06-1`）、56 项 E2E 及无头评测脚本均已迁至单一 `window.__CHENYUAN_DEBUG__` 并由静态单测守卫禁止旧钩子回流。

@@ -69,7 +69,7 @@ export const tests = [
 
       // A-11 check
       const hygiene = await page.evaluate(() => {
-        const sc = window.__CHENYUAN_V25__.getState().game.seenCutIns;
+        const sc = window.__CHENYUAN_DEBUG__.getState().game.seenCutIns;
         const own = (k) => Object.prototype.hasOwnProperty.call(sc, k);
         let strOk = true;
         try { String(sc); } catch { strOk = false; }
@@ -134,7 +134,7 @@ export const tests = [
         const bd = document.getElementById("modal-backdrop");
         const h2 = document.querySelector("#modal-content h2")?.textContent || "";
         if (!(bd && bd.classList.contains("open") && (h2.includes("MARK_CLOUD") || h2.includes("E2E_CLOUD")))) {
-          window.__CHENYUAN_V25__.openPendingRewardsManually();
+          window.__CHENYUAN_DEBUG__.openPendingRewardsManually();
         }
       });
       await page.waitForSelector("#modal-backdrop.open #modal-content h2");
@@ -163,7 +163,7 @@ export const tests = [
       await tab1.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
       await env.dismissOpeningIfAny(tab1);
       await tab1.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         for (let i = 0; i < 4; i++) {
           api.getState().game.stones += 10;
           api.saveGame();
@@ -188,7 +188,7 @@ export const tests = [
 
       await waitForCrossTabConflict(tab1, 2500);
       const a2Check = await tab1.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const before = Boolean(api.getPersistenceState().saveConflictState);
         const saved = api.saveGame();
         const disk = JSON.parse(localStorage.getItem(sk));
@@ -201,7 +201,7 @@ export const tests = [
 
       // A-4: On Tab 2, corrupt live STORAGE_KEY and dispatch delayed valid StorageEvent
       const a4Check = await tab2.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const envObj = JSON.parse(localStorage.getItem(sk));
         envObj.saveRev = 9;
         envObj.tabId = "tab_delayed_e2e_999";
@@ -237,7 +237,7 @@ export const tests = [
           if (k === sk) throw new DOMException("Read-only storage", "SecurityError");
           return window.__e2eOrigRm.call(this, k);
         };
-        window.__CHENYUAN_V25__.saveMeta();
+        window.__CHENYUAN_DEBUG__.saveMeta();
       }, STORAGE_KEY);
 
       await openSettingsTab(page, "controls");
@@ -249,7 +249,7 @@ export const tests = [
       const afterReset = await page.evaluate((sk) => ({
         welcomeVisible: document.getElementById("welcome-screen")?.style.display !== "none",
         diskExists: Boolean(localStorage.getItem(sk)),
-        hasGame: Boolean(window.__CHENYUAN_V25__.getState().game)
+        hasGame: Boolean(window.__CHENYUAN_DEBUG__.getState().game)
       }), STORAGE_KEY);
       const resetToasts = (await getToastTexts(page)).join(" | ");
       assert.equal(afterReset.welcomeVisible, false, "Reset failure must stay in-game (A-3)");
@@ -259,7 +259,7 @@ export const tests = [
 
       await closeModalEsc(page);
       const ptsBefore = await page.evaluate((mk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const p = Number(api.getMetaState().reincarnationPoints) || 0;
         const d = Number(JSON.parse(localStorage.getItem(mk) || "{}").reincarnationPoints) || 0;
         api.openLifespanExhaustedModal(true);
@@ -270,7 +270,7 @@ export const tests = [
       await page.waitForTimeout(100);
       const afterBingjie = await page.evaluate((mk) => ({
         welcomeVisible: document.getElementById("welcome-screen")?.style.display !== "none",
-        memPts: Number(window.__CHENYUAN_V25__.getMetaState().reincarnationPoints) || 0,
+        memPts: Number(window.__CHENYUAN_DEBUG__.getMetaState().reincarnationPoints) || 0,
         diskPts: Number(JSON.parse(localStorage.getItem(mk) || "{}").reincarnationPoints) || 0
       }), META_KEY);
       assert.equal(afterBingjie.welcomeVisible, false, "Bingjie removeItem failure must not return to welcome screen (A-3)");
@@ -320,11 +320,11 @@ export const tests = [
       await env.gotoWelcome(pageB);
       await pageB.click("#btn-continue-save");
       await pageB.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-      await pageB.evaluate(() => { window.__CHENYUAN_V25__.getState().game.stones = 444; window.__CHENYUAN_V25__.saveGame(); });
+      await pageB.evaluate(() => { window.__CHENYUAN_DEBUG__.getState().game.stones = 444; window.__CHENYUAN_DEBUG__.saveGame(); });
       await waitForCrossTabConflict(pageA, 2500);
 
       // Reopen conflict modal from #hud-save-alert -> stay-readonly-save -> focus off BODY
-      await pageA.evaluate(() => window.__CHENYUAN_V25__.closeModal());
+      await pageA.evaluate(() => window.__CHENYUAN_DEBUG__.closeModal());
       await pageA.waitForSelector('#hud-save-alert [data-action="open-save-conflict"]');
       await pageA.focus('#hud-save-alert [data-action="open-save-conflict"]');
       await pageA.click('#hud-save-alert [data-action="open-save-conflict"]');
@@ -352,7 +352,7 @@ export const tests = [
           if (window.__e2eBlockM && k === mk) throw new DOMException("Quota exceeded", "QuotaExceededError");
           return window.__e2eOrigSetM.call(this, k, v);
         };
-        window.__CHENYUAN_V25__.saveMeta();
+        window.__CHENYUAN_DEBUG__.saveMeta();
       }, META_KEY);
       await pageB.waitForSelector('#hud-save-alert [data-action="retry-meta-save"]');
       await pageB.focus('#hud-save-alert [data-action="retry-meta-save"]');
@@ -376,9 +376,9 @@ export const tests = [
       await pageB.evaluate(({ mk, freshMeta }) => {
         window.__e2eBlockM = false;
         window.__e2eOrigSetM.call(localStorage, mk, freshMeta);
-        window.__CHENYUAN_V25__.inspectMetaState({ applyToMemory: true });
+        window.__CHENYUAN_DEBUG__.inspectMetaState({ applyToMemory: true });
         window.__e2eBlockM = true;
-        window.__CHENYUAN_V25__.saveMeta();
+        window.__CHENYUAN_DEBUG__.saveMeta();
         window.__e2eBlockM = false;
       }, { mk: META_KEY, freshMeta: buildMetaSave() });
       await pageB.waitForSelector('#hud-save-alert [data-action="retry-meta-save"]');
@@ -414,7 +414,7 @@ export const tests = [
 
       // A-8: closeModal() clears craftMinigame.open
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.realm = "spirit";
         api.openTaixuCraftMinigameModal("alchemy");
       });
@@ -426,7 +426,7 @@ export const tests = [
       await page.keyboard.press("Space");
       await page.waitForTimeout(60);
       const craftState = await page.evaluate(() => {
-        const cm = window.__CHENYUAN_V23__.getState().craftMinigame;
+        const cm = window.__CHENYUAN_DEBUG__.getState().craftMinigame;
         return { open: cm.open, strikes: cm.strikes };
       });
       assert.equal(craftState.open, false, "closeModal() must reset craftMinigame.open (A-8)");
@@ -442,7 +442,7 @@ export const tests = [
       assert.equal((await getActiveElementInfo(page))?.id, "btn-pavilion-menu", "Escape must return focus to #btn-pavilion-menu (A-9)");
 
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.enterSanctumHub();
         api.getState().arena.player.dashCd = 0;
       });
@@ -450,12 +450,12 @@ export const tests = [
       await page.keyboard.press("Space");
       await page.waitForTimeout(100);
       assert.equal(await isModalOpen(page), true, "Space on focused #btn-goals-modal must open Goals modal (A-9)");
-      assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.player.dashCd), 0, "Space on focused HUD button must not fire dash (A-9)");
+      assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.player.dashCd), 0, "Space on focused HUD button must not fire dash (A-9)");
       await closeModalEsc(page);
 
       // A-10: Floating HUD cards keep focus off BODY
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const item = api.rollGearItem(2, 2, "weapon");
         item.name = "玄品·E2E试剑";
         item.sell = 30;
@@ -497,7 +497,7 @@ export const tests = [
       });
 
       // B-1: rush_thunder affix runs cleanly with live mainLoop
-      await page.evaluate(() => window.__CHENYUAN_V25__.openBossRushModal());
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.openBossRushModal());
       await page.waitForSelector('#modal-backdrop.open [data-rush-affix="rush_thunder"]');
       await page.click('#modal-backdrop.open [data-rush-affix="rush_thunder"]');
       await page.evaluate(() => {
@@ -506,26 +506,26 @@ export const tests = [
         Math.random = () => (++n <= 12 ? 0.001 : window.__e2eOrigRand());
       });
       await page.click('#modal-backdrop.open [data-start-rush="1"]');
-      await page.waitForFunction(() => (window.__CHENYUAN_V25__.getState().arena.bossRush?.elapsed || 0) > 0.04, null, { timeout: 3000 });
-      const t0 = await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.bossRush?.elapsed || 0);
-      await page.waitForFunction((prev) => (window.__CHENYUAN_V25__.getState().arena.bossRush?.elapsed || 0) > prev + 0.1, t0, { timeout: 3000 });
+      await page.waitForFunction(() => (window.__CHENYUAN_DEBUG__.getState().arena.bossRush?.elapsed || 0) > 0.04, null, { timeout: 3000 });
+      const t0 = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.bossRush?.elapsed || 0);
+      await page.waitForFunction((prev) => (window.__CHENYUAN_DEBUG__.getState().arena.bossRush?.elapsed || 0) > prev + 0.1, t0, { timeout: 3000 });
       const t1 = await page.evaluate(() => {
         Math.random = window.__e2eOrigRand;
-        return window.__CHENYUAN_V25__.getState().arena.bossRush?.elapsed || 0;
+        return window.__CHENYUAN_DEBUG__.getState().arena.bossRush?.elapsed || 0;
       });
       assert.ok(t1 > t0 + 0.08, `Boss Rush rush_thunder must not freeze mainLoop (B-1: t0=${t0}, t1=${t1})`);
 
       // B-2: Custom Workshop uses runtime overlay & leaks nothing into STORAGE_KEY
       await page.keyboard.press("KeyH");
       await page.waitForTimeout(160);
-      await page.evaluate(() => window.__CHENYUAN_V25__.openCustomWorkshopModal());
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.openCustomWorkshopModal());
       await page.waitForSelector("#modal-backdrop.open #sel-ws-curio");
       await page.selectOption("#sel-ws-curio", "16");
       await page.click("#btn-launch-workshop");
       await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
       const wsMid = await page.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
-        const v24 = window.__CHENYUAN_V24__;
+        const api = window.__CHENYUAN_DEBUG__;
+        const v24 = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         api.saveGame();
         const diskDuring = JSON.parse(localStorage.getItem(sk) || "{}");
@@ -558,7 +558,7 @@ export const tests = [
 
       await page.keyboard.press("KeyH");
       await page.waitForTimeout(160);
-      const afterExitCurios = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.spireCurios || {});
+      const afterExitCurios = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.spireCurios || {});
       assert.deepEqual(afterExitCurios, {}, "In-memory formal spireCurios must restore to empty after leaving workshop (B-2)");
       const disk = (await readStorageJson(page, STORAGE_KEY)).parsed;
       assert.deepEqual(disk?.game?.spireCurios || {}, {}, "Disk spireCurios must remain empty (B-2)");
@@ -591,10 +591,10 @@ export const tests = [
       });
 
       // B-3: Enter Boss Rush Wave 7 Practice Mode
-      await page.evaluate(() => window.__CHENYUAN_V25__.startBossRushGauntlet(7));
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.startBossRushGauntlet(7));
       await page.waitForTimeout(120);
       const pracRes = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const qOk = api.executeAlchemyQuickCraft("healing");
         const bRes = api.executeAlchemyBatchCraft("ascension", 5);
@@ -625,7 +625,7 @@ export const tests = [
 
       // B-4: refill-gourd-now disabled in combat, works in calm Sanctum
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.seenCutscenes = Object.assign({}, s.game.seenCutscenes, { enter_sect: true });
         api.initArenaStage(1, false);
@@ -644,7 +644,7 @@ export const tests = [
 
       // Return to calm Sanctum -> refill works -> then B-8 Hub->Stage meditation flush
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.enterSanctumHub();
         api.getState().game.gourd.charges = 0;
         api.updateHud();
@@ -652,7 +652,7 @@ export const tests = [
       await openNavTab(page, "alchemy");
       await page.click('#jade-panel [data-action="refill-gourd-now"]');
       const refilled = await page.evaluate(() => {
-        const g = window.__CHENYUAN_V25__.getState().game.gourd;
+        const g = window.__CHENYUAN_DEBUG__.getState().game.gourd;
         return g.charges === g.maxCharges;
       });
       assert.equal(refilled, true, "refill-gourd-now must refill gourd in calm Sanctum (B-4)");
@@ -660,7 +660,7 @@ export const tests = [
 
       // B-8: Meditate in Sanctum -> age 1 month -> depart via KeyH -> verify flushed to disk
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.elapsedMonths = 10;
         s.game.xp = 0;
@@ -668,17 +668,17 @@ export const tests = [
         api.focusBattlefield();
       });
       await page.keyboard.press("KeyB");
-      await page.waitForFunction(() => window.__CHENYUAN_V25__.getState().arena.player.meditating === true);
-      await page.evaluate(() => { window.__CHENYUAN_V25__.getState().arena.player.meditateAgeTick = 3.01; });
+      await page.waitForFunction(() => window.__CHENYUAN_DEBUG__.getState().arena.player.meditating === true);
+      await page.evaluate(() => { window.__CHENYUAN_DEBUG__.getState().arena.player.meditateAgeTick = 3.01; });
       await page.waitForFunction(() => {
-        const s = window.__CHENYUAN_V25__.getState();
+        const s = window.__CHENYUAN_DEBUG__.getState();
         return s.game.elapsedMonths >= 11 && s.arena.player.meditateAgedDirty === true;
       });
       await page.keyboard.press("KeyH");
-      await page.waitForFunction(() => window.__CHENYUAN_V25__.getState().arena.sanctumMode === false);
+      await page.waitForFunction(() => window.__CHENYUAN_DEBUG__.getState().arena.sanctumMode === false);
       const afterDepart = await page.evaluate((sk) => ({
-        dirty: window.__CHENYUAN_V25__.getState().arena.player.meditateAgedDirty,
-        mem: window.__CHENYUAN_V25__.getState().game.elapsedMonths,
+        dirty: window.__CHENYUAN_DEBUG__.getState().arena.player.meditateAgedDirty,
+        mem: window.__CHENYUAN_DEBUG__.getState().game.elapsedMonths,
         disk: JSON.parse(localStorage.getItem(sk))?.game?.elapsedMonths
       }), STORAGE_KEY);
       assert.equal(afterDepart.dirty, false, "meditateAgedDirty cleared on departure (B-8)");
@@ -697,7 +697,7 @@ export const tests = [
 
       // B-5: Active Live Tribulation blocks KeyH, #btn-sanctum-hub & KeyM
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "qi";
         s.game.xp = api.getState().realmSpec.xpCap;
@@ -708,24 +708,24 @@ export const tests = [
         s.game.hp = 15;
         api.focusBattlefield();
       });
-      assert.equal(await page.evaluate(() => Boolean(window.__CHENYUAN_V25__.getState().arena.tribulation)), true, "Live Tribulation precondition must be active (B-5)");
+      assert.equal(await page.evaluate(() => Boolean(window.__CHENYUAN_DEBUG__.getState().arena.tribulation)), true, "Live Tribulation precondition must be active (B-5)");
       await page.keyboard.press("KeyH");
       await page.click("#btn-sanctum-hub");
       await page.keyboard.press("KeyM");
       await page.waitForTimeout(80);
       const b5 = await page.evaluate(() => ({
-        tribActive: Boolean(window.__CHENYUAN_V25__.getState().arena.tribulation),
-        sanctum: window.__CHENYUAN_V25__.getState().arena.sanctumMode,
+        tribActive: Boolean(window.__CHENYUAN_DEBUG__.getState().arena.tribulation),
+        sanctum: window.__CHENYUAN_DEBUG__.getState().arena.sanctumMode,
         modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open"))
       }));
       assert.equal(b5.tribActive, true, "KeyH/#btn-sanctum-hub/KeyM must not cancel active Live Tribulation (B-5)");
       assert.equal(b5.sanctum, false, "Must not escape to Sanctum during active tribulation (B-5)");
       assert.equal(b5.modalOpen, false, "Must not open World Map during active tribulation (B-5)");
-      await page.evaluate(() => { window.__CHENYUAN_V25__.getState().arena.tribulation = null; });
+      await page.evaluate(() => { window.__CHENYUAN_DEBUG__.getState().arena.tribulation = null; });
 
       // B-6: Star Chart at 0 Star Points must not silently deduct 60 stones
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const g = api.getState().game;
         g.realm = "golden";
         g.stones = 200;
@@ -742,25 +742,25 @@ export const tests = [
         await page.click('#modal-content [data-light-star]:not(.lit)');
         await page.waitForTimeout(30);
       }
-      const stonesBefore = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones);
-      const litBefore = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.litStars.length);
+      const stonesBefore = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.stones);
+      const litBefore = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.litStars.length);
       await page.click('#modal-content [data-light-star]:not(.lit)');
       await page.waitForTimeout(60);
-      assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones), stonesBefore, "Star node click at 0 points must NOT silently deduct 60 stones (B-6)");
-      assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.litStars.length), litBefore, "Star node must NOT light at 0 points (B-6)");
+      assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.stones), stonesBefore, "Star node click at 0 points must NOT silently deduct 60 stones (B-6)");
+      assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.litStars.length), litBefore, "Star node must NOT light at 0 points (B-6)");
       await closeModalEsc(page);
 
       // B-7: ]/[ /\ blocked in Photo Mode, 2P gated by realm+bonds, Righteous dawn shield has cooldown
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "mortal";
         s.game.aids = { shen: false, pei: false, lu: false, yan: false };
         s.game.bondTiers = { shen: 0, pei: 0, lu: 0, yan: 0 };
         s.game.karmaScore = 60;
         s.arena.player.shieldHp = 0;
-        window.__CHENYUAN_V23__.toggleLocalCoop2P(false);
-        window.__CHENYUAN_V23__.setCelestialTimePhase(0, true);
+        window.__CHENYUAN_DEBUG__.toggleLocalCoop2P(false);
+        window.__CHENYUAN_DEBUG__.setCelestialTimePhase(0, true);
         api.focusBattlefield();
       });
       await page.keyboard.press("KeyP");
@@ -769,8 +769,8 @@ export const tests = [
       await page.keyboard.press("BracketLeft");
       for (let i = 0; i < 4; i++) await page.keyboard.press("Backslash");
       const inPhoto = await page.evaluate(() => ({
-        coop: window.__CHENYUAN_V23__.getState().coop2P.active,
-        shield: window.__CHENYUAN_V25__.getState().arena.player.shieldHp
+        coop: Boolean(window.__CHENYUAN_DEBUG__.getState().coop2P?.active),
+        shield: window.__CHENYUAN_DEBUG__.getState().arena.player.shieldHp
       }));
       assert.equal(inPhoto.coop, false, "]/[ blocked in Photo Mode (B-7)");
       assert.equal(inPhoto.shield, 0, "\\ blocked in Photo Mode (B-7)");
@@ -778,37 +778,37 @@ export const tests = [
 
       // Unpaused Mortal + Foundation blocked under D07; Golden Core + shen bonded allowed
       await page.keyboard.press("BracketRight");
-      assert.equal(await page.evaluate(() => window.__CHENYUAN_V23__.getState().coop2P.active), false, "Mortal unbonded 2P Co-Op blocked (B-7)");
+      assert.equal(await page.evaluate(() => Boolean(window.__CHENYUAN_DEBUG__.getState().coop2P?.active)), false, "Mortal unbonded 2P Co-Op blocked (B-7)");
       await page.evaluate(() => {
-        const s = window.__CHENYUAN_V25__.getState();
+        const s = window.__CHENYUAN_DEBUG__.getState();
         s.game.realm = "foundation";
         s.game.aids = { shen: true, pei: false, lu: false, yan: false };
         s.game.bondTiers = { shen: 1, pei: 0, lu: 0, yan: 0 };
-        window.__CHENYUAN_V25__.focusBattlefield();
+        window.__CHENYUAN_DEBUG__.focusBattlefield();
       });
       await page.keyboard.press("BracketRight");
-      assert.equal(await page.evaluate(() => window.__CHENYUAN_V23__.getState().coop2P.active), false, "Foundation 2P Co-Op blocked under D07 (B-7)");
+      assert.equal(await page.evaluate(() => Boolean(window.__CHENYUAN_DEBUG__.getState().coop2P?.active)), false, "Foundation 2P Co-Op blocked under D07 (B-7)");
       await page.evaluate(() => {
-        const s = window.__CHENYUAN_V25__.getState();
+        const s = window.__CHENYUAN_DEBUG__.getState();
         s.game.realm = "golden";
         s.game.aids = { shen: true, pei: false, lu: false, yan: false };
         s.game.bondTiers = { shen: 1, pei: 0, lu: 0, yan: 0 };
         s.arena.player.shieldHp = 0;
-        window.__CHENYUAN_V23__.setCelestialTimePhase(3, true);
-        window.__CHENYUAN_V25__.focusBattlefield();
+        window.__CHENYUAN_DEBUG__.setCelestialTimePhase(3, true);
+        window.__CHENYUAN_DEBUG__.focusBattlefield();
       });
       await page.keyboard.press("BracketRight");
       await page.keyboard.press("BracketLeft");
-      const coopBonded = await page.evaluate(() => window.__CHENYUAN_V23__.getState().coop2P);
-      assert.equal(coopBonded.active, true, "Bonded Golden Core 2P Co-Op allowed under D07 (B-7)");
-      assert.equal(coopBonded.partnerId, "shen", "Only bonded companions cycled by [ (B-7)");
+      const coopBonded = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().coop2P);
+      assert.equal(Boolean(coopBonded?.active), true, "Bonded Golden Core 2P Co-Op allowed under D07 (B-7)");
+      assert.equal(coopBonded?.partnerId, "shen", "Only bonded companions cycled by [ (B-7)");
 
       // Righteous dawn shield spam cooldown
       await page.keyboard.press("Backslash");
-      assert.ok(await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.player.shieldHp) > 0, "First dawn transition grants Righteous shield (B-7)");
-      await page.evaluate(() => { window.__CHENYUAN_V25__.getState().arena.player.shieldHp = 0; });
+      assert.ok(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.player.shieldHp) > 0, "First dawn transition grants Righteous shield (B-7)");
+      await page.evaluate(() => { window.__CHENYUAN_DEBUG__.getState().arena.player.shieldHp = 0; });
       for (let i = 0; i < 4; i++) await page.keyboard.press("Backslash");
-      assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.player.shieldHp), 0, "Spamming \\ cannot refresh Righteous dawn shield during cooldown (B-7)");
+      assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.player.shieldHp), 0, "Spamming \\ cannot refresh Righteous dawn shield during cooldown (B-7)");
     }
   },
 
@@ -822,7 +822,7 @@ export const tests = [
       const page1 = await env.openPage("t5-09-p1");
       await env.startFreshGame(page1, "二轮对抗一");
       await page1.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.realm = "spirit";
         api.saveGame();
       });
@@ -832,7 +832,7 @@ export const tests = [
       await page2.waitForSelector("#btn-continue-save");
       await page2.click("#btn-continue-save");
       await page2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-      await page2.evaluate(() => { window.__CHENYUAN_V25__.saveMeta(); });
+      await page2.evaluate(() => { window.__CHENYUAN_DEBUG__.saveMeta(); });
       await page1.waitForTimeout(100);
 
       // R2A-2: 2-tab bingjie under removeItem SecurityError must NOT bounce-back +40 pts
@@ -842,7 +842,7 @@ export const tests = [
           if (k === sk) throw new DOMException("Read-only storage", "SecurityError");
           return window.__e2eR2OrigRm.call(this, k);
         };
-        window.__CHENYUAN_V25__.openLifespanExhaustedModal(true);
+        window.__CHENYUAN_DEBUG__.openLifespanExhaustedModal(true);
       }, STORAGE_KEY);
       for (let i = 0; i < 2; i++) {
         await page1.waitForSelector('#modal-backdrop.open [data-action="confirm-bingjie-reincarnate"]');
@@ -851,9 +851,9 @@ export const tests = [
       }
       const r2a2 = await page1.evaluate(({ sk, mk }) => {
         Storage.prototype.removeItem = window.__e2eR2OrigRm;
-        window.__CHENYUAN_V25__.closeModal();
+        window.__CHENYUAN_DEBUG__.closeModal();
         return {
-          memPts: Number(window.__CHENYUAN_V25__.getMetaState().reincarnationPoints) || 0,
+          memPts: Number(window.__CHENYUAN_DEBUG__.getMetaState().reincarnationPoints) || 0,
           diskPts: Number(JSON.parse(localStorage.getItem(mk) || "{}").reincarnationPoints) || 0,
           saveExists: Boolean(localStorage.getItem(sk))
         };
@@ -863,15 +863,15 @@ export const tests = [
       assert.equal(r2a2.saveExists, true, "R2A-2: Primary save preserved");
 
       // R2A-1: Cross-tab deletion during Practice Mode + Sandbox Mode must NOT resurrect save
-      await page1.evaluate(() => { window.__CHENYUAN_V25__.startBossRushGauntlet(7); });
+      await page1.evaluate(() => { window.__CHENYUAN_DEBUG__.startBossRushGauntlet(7); });
       await openSettingsTab(page2, "controls");
       await page2.click('[data-action="confirm-reset-save"]');
       await page2.waitForSelector('[data-action="execute-reset-save"]');
       await page2.click('[data-action="execute-reset-save"]');
       await page2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "flex");
-      await page1.waitForFunction((sk) => localStorage.getItem(sk) === null && Boolean(window.__CHENYUAN_V25__.getPersistenceState().saveConflictState?.deleted), STORAGE_KEY, { timeout: 3000 });
+      await page1.waitForFunction((sk) => localStorage.getItem(sk) === null && Boolean(window.__CHENYUAN_DEBUG__.getPersistenceState().saveConflictState?.deleted), STORAGE_KEY, { timeout: 3000 });
       const r2a1 = await page1.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const conf = api.getPersistenceState().saveConflictState;
         const ok = api.saveGame();
         return { deletedConf: Boolean(conf && conf.deleted), ok, diskRaw: localStorage.getItem(sk) };
@@ -908,7 +908,7 @@ export const tests = [
 
       // R2A-3 / DEFECT-R1-2C: Alert-opened save_conflict closed by live corruption keeps focus off BODY
       const delayedForeign = await page3.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.saveGame();
         const envObj = JSON.parse(localStorage.getItem(sk));
         const foreign = Object.assign({}, envObj, { saveRev: envObj.saveRev + 4, tabId: "tab_e2e_r2a3" });
@@ -935,7 +935,7 @@ export const tests = [
 
       // DEFECT-R1-2B + R2A-4 + R2A-5: Practice Mode return-title-safe clears practice state, focuses welcome screen, and allows corrupt-meta reset with off-BODY focus
       await page3.evaluate((mk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.saveGame({ forceOverwrite: true });
         api.getState().game.realm = "spirit";
         api.startBossRushGauntlet(7);
@@ -950,7 +950,7 @@ export const tests = [
       await page3.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "flex");
       const welcomeCheck = await page3.evaluate(() => ({
         inWelcome: Boolean(document.getElementById("welcome-screen")?.contains(document.activeElement)),
-        isPractice: window.__CHENYUAN_V25__.isPracticeModeActive()
+        isPractice: window.__CHENYUAN_DEBUG__.isPracticeModeActive()
       }));
       assert.equal(welcomeCheck.inWelcome, true, "R2A-4: return-title-safe lands focus inside #welcome-screen");
       assert.equal(welcomeCheck.isPractice, false, "DEFECT-R1-2B: return-title-safe clears isPracticeModeActive()");
@@ -961,7 +961,7 @@ export const tests = [
       await page3.click('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
       await page3.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
       const metaResetCheck = await page3.evaluate(() => ({
-        metaErr: Boolean(window.__CHENYUAN_V25__.getPersistenceState().metaReadError),
+        metaErr: Boolean(window.__CHENYUAN_DEBUG__.getPersistenceState().metaReadError),
         isBody: document.activeElement === document.body,
         inWelcome: Boolean(document.getElementById("welcome-screen")?.contains(document.activeElement))
       }));
@@ -982,7 +982,7 @@ export const tests = [
 
       // R2B-1 / DEFECT-R1-2A: Active Hardcore Defiant Tribulation blocks Explore warp, quick-map, side modes & sandbox
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "spirit";
         s.game.xp = 99999;
@@ -994,7 +994,7 @@ export const tests = [
         s.game.gourd.charges = 0;
         api.startBossRushGauntlet(7);
         api.startCelestialSpireRun(9);
-        window.__CHENYUAN_V22__.launchCustomSeedEncounter();
+        window.__CHENYUAN_DEBUG__.launchCustomSeedEncounter();
         api.enterSandboxMode();
       });
       await openNavTab(page, "explore");
@@ -1007,7 +1007,7 @@ export const tests = [
       await page.waitForSelector("#pavilion-popover.open #btn-toggle-arcana-all");
       await page.click("#btn-toggle-arcana-all");
       const tribGuard = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         return {
           trib: Boolean(s.arena.tribulation),
@@ -1025,7 +1025,7 @@ export const tests = [
 
       // R2B-3: Mid-combat [data-craft-open=alchemy] disabled & strikeTaixuCraftMinigame + companion tea cannot refill/heal
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.arena.tribulation = null;
         api.initArenaStage(2, false);
@@ -1034,8 +1034,8 @@ export const tests = [
       });
       await openNavTab(page, "alchemy");
       const combatBlock = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        const v23 = window.__CHENYUAN_V23__;
+        const api = window.__CHENYUAN_DEBUG__;
+        const v23 = window.__CHENYUAN_DEBUG__;
         const craftDisabled = Boolean(document.querySelector('#jade-panel [data-craft-open="alchemy"]')?.disabled);
         v23.openTaixuCraftMinigameModal("alchemy");
         v23.strikeTaixuCraftMinigame(true);
@@ -1054,7 +1054,7 @@ export const tests = [
 
       // R2B-2: Practice Mode snapshot isolation + retreat-sanctum defeat fix
       const beforePrac = await page.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         api.closeDrawer();
         api.enterSanctumHub();
@@ -1075,7 +1075,7 @@ export const tests = [
       await page.click('#modal-backdrop.open [data-defeat-act="retreat-sanctum"]');
       await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
       const afterPrac = await page.evaluate((sk) => {
-        const s = window.__CHENYUAN_V25__.getState();
+        const s = window.__CHENYUAN_DEBUG__.getState();
         return { retreats: s.game.retreats, spiritPill: s.game.inventory.spirit_pill, rawAfter: localStorage.getItem(sk) };
       }, STORAGE_KEY);
       assert.equal(afterPrac.retreats, 0, "R2B-2: Practice retreat-sanctum must not increment formal retreats");
@@ -1084,8 +1084,8 @@ export const tests = [
 
       // R2B-4 + R2B-5 + R2B-6: Sandbox combat override cleanup, Photo Mode HUD button block, direct Boss Rush meditation flush
       const r2b4 = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        const v23 = window.__CHENYUAN_V23__;
+        const api = window.__CHENYUAN_DEBUG__;
+        const v23 = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "mortal";
         s.game.aids = { shen: false, pei: false, lu: false, yan: false };
@@ -1098,7 +1098,7 @@ export const tests = [
         s.arena.swordIntent = 100;
         api.exitSandboxMode();
         return {
-          coop: v23.getState().coop2P.active,
+          coop: Boolean(v23.getState().coop2P?.active),
           playable: api.getState().arena.playableCharId,
           intent: api.getState().arena.swordIntent
         };
@@ -1108,14 +1108,14 @@ export const tests = [
       assert.equal(r2b4.intent, 0, "R2B-4: exitSandboxMode resets swordIntent");
 
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "golden";
         s.game.aids = { shen: true, pei: true, lu: true, yan: true };
         s.game.bondTiers = { shen: 2, pei: 2, lu: 2, yan: 2 };
         s.game.karmaScore = 60;
         s.arena.player.shieldHp = 0;
-        window.__CHENYUAN_V23__.setCelestialTimePhase(0, true);
+        window.__CHENYUAN_DEBUG__.setCelestialTimePhase(0, true);
         api.focusBattlefield();
       });
       await page.keyboard.press("KeyP");
@@ -1126,8 +1126,8 @@ export const tests = [
         for (let i = 0; i < 4; i++) document.getElementById("btn-celestial-time")?.click();
         return {
           pe,
-          coop: window.__CHENYUAN_V23__.getState().coop2P.active,
-          shield: window.__CHENYUAN_V25__.getState().arena.player.shieldHp
+          coop: Boolean(window.__CHENYUAN_DEBUG__.getState().coop2P?.active),
+          shield: window.__CHENYUAN_DEBUG__.getState().arena.player.shieldHp
         };
       });
       assert.equal(r2b5.pe, "none", "R2B-5: #arcana-vault-wrap pointer-events: none in Photo Mode");
@@ -1137,7 +1137,7 @@ export const tests = [
 
       // R2B-6: Meditation flush on direct Boss Rush Wave 7 entry
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "spirit";
         s.game.xp = 0;
@@ -1147,14 +1147,14 @@ export const tests = [
         api.focusBattlefield();
       });
       await page.keyboard.press("KeyB");
-      await page.waitForFunction(() => window.__CHENYUAN_V25__.getState().arena.player.meditating === true);
-      await page.evaluate(() => { window.__CHENYUAN_V25__.getState().arena.player.meditateAgeTick = 2.95; });
+      await page.waitForFunction(() => window.__CHENYUAN_DEBUG__.getState().arena.player.meditating === true);
+      await page.evaluate(() => { window.__CHENYUAN_DEBUG__.getState().arena.player.meditateAgeTick = 2.95; });
       await page.waitForFunction(() => {
-        const s = window.__CHENYUAN_V25__.getState();
+        const s = window.__CHENYUAN_DEBUG__.getState();
         return s.game.elapsedMonths >= 12 && s.arena.player.meditateAgedDirty === true;
       }, null, { timeout: 2500 });
       const r2b6 = await page.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.startBossRushGauntlet(7);
         const s = api.getState();
         return {
@@ -1179,7 +1179,7 @@ export const tests = [
       const p1 = await env.openPage("t5-11-p1");
       await env.startFreshGame(p1, "三轮演武冲突");
       await p1.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "nascent";
         s.game.stones = 2500;
@@ -1196,17 +1196,17 @@ export const tests = [
       await p2.click("#btn-continue-save");
       await p2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
       const tab2Rev = await p2.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.stones = 8888;
         api.saveGame();
         return api.getPersistenceState().loadedSaveRev;
       });
-      await p1.waitForFunction(() => window.__CHENYUAN_V25__.getActiveModalKind() === "save_conflict", null, { timeout: 3000 });
+      await p1.waitForFunction(() => window.__CHENYUAN_DEBUG__.getActiveModalKind() === "save_conflict", null, { timeout: 3000 });
       await p1.evaluate(() => { const tc = document.getElementById("toast-container"); if (tc) tc.innerHTML = ""; });
       await p1.click('[data-action="overwrite-with-current-save"]');
       await p1.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"), null, { timeout: 3000 });
       const r3a1A = await p1.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const disk = JSON.parse(localStorage.getItem(sk) || "null");
         return {
           isPractice: api.isPracticeModeActive(),
@@ -1226,8 +1226,8 @@ export const tests = [
 
       // Case B: Cross-tab delete during Practice Mode -> overwrite recovers cleanly
       await p1.evaluate(() => {
-        window.__CHENYUAN_V25__.startBossRushGauntlet(6);
-        window.__CHENYUAN_V25__.getState().game.inventory.spirit_pill = 1;
+        window.__CHENYUAN_DEBUG__.startBossRushGauntlet(6);
+        window.__CHENYUAN_DEBUG__.getState().game.inventory.spirit_pill = 1;
       });
       await p2.reload({ waitUntil: "domcontentloaded" });
       await p2.waitForSelector("#btn-continue-save");
@@ -1236,7 +1236,7 @@ export const tests = [
       await openSettingsTab(p2, "controls");
       await p2.click('[data-action="confirm-reset-save"]');
       await p2.click('[data-action="execute-reset-save"]');
-      await p1.waitForFunction(() => window.__CHENYUAN_V25__.getPersistenceState().saveConflictState?.deleted === true, null, { timeout: 3000 });
+      await p1.waitForFunction(() => window.__CHENYUAN_DEBUG__.getPersistenceState().saveConflictState?.deleted === true, null, { timeout: 3000 });
       await p1.click('[data-action="overwrite-with-current-save"]');
       await p1.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"), null, { timeout: 3000 });
       const r3a1B = await p1.evaluate((sk) => {
@@ -1253,7 +1253,7 @@ export const tests = [
 
       // R3A-3: Delayed foreign StorageEvent with higher saveRev over locally-owned v1 disk save
       await p1.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         for (let i = 0; i < 4; i++) { api.getState().game.stones += 10; api.saveGame(); }
       });
       await p2.reload({ waitUntil: "domcontentloaded" });
@@ -1261,7 +1261,7 @@ export const tests = [
       await p2.click("#btn-continue-save");
       await p2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
       const tab2HighRaw = await p2.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.stones += 55;
         api.saveGame();
         return localStorage.getItem(sk);
@@ -1269,9 +1269,9 @@ export const tests = [
       await openSettingsTab(p2, "controls");
       await p2.click('[data-action="confirm-reset-save"]');
       await p2.click('[data-action="execute-reset-save"]');
-      await p1.waitForFunction(() => Boolean(window.__CHENYUAN_V25__.getPersistenceState().saveConflictState?.deleted), null, { timeout: 3000 });
+      await p1.waitForFunction(() => Boolean(window.__CHENYUAN_DEBUG__.getPersistenceState().saveConflictState?.deleted), null, { timeout: 3000 });
       await p2.close();
-      await p1.evaluate(() => window.__CHENYUAN_V25__.closeModal());
+      await p1.evaluate(() => window.__CHENYUAN_DEBUG__.closeModal());
       await openSettingsTab(p1, "controls");
       await p1.click('[data-action="return-title-safe"]');
       await p1.waitForSelector("#btn-start-new");
@@ -1284,7 +1284,7 @@ export const tests = [
       await p1.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
       await p1.evaluate(() => { const b = document.getElementById("btn-dlg-skip"); if (b && b.offsetParent !== null) b.click(); });
       const r3a3 = await p1.evaluate(({ sk, raw }) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const liveRev = JSON.parse(localStorage.getItem(sk)).saveRev;
         window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: raw, oldValue: null, storageArea: localStorage }));
         return {
@@ -1322,7 +1322,7 @@ export const tests = [
       await p1.click("#btn-continue-save");
       await p1.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
       const r3a4 = await p1.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.name = "沙盒验真";
         s.game.openingChoice = "help";
@@ -1349,7 +1349,7 @@ export const tests = [
       await p1.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
 
       // R3A-5: Dojo bar Escape & drill/action focus return
-      await p1.evaluate(() => window.__CHENYUAN_V25__.enterSanctumHub());
+      await p1.evaluate(() => window.__CHENYUAN_DEBUG__.enterSanctumHub());
       await p1.focus("#btn-toggle-dojo-bar");
       await p1.keyboard.press("Enter");
       await p1.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
@@ -1385,9 +1385,9 @@ export const tests = [
 
       // 1. DEFECT-R2-2A + DEFECT-R2-2C: Boss Rush 7 & Spire 9 Practice Victory isolate formal state, retain cross-tab META_KEY, block Cloud Import
       const r22ac = await page.evaluate(({ sk, mk }) => {
-        const api = window.__CHENYUAN_V25__;
-        const v21 = window.__CHENYUAN_V21__;
-        const v24 = window.__CHENYUAN_V24__;
+        const api = window.__CHENYUAN_DEBUG__;
+        const v21 = window.__CHENYUAN_DEBUG__;
+        const v24 = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "nascent";
         s.game.stones = 2500;
@@ -1449,8 +1449,8 @@ export const tests = [
 
       // 2. R3B-1: Sandbox exit clears arena.sanqingState & Gourd soak timers
       const r3b1 = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        const v24 = window.__CHENYUAN_V24__;
+        const api = window.__CHENYUAN_DEBUG__;
+        const v24 = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "mortal";
         s.game.gourd.soaks = ["iron_lotus", "samadhi_fire", "wind_feather", "crimson_vine"];
@@ -1465,7 +1465,7 @@ export const tests = [
         api.exitSandboxMode();
         const sOut = api.getState();
         return {
-          sanqingActive: v24.getState().sanqing.active,
+          sanqingActive: Boolean(v24.getState().sanqing?.active),
           echoQueueLen: v24.getState().echoQueueLen,
           hyperArmor: sOut.arena.player.hyperArmorTimer,
           samadhi: sOut.arena.player.samadhiFireReady,
@@ -1482,8 +1482,8 @@ export const tests = [
 
       // 3. R3B-2 + DEFECT-R2-2B + R3B-4: Live Tribulation from Sanctum clears Dojo/intent and blocks sanctum_portal, spring, Digit9 map, cloud import
       const r3b2 = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        const v24 = window.__CHENYUAN_V24__;
+        const api = window.__CHENYUAN_DEBUG__;
+        const v24 = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "nascent";
         s.game.xp = api.REALMS.nascent.xpCap;
@@ -1533,9 +1533,9 @@ export const tests = [
 
       // 4. R3B-3 + R3B-4 + R3B-5: Workshop overdrive purge, Dojo fill-intent reset, Sect Defense mixed_ward purge
       const r3b345 = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        const v22 = window.__CHENYUAN_V22__;
-        const v24 = window.__CHENYUAN_V24__;
+        const api = window.__CHENYUAN_DEBUG__;
+        const v22 = window.__CHENYUAN_DEBUG__;
+        const v24 = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.arena.tribulation = null;
         s.game.realm = "spirit";
@@ -1549,7 +1549,7 @@ export const tests = [
         const rushAfterWorkshop = {
           astral: Boolean(s.arena.astralForm),
           astralEnergy: s.arena.astralEnergy,
-          sanqing: v24.getState().sanqing.active,
+          sanqing: Boolean(v24.getState().sanqing?.active),
           shanhe: Boolean(s.arena.shanheDomain)
         };
         api.enterSanctumHub();
@@ -1611,7 +1611,7 @@ export const tests = [
           drawerOpen: document.getElementById("jade-panel").classList.contains("drawer-open"),
           modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
           pavOpen: document.getElementById("pavilion-popover").classList.contains("open"),
-          pauseLen: window.__CHENYUAN_V25__.getPauseTokens().length
+          pauseLen: window.__CHENYUAN_DEBUG__.getPauseTokens().length
         };
       });
       assert.equal(occludedRes.drawerOpen, false, "R4A-2: Occluded #btn-open-profile blocked on #welcome-screen");
@@ -1624,7 +1624,7 @@ export const tests = [
 
       // 2. R4A-1 / DEFECT-R3-2A: Atomic Practice overwrite-with-current-save under QuotaExceededError (retry + stay-readonly-save)
       await p1.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "nascent";
         s.game.stones = 2500;
@@ -1640,7 +1640,7 @@ export const tests = [
       await p2.click("#btn-continue-save");
       await p2.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
       await p2.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.stones = 9999;
         api.saveGame();
       });
@@ -1655,7 +1655,7 @@ export const tests = [
       }, STORAGE_KEY);
       await p1.click('[data-action="overwrite-with-current-save"]');
       const quotaRollback = await p1.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const errEl = document.getElementById("save-conflict-error-msg");
         const cs = errEl ? getComputedStyle(errEl) : null;
@@ -1692,7 +1692,7 @@ export const tests = [
       await p1.click('[data-action="overwrite-with-current-save"]');
       await p1.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
       const retryOk = await p1.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const disk = JSON.parse(localStorage.getItem(sk) || "null");
         return {
@@ -1714,9 +1714,9 @@ export const tests = [
       assert.equal(retryOk.diskPill, 3, "R4A-1 Retry: Formal pills restored on disk");
 
       // Second QuotaExceededError -> stay-readonly-save -> Practice coherent & KeyH exits cleanly
-      await p1.evaluate(() => { window.__CHENYUAN_V25__.startBossRushGauntlet(7); });
+      await p1.evaluate(() => { window.__CHENYUAN_DEBUG__.startBossRushGauntlet(7); });
       await p2.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.stones = 7777;
         api.saveGame({ forceOverwrite: true });
       });
@@ -1732,7 +1732,7 @@ export const tests = [
       await p1.click('[data-action="stay-readonly-save"]');
       await p1.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
       const roState = await p1.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         if (window.__e2eOrigSetItem) {
           Storage.prototype.setItem = window.__e2eOrigSetItem;
@@ -1747,10 +1747,10 @@ export const tests = [
       assert.equal(roState.isPractice, true, "R4A-1 ReadOnly: Practice Mode stays intact");
       assert.equal(roState.sanctumMode, false, "R4A-1 ReadOnly: No stranded boss in Sanctum");
       assert.equal(roState.bossRushActive, true, "R4A-1 ReadOnly: Boss Rush stays coherent");
-      await p1.evaluate(() => { window.__CHENYUAN_V25__.focusBattlefield(); });
+      await p1.evaluate(() => { window.__CHENYUAN_DEBUG__.focusBattlefield(); });
       await p1.keyboard.press("KeyH");
       const keyHExit = await p1.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         api.saveGame({ forceOverwrite: true, userInitiated: true });
         return {
@@ -1771,13 +1771,13 @@ export const tests = [
       await p1.keyboard.press("Enter");
       await p1.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
       const r4a3 = await p1.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.initArenaStage(0, false);
         const db = document.getElementById("dojo-control-bar");
         const afterStage = { active: db.classList.contains("active"), expanded: db.classList.contains("expanded") };
         api.enterSanctumHub();
         db.classList.add("expanded");
-        window.__CHENYUAN_V22__.launchCustomSeedEncounter();
+        window.__CHENYUAN_DEBUG__.launchCustomSeedEncounter();
         const afterWorkshop = { active: db.classList.contains("active"), expanded: db.classList.contains("expanded") };
         api.initArenaStage(0, false);
         const s = api.getState();
@@ -1804,7 +1804,7 @@ export const tests = [
       await p1.keyboard.press("Escape");
       const cardAfterEsc = await p1.evaluate(() => {
         document.getElementById("dojo-control-bar").classList.remove("expanded");
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         return {
           activeUnlock: api.getActiveUnlockCardId(),
           seenUnlockIds: (api.getState().game.seenUnlockIds || []).slice()
@@ -1815,9 +1815,9 @@ export const tests = [
 
       // 4. R4B-1 + R4B-2 + R4B-3: Trial-mode tribulation block, stele guards, Sanctum overdrive purge & Hardcore tribShield bypass
       const r4bAll = await p1.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        const v22 = window.__CHENYUAN_V22__;
-        const v24 = window.__CHENYUAN_V24__;
+        const api = window.__CHENYUAN_DEBUG__;
+        const v22 = window.__CHENYUAN_DEBUG__;
+        const v24 = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "nascent";
         s.game.xp = api.REALMS.nascent.xpCap;
@@ -1862,7 +1862,7 @@ export const tests = [
         const rushPurged = {
           astralEnergy: s.arena.astralEnergy,
           astralForm: Boolean(s.arena.astralForm),
-          sanqing: v24.getState().sanqing.active,
+          sanqing: Boolean(v24.getState().sanqing?.active),
           shanhe: Boolean(s.arena.shanheDomain),
           invuln: s.arena.player.invuln,
           shieldHp: s.arena.player.shieldHp,
@@ -1937,7 +1937,7 @@ export const tests = [
 
       // 1. R5B-3: Demon Tower blocks KeyB, openTribulationPrepModal, and startLiveTribulation
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "nascent";
         s.game.xp = api.REALMS.nascent.xpCap;
@@ -1948,7 +1948,7 @@ export const tests = [
       });
       await page.keyboard.press("KeyB");
       const r5b3 = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const modalAfterKeyB = document.getElementById("modal-backdrop").classList.contains("open");
         api.openTribulationPrepModal();
@@ -1968,7 +1968,7 @@ export const tests = [
 
       // 2. R5B-2: Karma Dilemma blocked mid-Hardcore-Tribulation via real #nav-btn-story UI AND direct API
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         api.initArenaStage(1, false);
         api.startLiveTribulation({ confirmed: true, mode: "defiant" });
@@ -1980,7 +1980,7 @@ export const tests = [
       await page.waitForSelector('[data-action="open-karma-dilemma"]', { state: "visible" });
       await page.click('[data-action="open-karma-dilemma"]');
       const r5b2 = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const modalAfterUiClick = document.getElementById("modal-backdrop").classList.contains("open");
         const directOpen = api.openKarmaDilemmaModal(0);
@@ -2008,8 +2008,8 @@ export const tests = [
 
       // 3. R5B-1: Full purge of qimenArray/domain/activeAllies/zones/witchTime across ALL 6 Sanctum exits + Sandbox exit
       const r5b1 = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        const v22 = window.__CHENYUAN_V22__;
+        const api = window.__CHENYUAN_DEBUG__;
+        const v22 = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "spirit";
         s.game.xp = api.REALMS.spirit.xpCap;
@@ -2042,7 +2042,7 @@ export const tests = [
 
         seedActiveFieldsInSanctum(); api.startLiveTribulation({ confirmed: true, mode: "defiant" });
         const afterTrib = snap();
-        window.__CHENYUAN_V23__.setCelestialTimePhase(1, true);
+        window.__CHENYUAN_DEBUG__.setCelestialTimePhase(1, true);
         s.game.hp = 200;
         s.arena.tribulation.strikes = [];
         s.arena.tribulation.cooldown = 99;
@@ -2095,7 +2095,7 @@ export const tests = [
 
       // 4. R5A-1 (confirm-reset-save & confirm-reset-corrupt-meta inline role="alert" errors) + R5A-2 (all 3 title-return Dojo cleanups)
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.enterSanctumHub();
         api.saveGame({ forceOverwrite: true });
       });
@@ -2149,7 +2149,7 @@ export const tests = [
         const db = document.getElementById("dojo-control-bar");
         const hud = document.getElementById("dojo-training-hud");
         return {
-          sanctumMode: window.__CHENYUAN_V25__.getState().arena.sanctumMode,
+          sanctumMode: window.__CHENYUAN_DEBUG__.getState().arena.sanctumMode,
           active: db.classList.contains("active"),
           expanded: db.classList.contains("expanded"),
           caret: (document.getElementById("lbl-dojo-caret")?.textContent || "").trim(),
@@ -2196,7 +2196,7 @@ export const tests = [
       // R5A-2 execute-reset-save & executeReincarnation
       await page.click("#btn-continue-save");
       await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
-      await page.evaluate(() => { window.__CHENYUAN_V25__.enterSanctumHub(); });
+      await page.evaluate(() => { window.__CHENYUAN_DEBUG__.enterSanctumHub(); });
       await page.click("#btn-toggle-dojo-bar");
       await page.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
       await page.click("#btn-open-settings");
@@ -2212,10 +2212,10 @@ export const tests = [
       await page.click("#btn-start-new");
       await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
       await env.dismissOpeningIfAny(page);
-      await page.evaluate(() => { window.__CHENYUAN_V25__.enterSanctumHub(); });
+      await page.evaluate(() => { window.__CHENYUAN_DEBUG__.enterSanctumHub(); });
       await page.click("#btn-toggle-dojo-bar");
       await page.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
-      const reincOk = await page.evaluate(() => window.__CHENYUAN_V25__.executeReincarnation({ source: "bingjie" }));
+      const reincOk = await page.evaluate(() => window.__CHENYUAN_DEBUG__.executeReincarnation({ source: "bingjie" }));
       assert.equal(reincOk, true, "R5A-2: executeReincarnation succeeded");
       const cleanReinc = await checkDojoClean();
       assert.deepEqual(cleanReinc, { sanctumMode: false, active: false, expanded: false, caret: "▾", trainingHud: false }, "R5A-2: executeReincarnation clears Sanctum/Dojo DOM");
@@ -2223,7 +2223,7 @@ export const tests = [
       // 5. Round 6 Convergence: Minor-3, R6A-1 (Option 1B), R6A-4, R6A-2 (+ Batch/Settings), R6A-3, R6B-1..4 (+ P4c)
       // 5a. Minor-3: exitSandboxMode with game === null clears Sanctum/Dojo DOM & keeps focus off BODY
       const minor3E2e = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const entered = api.enterSandboxMode({ source: "preset", preset: "golden" });
         api.enterSanctumHub();
         const db = document.getElementById("dojo-control-bar");
@@ -2313,7 +2313,7 @@ export const tests = [
 
       // 5c. R6A-4: Floating #new-unlock-card & #gear-compare-card requestCalmReevaluation focus retention
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.enterSanctumHub();
         const g = api.getState().game;
         g.realm = "qi";
@@ -2324,7 +2324,7 @@ export const tests = [
       await page.waitForSelector("#new-unlock-card #btn-unlock-dismiss", { state: "visible" });
       await page.focus("#btn-unlock-dismiss");
       const r6a4Unlock = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const before = document.getElementById("btn-unlock-dismiss");
         api.requestCalmReevaluation({ immediate: true });
         return {
@@ -2336,8 +2336,8 @@ export const tests = [
       assert.equal(r6a4Unlock.activeId, "btn-unlock-dismiss", "R6A-4 E2E: Focus stays on #btn-unlock-dismiss");
       await page.keyboard.press("Enter");
       const r6a4UnlockAfter = await page.evaluate(() => ({
-        activeUnlock: window.__CHENYUAN_V25__.getActiveUnlockCardId(),
-        seenHasCoop: (window.__CHENYUAN_V25__.getState().game.seenUnlockIds || []).includes("unlock_ally_coop"),
+        activeUnlock: window.__CHENYUAN_DEBUG__.getActiveUnlockCardId(),
+        seenHasCoop: (window.__CHENYUAN_DEBUG__.getState().game.seenUnlockIds || []).includes("unlock_ally_coop"),
         isBody: document.activeElement === document.body
       }));
       assert.equal(r6a4UnlockAfter.activeUnlock, null, "R6A-4 E2E: Enter dismisses unlock card cleanly");
@@ -2345,7 +2345,7 @@ export const tests = [
       assert.equal(r6a4UnlockAfter.isBody, false, "R6A-4 E2E: Focus stays off BODY after unlock dismiss");
 
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const it = api.rollGearItem(2, 2, "weapon");
         it.name = "玄品·冷静试剑";
         it.sell = 36;
@@ -2354,13 +2354,13 @@ export const tests = [
       });
       await page.waitForSelector('#gear-compare-card [data-action="compare-smelt-new"]', { state: "visible" });
       await page.waitForFunction(() => {
-        const gs = window.__CHENYUAN_V25__.getCompareCardGuardState();
+        const gs = window.__CHENYUAN_DEBUG__.getCompareCardGuardState();
         return !gs.guardUntil || performance.now() >= gs.guardUntil;
       }, null, { timeout: 2000 });
       await page.focus('#gear-compare-card [data-action="compare-smelt-new"]');
       const r6a4Cmp = await page.evaluate(() => {
         const before = document.querySelector('#gear-compare-card [data-action="compare-smelt-new"]');
-        window.__CHENYUAN_V25__.requestCalmReevaluation({ immediate: true });
+        window.__CHENYUAN_DEBUG__.requestCalmReevaluation({ immediate: true });
         return {
           sameNode: document.querySelector('#gear-compare-card [data-action="compare-smelt-new"]') === before,
           activeAction: document.activeElement?.getAttribute?.("data-action") || ""
@@ -2370,7 +2370,7 @@ export const tests = [
       assert.equal(r6a4Cmp.activeAction, "compare-smelt-new", "R6A-4 E2E: Focus stays on compare-smelt-new");
       await page.keyboard.press("Enter");
       const r6a4Arm = await page.evaluate(() => {
-        window.__CHENYUAN_V25__.requestCalmReevaluation({ immediate: true });
+        window.__CHENYUAN_DEBUG__.requestCalmReevaluation({ immediate: true });
         return document.activeElement?.getAttribute?.("data-action") || "";
       });
       assert.equal(r6a4Arm, "compare-smelt-new", "R6A-4 E2E: Armed smelt button retains focus across requestCalmReevaluation");
@@ -2380,7 +2380,7 @@ export const tests = [
 
       // 5d. R6A-2: Reincarnation (Bingjie & Ending) + Proactive Batch Craft/Enhance/Settings inline role="alert" errors
       await page.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const g = api.getState().game;
         g.realm = "spirit";
         g.stones = 500;
@@ -2419,7 +2419,7 @@ export const tests = [
       assert.equal(e2eBingjie.savePreserved, true, "R6A-2 E2E Bingjie: primary save preserved");
 
       await page.evaluate((mk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.closeModal();
         const g = api.getState().game;
         g.status = "ascended";
@@ -2438,7 +2438,7 @@ export const tests = [
         const rect = el ? el.getBoundingClientRect() : null;
         Storage.prototype.setItem = window.__e2eR6OrigSet;
         delete window.__e2eR6OrigSet;
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.status = "active";
         api.getState().game.ending = null;
         api.closeModal();
@@ -2456,7 +2456,7 @@ export const tests = [
 
       // Proactive Batch Craft + Batch Enhance + Settings refusal spot-check
       await page.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.openBatchCraftModal("healing", 1);
         window.__e2eR6OrigSet = Storage.prototype.setItem;
         Storage.prototype.setItem = function(k, v) {
@@ -2474,8 +2474,8 @@ export const tests = [
       assert.equal(e2eBatchCraft.visible, true, "R6A-2 E2E Proactive: #batch-craft-error-msg visible");
       assert.ok(e2eBatchCraft.text.includes("QuotaExceededError"), "R6A-2 E2E Proactive: #batch-craft-error-msg reports QuotaExceededError");
       await page.evaluate(() => {
-        window.__CHENYUAN_V25__.closeModal();
-        window.__CHENYUAN_V25__.openBatchEnhanceModal("weapon", 1);
+        window.__CHENYUAN_DEBUG__.closeModal();
+        window.__CHENYUAN_DEBUG__.openBatchEnhanceModal("weapon", 1);
       });
       await page.click("#btn-confirm-batch-enhance");
       const e2eBatchEnh = await page.evaluate(() => {
@@ -2483,7 +2483,7 @@ export const tests = [
         const rect = el ? el.getBoundingClientRect() : null;
         Storage.prototype.setItem = window.__e2eR6OrigSet;
         delete window.__e2eR6OrigSet;
-        window.__CHENYUAN_V25__.closeModal();
+        window.__CHENYUAN_DEBUG__.closeModal();
         return { role: el?.getAttribute("role"), visible: Boolean(el && getComputedStyle(el).display !== "none" && rect && rect.width > 0 && rect.height > 0), text: el?.textContent || "" };
       });
       assert.equal(e2eBatchEnh.role, "alert", "R6A-2 E2E Proactive: #batch-enhance-error-msg role='alert'");
@@ -2492,7 +2492,7 @@ export const tests = [
 
       // 5e. R6A-3: Dual storageWriteError + metaReadError HUD alert & clean retry transition
       await page.evaluate(({ sk, mk }) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         localStorage.setItem(mk, "{bad_meta_e2e_r6");
         window.dispatchEvent(new StorageEvent("storage", { key: mk, newValue: "{bad_meta_e2e_r6" }));
         window.__e2eR6OrigSet = Storage.prototype.setItem;
@@ -2521,7 +2521,7 @@ export const tests = [
       });
       await page.click('#hud-save-alert [data-action="retry-save-now"]');
       const e2eR6a3Retry = await page.evaluate((mk) => ({
-        writeErr: window.__CHENYUAN_V25__.getPersistenceState().storageWriteError,
+        writeErr: window.__CHENYUAN_DEBUG__.getPersistenceState().storageWriteError,
         corruptMetaUntouched: localStorage.getItem(mk) === "{bad_meta_e2e_r6",
         focusIsBody: document.activeElement === document.body
       }), META_KEY);
@@ -2535,7 +2535,7 @@ export const tests = [
 
       // 5f. R6B-1 (+ P4c) + R6B-2 + R6B-3 + R6B-4
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "spirit";
         s.game.xp = api.REALMS.spirit.xpCap;
@@ -2546,7 +2546,7 @@ export const tests = [
         s.game.loadout.relic = null;
         api.enterSanctumHub();
         api.startLiveTribulation({ confirmed: true, mode: "defiant" });
-        window.__CHENYUAN_V23__.setCelestialTimePhase(1, true);
+        window.__CHENYUAN_DEBUG__.setCelestialTimePhase(1, true);
         s.game.hp = 80;
         s.game.mp = 10;
         s.game.gourd.charges = 0;
@@ -2560,10 +2560,10 @@ export const tests = [
         api.focusBattlefield();
       });
       await page.keyboard.press("KeyB");
-      assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.player.meditating), false, "R6B-1 E2E: KeyB blocked mid-tribulation");
+      assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.player.meditating), false, "R6B-1 E2E: KeyB blocked mid-tribulation");
       await page.click("#orb-meditate");
       const e2eR6b1 = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const medOrb = s.arena.player.meditating;
         for (let k = 0; k < 30; k++) api.stepArena(0.05);
@@ -2598,7 +2598,7 @@ export const tests = [
 
       // R6B-2: stageEpoch bump & waveTransitioning reset in startLiveTribulation
       const e2eR6b2 = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.laws = ["karma_resonance"];
         s.game.bondTiers = { shen: 3, pei: 3, lu: 3, yan: 3 };
@@ -2610,7 +2610,7 @@ export const tests = [
         const ep0 = s.arena.stageEpoch;
         api.startLiveTribulation({ confirmed: true, mode: "defiant" });
         const ep1 = s.arena.stageEpoch;
-        window.__CHENYUAN_V23__.setCelestialTimePhase(1, true);
+        window.__CHENYUAN_DEBUG__.setCelestialTimePhase(1, true);
         s.game.hp = 100;
         s.arena.player.shieldHp = 0;
         s.arena.tribulation.strikes = [];
@@ -2620,7 +2620,7 @@ export const tests = [
       assert.equal(e2eR6b2.ep1, e2eR6b2.ep0 + 1, "R6B-2 E2E: startLiveTribulation bumps stageEpoch");
       await page.waitForTimeout(480);
       const e2eR6b2After = await page.evaluate(() => {
-        const s = window.__CHENYUAN_V25__.getState();
+        const s = window.__CHENYUAN_DEBUG__.getState();
         const res = { hp: s.game.hp, shield: s.arena.player.shieldHp, vortexes: (s.arena.lotusVortexes || []).length };
         s.arena.tribulation = null;
         return res;
@@ -2631,9 +2631,9 @@ export const tests = [
 
       // R6B-3 (23 entities across all transitions + Spire 1->2) & R6B-4 (plain-object stageStars +30% yield = 8)
       const e2eR6b34 = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        const v21 = window.__CHENYUAN_V21__;
-        const v22 = window.__CHENYUAN_V22__;
+        const api = window.__CHENYUAN_DEBUG__;
+        const v21 = window.__CHENYUAN_DEBUG__;
+        const v22 = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.laws = [];
         s.game.seenCutscenes = Object.assign({}, s.game.seenCutscenes, { enter_sect: true });

@@ -7,6 +7,7 @@ import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import {
   REPO_ROOT,
+  RUNTIME_MODULE_ORDER,
   assemblePlayableHtml,
   parseWebpHeader,
   transformEsmForIife
@@ -22,6 +23,19 @@ const ART_INDEX_PATH = path.join(REPO_ROOT, "src/assets/art-index.json");
 
 function sha256(buf) {
   return crypto.createHash("sha256").update(buf).digest("hex");
+}
+
+function collectFilesRecursive(dirPath) {
+  const out = [];
+  for (const dirent of fs.readdirSync(dirPath, { withFileTypes: true })) {
+    const abs = path.join(dirPath, dirent.name);
+    if (dirent.isDirectory()) {
+      out.push(...collectFilesRecursive(abs));
+    } else if (dirent.isFile()) {
+      out.push(abs);
+    }
+  }
+  return out;
 }
 
 test("art-index.json validates all 115 extracted runtime WebP binaries and 5 protected VP8X RGBA sprites", () => {
@@ -49,11 +63,26 @@ test("art-index.json validates all 115 extracted runtime WebP binaries and 5 pro
   }
 });
 
+test("RUNTIME_MODULE_ORDER lists all 16 ordered runtime modules and src/runtime/main.js is a thin loop shell", () => {
+  assert.equal(RUNTIME_MODULE_ORDER.length, 16);
+  assert.equal(RUNTIME_MODULE_ORDER[RUNTIME_MODULE_ORDER.length - 1], "src/runtime/main.js");
+  for (const relPath of RUNTIME_MODULE_ORDER) {
+    const abs = path.join(REPO_ROOT, relPath);
+    assert.ok(fs.existsSync(abs), `Missing runtime module: ${relPath}`);
+    const txt = fs.readFileSync(abs, "utf8");
+    assert.ok(txt.length > 0, `Empty runtime module: ${relPath}`);
+    assert.ok(!txt.includes("\r"), `CR character forbidden in ${relPath}`);
+  }
+  const mainLines = fs.readFileSync(path.join(REPO_ROOT, "src/runtime/main.js"), "utf8").split("\n").length;
+  assert.ok(mainLines < 60, `Expected thin src/runtime/main.js shell (< 60 lines), got ${mainLines} lines`);
+});
+
 test("deterministic build matches committed web/public/playable-v2.html byte-for-byte with single bare <script> and zero CDN", () => {
   const run1 = assemblePlayableHtml();
   const run2 = assemblePlayableHtml();
   assert.equal(run1.sha256, run2.sha256, "Two consecutive builds must be byte-identical");
   assert.equal(Buffer.compare(run1.buf, run2.buf), 0);
+  assert.equal(run1.runtimeModuleCount, RUNTIME_MODULE_ORDER.length);
 
   const diskBuf = fs.readFileSync(PLAYABLE_PATH);
   assert.equal(Buffer.compare(run1.buf, diskBuf), 0, "Committed playable-v2.html drifted from src/");
@@ -69,38 +98,39 @@ test("deterministic build matches committed web/public/playable-v2.html byte-for
   assert.match(stdout, /build-playable OK \(--check\)/);
 });
 
-test("pure ESM rule modules match live assembled playable-v2.html engine inside VM sandbox (parity & debug facade)", () => {
-  const { sandbox, v25 } = loadPlayableEngine(20261124);
+test("pure ESM rule modules match live assembled playable-v2.html engine inside VM sandbox (parity & unified debug facade)", () => {
+  const { sandbox, debug } = loadPlayableEngine(20261124);
   const dbg = sandbox.__CHENYUAN_DEBUG__;
-  assert.ok(dbg && dbg.version === "q5-compat-1");
+  assert.equal(dbg, debug);
+  assert.ok(dbg && dbg.version === "d06-unified-1");
+  assert.equal(dbg.namespaces, undefined, "namespaces must be removed in d06-unified-1");
+  assert.equal(dbg.getNamespace, undefined, "getNamespace must be removed in d06-unified-1");
 
-  // Exact 382 keys preserved across V18-V25
-  const expectedCounts = { V18: 5, V19: 8, V20: 8, V21: 11, V22: 12, V23: 14, V24: 11, V25: 313 };
-  let totalKeys = 0;
-  for (const [ver, count] of Object.entries(expectedCounts)) {
-    const ns = sandbox[`__CHENYUAN_${ver}__`];
-    assert.ok(ns && typeof ns === "object", `Missing window.__CHENYUAN_${ver}__`);
-    assert.equal(Object.keys(ns).length, count, `Key count drift in __CHENYUAN_${ver}__`);
-    assert.equal(dbg.getNamespace(ver.toLowerCase()), ns);
-    totalKeys += Object.keys(ns).length;
+  // All 8 legacy versioned globals must be strictly undefined
+  for (const ver of ["V18", "V19", "V20", "V21", "V22", "V23", "V24", "V25"]) {
+    const key = `__CHENYUAN_${ver}__`;
+    assert.equal(sandbox[key], undefined, `Legacy global window.${key} must be deleted`);
   }
-  assert.equal(totalKeys, 382);
 
-  // Prototype-safe getNamespace() rejects Object.prototype keys and unknown versions
-  assert.equal(dbg.getNamespace("constructor"), null);
-  assert.equal(dbg.getNamespace("__proto__"), null);
-  assert.equal(dbg.getNamespace("toString"), null);
-  assert.equal(dbg.getNamespace("hasOwnProperty"), null);
-  assert.equal(dbg.getNamespace("v99"), null);
+  // Exact 370 unified top-level keys (7 facade/group keys + 363 unique subsystem bindings)
+  assert.equal(Object.keys(dbg).length, 370, `Expected 370 top-level keys on __CHENYUAN_DEBUG__, got ${Object.keys(dbg).length}`);
+  for (const key of ["version", "getState", "rules", "q6", "persistence", "art", "telemetry", "startColossalTitanRaid", "executeSixAspectAwakeningSkill", "triggerImpactFrame", "getStyleRankSpec", "encodeWorkshopSeed", "toggleLocalCoop2P", "triggerSanqingTriClones", "importFullCloudSaveCode"]) {
+    assert.ok(Object.prototype.hasOwnProperty.call(dbg, key), `Missing expected top-level key: ${key}`);
+  }
 
   const plain = (v) => JSON.parse(JSON.stringify(v));
 
-  // Rule parity: compare direct Node ESM outputs vs VM runtime outputs on the live game state
+  // Unified non-mutating getState() check
   const state = dbg.getState();
   assert.ok(state && state.game && state.arena);
+  for (const reqField of ["game", "arena", "pity", "drawerOpen", "realmSpec", "persistence", "a11ySettings", "photoMode", "soundPan", "soundSurf", "artCount", "activeHero", "curioPoolCount", "sixAspect", "codexSelectedId", "codexDemoAnimT", "workshopState", "audioStems", "celestialPhase", "coop2P", "primordialCrafts", "craftMinigame", "highlightCount", "sanqing", "echoQueueLen", "shanhe", "warship", "customSeq", "expeditions"]) {
+    assert.ok(Object.prototype.hasOwnProperty.call(state, reqField), `Unified getState() missing field: ${reqField}`);
+  }
+
+  // Rule parity: compare direct Node ESM outputs vs VM runtime outputs on the live game state
   const g = state.game;
   const esmLedger = computeCombatStatLedger(g, { arena: state.arena });
-  const vmLedger = v25.computeCombatStatLedger(g);
+  const vmLedger = debug.computeCombatStatLedger(g);
   assert.deepEqual(plain(esmLedger.totals), plain(vmLedger.totals));
 
   const esmStats = getCombatStats(g, { arena: state.arena });
@@ -109,10 +139,10 @@ test("pure ESM rule modules match live assembled playable-v2.html engine inside 
 
   const sampleGear = { slot: "weapon", rarity: 3, lvl: 4, atk: 42, hp: 0, dr: 0, crit: 0.08, spd: 0, bonusSword: 1, affix: "posture_crush" };
   assert.equal(effectiveGearVal(sampleGear, "atk"), dbg.rules.effectiveGearVal(sampleGear, "atk"));
-  assert.deepEqual(plain(computeGearAffixBudget(sampleGear)), plain(v25.computeGearAffixBudget(sampleGear)));
+  assert.deepEqual(plain(computeGearAffixBudget(sampleGear)), plain(debug.computeGearAffixBudget(sampleGear)));
 
   const esmLifespan = previewLifespanImpact(g, 18, { sandboxMode: false });
-  const vmLifespan = v25.previewLifespanImpact(g, 18);
+  const vmLifespan = debug.previewLifespanImpact(g, 18);
   assert.deepEqual(plain(esmLifespan), plain(vmLifespan));
 
   const esmRecipe = computeRecipeCostBreakdown(g, RECIPES.foundation);
@@ -121,7 +151,7 @@ test("pure ESM rule modules match live assembled playable-v2.html engine inside 
 
   assert.equal(applySingleHitCap(500, 200, 20), dbg.rules.applySingleHitCap(500, 200, 20));
 
-  // Exhaustively invoke every method across __CHENYUAN_DEBUG__.{rules, persistence, art, telemetry}
+  // Exhaustively invoke every method across __CHENYUAN_DEBUG__.{rules, q6, persistence, art, telemetry}
   assert.ok(dbg.rules.computeCombatStatLedger(g).totals.atk > 0);
   assert.ok(dbg.rules.rollGearItem(1, 1, "weapon", { rng: () => 0.5 }).slot === "weapon");
   assert.ok(dbg.rules.getLifespanInfo(g).maxMonths > 0);
@@ -133,6 +163,7 @@ test("pure ESM rule modules match live assembled playable-v2.html engine inside 
   const compScore = dbg.rules.computeCompetitionScore(g);
   assert.ok(Number.isFinite(compScore));
   assert.ok(typeof dbg.rules.getScoreGrade(compScore, g).grade === "string");
+  assert.ok(dbg.q6 && Array.isArray(dbg.q6.VOLUME_CAMPAIGN_GUIDE) && typeof dbg.q6.buildVol5ResonanceSnapshot === "function");
 
   assert.equal(typeof dbg.persistence.STORAGE_KEY, "string");
   assert.equal(typeof dbg.persistence.META_KEY, "string");
@@ -176,6 +207,26 @@ test("pure ESM rule modules match live assembled playable-v2.html engine inside 
   const perfStats = dbg.telemetry.getPerfStats();
   assert.ok(perfSnap && typeof perfSnap === "object" && Number.isFinite(perfSnap.p50Ms) && Number.isFinite(perfSnap.maxFrameMs) && Number.isFinite(perfSnap.totalFrames));
   assert.deepEqual(plain(perfSnap), plain(perfStats));
+});
+
+test("static repo guard asserts zero legacy versioned debug hook references in src/, scripts/, tests/, and built playable-v2.html", () => {
+  const legacyHookRe = new RegExp("__CHENYUAN_" + "V(?:1[89]|2[0-5])__", "g");
+  const targets = [
+    ...collectFilesRecursive(path.join(REPO_ROOT, "src")),
+    ...collectFilesRecursive(path.join(REPO_ROOT, "scripts")),
+    ...collectFilesRecursive(path.join(REPO_ROOT, "tests")),
+    PLAYABLE_PATH
+  ];
+  const violations = [];
+  for (const abs of targets) {
+    if (abs.endsWith(".webp") || abs.endsWith(".png") || abs.endsWith(".jpg")) continue;
+    const text = fs.readFileSync(abs, "utf8");
+    const matches = text.match(legacyHookRe);
+    if (matches && matches.length > 0) {
+      violations.push(`${path.relative(REPO_ROOT, abs)} (${matches.length} matches)`);
+    }
+  }
+  assert.deepEqual(violations, [], `Found forbidden legacy debug hook references: ${violations.join(", ")}`);
 });
 
 test("build-playable negative guards reject orphan runtime assets, unquoted external HTML URLs, JS external URLs, and aliased ESM imports", () => {
@@ -230,15 +281,18 @@ test("build-playable negative guards reject orphan runtime assets, unquoted exte
     );
     fs.writeFileSync(bodyPath, origBody, "utf8");
 
-    // (c) External https:// URL inside JS runtime code must be rejected
-    const mainJsPath = path.join(tmpDir, "src/runtime/main.js");
-    const origMainJs = fs.readFileSync(mainJsPath, "utf8");
-    fs.writeFileSync(mainJsPath, `${origMainJs}\n  const __extProbe = "https://cdn.example.com/x.js";\n`, "utf8");
-    assert.throws(
-      () => assemblePlayableHtml({ repoRoot: tmpDir }),
-      /Forbidden external URL\(s\) in <script>/
-    );
-    fs.writeFileSync(mainJsPath, origMainJs, "utf8");
+    // (c) External https:// URL inside JS runtime code must be rejected (both thin main.js and extracted subsystem module)
+    for (const relTarget of ["src/runtime/main.js", "src/runtime/combat-step.js"]) {
+      const targetPath = path.join(tmpDir, relTarget);
+      const origContent = fs.readFileSync(targetPath, "utf8");
+      fs.writeFileSync(targetPath, `${origContent}\n  const __extProbe = "https://cdn.example.com/x.js";\n`, "utf8");
+      assert.throws(
+        () => assemblePlayableHtml({ repoRoot: tmpDir }),
+        /Forbidden external URL\(s\) in <script>/
+      );
+      fs.writeFileSync(targetPath, origContent, "utf8");
+    }
+
     // (d) Bare side-effect ESM import must be rejected
     assert.throws(
       () => transformEsmForIife('import "./side-effect.mjs";\nexport const X = 1;\n', "test.mjs"),

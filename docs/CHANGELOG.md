@@ -7,7 +7,19 @@
 | 条目 | 当前状态 | 事实说明 |
 |---|---|---|
 | **F29（观察式真人试玩）** | **`NOT_RUN`** | 实际完成真人试玩人数：`0 / 5~8` 名新玩家。仅完成遥测结构与导出自检，未以自动化代替真人验收。 |
-| **F37（非核心扩展：扫荡/移动端/自动连升）** | **`DEFERRED`（D08）** | 按 D08 保守基线暂缓实施，维持桌面 1440×900 键鼠体验与显式确认消费。 |
+| **F37（非核心扩展：扫荡/移动端/自动连升）** | **`SUPERSEDED_BY_R3_D08`** | Q6 阶段按保守基线记为 `DEFERRED`；2026-11-24 定稿 D08 由 Round 3 `R3-M3` 接管实施三星扫荡与长按连续养成（仍明确不做移动端适配，维持 1440×900 桌面键鼠）。 |
+
+---
+
+## Round 3 · R3-M1（D06）— 运行时深度子系统拆分与统一调试门面（R3-F02 / R3-F03）
+
+- **R3-F02 `src/runtime/main.js` 深度拆分与确定性构建**：
+  - 将原 31,458 行 `src/runtime/main.js` 按连续拓扑顺序拆分为 15 个有序子系统模块（`world-data`、`narrative-state`、`flagship-systems`、`endgame-modes`、`primordial-systems`、`genesis-dojo`、`persistence-sandbox`、`scheduler-rewards`、`sanctum-ecosystem`、`stage-expedition`、`combat-skills`、`combat-step`、`renderer`、`ui-modals-drawer`、`input-handlers`）加 20 行薄 `src/runtime/main.js` 主循环外壳，保持 2 空格顶层声明缩进，确保 `docs/art-manifest.md` 零漂移。
+  - 将原交错于尾部历史调试导出块间的 3 处真实 DOM 监听（无障碍/分轨/工坊 `input`、修行抽屉 `#panel-scroll-body` `<details>` `toggle`、连招/淬炼妖核折扣/远征/工坊 `change`）完整迁移至 `src/runtime/input-handlers.js`。
+  - 更新 `scripts/build-playable.mjs` 导出 `RUNTIME_MODULE_ORDER`（16 个运行时模块），逐个校验禁 BOM / LF / 禁 `</script` 后以 `// --- [runtime] <path> ---` 拼入单一 IIFE，继续产出字节级确定性的单文件离线 `web/public/playable-v2.html`（严格单 `<script>`、零外部 URL、115 张 WebP SHA-256 与 5 张 VP8X RGBA 校验不变）。
+- **R3-F03 统一 `window.__CHENYUAN_DEBUG__` 与清除历史分版本钩子**：
+  - 重写 `src/runtime/debug-facade.js` 为单一门面 `window.__CHENYUAN_DEBUG__`（`version: "d06-unified-1"`，顶层共 370 键）：无副作用统一 `getState()`（29 字段，纯读取不触发 `ensure*` 写副作用）、5 组结构化分组（`rules`/`q6`/`persistence`/`art`/`telemetry`，全部改为直接内部绑定）以及原 363 个去重子系统绑定（含 `startColossalTitanRaid` 与 `executeSixAspectAwakeningSkill` 包装器）；彻底删除历史 8 个分版本全局钩子及过渡性 `namespaces`/`getNamespace`。
+  - 全量迁移 `scripts/eval-combat-matrix.mjs`、`scripts/audit-economy.mjs`、`scripts/verify-playable-v2.mjs`（更新 `Q5-1`/`Q5-2` 并新增 `R3-D06-1` 验证旧钩子清零、无副作用 `getState()` 与 3 处尾部 DOM 监听，总回归套件 `77 → 78`）、`tests/e2e/tiers/tier{1..4}-*.mjs`（56 项 E2E）以及 `tests/unit/build-parity.test.mjs`（单元测试 `32 → 34`，新增 `RUNTIME_MODULE_ORDER`/薄外壳校验、拆分模块外链守卫与跨源码/脚本/E2E/产物的零旧钩子静态扫描）。
 
 ---
 

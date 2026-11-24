@@ -46,9 +46,9 @@ export const tests = [
 
       // Tab A writes newer rev -> Tab B enters read-only mode
       await pageA.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.stones = 901;
-        window.__CHENYUAN_V25__.saveGame();
+        window.__CHENYUAN_DEBUG__.saveGame();
       });
       await waitForCrossTabConflict(pageB, 2500);
 
@@ -214,9 +214,9 @@ export const tests = [
 
       // Mutate stones inside sandbox and reload
       await page.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.stones = 99999;
-        window.__CHENYUAN_V25__.saveGame();
+        window.__CHENYUAN_DEBUG__.saveGame();
       });
       await page.reload({ waitUntil: "domcontentloaded", timeout: env.navigationTimeoutMs });
       await page.waitForSelector("#btn-continue-save", { state: "visible", timeout: env.navigationTimeoutMs });
@@ -243,7 +243,7 @@ export const tests = [
 
       // 1. Verify boss gate before killing stage 0 boss
       await page.evaluate((xpCap) => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.realm = "mortal";
         game.xp = xpCap;
@@ -257,7 +257,7 @@ export const tests = [
 
       // 2. Defeat stage 0 boss -> expect clear_stage0 cutscene
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.openingChoice = "help";
         game.seenCutscenes = Object.assign({}, game.seenCutscenes, { boss_pre_stage0: true });
@@ -289,7 +289,7 @@ export const tests = [
       await env.startFreshGame(page);
 
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.realm = "qi";
         game.karmaScore = -80;
@@ -326,7 +326,7 @@ export const tests = [
 
       // Push lifespan to 100% (寿尽: curMonths = maxMonths + 12) and verify G8 soft-fail offer before taking longevity pill
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         const info = v25.getLifespanInfo(game);
         const startAge = game.startAgeMonths || 216;
@@ -373,7 +373,7 @@ export const tests = [
       await env.startFreshGame(page);
 
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game, arena } = v25.getState();
         game.realm = "spirit";
         arena.swordIntent = 0;
@@ -382,7 +382,7 @@ export const tests = [
         v25.enterSanctumHub();
         v25.syncProgressiveSkillVisibility();
         v25.updateHud();
-        window.__CHENYUAN_V18__.openKarmaDilemmaModal(0);
+        window.__CHENYUAN_DEBUG__.openKarmaDilemmaModal(0);
       });
       await page.waitForSelector("#modal-backdrop.open");
       const firstTitle = await page.evaluate(() =>
@@ -429,7 +429,7 @@ export const tests = [
       await env.startFreshGame(page);
 
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.realm = "qi";
         game.stones = 500;
@@ -485,7 +485,7 @@ export const tests = [
       await env.startFreshGame(page);
 
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.realm = "nascent";
         game.bondTiers = { shen: 1, pei: 0, lu: 0, yan: 0 };
@@ -505,7 +505,7 @@ export const tests = [
       );
 
       await page.evaluate(() => {
-        window.__CHENYUAN_V25__.openExpeditionSandboxModal();
+        window.__CHENYUAN_DEBUG__.openExpeditionSandboxModal();
       });
       await page.waitForSelector("#modal-backdrop.open");
 
@@ -529,7 +529,7 @@ export const tests = [
       await env.startFreshGame(page);
 
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.realm = "nascent";
         game.stones = 300;
@@ -562,7 +562,7 @@ export const tests = [
 
       // Precondition: defeat bout 7 boss via handleEnemyDeath
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { arena } = v25.getState();
         for (const e of [...arena.enemies]) {
           e.hp = 0;
@@ -591,7 +591,7 @@ export const tests = [
 
       // Phase 1: Combat distant drop (320px) must NOT be vacuumed while meditating
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         v25.initArenaStage(0, false);
         const { game, arena } = v25.getState();
         game.stones = 120;
@@ -646,7 +646,7 @@ export const tests = [
 
       // Phase 2: Close-range combat pickup (160px < 200px combat meditate radius) still works
       await page.evaluate(() => {
-        const { arena } = window.__CHENYUAN_V25__.getState();
+        const { arena } = window.__CHENYUAN_DEBUG__.getState();
         const px = arena.player?.x || 400;
         const py = arena.player?.y || 450;
         const dir = px > 720 ? -1 : 1;
@@ -668,7 +668,7 @@ export const tests = [
       );
       const hubBefore = (await getHudState(page)).stones;
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game, arena } = v25.getState();
         game.xp = 0;
         const px = arena.player?.x || 400;

@@ -43,17 +43,17 @@ function getCommitHash() {
 }
 
 function runAudit(opts) {
-  const { v25, rng } = loadPlayableEngine(opts.seed);
+  const { debug, rng } = loadPlayableEngine(opts.seed);
   const violations = [];
   const warnings = [];
 
   // 1. Per-volume income & cost ledger
-  const volumes = v25.CHAPTERS.map((ch, idx) => {
-    const act = v25.CAMPAIGN_ACTS[Math.min(idx, v25.CAMPAIGN_ACTS.length - 1)];
+  const volumes = debug.CHAPTERS.map((ch, idx) => {
+    const act = debug.CAMPAIGN_ACTS[Math.min(idx, debug.CAMPAIGN_ACTS.length - 1)];
     const questStoneRewards = (ch.steps || []).reduce((s, st) => s + ((st.reward && st.reward.stones) || 0), 0);
     const requiredSteps = (ch.steps || []).filter(st => st.priority === "required").length;
     const optionalSteps = (ch.steps || []).length - requiredSteps;
-    const realmSpec = v25.REALMS[ch.realm] || v25.REALMS.mortal;
+    const realmSpec = debug.REALMS[ch.realm] || debug.REALMS.mortal;
     return {
       volume: ch.index,
       realm: ch.realm,
@@ -71,8 +71,8 @@ function runAudit(opts) {
   // 2a. ITEMS direct price check (no sellable item sells for >= buy or worst-case discounted buy)
   const itemPriceChecks = [];
   let itemsWithBuy = 0;
-  const totalItemsCount = Object.keys(v25.ITEMS).length;
-  Object.values(v25.ITEMS).forEach(it => {
+  const totalItemsCount = Object.keys(debug.ITEMS).length;
+  Object.values(debug.ITEMS).forEach(it => {
     const hasBuy = typeof it.buy === "number" && Number.isFinite(it.buy) && it.buy > 0;
     if (hasBuy) itemsWithBuy += 1;
     const buy = hasBuy ? Number(it.buy) : 0;
@@ -98,9 +98,9 @@ function runAudit(opts) {
     for (let minR = 0; minR <= 4; minR += 1) {
       for (const slot of ["weapon", "armor", "ring"]) {
         for (let k = 0; k < 4; k += 1) {
-          const it = v25.rollGearItem(stage, minR, slot, { usePity: false, rng });
+          const it = debug.rollGearItem(stage, minR, slot, { usePity: false, rng });
           gearRollsChecked += 1;
-          const b = v25.computeGearAffixBudget(it);
+          const b = debug.computeGearAffixBudget(it);
           if (!b.withinBudget) gearBudgetFailures += 1;
           const fairBuyPrice = Math.round(it.price * 0.8 * 0.9); // worst-case fair omen (0.8) + righteous (0.9)
           const ratio = it.sell / Math.max(1, fairBuyPrice);
@@ -117,14 +117,14 @@ function runAudit(opts) {
   }
 
   // 2c. Karma market specials arbitrage audit (specifically km_demon_core under demonic + fair omen 0.8x)
-  const fairIdx = v25.CELESTIAL_OMENS.findIndex(o => o.id === "fair");
-  const { game } = v25.getState();
+  const fairIdx = debug.CELESTIAL_OMENS.findIndex(o => o.id === "fair");
+  const { game } = debug.getState();
   const karmaAudit = [];
   for (const [modeLabel, score] of [["neutral", 0], ["righteous", 40], ["demonic", -40]]) {
     game.karmaScore = score;
     game.omenIndex = fairIdx >= 0 ? fairIdx : 0;
     game.karmaMarketBought = {};
-    const specials = v25.getKarmaMarketSpecials(game);
+    const specials = debug.getKarmaMarketSpecials(game);
     for (const sp of specials) {
       const entry = { karmaMode: modeLabel, id: sp.id, costUnderFair: sp.cost, kind: sp.kind };
       if (sp.id === "km_demon_core") {
@@ -134,11 +134,11 @@ function runAudit(opts) {
         game.equippedGear = { weapon: null, armor: null, ring: null };
         game.gearBag = [];
         const beforeStones = game.stones;
-        const okBuy = v25.buyKarmaSpecialItem("km_demon_core");
+        const okBuy = debug.buyKarmaSpecialItem("km_demon_core");
         const paid = beforeStones - game.stones;
-        const pendingWpn = v25.getPendingCompareGear() || game.equippedGear.weapon || game.gearBag[game.gearBag.length - 1];
+        const pendingWpn = debug.getPendingCompareGear() || game.equippedGear.weapon || game.gearBag[game.gearBag.length - 1];
         const wpnSell = pendingWpn ? Number(pendingWpn.sell || 0) : 0;
-        const bundledCoresSell = 3 * Number((v25.ITEMS.core && v25.ITEMS.core.sell) || 0);
+        const bundledCoresSell = 3 * Number((debug.ITEMS.core && debug.ITEMS.core.sell) || 0);
         const totalBundleResale = wpnSell + bundledCoresSell;
         const sellCap = Math.floor(sp.cost * 0.45);
         entry.paid = paid;
@@ -163,15 +163,15 @@ function runAudit(opts) {
   // 3. Material Reachability & Recipe Audit
   const materialSources = {};
   ["herb", "dew", "core", "jade", "lotus", "soul", "dao"].forEach(m => {
-    materialSources[m] = { stageDrops: [], bossDrops: [], buyPrice: v25.ITEMS[m] ? Number(v25.ITEMS[m].buy || 0) : 0 };
+    materialSources[m] = { stageDrops: [], bossDrops: [], buyPrice: debug.ITEMS[m] ? Number(debug.ITEMS[m].buy || 0) : 0 };
   });
-  v25.CAMPAIGN_ACTS.forEach(act => {
+  debug.CAMPAIGN_ACTS.forEach(act => {
     (act.matDrops || []).forEach(m => { if (materialSources[m]) materialSources[m].stageDrops.push(act.actLabel); });
     (act.bossMats || []).forEach(m => { if (materialSources[m]) materialSources[m].bossDrops.push(`${act.actLabel}Boss(${act.bossName})`); });
   });
 
-  const recipeAudit = Object.values(v25.RECIPES).map(rec => {
-    const outItem = v25.ITEMS[rec.output];
+  const recipeAudit = Object.values(debug.RECIPES).map(rec => {
+    const outItem = debug.ITEMS[rec.output];
     const inputs = Object.entries(rec.inputs || {}).map(([matId, qty]) => {
       const src = materialSources[matId];
       const reachable = Boolean(src && (src.stageDrops.length > 0 || src.bossDrops.length > 0 || src.buyPrice > 0));
@@ -194,12 +194,12 @@ function runAudit(opts) {
   });
 
   // 4. Lifespan Closed-Loop & Threshold Verification
-  const fresh = v25.createFreshGame("寿元审计", "sword_bone", 0);
-  const lfBase = v25.getLifespanInfo(fresh);
+  const fresh = debug.createFreshGame("寿元审计", "sword_bone", 0);
+  const lfBase = debug.getLifespanInfo(fresh);
   const cross75Months = Math.max(1, Math.ceil(lfBase.maxMonths * 0.75) - lfBase.curMonths);
-  const prev75 = v25.previewLifespanImpact(fresh, cross75Months);
+  const prev75 = debug.previewLifespanImpact(fresh, cross75Months);
   const cross100Months = Math.max(1, lfBase.maxMonths - lfBase.curMonths);
-  const prev100 = v25.previewLifespanImpact(fresh, cross100Months);
+  const prev100 = debug.previewLifespanImpact(fresh, cross100Months);
   if (!prev75.crossedThresholds.includes(75)) {
     violations.push("LIFESPAN_PREVIEW_75_MISSING");
   }
@@ -208,7 +208,7 @@ function runAudit(opts) {
   }
 
   // 5. Reincarnation Dao Points Audit (D05 Conservative Baseline)
-  const meta = v25.getMetaState();
+  const meta = debug.getMetaState();
   const reincarnationAudit = {
     field: "metaState.reincarnationPoints",
     currentValue: Number(meta.reincarnationPoints || 0),
@@ -218,7 +218,7 @@ function runAudit(opts) {
   };
 
   // 6. Sanctum & Relic Cost Ladder Summary
-  const sanctumCosts = v25.SANCTUM_BUILDINGS.map(b => ({
+  const sanctumCosts = debug.SANCTUM_BUILDINGS.map(b => ({
     id: b.id,
     name: b.name,
     costs: b.costs || [],
@@ -248,7 +248,7 @@ function runAudit(opts) {
     recipes: recipeAudit,
     sanctumCosts,
     lifespan: {
-      thresholdsPct: v25.LIFESPAN_THRESHOLDS.map(t => Math.round(t * 100)),
+      thresholdsPct: debug.LIFESPAN_THRESHOLDS.map(t => Math.round(t * 100)),
       meditationMonthsPer3Sec: 1,
       mortalMaxYears: lfBase.maxYears,
       preview75Ok: prev75.crossedThresholds.includes(75),

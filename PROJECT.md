@@ -45,10 +45,10 @@
   - 读取：`parseAndValidateSaveRaw` 13661，`inspectSavedBundle` 13695，`normalizeLoadedGame` ~13556。
   - 写入：`saveGame` 13914；多标签页冲突靠 `storage` 事件处理（13999）。
 - **测试**：
-  - `npm run build:check` 与 `npm run test:unit`（`tests/unit/*.test.mjs` 8 个文件共 32 项纯 Node 单元测试）校验 `src/` 模块化编辑源与单文件发行包 `web/public/playable-v2.html` 的逐字节确定性一致及纯规则一致（由 PR #27 `df5efdab` 与 PR #28 `5115b8e8` 引入）。
-  - `scripts/verify-playable-v2.mjs` 是回归套件（`eb0ea67` 基线 24 项，现已扩展至 87 项：M1–M4 + P1–P5 + R2–R7 + Q0–Q6 + T5），基于 Playwright。它自带静态服务器，视口 1440×900，每个套件使用独立的浏览器上下文，并要求 0 个 console 或页面错误。
+  - `npm run build:check` 与 `npm run test:unit`（`tests/unit/*.test.mjs` 8 个文件共 35 项纯 Node 单元测试）校验 `src/` 模块化编辑源（10 个纯 ESM 模块 + 16 个有序运行期模块，含 `<60` 行主循环壳 `src/runtime/main.js`）与单文件发行包 `web/public/playable-v2.html` 的逐字节确定性一致、纯规则一致、`d06-unified-1` 370 键锁与零旧钩子静态扫描（由 PR #27 `df5efdab`、PR #28 `5115b8e8`、PR #30 `e766ea77` 与 PR #31 D06 `1d64b331` 演进并由 M7b Round 6/7 增补 `R6B-4` 单测）。
+  - `scripts/verify-playable-v2.mjs` 是回归套件（`eb0ea67` 基线 24 项，现已扩展至 88 项：M1–M4 + P1–P5 + R2–R7 + Q0–Q6 + R3-D06 + T5），基于 Playwright。它自带静态服务器，视口 1440×900，每个套件使用独立的浏览器上下文，并要求 0 个 console 或页面错误。
   - `tests/e2e/` 是需求驱动的 E2E 验收与对抗加固套件（Tier 1–5 共 70 项：Tier 1–4 共 56 项黑盒验收 + Tier 5 共 14 项白盒对抗加固），由 `tests/e2e/run.mjs` 驱动，详细索引与实测记录见 `TEST_INFRA.md` 与 `TEST_READY.md`。
-  - 调试钩子挂在 `window.__CHENYUAN_V18__…__V25__`（共 382 项契约键）及只读兼容门面 `window.__CHENYUAN_DEBUG__` 上。
+  - 调试钩子已于 PR #31 D06（`1d64b331`）统一收口至唯一无副作用门面 `window.__CHENYUAN_DEBUG__`（`version: "d06-unified-1"`，精确 370 项顶层契约键），全部旧 `window.__CHENYUAN_V18__…__V25__` 全局钩子均已移除并由单元测试静态禁扫。
 - **数据流**：玩家输入 → `game` 状态 → `saveGame()`（事件触发）→ localStorage；`metaState` 由 `saveMeta()` 写入。
 
 ## Feature Inventory
@@ -91,9 +91,9 @@
 | E1 | E2E 验收套件 | `tests/e2e/`：不看实现、以需求为准的 Tier 1–4 测试，覆盖本表所有可观测的特性 | E2E Track | pattern |
 | E2 | 通过全部 E2E + 对抗加固 | 通过 100% 的 Tier 1–4，并完成 Tier 5 对抗加固 | M7 | pattern |
 
-不改动的项目（有意保留）：
-- `window.__CHENYUAN_V18..V25__` 调试全局对象：回归测试依赖它们。只允许扩展 V25，不新增 V26。
-- 单文件结构：不拆分，因为 AGENTS.md 规定了实际入口。
+不改动的项目（有意保留与 D06 演进说明）：
+- 调试全局对象：原 M0–M6/Q0–Q6 期间保留 `window.__CHENYUAN_V18..V25__`；于 PR #31 D06（`1d64b331`）已正式统一收口为唯一无副作用门面 `window.__CHENYUAN_DEBUG__`（`d06-unified-1`，精确 370 顶层契约键）并全仓移除旧 `V18–V25` 钩子。
+- 单文件结构：最终发行入口 `web/public/playable-v2.html` 保持零外链单文件，由 `src/`（10 个纯 ESM + 16 个运行期模块）经 `npm run build` 确定性生成。
 
 ## Milestones
 | # | Name | Scope (features) | Branch | Dependencies | Status |
@@ -106,14 +106,14 @@
 | M5 | 叙事内容：前提、卷终、故人线 | S3, S4, S7, S8, S9, S10 | `codex/narrative-content` | M4 已合并 | DONE (PR #16, `8d86761`) |
 | M6 | 系统节奏与深度 | S11+G7, G8, G10, G11b, G12 | `codex/systems-pacing` | M5 已合并 | DONE (PR #17, `b399c67`) |
 | E2E | E2E 测试轨道 | E1 → 发布 `TEST_READY.md` | `codex/q0-infra-and-tests` | M1（package.json），否则自带运行器 | DONE (PR #20, `28d02e2` — 恢复 56 项 Tier 1–4 E2E 与 `TEST_INFRA.md`/`TEST_READY.md`，并于 M7a 全量实测 56/56 PASS) |
-| M7 | 最终里程碑：通过 E2E 并对抗加固 | E2：Tier 1→2→3→4 按顺序闸门，然后 Tier 5 | `codex/e2e-pass`、`codex/adversarial-hardening` | M1–M6 + TEST_READY.md | DONE (M7a PR #25, `2b1ca3a` — 60/60 回归 & Tier 1–4 E2E 56/56 PASS；M7b `codex/adversarial-hardening` 无损同步合入 PR #24 @ `fc9004fa`、PR #26 @ `4b86533c`、PR #27 模块化编辑源 @ `df5efdab`、PR #28 Q6 @ `5115b8e8` 与 PR #29 Q7 @ `fffcb721`，修复 `Q6-1` 减弱动效竞态并闭环第 1 轮 19 项 + 第 2 轮 13 项 + 第 3 轮 12 项 + 第 4 轮 6 项 + 第 5 轮 5 项对抗缺陷与 `DOC-1`/`NIT-DOC-1`，永久编码 T5-1..T5-10 [406 断言] 与 E2E-T5-01..14，实测 `build:check` PASS、32/32 单测 PASS、全量 87/87 回归 PASS & Tier 1–5 E2E 70/70 PASS) |
+| M7 | 最终里程碑：通过 E2E 并对抗加固 | E2：Tier 1→2→3→4 按顺序闸门，然后 Tier 5 | `codex/e2e-pass`、`codex/adversarial-hardening` | M1–M6 + TEST_READY.md | DONE (M7a PR #25, `2b1ca3a` — 60/60 回归 & Tier 1–4 E2E 56/56 PASS；M7b `codex/adversarial-hardening` 历经第 1–6 轮闭环 19 + 13 + 12 + 6 + 5 + 9 项对抗缺陷及 `Minor-3`/`DOC-1`/`NIT-DOC-1`，并于 Round 7 无损同步合入 PR #24–#31 [含 PR #30 `e766ea77` 与 PR #31 D06 `1d64b331`，224/224 运行期 hunk 迁入 14 个拆分模块，全量迁至 `window.__CHENYUAN_DEBUG__` `d06-unified-1` 370 键零旧钩子]，永久编码 T5-1..T5-10 [539 断言] 与 E2E-T5-01..14 [335 断言]，实测 `build:check` [16 运行期模块] PASS、35/35 单测 PASS、全量 88/88 回归 PASS & Tier 1–5 E2E 70/70 PASS) |
 
 **顺序说明**：M2–M7 都要修改同一个文件 `web/public/playable-v2.html` 和 `scripts/verify-playable-v2.mjs`，按写入独占规则只能**串行**进行（每个 PR 合并后，下一个里程碑再从新的 `main` 开分支）。M1（不碰游戏文件）和 E2E 轨道（只写 `tests/e2e/**`）可以和 M2 并行。M3 把 Boss 门控和难度曲线放在同一个里程碑，因为强制击败 Boss 之后，原来 136k 血量、一击秒杀的最终 Boss 必须同时调低，否则主线会卡关。
 
 ## Interface Contracts
 
 ### 游戏文件 ↔ 测试（所有里程碑）
-- 新增测试钩子只挂到 `window.__CHENYUAN_V25__` 上（追加函数或常量），不得删除或重命名已有钩子。
+- 历史里程碑曾挂在 `window.__CHENYUAN_V25__` 上；自 PR #31 D06（`1d64b331`）起，全部测试钩子已统一收口至唯一无副作用门面 `window.__CHENYUAN_DEBUG__`（`d06-unified-1`，严格锁定 370 项顶层键，零旧 `V18–V25` 钩子）。
 - 各里程碑的回归套件追加到 `scripts/verify-playable-v2.mjs`，用 `runSuite("R<里程碑号>-<n> …")` 命名（例如 `R2-1`）。沿用 `newIsolatedContext`（1440×900）和 `attachErrorListeners`（要求 0 个错误）。主要路径必须通过真实点击和按键驱动；状态注入只用于搭建前置条件。
 - 已有的 24 个套件必须继续通过。如果确实因为设计变更需要修改旧套件，要在 PR 中说明理由。
 
@@ -136,7 +136,7 @@
 
 ### E2E 套件（E2E 轨道 → M7）
 - 入口为 `tests/e2e/run.mjs`，自带静态服务器（`web/public`），视口 1440×900，每个用例使用独立的浏览器上下文，全部通过时 exit 0。支持 `--filter`、`--tier`、`--report <file>` 参数。
-- Tier 1–4（56 项黑盒验收）不看实现，依据本文 Feature Inventory 中可观测的行为编写：用 UI 文本、DOM 状态和 localStorage 判断结果，`__CHENYUAN_V25__` 只用于搭建前置条件（例如把角色放到晚期境界），不用于断言内部实现；Tier 5（`tests/e2e/tiers/tier5-adversarial.mjs`，14 项白盒对抗加固）则刻意结合可观测 DOM/`localStorage` 断言与 `__CHENYUAN_V25__`/`__V24__`/`__V23__`/`__V22__`/`__V21__` 运行期不变量校验（详见 `TEST_INFRA.md`）。
+- Tier 1–4（56 项黑盒验收）不看实现，依据本文 Feature Inventory 中可观测的行为编写：用 UI 文本、DOM 状态和 localStorage 判断结果，统一门面 `window.__CHENYUAN_DEBUG__`（`d06-unified-1`）只用于搭建前置条件（例如把角色放到晚期境界），不用于断言内部实现；Tier 5（`tests/e2e/tiers/tier5-adversarial.mjs`，14 项白盒对抗加固）则刻意结合可观测 DOM/`localStorage` 断言与 `window.__CHENYUAN_DEBUG__` 运行期不变量校验（详见 `TEST_INFRA.md`）。
 - 测试中的存档数据由代码动态生成，不提交真实玩家存档。
 
 ## Code Layout
@@ -248,9 +248,9 @@
      - 全量 `npm run test:regression`（`11:52:24Z`–`12:02:06Z`）：**83/83 PASS，0 FAIL, 0 ERROR, 0 SKIPPED, 0 runtimeErrors，`581066ms`**（`Q5-1..Q5-3` `1800ms`/`5640ms`/`2357ms`；`T5-1..T5-10` `6389ms`/`8289ms`/`16259ms`/`6835ms`/`7668ms`/`15260ms`/`6650ms`/`19048ms`/`3150ms`/`8060ms`，`schemaVersion: 2`，exit `0`）；
      - `npm run test:e2e` 分阶验证（`12:02:20Z`–`12:08:50Z`）：Tier 1 **31/31**（`141297ms`）→ Tier 2 **12/12**（`51693ms`）→ Tier 3 **10/10**（`64322ms`）→ Tier 4 **3/3**（`20395ms`）→ Tier 5 **13/13**（`107491ms`），合并全量 **69/69 PASS（`12:09:01Z`–`12:15:28Z`，0 FAIL, 0 runtimeErrors，`385431ms`，`schemaVersion: 1`，exit `0`）**；已同步更新 `TEST_READY.md`、`TEST_INFRA.md`、`README.md`，**M7 保持 `DONE`**。
 - 2026-11-24 — **M7b Round 5（`codex/adversarial-hardening`，无损合入最新 `origin/main` PR #28 Q6 F34–F37 @ `5115b8e8` + PR #29 Q7 F38 @ `fffcb721` 并闭环第 4 轮门禁全部 5 项缺陷 + `NIT-DOC-1`）**：
-  1. 无损合入外部 PR #28（`5115b8e8`，`codex/q6-endgame-continuity`，Q6 F34–F37 后续卷次三层景深/第五卷法则共鸣桥接/五大终局模式修复/D07 双人同游与天时金丹门控/10 项 ESM 模块与 32 项单测/`Q6-1..Q6-4`）与 PR #29（`fffcb721`，`codex/q7-release-docs`，Q7 F38 发行审计报告与文档）via `6a501a66`：逐一解决 `src/runtime/main.js` 全部 **17 处冲突（`C1–C17`）**并落地 **7 项语义协同（`S1–S7`）**——含修复 `Q6-1` CI 偶发竞态（`isReducedMotionActive()` 同步检查 `reducedMotionMq.matches`）、`saveGame()` 练习模式先验活盘冲突再拒写（兼顾 `Q6-2` 冲突窗与零写盘隔离）、`exportFullCloudSaveCode()` 练习期导出纯净正式快照、`cycleCelestialTimePhase({ allowInModal: true })` 允许星图弹窗内流转天时同时阻断战中暂停态热键、以及 `overwrite-with-current-save` 回滚表完整保存/还原 `activeCustomSeedTempCurio`；完整保留 PR #27–#29 全部工具/配置/规则/资产/文档/CI 与全部 **77 项** `origin/main` 既有回归套件（`M1-1..Q6-4`）。
+  1. 无损合入外部 PR #28（`5115b8e8`，`codex/campaign-quality`，Q6 F34–F37 后续卷次三层景深/第五卷法则共鸣桥接/五大终局模式修复/D07 双人同游与天时金丹门控/10 项 ESM 模块与 32 项单测/`Q6-1..Q6-4`）与 PR #29（`fffcb721`，`codex/quality-release`，Q7 F38 发行审计报告与文档）via `6a501a66`：逐一解决 `src/runtime/main.js` 全部 **17 处冲突（`C1–C17`）**并落地 **7 项语义协同（`S1–S7`）**——含修复 `Q6-1` CI 偶发竞态（`isReducedMotionActive()` 同步检查 `reducedMotionMq.matches`）、`saveGame()` 练习模式先验活盘冲突再拒写（兼顾 `Q6-2` 冲突窗与零写盘隔离）、`exportFullCloudSaveCode()` 练习期导出纯净正式快照、`cycleCelestialTimePhase({ allowInModal: true })` 允许星图弹窗内流转天时同时阻断战中暂停态热键、以及 `overwrite-with-current-save` 回滚表完整保存/还原 `activeCustomSeedTempCurio`；完整保留 PR #27–#29 全部工具/配置/规则/资产/文档/CI 与全部 **77 项** `origin/main` 既有回归套件（`M1-1..Q6-4`）。
   2. 在 `src/runtime/main.js` 根治全部 **5 项第 4 轮门禁缺陷**与 `PROJECT.md` `NIT-DOC-1`（`startCustomSeedRun` → `launchCustomSeedEncounter`），并经 `npm run build` 重新生成 `web/public/playable-v2.html`（`window.__CHENYUAN_V18__..__V25__` 严格保持 382 键零增删）：
-     - **`R5A-1`（MEDIUM）**：为全部存档保护弹窗（`openSaveConflictModal` `#save-conflict-error-msg`、`openCorruptedMetaResetConfirmModal` `#corrupt-meta-reset-error-msg`、`confirm-reset-save` `#reset-save-error-msg`、`openCorruptedOverwriteConfirmModal` `#corrupt-save-overwrite-error-msg` 及 `#cloud-import-error-msg`）内嵌显式 `role="alert" aria-live="assertive"` 内联报错容器，在 `QuotaExceededError`/`SecurityError` 等写/删失败弹窗保持打开时以 `.textContent` 渲染可见报错并保焦，彻底解决弹窗（`z-index: 85`）遮挡底部 `#toast-container`（`z-index: 60`）与 `#hud-save-alert`（`z-index: 50`）导致的视觉无反馈；
+     - **`R5A-1`（MEDIUM）**：为全部存档保护弹窗（`openSaveConflictModal` `#save-conflict-error-msg`、`openCorruptedMetaResetConfirmModal` `#corrupt-meta-reset-error-msg`、`confirm-reset-save` `#reset-save-error-msg`、`openCorruptedOverwriteConfirmModal` `#corrupt-save-overwrite-error-msg` 及 `#cloud-import-error-msg`）内嵌显式 `role="alert" aria-live="assertive"` 内联报错容器，在 `QuotaExceededError`/`SecurityError` 等写/删失败弹窗保持打开时以 `.textContent` 渲染可见报错并保焦，彻底解决弹窗（`--z-modal: 85`）遮挡 `#hud-save-alert`（`--z-alert: 62`），且弹窗开启时 CSS（`src/styles/main.css:1032–1034`）主动将 `#toast-container`（`--z-toast: 95`）置为 `opacity: 0 !important` 导致的视觉无反馈；
      - **`R5A-2`（LOW）**：统一 `return-title-safe`、`execute-reset-save` 与 `executeReincarnation()` 在返回标题页时清空 `arena.sanctumMode = false` 并调用 `hideDojoControlBar()` 与 `syncDojoTrainingHudVisibility()`，消除 `#dojo-control-bar`/`.expanded`/`#dojo-training-hud` DOM 残留；
      - **`R5B-1`（HIGH）**：在 `resetSanctumDojoCombatGauges()` 与 `resetRuntimeCombatOverrides()` 补齐全部临时场域/剑域/召唤故人/地带/投射物清零（`qimenArray`/`qimenCd`/`domain`/`activeAllies`/`zones`/`witchTime`/`lotusVortexes`/`thunderOrbs`/`jadeDecoys`/`fireZones`/`waterPools`/`frostPools`/`projectiles`/`hoverChakrams`/`groundSweeps`/`meteorBursts`），并同步加固 `initArenaStage`、`enterSanctumHub`、`startBossRushGauntlet`、`startCloudSeaAerialStage`、`startCelestialSpireRun` 与 `launchCustomSeedEncounter` 跨场清理，彻底封堵洞府免费充能或沙盒 `qimenArray(生门)` 泄露至逆天渡劫/正式关卡/终局模式；
      - **`R5B-2`（HIGH）**：在 `openKarmaDilemmaModal()`、`resolveKarmaDilemmaChoice()`、`[data-action="open-karma-dilemma"]` 及同批排查的 `upgradeSanctumBuilding()`、`[data-light-star]` 补齐 `guardNotInTribulation()` 守卫，封堵实时渡劫中经故人抽屉「红尘问心」等弹窗回满血/叠护盾/满酿仙葫套利；
@@ -276,5 +276,11 @@
      - 全量单命令 `npm run test:regression`（`16:21:08Z`–`16:30:57Z`）：**87/87 PASS，0 FAIL, 0 ERROR, 0 SKIPPED, 0 runtimeErrors，`585977ms`**（`Q6-1..Q6-4` `2935ms`/`11208ms`/`3173ms`/`2427ms`；`T5-1..T5-10` `6098ms`/`4826ms`/`7764ms`/`6139ms`/`6273ms`/`9398ms`/`7029ms`/`7817ms`/`3209ms`/`12109ms`，`schemaVersion: 2`，exit `0`）；
      - 全量合并 `npm run test:e2e`（`16:31:15Z`–`16:38:12Z`）：**70/70 PASS，0 FAIL, 0 runtimeErrors，`414401ms`**（Tier 1 **31/31** `147714ms`、Tier 2 **12/12** `52951ms`、Tier 3 **10/10** `66781ms`、Tier 4 **3/3** `19495ms`、Tier 5 **14/14** `126925ms`，`E2E-T5-14` `15999ms`，`schemaVersion: 1`，exit `0`）；
      - 连续 5 次竞态压测（`16:38:26Z`–`16:40:15Z`）：**5/5 `E2E-T5-13` PASS**（`10126ms`/`10325ms`/`10267ms`/`10377ms`/`9989ms`，0 runtimeErrors）+ **5/5 `T5-3` PASS**（`8542ms`/`8161ms`/`9542ms`/`8642ms`/`8136ms`，0 runtimeErrors）；已同步更新 `TEST_READY.md`、`TEST_INFRA.md`、`README.md`，**M7 保持 `DONE`**。
-
-
+- 2026-11-24 — **M7b Round 7（`codex/adversarial-hardening`，无损同步合入最新 `origin/main` PR #30 `e766ea77` + PR #31 D06 `1d64b331` 并完成 16 运行期模块与 `d06-unified-1` 全栈验收）**：
+  1. 无损执行 `git merge --no-ff origin/main`（`1d64b3319f24500c100063c10f4b34d156c4ed3e`），将 `fffcb721..df1ffe98` 全部 **224/224** 处 M7b 运行期修改精确移植至 14 个拆分 `src/runtime/*.js` 模块（仅舍弃已由 PR #30 `83df0beb` 合入的 `H3` `isReducedMotionActive()` 并完整保留全部 4 处 PR #30 调用点、PR #31 20 行主循环壳 `src/runtime/main.js`、3 处抢救尾部 DOM 监听 `src/runtime/input-handlers.js:2997–3085`、零改动 `src/runtime/renderer.js`、零改动精确 370 键 `src/runtime/debug-facade.js` 及单一 `arena.paused =` 写入点 `src/runtime/scheduler-rewards.js:371`），保留全部非重叠 M7b 修复文件（`src/rules/campaign-q6.mjs`、`src/state/save-rules.mjs`、`src/styles/main.css`、`tests/unit/campaign-q6.test.mjs`、`tests/e2e/run.mjs`），并经 `npm run build` 确定性重建 `web/public/playable-v2.html`。
+  2. 将 `T5-1..T5-10`（209 处引用 + 14 处非变异 `getState().coop2P`/`sanqing` 空安全 `?.` 守卫）与 `tests/e2e/tiers/tier5-adversarial.mjs`（178 处引用 + 9 处空安全 `?.` 守卫）全部迁至 `window.__CHENYUAN_DEBUG__`（全仓零旧 `V18–V25` 钩子）；完整保持 78 项上游回归 `L4..L11293`（`PRE78_SHA256 = a13d6fa0...`）与运行器尾段（`TAIL_SHA256 = a681001f...`）逐字节未动，并精简 `T5-1..T5-10` 纯前置等待以保持单命令 88 项全量回归充裕余量（`T5_ASSERTS = 539`、`E2E_T5_ASSERTS = 335` 零弱化）。
+  3. 1440×900 桌面 Chrome 158（`/usr/bin/google-chrome`，`Google Chrome 158.0.8127.36`，Chromium 内核，`CHROMIUM_PATH` 未设置回退，如实记录与上游 Chromium 差异；Node.js `v22.23.5`、`playwright-core@1.65.1`；按用户指令不跑单独手动冒烟）全量实测通过：
+     - 构建、单测、静态、经济、战斗矩阵、不变性与 CLI 门禁（`17:14:18Z`–`17:14:23Z` & 终态复核 `17:57:09Z`–`17:57:19Z`）：`npm run build:check` PASS（`8677034 bytes, 115 WebP assets, 10 ESM modules, 16 runtime modules, sha256=0715207ae91e`）、`npm run test:unit` **35/35 PASS（0 FAIL，`3056.3ms`，8 文件含 370 键锁与零旧钩子静态全仓扫）**、`vm.Script` PASS（`scripts=1 chars=8347123 utf8Bytes=8477349`）、单一 `arena.paused =` 写入点（`src/runtime/scheduler-rewards.js:371` / `web/public/playable-v2.html:20846`）、全部 31 份 `.mjs` `node --check` PASS、`npm run art:manifest:check` PASS（`115 inline assets, 11 disk files, 1 other inline asset`）、`node scripts/audit-economy.mjs --seed 20261124` PASS（`violations: []`）、`node scripts/eval-combat-matrix.mjs --seed 20261124` PASS（`84 scenarios, outliers: []`）、78 项既有回归与运行器尾段 SHA-256 逐字节一致（`a13d6fa0...` / `a681001f...`）、保留文件 `0` 行差异、10 项真实 CLI 边界校验（含 `--timeout 0`/`--timeout abc`）全返回退出码 `2`（`--help` 返回 `0`）；
+     - 全量单命令 `npm run test:regression`（`17:38:44Z`–`17:48:25Z`）：**88/88 PASS，0 FAIL, 0 ERROR, 0 SKIPPED, 0 runtimeErrors，`580495ms`**（`Q5-1..Q5-3` `1867ms`/`5840ms`/`2394ms`；`Q6-1..Q6-4` `2890ms`/`14344ms`/`3094ms`/`2599ms`；`R3-D06-1` `3983ms`；`T5-1..T5-10` `4861ms`/`4238ms`/`6755ms`/`5417ms`/`5273ms`/`6138ms`/`6481ms`/`7419ms`/`2223ms`/`11563ms`，`schemaVersion: 2`，exit `0`）；
+     - 全量合并 `npm run test:e2e`（`17:48:39Z`–`17:55:36Z`）：**70/70 PASS，0 FAIL, 0 runtimeErrors，`415227ms`**（Tier 1 **31/31** `147361ms`、Tier 2 **12/12** `53355ms`、Tier 3 **10/10** `62908ms`、Tier 4 **3/3** `20827ms`、Tier 5 **14/14** `130188ms`，`E2E-T5-14` `17714ms`，`schemaVersion: 1`，exit `0`）；
+     - 连续 3 次竞态压测（`17:55:49Z`–`17:56:50Z`）：**3/3 `E2E-T5-13` PASS**（`10121ms`/`9487ms`/`10620ms`，0 runtimeErrors）+ **3/3 `T5-3` PASS**（`7727ms`/`7572ms`/`7361ms`，0 runtimeErrors）；同步修正 `PROJECT.md` 全部 4 处文档细项及 `TEST_READY.md` L76 并更新 `TEST_INFRA.md` 与 `README.md`，**M7 保持 `DONE`**。
