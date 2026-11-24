@@ -16011,7 +16011,7 @@ const ART = {
     const nextMode = hasOwn(DOJO_MODE_META, mode) ? mode : "static";
     arena.dojoMode = nextMode;
     arena.dojoSession = createFreshDojoSession(nextMode);
-    if (arena.sanctumMode && game) {
+    if (isSanctumDojoActive() && game) {
       spawnDojoDummy(nextMode);
     }
     const curLbl = document.getElementById("lbl-dojo-cur-mode");
@@ -16030,7 +16030,7 @@ const ART = {
     } else if (!arena.dojoSession) {
       arena.dojoSession = createFreshDojoSession(arena.dojoMode || "static");
     }
-    if (!arena.sanctumMode || !game) return;
+    if (!isSanctumDojoActive() || !game) return;
     const canvas = document.getElementById("fx-canvas");
     const w = canvas.width || 1440, h = canvas.height || 900;
     const dPos = clampToPlaza(w * 0.54, h * 0.54, w, h);
@@ -16453,14 +16453,15 @@ const ART = {
     if (!g || !g.equippedGear) return tot;
     ["weapon", "armor", "ring"].forEach(sl => {
       const it = g.equippedGear[sl];
-      if (it) {
-        const enh = 1 + (it.lvl || 0) * GEAR_ENHANCE_STEP_PCT;
-        tot.atk += Math.round((it.atk || 0) * enh);
-        tot.hp += Math.round((it.hp || 0) * enh);
-        tot.dr += Math.round((it.dr || 0) * enh);
-        tot.crit += it.crit || 0;
-        tot.spd += (it.spd || 0) + (it.affix === "wind_rider" ? 0.10 : 0);
-        tot.bonusSword += it.bonusSword || 0;
+      if (it && typeof it === "object") {
+        const lvl = Math.max(0, num(it.lvl, 0));
+        const enh = 1 + lvl * GEAR_ENHANCE_STEP_PCT;
+        tot.atk += Math.round(Math.max(0, num(it.atk, 0)) * enh);
+        tot.hp += Math.round(Math.max(0, num(it.hp, 0)) * enh);
+        tot.dr += Math.round(Math.max(0, num(it.dr, 0)) * enh);
+        tot.crit += Math.max(0, num(it.crit, 0));
+        tot.spd += Math.max(0, num(it.spd, 0)) + (it.affix === "wind_rider" ? 0.10 : 0);
+        tot.bonusSword += Math.max(0, num(it.bonusSword, 0));
       }
     });
     const setB = getActiveSetBonus(g);
@@ -24167,7 +24168,7 @@ const ART = {
       const stNew = getCombatStats(game);
       if (hpRes.grantedHp > 0) game.hp = Math.min(stNew.maxHp, game.hp + hpRes.grantedHp);
       const lf = getLifespanInfo(game);
-      if (lf.ratio < 1.0) {
+      if (!lf.isExhausted) {
         lifespanExhaustedPromptDismissed = false;
         pendingLifespanExhaustedPrompt = false;
       }
@@ -24544,7 +24545,7 @@ const ART = {
 
     if (game.realm !== "ascended") {
       advanceLifespanMonths(12, "tribulation_success", { silentToast: true });
-      if (getLifespanInfo(game).ratio < 1.0) {
+      if (!getLifespanInfo(game).isExhausted) {
         lifespanExhaustedPromptDismissed = false;
         pendingLifespanExhaustedPrompt = false;
       }
@@ -33569,7 +33570,7 @@ const ART = {
           if (!saveConflictState) closeModal();
           return;
         }
-        if (lf && lf.ratio < 1.0) {
+        if (lf && !lf.isExhausted) {
           lifespanExhaustedPromptDismissed = false;
           pendingLifespanExhaustedPrompt = false;
         }
