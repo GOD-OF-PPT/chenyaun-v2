@@ -22,7 +22,7 @@ npm run test:regression
 npm run test:e2e
 ```
 
-- **回归套件（`npm run test:regression`）**：自动起停本地静态 HTTP 服务，在独立的 1440×900 浏览器上下文中运行 **M1–M4 + P1–P5 + R2–R6 + Q0–Q2 共 57 项回归测试**。默认在单条失败后继续执行全部套件并输出 `schemaVersion: 2` 汇总报告（及失败截图），要求 0 个控制台或页面运行时错误。
+- **回归套件（`npm run test:regression`）**：自动起停本地静态 HTTP 服务，在独立的 1440×900 浏览器上下文中运行 **M1–M4 + P1–P5 + R2–R7 + Q0–Q2 共 60 项回归测试**。默认在单条失败后继续执行全部套件并输出 `schemaVersion: 2` 汇总报告（及失败截图），要求 0 个控制台或页面运行时错误。
 - **黑盒 E2E 验收套件（`npm run test:e2e`）**：按 Tier 1–4 运行 **共 56 项端到端验收测试**（Tier 1 独立功能 31 项、Tier 2 边界与存档五场景 12 项、Tier 3 跨系统组合 10 项、Tier 4 玩家完整旅程 3 项），详见 [TEST_INFRA.md](TEST_INFRA.md) 与 [TEST_READY.md](TEST_READY.md)。
 
 常用参数（通过 `--` 透传给脚本）：
@@ -30,7 +30,7 @@ npm run test:e2e
 ```sh
 npm run test:regression -- --filter M4
 npm run test:regression -- --screenshots test-results/shots --report test-results/regression-report.json
-npm run test:regression -- --fail-fast --timeout 45000
+npm run test:regression -- --fail-fast --timeout 90000
 npm run test:regression -- --url http://127.0.0.1:5174/playable-v2.html
 
 npm run test:e2e -- --tier 1,2 --report test-results/e2e-report.json

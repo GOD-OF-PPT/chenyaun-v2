@@ -1,13 +1,14 @@
 # E2E Acceptance Suite Ready (`TEST_READY.md`)
 
 - **Restored In**: `codex/q0-infra-and-tests` (F04, extracted read-only from `origin/codex/e2e-suite` @ `34f6dd52` and statically audited against M2–M6 `web/public/playable-v2.html`)
+- **Latest Full-Pass Verification**: `codex/e2e-pass` (M7a, based on `origin/main` @ `6946074`, post-M2–M6 + Q0–Q2 + ported `7ca198c` runtime fixes P1–P10, PR #23 P11, dual-error corrupt/quota HUD recovery, cutscene popover focus retention, and `META_KEY` CRDT D1–D4 healing)
 - **Runner Command**: `npm ci && npm run test:e2e`
 - **Scoped Runs**:
   - Single tier: `npm run test:e2e -- --tier 1` (supports `1`, `2`, `3`, `4`, comma-separated e.g. `1,2`, or `all`)
   - Filtered run: `npm run test:e2e -- --filter <substring|/regex/i>`
   - JSON report: `npm run test:e2e -- --report <file>`
-- **Environment**: Built-in static HTTP server (`web/public`, `127.0.0.1` ephemeral port), `1440×900` desktop Chromium/Chrome (`CHROMIUM_PATH` fallback `/usr/bin/chromium`, `/usr/bin/chromium-browser`, `/usr/bin/google-chrome`), fresh isolated `BrowserContext` per test, strict `0` `console.error` / `pageerror` gate.
-- **Current Verification Status (Phase 1)**: Static syntax & M2–M6 selector/flow audit completed (`node --check`, `--help`, art-manifest `--check`). Full post-M2–M6 Chromium execution is scheduled for Phase 2 once all Q0–Q6 code PRs merge to `main` (historical pre-M2 baseline from `29daf69` is preserved below).
+- **Environment**: Built-in cached static HTTP server (`web/public`, `127.0.0.1` ephemeral port), `1440×900` desktop Chromium/Chrome (`CHROMIUM_PATH` fallback `/usr/bin/chromium`, `/usr/bin/chromium-browser`, `/usr/bin/google-chrome`), fresh isolated `BrowserContext` per test, strict `0` `console.error` / `pageerror` gate.
+- **Current Verification Status (M7a — 100% PASS)**: Full 1440×900 desktop Chrome/Chromium automated verification completed post-M2–M6, Q0–Q2 (PR #20–#23), and M7a runtime + Round 1 defect remediation fixes: **56/56 E2E PASS (0 FAIL, 0 runtime errors)** across Tier 1→4 and **60/60 Regression PASS (0 FAIL, 0 runtime errors)** (`vm.Script` inline JS syntax check & `art:manifest:check` PASS). Per user directive (`ORIGINAL_REQUEST.md`), no separate manual smoke test was run; static HTTP end-user verification is fulfilled by the automated 1440×900 isolated-context suites. Historical pre-M2 baseline (`29daf69`) is preserved at the bottom.
 
 ## Tier Breakdown (56 Tests Total)
 
@@ -55,7 +56,31 @@
 | **G11b** 数据清理 | M6 | `E2E-T1-30` | — | — | `E2E-T4-03` |
 | **G12** 闭关吸附掉落 | M6 | `E2E-T1-31` | — | `E2E-T3-10` | — |
 
-## Baseline Execution Results (against `origin/main` @ `29daf69`, M0+M1 merged, M2–M6 not yet merged)
+## Latest Post-M2–M6 / Q0–Q2 / M7a Verification Results (100% PASS)
+
+- **Branch / Base**: `codex/e2e-pass` (based on `origin/main` @ `6946074`, preserving PR #23 Q2 F14–F18 & `P11`, with ported `7ca198c` runtime fixes P1–P10, dual-error `storageWriteError && storageReadError` HUD banner & in-game recovery, active-cutscene `#pavilion-popover` focus preservation, complete 14-field `META_KEY` CRDT healing with live re-read zero write amplification, `R7-1..R7-3` regression suites, and verified `tests/e2e/**` enhancements)
+- **Verified At (UTC)**: `2026-11-24T01:25:27Z`–`01:31:47Z` (full 60/60 regression on identical unchanged code) & `2026-11-24T01:56:00Z`–`02:07:25Z` (post-restart static/CLI gates, `R7` 3/3 regression sanity check, ordered Tier 1–4 E2E, and combined 56/56 E2E)
+- **Browser & Toolchain**: `/usr/bin/google-chrome` (`Google Chrome 158.0.8127.36`, Chromium-based; `CHROMIUM_PATH` unset → `/usr/bin/google-chrome` fallback; Chrome 158 vs upstream Chromium honestly noted per `PROJECT.md`), Node.js `v22.23.5`, `playwright-core@1.65.1`, viewport `1440×900`, fresh isolated `BrowserContext` per suite/test
+- **Runtime errors (`console.error` / `pageerror`)**: **0** across all 60 regression suites, fresh `R7` 3/3 verification, all ordered Tier 1–4 E2E runs, and the combined 56/56 E2E run
+- **Verification Scope Note**: Per user directive (`ORIGINAL_REQUEST.md`), no separate manual smoke test was executed; all static HTTP player-interaction verification is performed via the automated 1440×900 Playwright regression & E2E suites.
+- **Static & Provenance Gates (`01:56:00Z`–`01:56:02Z` & CLI guards `02:07:25Z`)**:
+  - `git merge-base --is-ancestor origin/main HEAD` → PASS (exit `0`), zero conflict markers, zero edits inside `M1-1..Q2-5`
+  - Inline `<script>` syntax validation (`vm.Script`) → PASS (`VM_SCRIPT_OK scripts=1`, single `arena.paused = pauseTokens.size > 0;` writer at L17747, exit `0`)
+  - `npm run art:manifest:check` → PASS (`115 inline assets, 11 disk files, 1 other inline asset`, exit `0`)
+  - `node --check` on `scripts/verify-playable-v2.mjs` & `tests/e2e/**/*.mjs` + 7 CLI exit-code-`2` guard checks (`verify-playable-v2.mjs --timeout 0`, `--unknown-flag`; `tests/e2e/run.mjs --timeout 0`, `--tier 9`, `--filter '/[unclosed/'`, `--url 'javascript:alert(1)'`, `--unknown-flag`) → all exit `2`
+- **Regression Suite**:
+  - **Full 60-suite run (`npm run test:regression`, `01:25:27Z`–`01:31:47Z` on unchanged code)**: `60/60 PASS`, `0 FAIL`, `0 ERROR`, `0 SKIPPED`, `runtimeErrors=0`, `duration=379524ms` (`schemaVersion: 2`, Chrome `158.0.8127.36`, `1440×900`, exit code `0`)
+  - **Post-restart targeted `R7` sanity check (`npm run test:regression -- --filter R7`, `01:56:22Z`–`01:57:03Z`)**: `3/3 PASS` (`R7-1` `15948ms`, `R7-2` `15404ms`, `R7-3` `7915ms`), `0 FAIL`, `0 ERROR`, `57 SKIPPED`, `runtimeErrors=0`, `duration=40588ms` (`schemaVersion: 2`, Chrome `158.0.8127.36`, `1440×900`, exit code `0`)
+  - **Coverage**: `M1-1..M4-4` (19) + `P1-1..P5-1` (5) + `R2-1..R2-7` (7) + `R3-1..R6-3` (13) + `Q0-1..Q2-5` (13) + `R7-1..R7-3` (3)
+- **E2E Ordered Tier-by-Tier Verification (`npm run test:e2e -- --tier <1|2|3|4>`)**:
+  - **Tier 1** (`--tier 1`, `01:57:23Z`–`01:59:32Z`): `31/31 PASS`, `0 FAIL`, `runtimeErrors=0` (`elapsed=128830ms`, tests `128345ms`, exit `0`)
+  - **Tier 2** (`--tier 2`, `01:59:51Z`–`02:00:38Z`): `12/12 PASS`, `0 FAIL`, `runtimeErrors=0` (`elapsed=46557ms`, tests `46086ms`, exit `0`)
+  - **Tier 3** (`--tier 3`, `02:00:57Z`–`02:01:52Z`): `10/10 PASS`, `0 FAIL`, `runtimeErrors=0` (`elapsed=54502ms`, tests `54015ms`, exit `0`)
+  - **Tier 4** (`--tier 4`, `02:02:11Z`–`02:02:30Z`): `3/3 PASS`, `0 FAIL`, `runtimeErrors=0` (`elapsed=18149ms`, tests `17647ms`, exit `0`)
+- **E2E Combined Run (`npm run test:e2e -- --report <scratch>/m7a-r2-e2e.json`, `02:02:54Z`–`02:07:01Z`)**:
+  - **Total**: `56/56 PASS`, `0 FAIL`, `runtimeErrors=0`, `elapsed=247037ms` (`schemaVersion: 1`, Tier 1 `125558ms`, Tier 2 `46950ms`, Tier 3 `56996ms`, Tier 4 `17035ms`, exit code `0`)
+
+## Historical Baseline Execution Results (Pre-M2 @ `29daf69`, M0+M1 merged, M2–M6 not yet merged)
 
 - **Browser**: `/usr/bin/google-chrome` (Chrome 158, Chromium-based), viewport `1440×900`
 - **Runtime errors (`console.error` / `pageerror`)**: **0** across all 56 tests

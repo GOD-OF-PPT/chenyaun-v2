@@ -12,7 +12,11 @@ import {
   getHudState,
   getToastTexts,
   getActiveElementInfo,
-  readStorageJson
+  readStorageJson,
+  ensureMeditating,
+  waitForLootMagnetWindow,
+  waitForStonesAtLeast,
+  waitForCrossTabConflict
 } from "../lib/harness.mjs";
 import {
   REALM_XP_CAPS,
@@ -35,8 +39,8 @@ export const tests = [
       const pageB = await env.openPage("t3-01-B");
 
       await env.startFreshGame(pageA);
-      await pageB.goto(env.baseUrl, { waitUntil: "domcontentloaded" });
-      await pageB.waitForSelector("#btn-continue-save", { state: "visible", timeout: 10000 });
+      await pageB.goto(env.baseUrl, { waitUntil: "domcontentloaded", timeout: env.navigationTimeoutMs });
+      await pageB.waitForSelector("#btn-continue-save", { state: "visible", timeout: env.navigationTimeoutMs });
       await pageB.click("#btn-continue-save");
       await pageB.waitForTimeout(200);
 
@@ -46,7 +50,7 @@ export const tests = [
         game.stones = 901;
         window.__CHENYUAN_V25__.saveGame();
       });
-      await pageB.waitForTimeout(250);
+      await waitForCrossTabConflict(pageB, 2500);
 
       const stayRo = await pageB.$('[data-action="stay-readonly-save"]');
       if (stayRo && await stayRo.isVisible()) {
@@ -214,8 +218,8 @@ export const tests = [
         game.stones = 99999;
         window.__CHENYUAN_V25__.saveGame();
       });
-      await page.reload({ waitUntil: "domcontentloaded" });
-      await page.waitForSelector("#btn-continue-save", { state: "visible", timeout: 10000 });
+      await page.reload({ waitUntil: "domcontentloaded", timeout: env.navigationTimeoutMs });
+      await page.waitForSelector("#btn-continue-save", { state: "visible", timeout: env.navigationTimeoutMs });
       await page.click("#btn-continue-save");
       await page.waitForTimeout(220);
 
@@ -320,6 +324,33 @@ export const tests = [
       }
       assert.ok(bought >= 1 && bought < 8, `Blood-fury pill must be purchasable (>=1) and capped per realm (<8), got bought=${bought}`);
 
+      // Push lifespan to 100% (寿尽: curMonths = maxMonths + 12) and verify G8 soft-fail offer before taking longevity pill
+      await page.evaluate(() => {
+        const v25 = window.__CHENYUAN_V25__;
+        const { game } = v25.getState();
+        const info = v25.getLifespanInfo(game);
+        const startAge = game.startAgeMonths || 216;
+        game.elapsedMonths = Math.max(0, (info.maxMonths || 1140) - startAge) + 12;
+        game.inventory.longevity_pill = Math.max(game.inventory.longevity_pill || 0, 1);
+        v25.enterSanctumHub();
+        v25.updateHud();
+      });
+      await page.waitForTimeout(200);
+
+      let lifespanText = (await isModalOpen(page)) ? await getModalText(page) : "";
+      if (!lifespanText) {
+        await openNavTab(page, "cultivate");
+        lifespanText = await getDrawerText(page);
+      }
+      assert.match(
+        lifespanText,
+        /兵解转世|寿元已尽|寿尽/,
+        `At 100% lifespan, expected G8 soft-fail offer (兵解转世/寿元已尽/寿尽), got: "${lifespanText.slice(0, 200)}"`
+      );
+      if (await isModalOpen(page)) {
+        await closeModalEsc(page);
+      }
+
       // Use longevity pill from cultivate drawer and verify lifespan warning clears
       await openNavTab(page, "cultivate");
       const useLongevity = await page.$('[data-use-item="longevity_pill"]');
@@ -345,12 +376,18 @@ export const tests = [
         const v25 = window.__CHENYUAN_V25__;
         const { game, arena } = v25.getState();
         game.realm = "spirit";
+        arena.swordIntent = 0;
         arena.astralEnergy = 0;
         arena.bondSynergy = 0;
+        v25.enterSanctumHub();
+        v25.syncProgressiveSkillVisibility();
         v25.updateHud();
         window.__CHENYUAN_V18__.openKarmaDilemmaModal(0);
       });
       await page.waitForSelector("#modal-backdrop.open");
+      const firstTitle = await page.evaluate(() =>
+        (document.querySelector("#modal-content h2")?.innerText || "").trim()
+      );
       await page.click('button[data-karma-side="right"]');
       await page.waitForTimeout(150);
 
@@ -365,11 +402,18 @@ export const tests = [
         `S6 brace bug must not fill astral/bond to 100%, got ${JSON.stringify(hudMeters)}`
       );
 
-      // Reopen dilemma -> must not repeat dilemma 0
-      await page.evaluate(() => window.__CHENYUAN_V18__.openKarmaDilemmaModal());
-      await page.waitForTimeout(150);
+      // Reopen second karma dilemma via real player UI -> must not repeat completed dilemma
+      await openNavTab(page, "story");
+      await page.click('#jade-panel [data-action="open-karma-dilemma"]');
+      await page.waitForSelector("#modal-backdrop.open");
       const nextTitle = await page.evaluate(() =>
         (document.querySelector("#modal-content h2")?.innerText || "").trim()
+      );
+      assert.ok(nextTitle.length > 0, "Reopened karma dilemma modal must show a title");
+      assert.notEqual(
+        nextTitle,
+        firstTitle,
+        `S10 must not repeat completed dilemma "${firstTitle}"`
       );
       assert.doesNotMatch(nextTitle, /古道走火散修/, "S10 must not repeat completed dilemma");
     }
@@ -446,7 +490,22 @@ export const tests = [
         game.realm = "nascent";
         game.bondTiers = { shen: 1, pei: 0, lu: 0, yan: 0 };
         game.aids = { shen: true, pei: false, lu: false, yan: false };
-        v25.openExpeditionSandboxModal();
+        v25.enterSanctumHub();
+        v25.updateHud();
+      });
+      await page.waitForTimeout(150);
+
+      const trackerRows = await page.evaluate(() =>
+        (document.querySelector("#qt-body-rows")?.innerText || "").trim()
+      );
+      assert.match(
+        trackerRows,
+        /故人线/,
+        `Quest tracker must show optional 故人线 row for current chapter (S9), got: "${trackerRows}"`
+      );
+
+      await page.evaluate(() => {
+        window.__CHENYUAN_V25__.openExpeditionSandboxModal();
       });
       await page.waitForSelector("#modal-backdrop.open");
 
@@ -478,22 +537,41 @@ export const tests = [
       });
       await page.waitForSelector("#modal-backdrop.open");
       await page.click('button[data-start-rush="7"]');
-      await page.waitForTimeout(250);
+      await page
+        .waitForFunction(
+          () => {
+            const b = document.querySelector("#boss-hud-banner");
+            return !!(b && getComputedStyle(b).display !== "none");
+          },
+          null,
+          { timeout: 2000 }
+        )
+        .catch(() => {});
 
-      const killed = await page.evaluate(() => {
+      const bossBanner = await page.evaluate(() => {
+        const b = document.querySelector("#boss-hud-banner");
+        return {
+          visible: !!(b && getComputedStyle(b).display !== "none"),
+          name: (document.querySelector("#boss-banner-name")?.textContent || "").trim()
+        };
+      });
+      assert.ok(
+        bossBanner.visible && bossBanner.name.length > 0,
+        `Boss Rush bout 7 must display #boss-hud-banner with boss name, got ${JSON.stringify(bossBanner)}`
+      );
+
+      // Precondition: defeat bout 7 boss via handleEnemyDeath
+      await page.evaluate(() => {
         const v25 = window.__CHENYUAN_V25__;
         const { arena } = v25.getState();
-        const targets = [...arena.enemies];
-        for (const e of targets) {
+        for (const e of [...arena.enemies]) {
           e.hp = 0;
           v25.handleEnemyDeath(e);
         }
         v25.updateHud();
-        return targets.length;
       });
-      assert.ok(killed > 0, "Boss Rush bout 7 must spawn boss enemy");
-      // Wait past the 450ms Boss Rush victory modal timer
-      await page.waitForTimeout(700);
+      // Non-throwing bounded wait past the 450ms Boss Rush victory modal timer
+      await page.waitForSelector("#modal-backdrop.open", { timeout: 2500 }).catch(() => {});
 
       const hud = await getHudState(page);
       const { parsed: meta } = await readStorageJson(page, META_KEY);
@@ -511,60 +589,100 @@ export const tests = [
       const page = await env.openPage("t3-10");
       await env.startFreshGame(page);
 
+      // Phase 1: Combat distant drop (320px) must NOT be vacuumed while meditating
       await page.evaluate(() => {
         const v25 = window.__CHENYUAN_V25__;
         v25.initArenaStage(0, false);
         const { game, arena } = v25.getState();
         game.stones = 120;
+        game.xp = 0;
         const px = arena.player?.x || 400;
         const py = arena.player?.y || 450;
+        const dir = px > 720 ? -1 : 1;
         // Keep one enemy alive at a safe distance so combat zone stays active without interrupting meditation
         if (arena.enemies.length > 0) {
           const keeper = arena.enemies[0];
-          keeper.x = px + 1100;
+          keeper.x = px + dir * 1100;
           keeper.y = py;
           keeper.vx = 0;
           keeper.vy = 0;
+          keeper.state = "stun";
           keeper.timer = 99;
+          keeper.hp = Math.max(keeper.hp || 100, 9999);
           arena.enemies = [keeper];
         }
-        arena.drops.push({ x: px + 320, y: py, vx: 0, vy: 0, kind: "stone", val: 40, life: 30 });
+        arena.drops = [{ x: px + dir * 320, y: py, vx: 0, vy: 0, kind: "stone", val: 40, life: 30 }];
         v25.updateHud();
       });
-      await page.waitForTimeout(150);
-
-      const stonesBefore = (await getHudState(page)).stones;
-      await page.keyboard.press("KeyB");
       await page.waitForTimeout(120);
 
-      const meditating = await page.evaluate(() => !!window.__CHENYUAN_V25__.getState().arena.player?.meditating);
-      assert.equal(meditating, true, "Player must enter meditation after pressing KeyB");
+      const stonesBefore = (await getHudState(page)).stones;
+      await ensureMeditating(page, env.actionTimeoutMs);
 
-      // Frame-counted rAF wait (40 frames > ceil(320/22)=15 frames needed to pull 320px), 100% immune to CPU/rAF throttling
-      await page.evaluate(
-        ({ before, maxFrames }) =>
-          new Promise((resolve) => {
-            let frames = 0;
-            function step() {
-              const raw = (document.querySelector("#hud-stones")?.textContent || "").trim();
-              const cur = parseInt(raw.replace(/[^\d-]/g, ""), 10);
-              if ((Number.isFinite(cur) && cur > before) || frames >= maxFrames) {
-                resolve({ frames, stones: cur });
-                return;
-              }
-              frames++;
-              requestAnimationFrame(step);
-            }
-            requestAnimationFrame(step);
-          }),
-        { before: stonesBefore, maxFrames: 40 }
+      const combatWin = await waitForLootMagnetWindow(page, {
+        stonesBefore,
+        minFrames: 32,
+        minSimSec: 0.7,
+        maxWallMs: 12000,
+        requireMeditation: true
+      });
+      assert.notEqual(
+        combatWin.reason,
+        "meditation_lost",
+        `Meditation ended unexpectedly during combat magnet window: ${JSON.stringify(combatWin)}`
+      );
+      assert.notEqual(
+        combatWin.reason,
+        "wall_timeout",
+        `rAF loop stalled before reaching combat magnet simulation window: ${JSON.stringify(combatWin)}`
       );
 
       const stonesAfterCombatMed = (await getHudState(page)).stones;
       assert.equal(
         stonesAfterCombatMed,
         stonesBefore,
-        `Active combat meditation must NOT pull drop from 320px away (before=${stonesBefore}, after=${stonesAfterCombatMed})`
+        `Active combat meditation must NOT pull drop from 320px away (before=${stonesBefore}, after=${stonesAfterCombatMed}, window=${JSON.stringify(combatWin)})`
+      );
+
+      // Phase 2: Close-range combat pickup (160px < 200px combat meditate radius) still works
+      await page.evaluate(() => {
+        const { arena } = window.__CHENYUAN_V25__.getState();
+        const px = arena.player?.x || 400;
+        const py = arena.player?.y || 450;
+        const dir = px > 720 ? -1 : 1;
+        arena.drops.push({ x: px + dir * 160, y: py, vx: 0, vy: 0, kind: "stone", val: 25, life: 30 });
+      });
+      const closeRes = await waitForStonesAtLeast(page, stonesBefore + 25, 6000);
+      assert.equal(
+        closeRes.ok,
+        true,
+        `Close-range (160px) loot pickup must still work in active combat: ${JSON.stringify(closeRes)}`
+      );
+
+      // Phase 3: Safe-hub meditation pickup (320px) vacuums drops blocked during active combat
+      await page.click("#btn-sanctum-hub");
+      await page.waitForFunction(
+        () => (document.querySelector("#btn-sanctum-hub")?.textContent || "").includes("出征"),
+        null,
+        { timeout: env.actionTimeoutMs }
+      );
+      const hubBefore = (await getHudState(page)).stones;
+      await page.evaluate(() => {
+        const v25 = window.__CHENYUAN_V25__;
+        const { game, arena } = v25.getState();
+        game.xp = 0;
+        const px = arena.player?.x || 400;
+        const py = arena.player?.y || 450;
+        const dir = px > 720 ? -1 : 1;
+        arena.drops = [{ x: px + dir * 320, y: py, vx: 0, vy: 0, kind: "stone", val: 30, life: 30 }];
+        v25.updateHud();
+      });
+      await ensureMeditating(page, env.actionTimeoutMs);
+      const hubRes = await waitForStonesAtLeast(page, hubBefore + 30, 6000);
+      assert.equal(
+        hubRes.ok,
+        true,
+        `Safe-hub meditation pickup (320px) must collect loot drops: ${JSON.stringify(hubRes)}`
       );
     }
   }

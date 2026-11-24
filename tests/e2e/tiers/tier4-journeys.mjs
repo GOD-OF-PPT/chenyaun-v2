@@ -13,7 +13,8 @@ import {
   getHudState,
   getToastTexts,
   getActiveElementInfo,
-  readStorageJson
+  readStorageJson,
+  waitForCrossTabConflict
 } from "../lib/harness.mjs";
 import {
   ALL_DAO_LAW_IDS,
@@ -116,10 +117,10 @@ export const tests = [
       const restored = await getActiveElementInfo(pageA);
       assert.equal(restored?.id, "btn-open-settings", "Escape must return focus to #btn-open-settings (T3)");
 
-      // 2. Open Tab B, create conflict, verify read-only guards (T4, T6)
+      // 2. Open Tab B, create conflict, enter read-only mode, verify read-only cloud import refusal (T4, T6)
       const pageB = await env.openPage("t4-02-B");
-      await pageB.goto(env.baseUrl, { waitUntil: "domcontentloaded" });
-      await pageB.waitForSelector("#btn-continue-save", { state: "visible", timeout: 10000 });
+      await pageB.goto(env.baseUrl, { waitUntil: "domcontentloaded", timeout: env.navigationTimeoutMs });
+      await pageB.waitForSelector("#btn-continue-save", { state: "visible", timeout: env.navigationTimeoutMs });
       await pageB.click("#btn-continue-save");
       await pageB.waitForTimeout(200);
 
@@ -128,13 +129,95 @@ export const tests = [
         game.stones = 1234;
         window.__CHENYUAN_V25__.saveGame();
       });
-      await pageB.waitForTimeout(250);
+      await waitForCrossTabConflict(pageB, 2500);
+
+      const hasConflictUi = await pageB.evaluate(() => {
+        const modal = document.querySelector("#modal-backdrop.open #modal-content")?.innerText || "";
+        const alert = document.querySelector("#hud-save-alert")?.innerText || "";
+        return (
+          !!document.querySelector('[data-action="stay-readonly-save"], [data-action="open-save-conflict"]') ||
+          /冲突|新进度|载入最新/.test(`${modal} ${alert}`)
+        );
+      });
+      assert.equal(hasConflictUi, true, "Tab B must surface multi-tab conflict UI when Tab A saves newer rev (T6)");
+
+      const stayRo = await pageB.$('[data-action="stay-readonly-save"]');
+      if (stayRo && (await stayRo.isVisible())) {
+        await stayRo.click();
+      } else {
+        const openConf = await pageB.$('[data-action="open-save-conflict"]');
+        if (openConf && (await openConf.isVisible())) {
+          await openConf.click();
+          await pageB.waitForTimeout(120);
+          const stayRo2 = await pageB.$('[data-action="stay-readonly-save"]');
+          if (stayRo2 && (await stayRo2.isVisible())) {
+            await stayRo2.click();
+          }
+        }
+      }
+      await pageB.waitForTimeout(150);
+
+      await openSettingsTab(pageB, "controls");
+      await pageB.fill("#inp-cloud-save-code", exportedCode);
+      const importBtnDisabled = await pageB.evaluate(
+        () => !!document.querySelector("#btn-import-cloud-save")?.disabled
+      );
+      if (!importBtnDisabled) {
+        await pageB.click("#btn-import-cloud-save");
+        await pageB.waitForTimeout(200);
+        const confirmClicked = await pageB.evaluate(() => {
+          const modal = document.querySelector("#modal-backdrop.open #modal-content");
+          if (!modal) return false;
+          const buttons = Array.from(modal.querySelectorAll("button")).filter(
+            (b) => b.id !== "btn-import-cloud-save" && !b.disabled && b.offsetParent !== null
+          );
+          const match = buttons.find((b) => {
+            const act = (b.getAttribute("data-action") || "").toLowerCase();
+            const txt = (b.innerText || "").trim();
+            if (/取消|返回|关闭|清空|重置/.test(txt) || act.includes("reset") || act.includes("copy")) return false;
+            return (
+              act.includes("apply-cloud") ||
+              act.includes("confirm-cloud") ||
+              act.includes("confirm-import") ||
+              act.includes("import-confirm") ||
+              /确认导入|确认恢复|覆盖存档|确认覆写/.test(txt)
+            );
+          });
+          if (match) {
+            match.click();
+            return true;
+          }
+          return false;
+        });
+        if (confirmClicked) {
+          await pageB.waitForTimeout(200);
+        }
+      }
+      const roFeedback = await pageB.evaluate(() => {
+        const status = document.querySelector("#lbl-cloud-save-status")?.innerText || "";
+        const modal = document.querySelector("#modal-backdrop.open #modal-content")?.innerText || "";
+        const toasts = Array.from(document.querySelectorAll("#toast-container .toast-pill"))
+          .map((e) => e.textContent || "")
+          .join(" ");
+        return `${status} ${modal} ${toasts}`;
+      });
+      assert.doesNotMatch(
+        roFeedback,
+        /存档恢复成功|导入成功/,
+        `Read-only Tab B must never report cloud import success (T4/T6), got: "${roFeedback.slice(0, 200)}"`
+      );
+      assert.ok(
+        importBtnDisabled || /只读|冲突|无法|失败|禁止|拒绝|未写入|锁定/.test(roFeedback),
+        `Read-only Tab B must refuse or warn on cloud import (T4/T6), disabled=${importBtnDisabled}, text="${roFeedback.slice(0, 200)}"`
+      );
+      const { parsed: tabASave } = await readStorageJson(pageA, STORAGE_KEY);
+      assert.equal(tabASave?.game?.stones, 1234, "Tab A save in localStorage must remain intact after read-only import attempt (T6)");
 
       // 3. Corrupt meta save & reload Tab A -> verify meta preserved with banner (T1)
       const badMeta = buildCorruptMetaSave();
       await pageA.evaluate(([k, v]) => localStorage.setItem(k, v), [META_KEY, badMeta]);
-      await pageA.reload({ waitUntil: "domcontentloaded" });
-      await pageA.waitForSelector("#welcome-screen", { state: "visible", timeout: 10000 });
+      await pageA.reload({ waitUntil: "domcontentloaded", timeout: env.navigationTimeoutMs });
+      await pageA.waitForSelector("#welcome-screen", { state: "visible", timeout: env.navigationTimeoutMs });
       const bannerText = await pageA.evaluate(() =>
         (document.querySelector("#save-status-banner")?.innerText || "").trim()
       );

@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import {
   REPO_ROOT,
   STORAGE_KEY,
@@ -17,8 +18,13 @@ import {
   getHudState,
   getToastTexts,
   getActiveElementInfo,
-  readStorageJson
+  readStorageJson,
+  ensureMeditating,
+  waitForLootMagnetWindow,
+  waitForCrossTabConflict
 } from "../lib/harness.mjs";
+
+const execFileAsync = promisify(execFile);
 import {
   ALL_DAO_LAW_IDS,
   ALL_CHAPTER_STEP_IDS,
@@ -184,6 +190,11 @@ export const tests = [
         9876,
         "Cloud code import must require preview & explicit confirmation before overwriting active save"
       );
+      assert.equal(
+        hudAfterFirstClick.stones,
+        beforeStones,
+        "Cloud code import must preserve current stones before explicit confirmation"
+      );
       assert.match(
         modalText,
         /青云剑客|9876|元婴/,
@@ -206,10 +217,14 @@ export const tests = [
         [STORAGE_KEY]: buildEnvelopeV2(),
         [META_KEY]: initialMeta
       });
-      await env.continueSavedGame(pageB, {
-        [STORAGE_KEY]: buildEnvelopeV2(),
-        [META_KEY]: initialMeta
+      // Open Tab B from the already-seeded shared storage without clearing localStorage while Tab A is live
+      await env.gotoWelcome(pageB);
+      await pageB.waitForSelector("#btn-continue-save", {
+        state: "visible",
+        timeout: env.navigationTimeoutMs
       });
+      await pageB.click("#btn-continue-save");
+      await pageB.waitForSelector("#btn-sanctum-hub", { timeout: env.navigationTimeoutMs });
 
       // Precondition: Tab A progresses meta (higher score + new seenEnemy) and writes meta
       await pageA.evaluate(() => {
@@ -252,8 +267,8 @@ export const tests = [
       const pageB = await env.openPage("t1-06-B");
 
       await env.startFreshGame(pageA);
-      await pageB.goto(env.baseUrl, { waitUntil: "domcontentloaded" });
-      await pageB.waitForSelector("#btn-continue-save", { state: "visible", timeout: 10000 });
+      await pageB.goto(env.baseUrl, { waitUntil: "domcontentloaded", timeout: env.navigationTimeoutMs });
+      await pageB.waitForSelector("#btn-continue-save", { state: "visible", timeout: env.navigationTimeoutMs });
       await pageB.click("#btn-continue-save");
       await pageB.waitForTimeout(200);
 
@@ -263,7 +278,7 @@ export const tests = [
         game.stones = 777;
         window.__CHENYUAN_V25__.saveGame();
       });
-      await pageB.waitForTimeout(250);
+      await waitForCrossTabConflict(pageB, 2500);
 
       // Enter read-only mode on Tab B
       const stayRo = await pageB.$('[data-action="stay-readonly-save"]');
@@ -321,61 +336,122 @@ export const tests = [
     title: "T7: prefers-reduced-motion respected, Tab does not hijack HUD focus, no duplicate pad bindings",
     features: ["T7"],
     async fn(env) {
-      const reducedCtx = await env.context.browser().newContext({
-        viewport: { width: 1440, height: 900 },
-        reducedMotion: "reduce"
+      const page = await env.openPage("t1-07", { reducedMotion: "reduce" });
+      await env.gotoWelcome(page);
+      await page.waitForSelector("#btn-start-new", {
+        state: "visible",
+        timeout: env.navigationTimeoutMs
       });
-      try {
-        const page = await reducedCtx.newPage();
-        page.setDefaultTimeout(5000);
-        page.setDefaultNavigationTimeout(10000);
-        page.on("pageerror", (err) => {
-          env.runtimeErrors.push(`[t1-07-reduced pageerror] ${err?.message || String(err)}`);
-        });
-        page.on("console", (msg) => {
-          if (msg.type() === "error") {
-            env.runtimeErrors.push(`[t1-07-reduced console.error] ${msg.text()}`);
-          }
-        });
-        await page.goto(env.baseUrl, { waitUntil: "domcontentloaded", timeout: 10000 });
-        await page.waitForSelector("#btn-start-new", { state: "visible", timeout: 10000 });
 
-        // 1. Check CSS has prefers-reduced-motion rule active
-        const hasReducedMotionCss = await page.evaluate(() => {
-          for (const sheet of Array.from(document.styleSheets)) {
-            let rules;
-            try {
-              rules = sheet.cssRules;
-            } catch {
-              continue;
-            }
-            for (const r of Array.from(rules || [])) {
-              if (r.conditionText && r.conditionText.includes("prefers-reduced-motion")) {
-                return true;
-              }
+      // 1. Check prefers-reduced-motion media query, CSS rule, and computed transition duration
+      const motionInfo = await page.evaluate(() => {
+        const mqMatches = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        let hasRule = false;
+        for (const sheet of Array.from(document.styleSheets)) {
+          let rules;
+          try {
+            rules = sheet.cssRules;
+          } catch {
+            continue;
+          }
+          for (const r of Array.from(rules || [])) {
+            if (r.conditionText && r.conditionText.includes("prefers-reduced-motion")) {
+              hasRule = true;
+              break;
             }
           }
-          return false;
-        });
-        assert.equal(hasReducedMotionCss, true, "Stylesheet must include a prefers-reduced-motion media query");
+          if (hasRule) break;
+        }
+        const btn = document.querySelector("#btn-start-new");
+        const rawDur = btn ? getComputedStyle(btn).transitionDuration || "0s" : "0s";
+        const firstToken = rawDur.split(",")[0].trim();
+        const durSec = firstToken.endsWith("ms")
+          ? parseFloat(firstToken) / 1000
+          : parseFloat(firstToken);
+        return {
+          mqMatches,
+          hasRule,
+          rawDur,
+          durSec: Number.isFinite(durSec) ? durSec : NaN
+        };
+      });
+      assert.equal(motionInfo.mqMatches, true, "Page must emulate prefers-reduced-motion: reduce");
+      assert.equal(
+        motionInfo.hasRule,
+        true,
+        "Stylesheet must include a prefers-reduced-motion media query"
+      );
+      assert.ok(
+        Number.isFinite(motionInfo.durSec) && motionInfo.durSec <= 0.01,
+        `Under prefers-reduced-motion: reduce, #btn-start-new transitionDuration must be <= 0.01s, got "${motionInfo.rawDur}"`
+      );
 
-        // 2. Start game and verify Tab moves focus between HUD controls rather than being hijacked
-        await page.click("#btn-start-new");
-        await page.waitForTimeout(220);
-        await env.dismissOpeningIfAny(page);
-        await page.focus("#btn-sanctum-hub");
-        const beforeId = await page.evaluate(() => document.activeElement?.id || "");
-        await page.keyboard.press("Tab");
-        await page.waitForTimeout(100);
-        const afterId = await page.evaluate(() => document.activeElement?.id || "");
-        assert.notEqual(
-          afterId,
-          beforeId,
-          "Pressing Tab while focused on a HUD button must advance browser focus (not be hijacked by posture toggle)"
-        );
-      } finally {
-        await reducedCtx.close();
+      // 2. Start game, dismiss opening/onboarding, and verify Tab advances HUD focus (not hijacked)
+      await page.click("#btn-start-new");
+      await page.waitForTimeout(220);
+      await env.dismissOpeningIfAny(page);
+      const skipOnb = await page.$("#btn-skip-onboarding");
+      if (skipOnb && (await skipOnb.isVisible())) {
+        await skipOnb.click().catch(() => {});
+        await page.waitForTimeout(80);
       }
+      await page.waitForSelector("#btn-sanctum-hub", {
+        state: "visible",
+        timeout: env.navigationTimeoutMs
+      });
+
+      await page.focus("#btn-sanctum-hub");
+      const beforeId = await page.evaluate(() => document.activeElement?.id || "");
+      assert.equal(beforeId, "btn-sanctum-hub", "Precondition: focus must start on #btn-sanctum-hub");
+      await page.keyboard.press("Tab");
+      await page.waitForTimeout(100);
+      const afterInfo = await page.evaluate(() => ({
+        id: document.activeElement?.id || "",
+        tag: document.activeElement?.tagName || "",
+        isBody: document.activeElement === document.body
+      }));
+      assert.notEqual(
+        afterInfo.id,
+        "btn-sanctum-hub",
+        "Pressing Tab while focused on a HUD button must advance browser focus (not be hijacked by posture toggle)"
+      );
+      assert.equal(
+        afterInfo.isBody,
+        false,
+        `Pressing Tab from #btn-sanctum-hub must move focus to another control rather than document.body: ${JSON.stringify(afterInfo)}`
+      );
+
+      // 3. Check Settings -> Controls has 0 duplicate default gamepad glyph bindings
+      await openSettingsTab(page, "controls");
+      const padAudit = await page.evaluate(() => {
+        const buttons = Array.from(document.querySelectorAll(".kb-cap-btn[data-rebind-act]"));
+        const byGlyph = new Map();
+        let assignedCount = 0;
+        for (const btn of buttons) {
+          const act = btn.getAttribute("data-rebind-act") || "";
+          const txt = (btn.textContent || "").trim();
+          const m = txt.match(/🎮\s*(.+)$/);
+          const glyph = (m?.[1] || "").trim();
+          if (!glyph || /^(?:未绑|未绑定|无|-|—|none)$/i.test(glyph)) continue;
+          assignedCount += 1;
+          if (!byGlyph.has(glyph)) byGlyph.set(glyph, []);
+          byGlyph.get(glyph).push(act);
+        }
+        const dups = [];
+        for (const [glyph, acts] of byGlyph.entries()) {
+          if (acts.length > 1) dups.push({ glyph, acts });
+        }
+        return { totalButtons: buttons.length, assignedCount, dups };
+      });
+      assert.ok(
+        padAudit.totalButtons >= 10,
+        `Expected >= 10 rebindable control buttons in Settings -> Controls, found ${padAudit.totalButtons}`
+      );
+      assert.equal(
+        padAudit.dups.length,
+        0,
+        `Default gamepad bindings must have 0 duplicates, found: ${JSON.stringify(padAudit.dups)}`
+      );
     }
   },
 
@@ -408,9 +484,8 @@ export const tests = [
       assert.ok(shaMatches.length >= 100, `docs/art-manifest.md must record sha256 checksums for inline art, found ${shaMatches.length}`);
 
       // Verify script runs cleanly
-      execFileSync(process.execPath, [manifestScriptPath, "--check"], {
+      await execFileAsync(process.execPath, [manifestScriptPath, "--check"], {
         cwd: REPO_ROOT,
-        stdio: "pipe",
         timeout: 10000
       });
     }
@@ -1169,23 +1244,41 @@ export const tests = [
       });
       await page.waitForSelector("#modal-backdrop.open");
       await page.click('button[data-start-spire="9"]');
-      await page.waitForTimeout(250);
+      await page
+        .waitForFunction(
+          () => {
+            const b = document.querySelector("#boss-hud-banner");
+            return !!(b && getComputedStyle(b).display !== "none");
+          },
+          null,
+          { timeout: 2000 }
+        )
+        .catch(() => {});
+
+      const spireBanner = await page.evaluate(() => {
+        const b = document.querySelector("#boss-hud-banner");
+        return {
+          visible: !!(b && getComputedStyle(b).display !== "none"),
+          name: (document.querySelector("#boss-banner-name")?.textContent || "").trim()
+        };
+      });
+      assert.ok(
+        spireBanner.visible && spireBanner.name.length > 0,
+        `Spire floor 9 must display #boss-hud-banner with floor/boss label, got ${JSON.stringify(spireBanner)}`
+      );
 
       // Precondition: defeat floor 9 enemies via handleEnemyDeath
-      const killedCount = await page.evaluate(() => {
+      await page.evaluate(() => {
         const v25 = window.__CHENYUAN_V25__;
         const { arena } = v25.getState();
-        const targets = [...arena.enemies];
-        for (const e of targets) {
+        for (const e of [...arena.enemies]) {
           e.hp = 0;
           v25.handleEnemyDeath(e);
         }
         v25.updateHud();
-        return targets.length;
       });
-      assert.ok(killedCount > 0, "Spire floor 9 must have spawned at least 1 enemy");
-      // Wait past the 420ms transition timer in handleEnemyDeath
-      await page.waitForTimeout(700);
+      // Non-throwing bounded wait past the 420ms transition timer in handleEnemyDeath
+      await page.waitForSelector("#modal-backdrop.open", { timeout: 2500 }).catch(() => {});
       // If a curio draft modal opened on floor 9 skip, click a curio to complete the floor
       const curioBtn = await page.$("button[data-pick-curio]");
       if (curioBtn && (await curioBtn.isVisible())) {
@@ -1555,69 +1648,69 @@ export const tests = [
       const page = await env.openPage("t1-31");
       await env.startFreshGame(page);
 
-      // Precondition: active stage 0 combat with a non-interrupting enemy alive and a stone drop 320px away
+      // Precondition: active stage 0 combat with a stunned keeper enemy and a stone drop 320px away
       await page.evaluate(() => {
         const v25 = window.__CHENYUAN_V25__;
         v25.initArenaStage(0, false);
         const { game, arena } = v25.getState();
         game.stones = 100;
+        game.xp = 0;
         const px = arena.player?.x || 400;
         const py = arena.player?.y || 450;
+        const dir = px > 720 ? -1 : 1;
         // Keep one enemy alive at a safe distance so combat zone stays active without interrupting meditation
         if (arena.enemies.length > 0) {
           const keeper = arena.enemies[0];
-          keeper.x = px + 1100;
+          keeper.x = px + dir * 1100;
           keeper.y = py;
           keeper.vx = 0;
           keeper.vy = 0;
+          keeper.state = "stun";
           keeper.timer = 99;
+          keeper.hp = Math.max(keeper.hp || 100, 9999);
           arena.enemies = [keeper];
         }
-        arena.drops.push({
-          x: px + 320,
-          y: py,
-          vx: 0,
-          vy: 0,
-          kind: "stone",
-          val: 50,
-          life: 30
-        });
+        arena.drops = [
+          {
+            x: px + dir * 320,
+            y: py,
+            vx: 0,
+            vy: 0,
+            kind: "stone",
+            val: 50,
+            life: 30
+          }
+        ];
         v25.updateHud();
       });
-      await page.waitForTimeout(150);
-
-      const stonesBefore = (await getHudState(page)).stones;
-      await page.keyboard.press("KeyB");
       await page.waitForTimeout(120);
 
-      const meditating = await page.evaluate(() => !!window.__CHENYUAN_V25__.getState().arena.player?.meditating);
-      assert.equal(meditating, true, "Player must enter meditation after pressing KeyB");
+      const stonesBefore = (await getHudState(page)).stones;
+      await ensureMeditating(page, env.actionTimeoutMs);
 
-      // Frame-counted rAF wait (40 frames > ceil(320/22)=15 frames needed to pull 320px), 100% immune to CPU/rAF throttling
-      await page.evaluate(
-        ({ before, maxFrames }) =>
-          new Promise((resolve) => {
-            let frames = 0;
-            function step() {
-              const raw = (document.querySelector("#hud-stones")?.textContent || "").trim();
-              const cur = parseInt(raw.replace(/[^\d-]/g, ""), 10);
-              if ((Number.isFinite(cur) && cur > before) || frames >= maxFrames) {
-                resolve({ frames, stones: cur });
-                return;
-              }
-              frames++;
-              requestAnimationFrame(step);
-            }
-            requestAnimationFrame(step);
-          }),
-        { before: stonesBefore, maxFrames: 40 }
+      const win = await waitForLootMagnetWindow(page, {
+        stonesBefore,
+        minFrames: 32,
+        minSimSec: 0.7,
+        maxWallMs: 12000,
+        requireMeditation: true
+      });
+      assert.notEqual(
+        win.reason,
+        "meditation_lost",
+        `Meditation ended unexpectedly during combat magnet window: ${JSON.stringify(win)}`
+      );
+      assert.notEqual(
+        win.reason,
+        "wall_timeout",
+        `rAF loop stalled before reaching combat magnet simulation window: ${JSON.stringify(win)}`
       );
 
       const stonesAfter = (await getHudState(page)).stones;
       assert.equal(
         stonesAfter,
         stonesBefore,
-        `Meditating in active combat must NOT vacuum a drop 320px away (before=${stonesBefore}, after=${stonesAfter})`
+        `Meditating in active combat must NOT vacuum a drop 320px away (before=${stonesBefore}, after=${stonesAfter}, window=${JSON.stringify(win)})`
       );
     }
   }

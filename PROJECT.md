@@ -45,7 +45,8 @@
   - 读取：`parseAndValidateSaveRaw` 13661，`inspectSavedBundle` 13695，`normalizeLoadedGame` ~13556。
   - 写入：`saveGame` 13914；多标签页冲突靠 `storage` 事件处理（13999）。
 - **测试**：
-  - `scripts/verify-playable-v2.mjs` 是回归套件，共 24 个，基于 Playwright。它自带静态服务器，视口 1440×900，每个套件使用独立的浏览器上下文，并要求 0 个 console 或页面错误。
+  - `scripts/verify-playable-v2.mjs` 是回归套件（`eb0ea67` 基线 24 项，现已扩展至 60 项：M1–M4 + P1–P5 + R2–R7 + Q0–Q2），基于 Playwright。它自带静态服务器，视口 1440×900，每个套件使用独立的浏览器上下文，并要求 0 个 console 或页面错误。
+  - `tests/e2e/` 是黑盒需求驱动的 E2E 验收套件（Tier 1–4 共 56 项），由 `tests/e2e/run.mjs` 驱动，详细索引与实测记录见 `TEST_INFRA.md` 与 `TEST_READY.md`。
   - 调试钩子挂在 `window.__CHENYUAN_V18__…__V25__` 上。
 - **数据流**：玩家输入 → `game` 状态 → `saveGame()`（事件触发）→ localStorage；`metaState` 由 `saveMeta()` 写入。
 
@@ -96,15 +97,15 @@
 ## Milestones
 | # | Name | Scope (features) | Branch | Dependencies | Status |
 |---|------|------------------|--------|-------------|--------|
-| M0 | 规划 PR | 提交 PROJECT.md | `codex/project-plan` | none | DONE (PR #11) |
-| M1 | 工具链与美术溯源 | T8, T9 | `codex/tooling-art-provenance` | none（不改 playable-v2.html，可与 M2 并行） | DONE (PR #12) |
+| M0 | 规划 PR | 提交 PROJECT.md | `codex/project-plan` | none | DONE (PR #11, `fd011c6`) |
+| M1 | 工具链与美术溯源 | T8, T9 | `codex/tooling-art-provenance` | none（不改 playable-v2.html，可与 M2 并行） | DONE (PR #12, `29daf69`) |
 | M2 | 存档与输入安全 | T1–T7 | `codex/save-input-safety` | none | DONE (PR #13, `4b1fc00`) |
-| M3 | 主线进阶完整性与难度曲线 | S1, S2, S5, S6, G3 | `codex/mainline-progression` | M2 已合并 | DONE (`codex/mainline-progression`) |
-| M4 | 经济完整性与显式消费 | G1, G2, G4, G5, G6, G9, G11a | `codex/economy-integrity` | M3 已合并 | DONE (`codex/economy-integrity`) |
-| M5 | 叙事内容：前提、卷终、故人线 | S3, S4, S7, S8, S9, S10 | `codex/narrative-content` | M4 已合并 | DONE (`codex/narrative-content`) |
-| M6 | 系统节奏与深度 | S11+G7, G8, G10, G11b, G12 | `codex/systems-pacing` | M5 已合并 | DONE (`codex/systems-pacing`) |
-| E2E | E2E 测试轨道 | E1 → 发布 `TEST_READY.md` | `codex/e2e-suite` | M1（package.json），否则自带运行器 | PAUSED (WIP on `codex/e2e-suite`; deferred to M7 per user directive) |
-| M7 | 最终里程碑：通过 E2E 并对抗加固 | E2：Tier 1→2→3→4 按顺序闸门，然后 Tier 5 | `codex/e2e-pass`、`codex/adversarial-hardening` | M1–M6 + TEST_READY.md | PLANNED |
+| M3 | 主线进阶完整性与难度曲线 | S1, S2, S5, S6, G3 | `codex/mainline-progression` | M2 已合并 | DONE (PR #14, `eb112bd`) |
+| M4 | 经济完整性与显式消费 | G1, G2, G4, G5, G6, G9, G11a | `codex/economy-integrity` | M3 已合并 | DONE (PR #15, `426c03a`) |
+| M5 | 叙事内容：前提、卷终、故人线 | S3, S4, S7, S8, S9, S10 | `codex/narrative-content` | M4 已合并 | DONE (PR #16, `8d86761`) |
+| M6 | 系统节奏与深度 | S11+G7, G8, G10, G11b, G12 | `codex/systems-pacing` | M5 已合并 | DONE (PR #17, `b399c67`) |
+| E2E | E2E 测试轨道 | E1 → 发布 `TEST_READY.md` | `codex/q0-infra-and-tests` | M1（package.json），否则自带运行器 | DONE (PR #20, `28d02e2` — 恢复 56 项 Tier 1–4 E2E 与 `TEST_INFRA.md`/`TEST_READY.md`，并于 M7a 全量实测 56/56 PASS) |
+| M7 | 最终里程碑：通过 E2E 并对抗加固 | E2：Tier 1→2→3→4 按顺序闸门，然后 Tier 5 | `codex/e2e-pass`、`codex/adversarial-hardening` | M1–M6 + TEST_READY.md | IN PROGRESS (M7a `codex/e2e-pass` 基于 `6946074`：移植缺失运行期修复并闭环 Round 1 缺陷、回归 60/60 PASS、Tier 1–4 E2E 56/56 PASS；M7b `codex/adversarial-hardening` Tier 5 对抗加固待执行) |
 
 **顺序说明**：M2–M7 都要修改同一个文件 `web/public/playable-v2.html` 和 `scripts/verify-playable-v2.mjs`，按写入独占规则只能**串行**进行（每个 PR 合并后，下一个里程碑再从新的 `main` 开分支）。M1（不碰游戏文件）和 E2E 轨道（只写 `tests/e2e/**`）可以和 M2 并行。M3 把 Boss 门控和难度曲线放在同一个里程碑，因为强制击败 Boss 之后，原来 136k 血量、一击秒杀的最终 Boss 必须同时调低，否则主线会卡关。
 
@@ -194,3 +195,11 @@
   3. `R2-7d` Case 2（L3406–3439）：与 M4 G1 迁移对齐——既有 `assignments.qinglan_vein` 旧档由 S11+G7 零倒退守卫保持兼容，在 M7 将 `tickTimer < 8.5` 探针迁往非洞府活敌战斗场景时可同步将 `g.realm` 对齐至 `"nascent"`（或分别覆盖旧档零倒退与元婴期常态解锁）；
   4. 保持兼容无破坏项：`M3-4`（`216 + 504 = 720/744 = 96.8%` → `.lifespan-alert-card.critical` 与 `[data-use-item="longevity_pill"]`）、`P3-1`（凡人开局可见按钮 `<= 14`、`#hud-lifespan-badge` 与 `#new-unlock-card` 默认隐藏、键位仍为 3 层 `.kb-tier-hdr`）均保持兼容；
   5. 新增 `R6-*` 回归套件：`R6-1` S11+G7 五境分批解封矩阵 + 旧档零倒退 + `#new-unlock-card` 试用/忽略/Escape/不抢焦点/`seenUnlockIds` 5 场景存档持久化与旧档预标零轰炸；`R6-2` G8 `RECIPES.months`/八卦丹剑/渡劫成败/闭关/清关老化 + 75%/90%/95%/100% 阶梯修炼效率单次扣减 + 延寿丹解警报与弹窗关闭焦点安全返回 + 大限已至「暂留延寿」与二次确认「兵解转世」（含只读/损坏/冲突/写元存档失败守卫）；`R6-3` G10 分级喂养扣料（`herb×3 → core×2 → core×4 → jade×3`）+ 缺料提示 + Lv.3/Lv.5 择技弹窗显式选择（关闭不代选、焦点安全返回）+ 6 项灵技实战生效与 5 场景存档兼容；`R6-4` G11b 死字段移除 + `SYSTEM_ECOSYSTEM_LADDER` 规范灵宠名 + `RELICS.passive`/劫印 +12% 显示一致；`R6-5` G12 洞府/清场安全区 1800px 闭关吸纳 vs 活敌战中闭关 200px 收敛校验；`R6-6` 沙盒模式隔离校验（沙盒不弹 `#new-unlock-card`、不老化、不触发大限弹窗）。
+- 2026-11-23 — M3（PR #14，`eb112bd`）、M4（PR #15，`426c03a`）、M5（PR #16，`8d86761`）、M6（PR #17，`b399c67`）均已合并至 `main`；随后品质迭代轨道合入 PR #19（`b336fe8`，体验分析与品质计划）、PR #20（`28d02e2`，`codex/q0-infra-and-tests` 恢复 56 项 Tier 1–4 E2E 与 `R3..R6` 回归及 CI 门禁）、PR #21（`292b7b1`，`Q0-1/Q0-2` 战场焦点/过场优先级/规则文案对齐）、PR #22（`dfbbd38`，`Q1-1..Q1-6` 战中冷静/待领奖池/暂停令牌/通知总线），以及 **PR #23（`6946074`，`codex/navigation-hierarchy`，Q2 F14–F18、`Q2-1..Q2-5` 与目标弹窗刷新修复 P11，已由 `GOD-OF-PPT` 于 `2026-11-24T00:19:39Z` 外部合入 `origin/main`）**。注：当前远端仅剩 **PR #18** 保持 OPEN 未触碰。
+- 2026-11-24 — **M7a（`codex/e2e-pass`，基于最新 `origin/main` @ `6946074`）**：
+  1. 完整保留 PR #23（`6946074`）的全部 Q2 F14–F18 改动与 P11 修复，精准移植 `7ca198c` 仍缺失的 10 项运行期缺陷修复（P1 闭关 6 路打断 + 渡劫整备弹窗老化落盘 `toggleMeditation(false)` 及 `startLiveTribulation` 清理老化标记且保留 `resetEncounterTelemetry()`、P2 `startCelestialSpireRun` 元婴门控、P3 远征 `tickTimer === 0` 假值归零修复、P4 `openSandboxConfirmModal` 焦点返回 `#btn-pavilion-menu`、P5 `executeReincarnation` Q1 兼容回标题焦点落地 `#btn-start-new`、P6 `enterSanctumHub`/`initArenaStage` 清除残留 `arena.hitStop`、P7/P8 延寿丹/法宝淬炼/抽屉重绘保焦、P9 `#pavilion-popover` 提前收起并返焦、P10 移除 `startFreshGameSession` 提前清空 `storageReadError` 守卫），并闭环第 1 轮门禁发现的全部缺陷：
+     - **DEFECT-1（双误横幅与局内恢复）**：在 `renderHudSaveAlert()` 优先处理 `storageWriteError && storageReadError` 双重异常，同时明确展示写入失败与原受损存档保留状态，暴露可工作的 `copy-corrupt-save-raw` / `overwrite-with-current-save` / `open-cloud-backup` 并移除无效的 `retry-save-now` / `dismiss-save-alert`；为 `retry-save-now` 补齐 `storageReadError` 防静默强提示守卫；为局内 `overwrite-with-current-save` 补齐隐藏横幅后焦点安全返回（不落 `BODY`）；
+     - **FINDING-2（过场期间浮层保焦）**：`#pavilion-popover` 项点击在 `cutscene.active` 时调用 `focusDialogSafely(#story-dialogue-bar)`，避免焦点短暂掉落 `BODY`；
+     - **CRDT D1–D4（`META_KEY` 多标签并发自愈完整性与零冗余写放大）**：新增 `hallEntryKey()` 与覆盖全部 14 项单调字段（含 `bestCalamityTier`/`cloudSeaClears`/`taixuTrailUnlocked`/`karmaAscensions`、集合成员判定 `seenEnemies`/`seenLaws`/`unlockedEndings`、移除无效 `unlockedAchievements`、18 条上限下 `hallEntryKey` 成员判定）的 `isMetaBehind(candidate, target)`，并在写盘前实时重读 `localStorage.getItem(META_KEY)` 校验非损坏且仅当活盘确实落后于并集时方才调用 `saveMeta()`；
+  2. 保留全部 **57 项**既有回归套件（`M1-1..Q2-5`，含 PR #23 更新的 `R2-4`/`Q0-1` 与 `Q2-1..Q2-5`）逐字节未修改未弱化，追加强化版 `R7-1`（含 DEFECT-1 双误横幅/防静默/局内恢复）、`R7-2`（含 FINDING-2 过场点击保焦与 CRDT D1–D4 2-tab 验收）、`R7-3` 至 **60 项**回归套件（并为回归运行器补充内存静态缓存与 90s 默认单套件超时），同时将经核验的 E2E 运行器 CLI 校验/超时缩放/内存缓存/不透明箱轮询与用例增强（含修复 `E2E-T2-02` `maxHpBonus`、补全 `E2E-T1-07` 手柄重复键检查、`E2E-T3-10` 保持 320px 并补全近距与安全区阶段、`E2E-T4-02` 补全只读云码拒写断言）移植至 `tests/e2e/**`；
+  3. 1440×900 桌面 Chrome 158（`/usr/bin/google-chrome`，`Google Chrome 158.0.8127.36`，Chromium 内核，`CHROMIUM_PATH` 未设置回退，如实记录与上游 Chromium 差异；Node.js `v22.23.5`、`playwright-core@1.65.1`；按用户指令不跑单独手动冒烟）全量实测通过：静态与 CLI 门禁（`2026-11-24T01:56:00Z`–`01:56:02Z` 及 `02:07:25Z`，内联 JS `vm.Script` PASS、`npm run art:manifest:check` PASS、7 项 CLI 退出码 `2` 校验 PASS）、全量 `npm run test:regression`（`01:25:27Z`–`01:31:47Z`，未改动代码上实测 **60/60 PASS，0 FAIL, 0 ERROR, 0 SKIPPED, 0 runtimeErrors, `379524ms`**）+ 重启后定向 `--filter R7` 复核（`01:56:22Z`–`01:57:03Z`，**3/3 PASS，0 FAIL, 0 runtimeErrors, `40588ms`**）、`npm run test:e2e` 分阶验证 Tier 1 **31/31**（`01:57:23Z`–`01:59:32Z`，`128830ms`）→ Tier 2 **12/12**（`01:59:51Z`–`02:00:38Z`，`46557ms`）→ Tier 3 **10/10**（`02:00:57Z`–`02:01:52Z`，`54502ms`）→ Tier 4 **3/3**（`02:02:11Z`–`02:02:30Z`，`18149ms`）及全量 **56/56 PASS（`02:02:54Z`–`02:07:01Z`，0 FAIL, 0 runtimeErrors, `247037ms`）**；已同步更新 `TEST_READY.md`、`TEST_INFRA.md`、`README.md`。下一步：M7b（`codex/adversarial-hardening`）执行 Tier 5 白盒对抗加固循环。
