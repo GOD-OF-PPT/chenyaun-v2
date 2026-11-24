@@ -47,6 +47,7 @@ export const ESM_MODULE_ORDER = [
   "src/rules/combat-stats.mjs",
   "src/rules/economy-rules.mjs",
   "src/rules/scoring-rules.mjs",
+  "src/rules/sweep-rules.mjs",
   "src/state/save-rules.mjs"
 ];
 

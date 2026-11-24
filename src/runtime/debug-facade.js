@@ -94,7 +94,17 @@
       getExpeditionNodeStageSynergy,
       getSpireCloudSeaYieldMult,
       computeEndgameMasteryResonance,
-      buildVol5ResonanceSnapshot
+      buildVol5ResonanceSnapshot,
+      STAGE_SWEEP_MAX_PER_DAY,
+      STAGE_SWEEP_COOLDOWN_MS,
+      STAGE_SWEEP_LIFESPAN_MONTHS,
+      HOLD_START_DELAY_MS,
+      HOLD_REPEAT_INTERVAL_MS,
+      formatLocalDayKey,
+      sanitizeStageSweepState,
+      getStageSweepStatus,
+      computeStageSweepPreview,
+      rollStageSweepRewards
     },
     q6: {
       VOLUME_CAMPAIGN_GUIDE,
@@ -122,7 +132,13 @@
       stepCloudSeaFlight,
       stepSectDefenseSiege,
       startCelestialSpireRun,
-      selectSpireCurioAndAdvance
+      selectSpireCurioAndAdvance,
+      openStageSweepConfirmModal,
+      executeStageSweep,
+      executeSingleGearEnhance,
+      executeSingleAlchemyCraft,
+      getHoldProgressionState,
+      stopHoldProgression
     },
     persistence: {
       STORAGE_KEY,

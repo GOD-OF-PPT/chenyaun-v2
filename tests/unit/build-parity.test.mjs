@@ -7,6 +7,7 @@ import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import {
   REPO_ROOT,
+  ESM_MODULE_ORDER,
   RUNTIME_MODULE_ORDER,
   assemblePlayableHtml,
   parseWebpHeader,
@@ -17,6 +18,16 @@ import { computeCombatStatLedger, getCombatStats, applySingleHitCap, computeMain
 import { effectiveGearVal, computeGearAffixBudget } from "../../src/rules/gear-rules.mjs";
 import { computeRecipeCostBreakdown, previewLifespanImpact } from "../../src/rules/economy-rules.mjs";
 import { stageStarsToGrade, maxUnifiedGrade, computeModeGrade, UNIFIED_GRADES } from "../../src/rules/scoring-rules.mjs";
+import {
+  STAGE_SWEEP_MAX_PER_DAY,
+  STAGE_SWEEP_COOLDOWN_MS,
+  STAGE_SWEEP_LIFESPAN_MONTHS,
+  HOLD_START_DELAY_MS,
+  HOLD_REPEAT_INTERVAL_MS,
+  sanitizeStageSweepState,
+  getStageSweepStatus,
+  computeStageSweepPreview
+} from "../../src/rules/sweep-rules.mjs";
 import { RECIPES } from "../../src/config/realms-items.mjs";
 
 const PLAYABLE_PATH = path.join(REPO_ROOT, "web/public/playable-v2.html");
@@ -74,6 +85,8 @@ test("RUNTIME_MODULE_ORDER lists all 16 ordered runtime modules and src/runtime/
     assert.ok(txt.length > 0, `Empty runtime module: ${relPath}`);
     assert.ok(!txt.includes("\r"), `CR character forbidden in ${relPath}`);
   }
+  assert.equal(ESM_MODULE_ORDER.length, 11);
+  assert.ok(ESM_MODULE_ORDER.includes("src/rules/sweep-rules.mjs"), "ESM_MODULE_ORDER must include src/rules/sweep-rules.mjs");
   const mainLines = fs.readFileSync(path.join(REPO_ROOT, "src/runtime/main.js"), "utf8").split("\n").length;
   assert.ok(mainLines < 60, `Expected thin src/runtime/main.js shell (< 60 lines), got ${mainLines} lines`);
 });
@@ -157,6 +170,27 @@ test("pure ESM rule modules match live assembled playable-v2.html engine inside 
   assert.equal(stageStarsToGrade(3), dbg.rules.stageStarsToGrade(3));
   assert.equal(maxUnifiedGrade("A", "S"), dbg.rules.maxUnifiedGrade("A", "S"));
   assert.equal(computeModeGrade("sect_defense", { victory: true, coreHp: 850, maxCoreHp: 1000 }), dbg.rules.computeModeGrade("sect_defense", { victory: true, coreHp: 850, maxCoreHp: 1000 }));
+
+  // D08 sweep & hold rules parity
+  assert.equal(dbg.rules.STAGE_SWEEP_MAX_PER_DAY, STAGE_SWEEP_MAX_PER_DAY);
+  assert.equal(dbg.rules.STAGE_SWEEP_COOLDOWN_MS, STAGE_SWEEP_COOLDOWN_MS);
+  assert.equal(dbg.rules.STAGE_SWEEP_LIFESPAN_MONTHS, STAGE_SWEEP_LIFESPAN_MONTHS);
+  assert.equal(dbg.rules.HOLD_START_DELAY_MS, HOLD_START_DELAY_MS);
+  assert.equal(dbg.rules.HOLD_REPEAT_INTERVAL_MS, HOLD_REPEAT_INTERVAL_MS);
+  const sweepEnv = { STAGES: debug.STAGES, CAMPAIGN_ACTS: debug.CAMPAIGN_ACTS, ENEMIES: debug.ENEMIES };
+  const probeNow = 1795440000000;
+  assert.deepEqual(
+    plain(getStageSweepStatus(g, 0, probeNow, sweepEnv)),
+    plain(dbg.rules.getStageSweepStatus(g, 0, probeNow))
+  );
+  assert.deepEqual(
+    plain(computeStageSweepPreview(g, 0, sweepEnv)),
+    plain(dbg.rules.computeStageSweepPreview(g, 0))
+  );
+  assert.deepEqual(
+    plain(sanitizeStageSweepState({ 0: { dayKey: "2026-11-24", usedToday: 2, lastSweepAt: 1000, totalSweeps: 2 } })),
+    plain(dbg.rules.sanitizeStageSweepState({ 0: { dayKey: "2026-11-24", usedToday: 2, lastSweepAt: 1000, totalSweeps: 2 } }))
+  );
 
   // Exhaustively invoke every method across __CHENYUAN_DEBUG__.{rules, q6, persistence, art, telemetry}
   assert.ok(dbg.rules.computeCombatStatLedger(g).totals.atk > 0);

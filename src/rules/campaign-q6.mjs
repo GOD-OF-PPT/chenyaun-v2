@@ -200,8 +200,9 @@ export const VOL5_RESONANCE_PILLARS = [
     summary: "击退三波百鬼夜行守卫护山大阵",
     check: (g) => {
       const grade = (g && typeof g.sectDefenseBestGrade === "string") ? g.sectDefenseBestGrade.trim() : "";
-      const active = Boolean(g && (g.sectDefenseCleared || (grade && ["C", "B", "A", "S"].includes(grade))));
-      return { active, progressText: active ? `${grade || "已破"} 级 ✓` : "待守阵" };
+      const validGrade = ["C", "B", "A", "S"].includes(grade);
+      const active = Boolean(g && (g.sectDefenseCleared || validGrade));
+      return { active, progressText: active ? (validGrade ? `${grade} 级 ✓` : "已破 ✓") : "待守阵" };
     }
   }
 ];
