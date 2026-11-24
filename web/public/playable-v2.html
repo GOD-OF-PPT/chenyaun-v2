@@ -1297,7 +1297,9 @@
   body.photo-mode-active #dojo-control-bar,
   body.photo-mode-active #combo-rank-seal,
   body.photo-mode-active #region-cinema-card,
-  body.photo-mode-active #stage-recap-card {
+  body.photo-mode-active #stage-recap-card,
+  body.photo-mode-active #arcana-vault-wrap,
+  body.photo-mode-active #tag-team-hud-pill {
     opacity: 0 !important; pointer-events: none !important;
   }
   body.photo-mode-active #toast-container {
@@ -7496,6 +7498,7 @@ const ART = {
 
   function buyKarmaSpecialItem(specialId) {
     if (!game) return false;
+    if (!guardNotPracticeMode("正魔特供购置")) return false;
     if (!game.karmaMarketBought) game.karmaMarketBought = {};
     if (game.karmaMarketBought[specialId]) {
       showToast("本批特供珍品已购罄，可点击【换一批】刷新货架！");
@@ -8926,6 +8929,7 @@ const ART = {
 
   function resolveKarmaDilemmaChoice(kdId, side) {
     if (!game || typeof kdId !== "string") return false;
+    if (!guardNotPracticeMode("红尘问心抉择")) return false;
     const kd = KARMA_DILEMMAS.find(x => x.id === kdId);
     if (!kd) return false;
     const done = ensureCompletedKarmaIds(game);
@@ -10176,12 +10180,83 @@ const ART = {
       : `★ 妖脉寸断！已永久废除${e.name}危招，爆出【天工神髓】！`);
   }
 
+  let practiceFormalSnapshot = null;
+
   function isPracticeModeActive() {
+    if (!game) return false;
+    const ws = document.getElementById("welcome-screen");
+    if (ws && ws.style.display !== "none") return false;
     return Boolean(
       (arena.bossRush && arena.bossRush.active && (arena.bossRush.practiceMode || (arena.bossRush.startBout && arena.bossRush.startBout > 1))) ||
       (arena.celestialSpire && arena.celestialSpire.active && (arena.celestialSpire.practiceMode || (arena.celestialSpire.startFloor && arena.celestialSpire.startFloor > 1))) ||
       (arena.customSeedRun && arena.customSeedRun.active)
     );
+  }
+
+  function beginPracticeModeIsolation() {
+    if (sandboxMode || !game) return false;
+    if (!practiceFormalSnapshot) {
+      practiceFormalSnapshot = {
+        game: JSON.parse(JSON.stringify(game)),
+        meta: JSON.parse(JSON.stringify(ensureMetaState())),
+        stageIdx: arena.stageIdx,
+        stanceIdx: arena.stanceIdx,
+        towerMode: !!arena.towerMode,
+        sanctumMode: !!arena.sanctumMode
+      };
+    }
+    return true;
+  }
+
+  function endPracticeModeIsolation(opts = {}) {
+    if (!practiceFormalSnapshot) return false;
+    const snap = practiceFormalSnapshot;
+    practiceFormalSnapshot = null;
+    if (!sandboxMode && !(opts && opts.discardRestore)) {
+      if (snap.game) {
+        const restored = normalizeLoadedGame(JSON.parse(JSON.stringify(snap.game)));
+        if (game && typeof game === "object") {
+          Object.keys(game).forEach(k => { if (!(k in restored)) delete game[k]; });
+          Object.assign(game, restored);
+        } else {
+          game = restored;
+        }
+      }
+      if (snap.meta) {
+        Object.keys(metaState).forEach(k => { if (!(k in snap.meta)) delete metaState[k]; });
+        safeAssignPlain(metaState, JSON.parse(JSON.stringify(snap.meta)));
+        ensureMetaState();
+      }
+      if (typeof computeCurrentPayloadChecksum === "function") {
+        lastSavedPayloadChecksum = computeCurrentPayloadChecksum();
+      }
+    }
+    return true;
+  }
+
+  function flushAndEndMeditation() {
+    if (!game || !arena || !arena.player) return;
+    if (arena.player.meditating) {
+      toggleMeditation(false);
+    } else if (arena.player.meditateAgedDirty) {
+      arena.player.meditateAgedDirty = false;
+      if (!sandboxMode && !isPracticeModeActive()) {
+        saveGame();
+      }
+    }
+    arena.player.meditating = false;
+    arena.player.meditateAgeTick = 0;
+    arena.player.meditateAgedDirty = false;
+  }
+
+  function guardNotInTribulation(actionLabel = "切换场景或挑战模式") {
+    if (!(arena && arena.tribulation)) return true;
+    showToast(`⚡ 正在【九霄紫霄雷劫】渡劫中，无法进行【${actionLabel}】！请迎雷破境或于力竭后主动抉择中止渡劫。`, {
+      critical: true,
+      key: "tribulation_guard",
+      throttleMs: 1200
+    });
+    return false;
   }
 
   function guardNotPracticeMode(actionLabel = "此项正式养成") {
@@ -10208,6 +10283,7 @@ const ART = {
   // ==================== V17 MYRIAD SWORD GRAVEYARD BOSS RUSH & INNER DEMON MIRROR DUEL ====================
   function openBossRushModal() {
     if (!game) return;
+    if (!guardNotInTribulation("万剑冢连战")) return;
     if (!guardEcosystemAccess("sword_tomb_rush")) return;
     closeDrawer();
     const affMult = 1 + arena.rushAffixes.reduce((s, id) => {
@@ -10280,7 +10356,13 @@ const ART = {
 
   function startBossRushGauntlet(startBout = 1) {
     if (!game) return;
+    if (!guardNotInTribulation("万剑冢连战")) return;
     if (!guardEcosystemAccess("sword_tomb_rush")) return;
+    flushAndEndMeditation();
+    const clampedStart = Math.max(1, Math.min(7, Math.floor(num(startBout, 1))));
+    const isPractice = clampedStart > 1;
+    if (isPractice) beginPracticeModeIsolation();
+    else if (practiceFormalSnapshot) endPracticeModeIsolation();
     resetStageTransitionState();
     closeModal();
     closeDrawer();
@@ -10301,8 +10383,6 @@ const ART = {
     arena.defeatPending = null;
     arena.nearbyProp = null;
     renderPropInteractHud();
-    const clampedStart = Math.max(1, Math.min(7, Math.floor(num(startBout, 1))));
-    const isPractice = clampedStart > 1;
     arena.bossRush = {
       active: true,
       bout: clampedStart,
@@ -10912,7 +10992,10 @@ const ART = {
 
   function startSectDefenseSiege() {
     if (!game) return;
+    if (!guardNotInTribulation("护山大阵守卫战")) return;
     if (!guardEcosystemAccess("sect_defense")) return;
+    flushAndEndMeditation();
+    if (practiceFormalSnapshot) endPracticeModeIsolation();
     resetStageTransitionState();
     closeModal();
     closeDrawer();
@@ -11340,7 +11423,10 @@ const ART = {
   // ==================== PILLAR 1: CLOUD-SEA HIGH-SPEED SWORD-SURFING AERIAL STAGE (`九霄云海 · 破阵凌霄`) ====================
   function startCloudSeaAerialStage() {
     if (!game) return;
+    if (!guardNotInTribulation("九霄云海空战")) return;
     if (!guardEcosystemAccess("cloud_sea_trial")) return;
+    flushAndEndMeditation();
+    if (practiceFormalSnapshot) endPracticeModeIsolation();
     resetStageTransitionState();
     closeModal();
     closeDrawer();
@@ -11713,6 +11799,7 @@ const ART = {
 
   function openCelestialSpireModal() {
     if (!game) return;
+    if (!guardNotInTribulation("太虚登仙台")) return;
     if (!guardEcosystemAccess("celestial_spire")) return;
     notifyUnlockCardTried("spire");
     closeDrawer();
@@ -11774,7 +11861,13 @@ const ART = {
 
   function startCelestialSpireRun(startFloor = 1) {
     if (!game) return;
+    if (!guardNotInTribulation("太虚登仙台")) return;
     if (!guardEcosystemAccess("celestial_spire")) return;
+    flushAndEndMeditation();
+    const clampedStart = Math.max(1, Math.min(9, Math.floor(num(startFloor, 1))));
+    const isPractice = clampedStart > 1;
+    if (isPractice) beginPracticeModeIsolation();
+    else if (practiceFormalSnapshot) endPracticeModeIsolation();
     resetStageTransitionState();
     closeModal();
     closeDrawer();
@@ -11796,8 +11889,6 @@ const ART = {
     const dojoBar = document.getElementById("dojo-control-bar");
     if (dojoBar) dojoBar.classList.remove("active");
 
-    const clampedStart = Math.max(1, Math.min(9, Math.floor(num(startFloor, 1))));
-    const isPractice = clampedStart > 1;
     arena.celestialSpire = {
       active: true,
       floor: clampedStart,
@@ -12776,6 +12867,7 @@ const ART = {
 
   function openCustomWorkshopModal() {
     if (!game) return;
+    if (!guardNotInTribulation("太虚造化工坊")) return;
     if (!guardEcosystemAccess("seed_workshop")) return;
     notifyUnlockCardTried("workshop");
     closeDrawer();
@@ -12908,6 +13000,9 @@ const ART = {
 
   function launchCustomSeedEncounter(seedOverride = null) {
     if (!game) return false;
+    if (!guardNotInTribulation("太虚造化工坊")) return false;
+    flushAndEndMeditation();
+    beginPracticeModeIsolation();
     if (seedOverride) {
       const parsed = decodeWorkshopSeed(seedOverride);
       if (parsed) safeAssignPlain(workshopState, parsed);
@@ -13075,6 +13170,7 @@ const ART = {
   }
 
   function cycleCelestialTimePhase() {
+    if (!game || photoMode.active || arena.paused) return false;
     return setCelestialTimePhase(celestialState.idx + 1, false);
   }
 
@@ -13115,7 +13211,7 @@ const ART = {
   }
 
   function toggleLocalCoop2P(forceState = null, partnerOverride = null) {
-    if (!game) return false;
+    if (!game || photoMode.active || arena.paused) return false;
     const c2 = ensureCoop2PState();
     const st = getCombatStats(game);
     const nextOn = forceState !== null ? !!forceState : !c2.active;
@@ -13162,7 +13258,7 @@ const ART = {
   }
 
   function cycleCoop2PPartner() {
-    if (!game) return;
+    if (!game || photoMode.active || arena.paused) return false;
     if (!sandboxMode && !game.unlockAllArcana && !isEcosystemSystemUnlocked(game, "tag_team")) {
       showToast("🔒 【本地双人同屏共斗】将于【筑基期】随道侣同心解封；亦可于演武沙盒提前体验！");
       return;
@@ -13487,6 +13583,7 @@ const ART = {
   function openTaixuCraftMinigameModal(mode = "alchemy") {
     if (!game) return;
     if (!guardNotPracticeMode("太虚百工")) return;
+    if (!guardNotInTribulation("太虚百工")) return;
     if (!guardEcosystemAccess("bagua_alchemy")) return;
     closeDrawer();
     craftMinigame.open = true;
@@ -13562,6 +13659,7 @@ const ART = {
   function strikeTaixuCraftMinigame(forcePerfect = false) {
     if (!game || !craftMinigame.open) return null;
     if (!guardNotPracticeMode("太虚百工")) return null;
+    if (!guardNotInTribulation("太虚百工")) return null;
     if (craftMinigame.strikes >= craftMinigame.maxStrikes) {
       craftMinigame.strikes = 0;
       craftMinigame.perfectCount = 0;
@@ -13601,7 +13699,10 @@ const ART = {
         const capNote = hpRes.hpCapped
           ? `（本境丹道永久属性已达上限 ${hpRes.pg.alchemyHp}/${hpRes.caps.alchemyHp}，破境后提升上限）`
           : "";
-        refillImmortalGourd();
+        const gourdRefilledNow = canRefillGourdInAlchemyDrawer();
+        if (gourdRefilledNow) {
+          refillImmortalGourd();
+        }
         if (climaxTriggered) {
           pc.goldenAcolyte = true;
           Sound.fanfare();
@@ -13610,7 +13711,9 @@ const ART = {
           showToast(`⚡ 极品丹雷异象！气血上限 +${hpRes.grantedHp}${capNote}，已永久觉醒【金甲丹童护法】！`);
           captureBattleHighlightFrame("九色丹雷", "八卦控火·极品金甲丹童", 45, 3);
         } else {
-          craftMinigame.lastJudge = `丹成出炉：气血上限 +${hpRes.grantedHp}${capNote}，仙葫已满酿（达成 ≥2 次鼎盛判定可引动极品丹雷）！`;
+          craftMinigame.lastJudge = gourdRefilledNow
+            ? `丹成出炉：气血上限 +${hpRes.grantedHp}${capNote}，仙葫已满酿（达成 ≥2 次鼎盛判定可引动极品丹雷）！`
+            : `丹成出炉：气血上限 +${hpRes.grantedHp}${capNote}（秘境/战中不补充仙葫饮次，回听雨洞府静息时满酿）！`;
         }
       } else {
         pc.forgedBlades += 1;
@@ -14713,6 +14816,7 @@ const ART = {
 
   function claimExpeditionRewards() {
     if (!game) return null;
+    if (!guardNotPracticeMode("征收远征军资")) return null;
     const ex = ensureExpeditionState(game);
     const activeNodes = EXPEDITION_NODES.filter(nd => ex.assignments && ex.assignments[nd.id]);
     const bankedSt = Math.min(EXPEDITION_BANKED_STONES_CAP, Math.max(0, Math.floor(num(ex.bankedStones, 0))));
@@ -15526,10 +15630,7 @@ const ART = {
 
   function triggerMappedAction(act) {
     if (act === "hub") {
-      if (arena.tribulation) {
-        showToast("⚡ 天劫正在降临！无法御剑遁回洞府，请迎雷渡劫或于力竭后主动抉择散功避劫！");
-        return;
-      }
+      if (!guardNotInTribulation("往返洞府与秘境")) return;
       closeDrawer();
       if (arena.sanctumMode) initArenaStage(arena.stageIdx, false);
       else enterSanctumHub();
@@ -15948,7 +16049,7 @@ const ART = {
   }
 
   function isSanctumDojoActive() {
-    return Boolean(arena.sanctumMode && !(arena.sectDefense && arena.sectDefense.active));
+    return Boolean(arena.sanctumMode && !arena.tribulation && !(arena.sectDefense && arena.sectDefense.active));
   }
 
   function syncDojoTrainingHudVisibility() {
@@ -17103,8 +17204,43 @@ const ART = {
   let preSandboxSnapshot = null;
   let pendingSandboxEntry = null;
 
+  function resetRuntimeCombatOverrides() {
+    const c2 = ensureCoop2PState();
+    c2.active = false;
+    c2.partnerId = "shen";
+    c2.downed = false;
+    c2.hp = c2.maxHp || 420;
+    c2.shieldHp = 0;
+    c2.slashCd = 0;
+    c2.skillCd = 0;
+    c2.tetherTickCd = 0;
+    c2.tetherOverchargeT = 0;
+    c2.rescueCd = 0;
+    c2.afterimages = [];
+    arena.playableCharId = "player";
+    arena.weaponForm = (game && game.weaponForm) || "sword";
+    arena.weaponPosture = "qinglian";
+    arena.swordIntent = 0;
+    arena.astralEnergy = 0;
+    arena.bondSynergy = 0;
+    arena.astralForm = null;
+    arena.sanqingClones = [];
+    arena.shanheDomain = null;
+    arena.mountState = null;
+    arena.pillAcolyte = null;
+    arena.spatialRifts = [];
+    if (arena.player) {
+      arena.player.shieldHp = 0;
+      arena.player.invuln = 0;
+    }
+    syncV23EpochDock();
+    if (typeof syncV22TacticalDock === "function") syncV22TacticalDock();
+    if (typeof syncTagTeamHud === "function") syncTagTeamHud();
+  }
+
   function openSandboxConfirmModal(source = "pavilion", preset = null, triggerEl = null) {
     if (!game && !preset) return;
+    if (!guardNotInTribulation("演武沙盒模式")) return;
     pendingSandboxEntry = { source, preset };
     const presetLabels = {
       judge_showcase: "诛仙双羁绊卷（金丹·11剑三轮）",
@@ -17140,7 +17276,15 @@ const ART = {
 
   function enterSandboxMode(opts = {}) {
     if (!game && !(opts && opts.preset)) return false;
+    if (!guardNotInTribulation("演武沙盒模式")) return false;
     if (!sandboxMode) {
+      flushAndEndMeditation();
+      if (isPracticeModeActive() || practiceFormalSnapshot) {
+        arena.bossRush = null;
+        arena.celestialSpire = null;
+        arena.customSeedRun = null;
+        endPracticeModeIsolation();
+      }
       if (game && !saveReadOnlyMode && !saveConflictState && !storageReadError) {
         saveGame();
       }
@@ -17208,10 +17352,13 @@ const ART = {
     arena.cloudFlight = null;
     arena.customSeedRun = null;
     arena.bladeClash = null;
+    arena.tribulation = null;
+    practiceFormalSnapshot = null;
 
-    if (preSandboxSnapshot && preSandboxSnapshot.meta) {
-      Object.keys(metaState).forEach(k => { if (!(k in preSandboxSnapshot.meta)) delete metaState[k]; });
-      safeAssignPlain(metaState, preSandboxSnapshot.meta);
+    const prevSnap = preSandboxSnapshot;
+    if (prevSnap && prevSnap.meta) {
+      Object.keys(metaState).forEach(k => { if (!(k in prevSnap.meta)) delete metaState[k]; });
+      safeAssignPlain(metaState, prevSnap.meta);
       ensureMetaState();
     }
     inspectMetaState({ applyToMemory: true });
@@ -17220,26 +17367,58 @@ const ART = {
     let restoredStanceIdx = 0;
     let restoredTower = false;
     let restoredSanctum = false;
+    let postExitConflictRes = null;
+
     const res = inspectSavedBundle();
-    if (res.ok && res.bundle && res.bundle.game && !saveReadOnlyMode && !saveConflictState && !storageWriteError) {
-      const s = res.bundle;
-      game = normalizeLoadedGame(s.game);
-      recordLoadedSaveMeta(res);
-      restoredStageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(s.stageIdx, 0))));
-      restoredStanceIdx = ((Math.floor(num(s.stanceIdx, 0)) % SWORD_STANCES.length) + SWORD_STANCES.length) % SWORD_STANCES.length;
-      restoredTower = !!s.towerMode;
-      restoredSanctum = !!s.sanctumMode;
-    } else if (preSandboxSnapshot && preSandboxSnapshot.game) {
-      game = normalizeLoadedGame(preSandboxSnapshot.game);
-      loadedSaveRev = preSandboxSnapshot.loadedSaveRev;
-      loadedSaveTabId = preSandboxSnapshot.loadedSaveTabId || null;
-      loadedSaveLineage = preSandboxSnapshot.loadedSaveLineage || null;
-      loadedSaveUpdatedAt = preSandboxSnapshot.loadedSaveUpdatedAt || 0;
-      const snap = preSandboxSnapshot.arenaSnap || {};
-      restoredStageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(snap.stageIdx, 0))));
-      restoredStanceIdx = ((Math.floor(num(snap.stanceIdx, 0)) % SWORD_STANCES.length) + SWORD_STANCES.length) % SWORD_STANCES.length;
-      restoredTower = !!snap.towerMode;
-      restoredSanctum = !!snap.sanctumMode;
+    const snapRev = prevSnap ? Math.max(0, Math.floor(num(prevSnap.loadedSaveRev, 0))) : 0;
+    let livePrimaryRaw = null;
+    try { livePrimaryRaw = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+
+    const restoreFromPreSandbox = () => {
+      if (prevSnap && prevSnap.game) {
+        game = normalizeLoadedGame(prevSnap.game);
+        loadedSaveRev = prevSnap.loadedSaveRev;
+        loadedSaveTabId = prevSnap.loadedSaveTabId || null;
+        loadedSaveLineage = prevSnap.loadedSaveLineage || null;
+        loadedSaveUpdatedAt = prevSnap.loadedSaveUpdatedAt || 0;
+        const snap = prevSnap.arenaSnap || {};
+        restoredStageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(snap.stageIdx, 0))));
+        restoredStanceIdx = ((Math.floor(num(snap.stanceIdx, 0)) % SWORD_STANCES.length) + SWORD_STANCES.length) % SWORD_STANCES.length;
+        restoredTower = !!snap.towerMode;
+        restoredSanctum = !!snap.sanctumMode;
+      } else {
+        game = null;
+      }
+    };
+
+    if (storageReadError) {
+      // Disk save was corrupted while in Sandbox: preserve storageReadError & restore memory from preSandboxSnapshot without overwriting disk!
+      restoreFromPreSandbox();
+    } else if (snapRev > 0 && (livePrimaryRaw === null || livePrimaryRaw === "")) {
+      // R2A-1: Disk save was deleted by another tab while in Sandbox! Surface deletion conflict instead of silently resurrecting!
+      restoreFromPreSandbox();
+      postExitConflictRes = { ok: true, rev: 0, tabId: "另一标签页", updatedAt: Date.now(), deleted: true, bundle: { game: null } };
+    } else if (res.ok && res.bundle && res.bundle.game && !saveReadOnlyMode && !saveConflictState && !storageWriteError) {
+      const snapLineage = prevSnap ? (prevSnap.loadedSaveLineage || null) : null;
+      const snapTabId = prevSnap ? (prevSnap.loadedSaveTabId || null) : null;
+      const foreignWhileInSandbox = snapRev > 0 && (
+        (res.tabId && res.tabId !== TAB_ID && (res.rev !== snapRev || (snapLineage && res.lineageId && res.lineageId !== snapLineage) || (snapTabId && res.tabId !== snapTabId))) ||
+        (!res.tabId && res.rev > snapRev)
+      );
+      if (foreignWhileInSandbox) {
+        restoreFromPreSandbox();
+        postExitConflictRes = res;
+      } else {
+        const s = res.bundle;
+        game = normalizeLoadedGame(s.game);
+        recordLoadedSaveMeta(res);
+        restoredStageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(s.stageIdx, 0))));
+        restoredStanceIdx = ((Math.floor(num(s.stanceIdx, 0)) % SWORD_STANCES.length) + SWORD_STANCES.length) % SWORD_STANCES.length;
+        restoredTower = !!s.towerMode;
+        restoredSanctum = !!s.sanctumMode;
+      }
+    } else {
+      restoreFromPreSandbox();
     }
     if (game) game.unlockAllArcana = false;
     preSandboxSnapshot = null;
@@ -17247,14 +17426,21 @@ const ART = {
     const sbBadge = document.getElementById("hud-sandbox-badge");
     if (sbBadge) sbBadge.style.display = "none";
 
+    // R2B-4: Reset all runtime combat overrides (2P Co-Op, switched 1P char, posture, swordIntent, astralForm, mount, etc.)
+    resetRuntimeCombatOverrides();
+
     if (game) {
       arena.stanceIdx = restoredStanceIdx;
       arena.stageIdx = restoredStageIdx;
       if (restoredSanctum) enterSanctumHub({ skipSave: true });
       else initArenaStage(restoredStageIdx, restoredTower);
+      resetRuntimeCombatOverrides();
       lastSavedPayloadChecksum = computeCurrentPayloadChecksum();
       updateHud(true);
       renderHudSaveAlert();
+      if (postExitConflictRes) {
+        triggerSaveConflict(postExitConflictRes, true);
+      }
     } else {
       document.getElementById("welcome-screen").style.display = "flex";
       renderWelcomeScreen();
@@ -17731,6 +17917,10 @@ const ART = {
             return false;
           }
           externalMaxRev = Math.max(externalMaxRev, curRes.rev);
+        } else if (loadedSaveRev > 0) {
+          // R2A-1: Save existed for this session (loadedSaveRev > 0) but was deleted on disk -> do NOT silently resurrect!
+          triggerSaveConflict({ ok: true, rev: 0, tabId: "另一标签页", updatedAt: Date.now(), deleted: true, bundle: { game: null } }, true);
+          return false;
         }
       } catch (e) {}
     } else {
@@ -17864,11 +18054,30 @@ const ART = {
     if (sandboxMode) return;
     const wsEl = document.getElementById("welcome-screen");
     const onWelcome = !game || (wsEl && wsEl.style.display !== "none");
+    const handleLivePrimaryCorruption = (reason, raw, toastMsg) => {
+      const wasConflictModal = activeModalKind === "save_conflict" && Boolean(document.getElementById("modal-backdrop")?.classList.contains("open"));
+      storageReadError = {
+        key: STORAGE_KEY,
+        reason: reason || "本地存档结构异常",
+        raw,
+        rawLength: typeof raw === "string" ? raw.length : 0,
+        at: Date.now()
+      };
+      saveConflictState = null;
+      saveAlertDismissed = false;
+      renderWelcomeSaveStatusBanner();
+      renderHudSaveAlert();
+      if (wasConflictModal) {
+        closeModal();
+        focusSaveAlertOrFallback("overwrite-with-current-save");
+      }
+      showToast(toastMsg || "⚠ 检测到本地存档已损坏，已暂停自动保存并保留原数据！", { critical: true, key: "save_corrupt_err", throttleMs: 0 });
+    };
     if (ev.key === null) {
       if (onWelcome) {
         clearLoadedSaveMeta();
         renderWelcomeScreen();
-      } else if (!isPracticeModeActive() && loadedSaveRev > 0) {
+      } else if (loadedSaveRev > 0) {
         let liveRawAfterClear = null;
         try { liveRawAfterClear = localStorage.getItem(STORAGE_KEY); } catch (e) {}
         if (liveRawAfterClear === null || liveRawAfterClear === "") {
@@ -17952,65 +18161,59 @@ const ART = {
       if (liveRawDel !== null && liveRawDel !== "") {
         const liveDelRes = parseAndValidateSaveRaw(liveRawDel, STORAGE_KEY);
         if (!liveDelRes.ok) {
-          storageReadError = {
-            key: STORAGE_KEY,
-            reason: liveDelRes.reason || "本地存档结构异常",
-            raw: liveRawDel,
-            rawLength: liveRawDel.length,
-            at: Date.now()
-          };
-          saveConflictState = null;
-          saveAlertDismissed = false;
-          renderWelcomeSaveStatusBanner();
-          renderHudSaveAlert();
-          showToast("⚠ 检测到本地存档已损坏，已暂停自动保存并保留原数据！", { critical: true, key: "save_corrupt_err", throttleMs: 0 });
+          handleLivePrimaryCorruption(liveDelRes.reason, liveRawDel, "⚠ 检测到本地存档已损坏，已暂停自动保存并保留原数据！");
           return;
         }
+        if (liveDelRes.tabId && liveDelRes.tabId === TAB_ID) return;
         if (isForeignSaveConflict(liveDelRes)) {
           triggerSaveConflict(liveDelRes, true);
         }
         return;
       }
-      if (!isPracticeModeActive() && loadedSaveRev > 0) {
+      if (loadedSaveRev > 0) {
         triggerSaveConflict({ ok: true, rev: 0, tabId: "另一标签页", updatedAt: Date.now(), deleted: true, bundle: { game: null } }, true);
       }
       return;
     }
     const res = parseAndValidateSaveRaw(ev.newValue, STORAGE_KEY);
     if (!res.ok) {
-      storageReadError = {
-        key: STORAGE_KEY,
-        reason: res.reason || "另一标签页写入了异常存档数据",
-        raw: ev.newValue,
-        rawLength: ev.newValue.length,
-        at: Date.now()
-      };
-      saveConflictState = null;
-      saveAlertDismissed = false;
-      renderWelcomeSaveStatusBanner();
-      renderHudSaveAlert();
-      showToast("⚠ 检测到另一标签页写入了异常存档，已暂停自动保存并保留原数据！", { critical: true, key: "save_corrupt_err", throttleMs: 0 });
+      handleLivePrimaryCorruption(res.reason || "另一标签页写入了异常存档数据", ev.newValue, "⚠ 检测到另一标签页写入了异常存档，已暂停自动保存并保留原数据！");
       return;
     }
-    // A-4: Always inspect live disk STORAGE_KEY before acting on a potentially delayed valid StorageEvent!
+    // A-4 & R2A-3: Always reconcile against live disk STORAGE_KEY before acting on a potentially delayed valid StorageEvent!
     let livePrimaryRaw = null;
-    try { livePrimaryRaw = localStorage.getItem(STORAGE_KEY); } catch (e) {}
-    if (livePrimaryRaw !== null && livePrimaryRaw !== "") {
+    let livePrimaryReadFailed = false;
+    try { livePrimaryRaw = localStorage.getItem(STORAGE_KEY); } catch (e) { livePrimaryReadFailed = true; }
+    if (!livePrimaryReadFailed) {
+      if (livePrimaryRaw === null || livePrimaryRaw === "") {
+        if (onWelcome) {
+          clearLoadedSaveMeta();
+          renderWelcomeScreen();
+          return;
+        }
+        if (loadedSaveRev > 0) {
+          triggerSaveConflict({ ok: true, rev: 0, tabId: "另一标签页", updatedAt: Date.now(), deleted: true, bundle: { game: null } }, true);
+        }
+        return;
+      }
       const livePrimaryRes = parseAndValidateSaveRaw(livePrimaryRaw, STORAGE_KEY);
       if (!livePrimaryRes.ok) {
-        storageReadError = {
-          key: STORAGE_KEY,
-          reason: livePrimaryRes.reason || "本地存档结构异常",
-          raw: livePrimaryRaw,
-          rawLength: livePrimaryRaw.length,
-          at: Date.now()
-        };
-        saveConflictState = null;
-        if (activeModalKind === "save_conflict") closeModal();
-        saveAlertDismissed = false;
-        renderWelcomeSaveStatusBanner();
-        renderHudSaveAlert();
-        showToast("⚠ 检测到本地存档已损坏，已暂停自动保存并保留原数据！", { critical: true, key: "save_corrupt_err", throttleMs: 0 });
+        handleLivePrimaryCorruption(livePrimaryRes.reason, livePrimaryRaw, "⚠ 检测到本地存档已损坏，已暂停自动保存并保留原数据！");
+        return;
+      }
+      if (livePrimaryRes.tabId && livePrimaryRes.tabId === TAB_ID) {
+        // Live disk is owned by this tab: ignore any stale delayed foreign event with rev <= live disk rev
+        if (res.rev <= livePrimaryRes.rev) return;
+      } else {
+        // Live disk belongs to a foreign/legacy tab: reconcile against live disk as source of truth
+        if (onWelcome) {
+          recordLoadedSaveMeta(livePrimaryRes);
+          renderWelcomeScreen();
+          return;
+        }
+        if (isForeignSaveConflict(livePrimaryRes)) {
+          triggerSaveConflict(livePrimaryRes, true);
+        }
         return;
       }
     }
@@ -19885,6 +20088,7 @@ const ART = {
       showToast("🧪 演武沙盒模式不记录轮回飞升，请先点击【退出沙盒】！");
       return false;
     }
+    if (!guardNotPracticeMode("轮回转世")) return false;
     if (storageReadError) {
       saveAlertDismissed = false;
       renderWelcomeSaveStatusBanner();
@@ -19905,16 +20109,17 @@ const ART = {
       showToast("⚠ 元存档损坏尚未处理，已中止轮回清档以免丢失累世功德！请先备份或重置元存档。");
       return false;
     }
+    let prevSaveRaw = null;
     try {
-      const curRaw = localStorage.getItem(STORAGE_KEY);
-      if (curRaw !== null && curRaw !== "") {
-        const curRes = parseAndValidateSaveRaw(curRaw, STORAGE_KEY);
+      prevSaveRaw = localStorage.getItem(STORAGE_KEY);
+      if (prevSaveRaw !== null && prevSaveRaw !== "") {
+        const curRes = parseAndValidateSaveRaw(prevSaveRaw, STORAGE_KEY);
         if (!curRes.ok) {
           storageReadError = {
             key: STORAGE_KEY,
             reason: curRes.reason || "本地存档结构异常",
-            raw: curRaw,
-            rawLength: curRaw.length,
+            raw: prevSaveRaw,
+            rawLength: prevSaveRaw.length,
             at: Date.now()
           };
           saveAlertDismissed = false;
@@ -19928,51 +20133,125 @@ const ART = {
           showToast("⚠ 检测到另一标签页更新了存档，已中止轮回清档！");
           return false;
         }
+      } else if (loadedSaveRev > 0) {
+        triggerSaveConflict({ ok: true, rev: 0, tabId: "另一标签页", updatedAt: Date.now(), deleted: true, bundle: { game: null } }, true);
+        showToast("⚠ 检测到另一标签页已清空存档，已中止轮回清档！");
+        return false;
       }
     } catch (e) {}
+
+    // R2A-2 Step 1: Pre-flight META_KEY integrity & writability check WITHOUT mutating or broadcasting monotonic fields!
+    ensureMetaState();
     const prevMetaSnap = JSON.parse(JSON.stringify(metaState));
     const prevLifeRecorded = !!(game && game.lifeRecorded);
+    let curMetaRaw = null;
+    try {
+      curMetaRaw = localStorage.getItem(META_KEY);
+    } catch (e) {
+      metaWriteError = { message: safeText(e && e.message, safeDiag(e)) || safeDiag(e), at: Date.now() };
+      saveAlertDismissed = false;
+      renderHudSaveAlert();
+      showToast(`⚠ 元存档读取失败（${metaWriteError.message}），已中止轮回并保留当前主存档！`, { critical: true });
+      return false;
+    }
+    if (curMetaRaw !== null && curMetaRaw !== "") {
+      const curMetaRes = parseAndValidateMetaRaw(curMetaRaw, META_KEY);
+      if (!curMetaRes.ok) {
+        metaReadError = {
+          key: META_KEY,
+          reason: curMetaRes.reason || "元存档结构异常",
+          raw: curMetaRaw,
+          rawLength: curMetaRaw.length,
+          at: Date.now()
+        };
+        saveAlertDismissed = false;
+        renderWelcomeSaveStatusBanner();
+        renderHudSaveAlert();
+        showToast(`⚠ 元存档保存失败（${metaReadError.reason}），已中止轮回并保留当前主存档！`, { critical: true });
+        return false;
+      }
+    }
+    try {
+      // Write existing value (or un-incremented metaState) to verify quota/writability before removing STORAGE_KEY
+      localStorage.setItem(META_KEY, (curMetaRaw !== null && curMetaRaw !== "") ? curMetaRaw : JSON.stringify(metaState));
+    } catch (e) {
+      metaWriteError = {
+        message: (e && e.name === "QuotaExceededError") ? "存储空间已满 (QuotaExceededError)" : (safeText(e && e.message, safeDiag(e)) || safeDiag(e)),
+        at: Date.now()
+      };
+      saveAlertDismissed = false;
+      renderHudSaveAlert();
+      showToast(`⚠ 元存档保存失败（${metaWriteError.message}），已中止轮回并保留当前主存档！`, { critical: true });
+      return false;
+    }
+
+    // R2A-2 Step 2: Verify primary save removal BEFORE incrementing monotonic META_KEY fields (prevents 2-tab CRDT bounce-back!)
+    const rmRes = removePrimarySaveVerified();
+    if (!rmRes.ok) {
+      storageWriteError = { message: `清空主存档失败：${rmRes.message}`, at: Date.now() };
+      saveAlertDismissed = false;
+      renderHudSaveAlert();
+      showToast(`⚠ 轮回清档失败：${rmRes.message}（未变动元存档并保留当前主存档）！`, { critical: true, key: "reincarnate_remove_err", throttleMs: 0 });
+      return false;
+    }
+
+    // R2A-2 Step 3: Primary save is verified gone -> commit monotonic +40 pts / Hall of Lives & saveMeta!
     if (source === "bingjie" && (!game || game.status !== "ascended")) {
       ensureMetaState();
       metaState.reincarnationPoints = (metaState.reincarnationPoints || 0) + 40;
     } else if (game && game.status === "ascended" && game.ending && !game.lifeRecorded) {
-      recordPastLifeInHall(game, game.ending);
+      recordPastLifeInHall(game, game.ending, { skipSave: true });
     }
     const metaSaved = saveMeta({ userInitiated: true });
     if (!metaSaved) {
       Object.keys(metaState).forEach(k => { if (!(k in prevMetaSnap)) delete metaState[k]; });
       Object.assign(metaState, prevMetaSnap);
       if (game) game.lifeRecorded = prevLifeRecorded;
+      let saveRestored = (prevSaveRaw === null || prevSaveRaw === "");
+      if (!saveRestored) {
+        try {
+          localStorage.setItem(STORAGE_KEY, prevSaveRaw);
+          saveRestored = (localStorage.getItem(STORAGE_KEY) === prevSaveRaw);
+        } catch (restoreErr) {
+          saveRestored = false;
+        }
+      }
+      if (!saveRestored) {
+        storageWriteError = { message: "元存档写入失败且恢复主存档失败，请立即导出云码备份", at: Date.now() };
+      }
       saveAlertDismissed = false;
       renderHudSaveAlert();
       const errMsg = metaReadError
         ? metaReadError.reason
         : ((metaWriteError && metaWriteError.message) ? metaWriteError.message : "元存档写入失败");
-      showToast(`⚠ 元存档保存失败（${errMsg}），已中止轮回并保留当前主存档！`, { critical: true });
+      showToast(
+        saveRestored
+          ? `⚠ 元存档保存失败（${errMsg}），已中止轮回并恢复当前主存档！`
+          : `⚠ 严重异常：元存档保存失败（${errMsg}）且恢复主存档失败，请立即导出云码备份！`,
+        { critical: true, key: "reincarnate_meta_err", throttleMs: 0 }
+      );
       return false;
     }
-    const rmRes = removePrimarySaveVerified();
-    if (!rmRes.ok) {
-      Object.keys(metaState).forEach(k => { if (!(k in prevMetaSnap)) delete metaState[k]; });
-      Object.assign(metaState, prevMetaSnap);
-      if (game) game.lifeRecorded = prevLifeRecorded;
-      try { localStorage.setItem(META_KEY, JSON.stringify(metaState)); } catch (e) {}
-      storageWriteError = { message: `清空主存档失败：${rmRes.message}`, at: Date.now() };
-      saveAlertDismissed = false;
-      renderHudSaveAlert();
-      showToast(`⚠ 轮回清档失败：${rmRes.message}（已回滚元存档变动并保留当前主存档）！`, { critical: true, key: "reincarnate_remove_err", throttleMs: 0 });
-      return false;
-    }
+
     clearTransientChoiceQueues();
     game = null;
+    practiceFormalSnapshot = null;
     clearLoadedSaveMeta();
     lastSavedPayloadChecksum = null;
     saveReadOnlyMode = false;
     saveConflictState = null;
     storageWriteError = null;
     arena.stageEpoch += 1;
+    arena.bossRush = null;
+    arena.celestialSpire = null;
+    arena.customSeedRun = null;
+    arena.tribulation = null;
+    arena.sectDefense = null;
+    arena.cloudFlight = null;
+    arena.bladeClash = null;
     resetStageTransitionState();
     resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
+    resetRuntimeCombatOverrides();
     arena.defeatPending = null;
     releasePauseToken(defeatPauseToken); defeatPauseToken = null;
     lastModalTriggerEl = null;
@@ -20050,6 +20329,7 @@ const ART = {
 
   function upgradeSanctumBuilding(bId) {
     if (!game) return false;
+    if (!guardNotPracticeMode("洞府灵脉升阶")) return false;
     const spec = SANCTUM_BUILDINGS.find(b => b.id === bId);
     const lvMap = ensureSanctumLevels(game);
     const curLv = lvMap[bId] || 1;
@@ -20274,13 +20554,13 @@ const ART = {
       `}
 
       <div class="companion-action-grid">
-        <button type="button" class="companion-action-btn" data-comp-act="tea" data-comp-npc="${npcId}">
-          <strong style="font-size:13px;color:#9effec;">🍵 洞府茶叙</strong>
-          <span style="font-size:10.5px;color:var(--text-sub);line-height:1.4;">${teaClaimed ? "重温立绘对谈（本境茶礼已领）" : "半身立绘茶叙 · 仁心/本真 +5 · 灵气全满"}</span>
+        <button type="button" class="companion-action-btn" data-comp-act="tea" data-comp-npc="${npcId}" ${canRefillGourdInAlchemyDrawer() ? "" : "disabled"}>
+          <strong style="font-size:13px;color:#9effec;">🍵 洞府茶叙${canRefillGourdInAlchemyDrawer() ? "" : " (限洞府静息)"}</strong>
+          <span style="font-size:10.5px;color:var(--text-sub);line-height:1.4;">${!canRefillGourdInAlchemyDrawer() ? "请先按 H 返回听雨洞府静息状态再品茗休整" : teaClaimed ? "重温立绘对谈（本境茶礼已领）" : "半身立绘茶叙 · 仁心/本真 +5 · 灵气全满"}</span>
         </button>
-        <button type="button" class="companion-action-btn" data-comp-act="spar" data-comp-npc="${npcId}">
-          <strong style="font-size:13px;color:#ffe28a;">⚔ 同门切磋</strong>
-          <span style="font-size:10.5px;color:var(--text-sub);line-height:1.4;">${sparClaimed ? "演武切磋感悟（本境修为已领）" : dlg.sparReward}</span>
+        <button type="button" class="companion-action-btn" data-comp-act="spar" data-comp-npc="${npcId}" ${canRefillGourdInAlchemyDrawer() ? "" : "disabled"}>
+          <strong style="font-size:13px;color:#ffe28a;">⚔ 同门切磋${canRefillGourdInAlchemyDrawer() ? "" : " (限洞府静息)"}</strong>
+          <span style="font-size:10.5px;color:var(--text-sub);line-height:1.4;">${!canRefillGourdInAlchemyDrawer() ? "请先按 H 返回听雨洞府静息状态再演武切磋" : sparClaimed ? "演武切磋感悟（本境修为已领）" : dlg.sparReward}</span>
         </button>
         <button type="button" class="companion-action-btn" data-comp-act="gift" data-comp-npc="${npcId}" ${tier >= 3 || (!hasFavMat && !canGiftStone) ? "disabled" : ""}>
           <strong style="font-size:13px;color:#f3c6ff;">🎁 赠礼晋阶信物</strong>
@@ -20292,6 +20572,7 @@ const ART = {
 
   function triggerCompanionHubAction(npcId, act) {
     if (!game || !NPC_META[npcId]) return false;
+    if (!guardNotPracticeMode("故人雅集")) return false;
     const npc = NPC_META[npcId];
     const kp = COMPANION_KEEPSAKES[npcId];
     const dlg = COMPANION_HUB_DIALOGUES[npcId];
@@ -20300,6 +20581,11 @@ const ART = {
     const chatKey = `${npcId}_${game.realm}`;
 
     if (act === "tea") {
+      if (!guardNotInTribulation("洞府茶叙")) return false;
+      if (!canRefillGourdInAlchemyDrawer()) {
+        showToast("🍵 请先按 H 返回【听雨洞府】静息状态，再与故人茶叙休整！", { critical: true });
+        return false;
+      }
       closeModal();
       const firstTime = !game.sanctumChatStage["tea_" + chatKey];
       if (firstTime) {
@@ -20327,6 +20613,11 @@ const ART = {
     }
 
     if (act === "spar") {
+      if (!guardNotInTribulation("同门切磋")) return false;
+      if (!canRefillGourdInAlchemyDrawer()) {
+        showToast("⚔ 请先按 H 返回【听雨洞府】静息状态，再与故人同门切磋！", { critical: true });
+        return false;
+      }
       closeModal();
       const firstTime = !game.sanctumChatStage["spar_" + chatKey];
       const st = getCombatStats(game);
@@ -20548,7 +20839,7 @@ const ART = {
     return false;
   }
 
-  function recordPastLifeInHall(g, endId) {
+  function recordPastLifeInHall(g, endId, opts = {}) {
     if (!g || g.lifeRecorded || sandboxMode) return null;
     ensureMetaState();
     const score = computeCompetitionScore(g);
@@ -20590,12 +20881,15 @@ const ART = {
     if ((g.bestSpireFloor || 0) > (metaState.bestSpireFloor || 0)) metaState.bestSpireFloor = g.bestSpireFloor || 0;
     if (calTier > (metaState.bestCalamityTier || 0)) metaState.bestCalamityTier = calTier;
     metaState.reincarnationPoints = (metaState.reincarnationPoints || 0) + 100 + calTier * 60 + Math.round(score / 40);
-    saveMeta();
+    if (!(opts && opts.skipSave)) saveMeta();
     return entry;
   }
 
   function launchEcosystemAction(actionId) {
     if (!game) return;
+    if (["start_tower", "start_sect_defense", "start_cloud_sea", "open_spire", "open_boss_rush", "open_workshop", "open_taixu_craft"].includes(actionId)) {
+      if (!guardNotInTribulation("切换挑战模式")) return;
+    }
     if (actionId === "open_drawer_cultivate") { closeModal(); toggleDrawer("cultivate"); }
     else if (actionId === "open_taixu_craft") openTaixuCraftMinigameModal("alchemy");
     else if (actionId === "start_tower") {
@@ -21199,6 +21493,10 @@ const ART = {
 
   function routeToGoalTarget(routeKey) {
     if (!game) return;
+    if (arena.tribulation && (routeKey === "hub" || routeKey === "tower" || routeKey === "calamity_ng" || (routeKey && routeKey.startsWith("stage_")))) {
+      guardNotInTribulation("道标传送");
+      return;
+    }
     activeMatSourceJump = null;
     closeModal();
     const r = REALMS[game.realm];
@@ -22039,19 +22337,15 @@ const ART = {
   function enterSanctumHub(opts = {}) {
     if (!game) return;
     const wasPractice = isPracticeModeActive();
-    if (!wasPractice && arena.player && (arena.player.meditating || arena.player.meditateAgedDirty)) {
-      if (arena.player.meditating) toggleMeditation(false);
-      else {
-        arena.player.meditateAgedDirty = false;
-        if (!sandboxMode) saveGame();
-      }
+    if (!wasPractice) {
+      flushAndEndMeditation();
+    } else if (arena.player) {
+      arena.player.meditating = false;
+      arena.player.meditateAgeTick = 0;
+      arena.player.meditateAgedDirty = false;
     }
     celestialState.lastDawnShieldAt = 0;
     const skipSave = !!(opts && opts.skipSave) || wasPractice;
-    if (!skipSave && game.openingChoice && (game.tutorialStep || 0) === 2) {
-      advanceOnboardingStep(2);
-      showToast("🏠 听雨洞府三大核心地标：紫微丹鼎（炼丹）、天工剑炉（锻剑）与九州出征阵门！");
-    }
     const canvas = document.getElementById("fx-canvas");
     const w = canvas.width || window.innerWidth;
     const h = canvas.height || window.innerHeight;
@@ -22069,6 +22363,13 @@ const ART = {
     arena.celestialSpire = null;
     arena.customSeedRun = null;
     arena.bladeClash = null;
+    if (wasPractice || practiceFormalSnapshot) {
+      endPracticeModeIsolation();
+    }
+    if (!skipSave && game.openingChoice && (game.tutorialStep || 0) === 2) {
+      advanceOnboardingStep(2);
+      showToast("🏠 听雨洞府三大核心地标：紫微丹鼎（炼丹）、天工剑炉（锻剑）与九州出征阵门！");
+    }
     arena.calmT = COMBAT_CALM_GRACE_SEC;
     arena.calmFlushed = false;
     arena.runBoons = [];
@@ -22237,12 +22538,13 @@ const ART = {
   }
 
   function initArenaStage(stageIdx, towerMode = false) {
-    if (game && arena.player && (arena.player.meditating || arena.player.meditateAgedDirty)) {
-      if (arena.player.meditating) toggleMeditation(false);
-      else {
-        arena.player.meditateAgedDirty = false;
-        if (!sandboxMode && !isPracticeModeActive()) saveGame();
-      }
+    const wasPractice = isPracticeModeActive();
+    if (!wasPractice) {
+      flushAndEndMeditation();
+    } else if (arena.player) {
+      arena.player.meditating = false;
+      arena.player.meditateAgeTick = 0;
+      arena.player.meditateAgedDirty = false;
     }
     celestialState.lastDawnShieldAt = 0;
     const canvas = document.getElementById("fx-canvas");
@@ -22260,6 +22562,9 @@ const ART = {
     arena.celestialSpire = null;
     arena.customSeedRun = null;
     arena.bladeClash = null;
+    if (wasPractice || practiceFormalSnapshot) {
+      endPracticeModeIsolation();
+    }
     arena.calmT = 0;
     arena.calmFlushed = false;
     arena.defeatRevivesUsed = 0;
@@ -24733,12 +25038,7 @@ const ART = {
     closeDrawer();
     arena.defeatRevivesUsed = 0;
     resetEncounterTelemetry();
-    if (arena.player.meditating) toggleMeditation(false);
-    else if (arena.player.meditateAgedDirty) {
-      arena.player.meditateAgedDirty = false;
-      if (!sandboxMode && !isPracticeModeActive()) saveGame();
-    }
-    arena.player.meditating = false; arena.player.meditateAgeTick = 0; arena.player.meditateAgedDirty = false;
+    flushAndEndMeditation();
 
     if (game.aids.lu) {
       const st = getCombatStats(game);
@@ -24926,10 +25226,7 @@ const ART = {
 
   function openWorldMapModal(focusNodeId = null) {
     if (!game) return;
-    if (arena.tribulation) {
-      showToast("⚡ 天劫正在降临！渡劫期间不可打开九州舆图远遁！");
-      return;
-    }
+    if (!guardNotInTribulation("九州舆图传送")) return;
     closeDrawer();
     const navSnap = buildNavigationSnapshot(game);
     const nodes = navSnap.mapNodes;
@@ -27454,10 +27751,7 @@ const ART = {
         return false;
       }
     } else if (pr.kind === "portal") {
-      if (arena.tribulation) {
-        showToast("⚡ 天劫正在降临！渡劫期间不可御剑离境！");
-        return false;
-      }
+      if (!guardNotInTribulation("阵门传送")) return false;
       if (!pr.toTower && STAGES[pr.nextIdx]) {
         const reqRealm = STAGES[pr.nextIdx].min || "mortal";
         if (rankOf(game.realm) < rankOf(reqRealm)) {
@@ -27720,6 +28014,7 @@ const ART = {
     }
 
     if (act === "retreat-sanctum") {
+      const wasPractice = isPracticeModeActive();
       arena.defeatPending = null;
       arena.tribulation = null;
       arena.bossRush = null;
@@ -27728,12 +28023,18 @@ const ART = {
       arena.cloudFlight = null;
       arena.customSeedRun = null;
       arena.bladeClash = null;
-      game.retreats = (game.retreats || 0) + 1;
-      if (Array.isArray(game.journal)) game.journal.unshift(`秘境历练力竭御剑遁走（第 ${game.retreats} 次），携战利品安返听雨洞府。`);
+      if (wasPractice || practiceFormalSnapshot) {
+        endPracticeModeIsolation();
+      } else {
+        game.retreats = (game.retreats || 0) + 1;
+        if (Array.isArray(game.journal)) game.journal.unshift(`秘境历练力竭御剑遁走（第 ${game.retreats} 次），携战利品安返听雨洞府。`);
+      }
       releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       closeModal();
-      enterSanctumHub();
-      showToast("🕊 已御剑遁回【听雨洞府】· 战利品尽数保全，整备炼丹后再行出征！");
+      enterSanctumHub({ skipSave: wasPractice });
+      showToast(wasPractice
+        ? "🎯 已结束演武练习并返回【听雨洞府】（正式存档与状态未受影响）！"
+        : "🕊 已御剑遁回【听雨洞府】· 战利品尽数保全，整备炼丹后再行出征！");
     }
   }
 
@@ -30976,6 +31277,12 @@ const ART = {
   function isElementFocusable(cand) {
     if (!cand || !cand.isConnected || cand.disabled || typeof cand.focus !== "function") return false;
     try {
+      const ws = document.getElementById("welcome-screen");
+      if (ws && ws.style.display !== "none") {
+        const bd = document.getElementById("modal-backdrop");
+        const modalOpen = Boolean(bd && bd.classList.contains("open"));
+        if (!ws.contains(cand) && !(modalOpen && bd.contains(cand))) return false;
+      }
       const dlgBar = document.getElementById("story-dialogue-bar");
       if (dlgBar && dlgBar.contains(cand) && !dlgBar.classList.contains("open")) return false;
       if (isHiddenInsideClosedDetails(cand)) return false;
@@ -31198,6 +31505,12 @@ const ART = {
     if (cutscene.active) {
       focusDialogSafely(document.getElementById("story-dialogue-bar"));
       return;
+    }
+    const pavPop = document.getElementById("pavilion-popover");
+    if (pavPop && pavPop.classList.contains("open")) {
+      pavPop.classList.remove("open");
+      const pavBtn = document.getElementById("btn-pavilion-menu");
+      if (pavBtn) pavBtn.classList.remove("open");
     }
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
@@ -32020,8 +32333,8 @@ const ART = {
               </div>
             </div>
             <div style="display:flex;gap:6px;">
-              <button type="button" class="btn-primary btn-gold" style="padding:5px 10px;font-size:var(--fs-xs);" data-craft-open="alchemy">🔥 八卦炼丹</button>
-              <button type="button" class="btn-secondary btn-jade" style="padding:5px 10px;font-size:var(--fs-xs);" data-craft-open="forge">🔨 星火锻剑</button>
+              <button type="button" class="btn-primary btn-gold ${canRefillGourdInAlchemyDrawer() ? "" : "is-locked"}" style="padding:5px 10px;font-size:var(--fs-xs);" data-craft-open="alchemy" ${canRefillGourdInAlchemyDrawer() ? "" : "disabled"} data-tip="${escTip("八卦控火炼丹", canRefillGourdInAlchemyDrawer() ? "于听雨洞府静息时开启八卦丹炉控火炼丹并满酿仙葫" : "请先按 H 返回听雨洞府静息状态再开启八卦炼丹")}">${canRefillGourdInAlchemyDrawer() ? "🔥 八卦炼丹" : "🔥 炼丹(限洞府)"}</button>
+              <button type="button" class="btn-secondary btn-jade ${canRefillGourdInAlchemyDrawer() ? "" : "is-locked"}" style="padding:5px 10px;font-size:var(--fs-xs);" data-craft-open="forge" ${canRefillGourdInAlchemyDrawer() ? "" : "disabled"} data-tip="${escTip("天工星火锻剑", canRefillGourdInAlchemyDrawer() ? "于听雨洞府静息时开启天工剑炉落锤锻剑" : "请先按 H 返回听雨洞府静息状态再开启星火锻剑")}">${canRefillGourdInAlchemyDrawer() ? "🔨 星火锻剑" : "🔨 锻剑(限洞府)"}</button>
             </div>
           </div>
           <div id="alchemy-perm-cap-row" style="display:flex;gap:6px;flex-wrap:wrap;padding-top:5px;border-top:1px solid rgba(132,208,194,0.18);font-size:var(--fs-xs);">
@@ -32658,6 +32971,7 @@ const ART = {
 
   function executeGearBatchEnhance(slot, steps) {
     if (!game || !game.equippedGear || !game.equippedGear[slot]) return { ok: false, reason: "missing_slot" };
+    if (!guardNotPracticeMode("批量淬火强化")) return { ok: false, reason: "practice_mode" };
     if (typeof steps !== "number" || !Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1 || steps > 5) {
       return { ok: false, reason: "invalid_steps" };
     }
@@ -33501,6 +33815,27 @@ const ART = {
       return;
     }
 
+    // 3b. Pavilion Popover floats above drawer & HUD: handle Tab/Escape BEFORE drawerOpen (R2A-6)
+    const pavPopTop = document.getElementById("pavilion-popover");
+    if (pavPopTop && pavPopTop.classList.contains("open")) {
+      if (ev.code === "Tab") {
+        trapFocusInContainer(ev, pavPopTop);
+        return;
+      }
+      if (ev.code === "Escape") {
+        ev.preventDefault();
+        pavPopTop.classList.remove("open");
+        const pavBtnTop = document.getElementById("btn-pavilion-menu");
+        if (pavBtnTop) {
+          pavBtnTop.classList.remove("open");
+          if (isElementFocusable(pavBtnTop)) {
+            try { pavBtnTop.focus({ preventScroll: true }); } catch (e) {}
+          }
+        }
+        return;
+      }
+    }
+
     // 4. Drawer open: trap Tab/Shift+Tab, allow Escape & alchemy Space; block all background global shortcuts
     if (drawerOpen) {
       if (ev.code === "Tab") {
@@ -34209,6 +34544,7 @@ const ART = {
       clearTransientChoiceQueues();
       sandboxMode = false;
       preSandboxSnapshot = null;
+      practiceFormalSnapshot = null;
       saveReadOnlyMode = false;
       saveConflictState = null;
       storageWriteError = null;
@@ -34219,6 +34555,7 @@ const ART = {
       game = createFreshGame(inp ? inp.value : "顾长青", selectedPerkId, selectedCalamityTier);
       arena.stanceIdx = 0;
       resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
+      resetRuntimeCombatOverrides();
       arena.defeatPending = null;
       releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       closeModal();
@@ -34255,6 +34592,7 @@ const ART = {
       releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       sandboxMode = false;
       preSandboxSnapshot = null;
+      practiceFormalSnapshot = null;
       const s = res.bundle;
       const hadLegacyUnlockAll = Boolean(s.game && s.game.unlockAllArcana === true);
       recordLoadedSaveMeta(res);
@@ -34263,6 +34601,7 @@ const ART = {
       storageWriteError = null;
       saveAlertDismissed = false;
       game = normalizeLoadedGame(s.game);
+      resetRuntimeCombatOverrides();
       arena.stanceIdx = ((Math.floor(num(s.stanceIdx, 0)) % SWORD_STANCES.length) + SWORD_STANCES.length) % SWORD_STANCES.length;
       arena.stageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(s.stageIdx, 0))));
       document.getElementById("welcome-screen").style.display = "none";
@@ -34302,6 +34641,7 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-trib-goto-boss")) {
+      if (!guardNotInTribulation("前往讨伐妖王")) return;
       const targetStage = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(t.getAttribute("data-trib-goto-boss"), 0))));
       const act = CAMPAIGN_ACTS[targetStage] || CAMPAIGN_ACTS[0];
       const stg = STAGES[targetStage] || STAGES[0];
@@ -34354,19 +34694,28 @@ const ART = {
     if (m1Act === "copy-corrupt-save-raw") {
       const rawTxt = storageReadError && storageReadError.raw ? storageReadError.raw : "";
       if (!rawTxt) { showToast("当前无可复制的受损存档原文"); return; }
+      const origFocusEl = (document.activeElement && document.activeElement !== document.body) ? document.activeElement : t;
       const fallbackCopy = () => {
+        const prevActive = (document.activeElement && document.activeElement !== document.body) ? document.activeElement : origFocusEl;
+        let ta = null;
         try {
-          const ta = document.createElement("textarea");
+          ta = document.createElement("textarea");
           ta.value = rawTxt;
           ta.style.position = "fixed";
           ta.style.opacity = "0";
           document.body.appendChild(ta);
           ta.select();
           document.execCommand("copy");
-          document.body.removeChild(ta);
           showToast("已复制受损存档原文（本地原数据未修改）");
         } catch (e) {
           showToast("请手动在浏览器开发者工具查看本地存档键值");
+        } finally {
+          if (ta && ta.parentNode) ta.parentNode.removeChild(ta);
+          if (isElementFocusable(prevActive)) {
+            try { prevActive.focus({ preventScroll: true }); } catch (e) {}
+          } else {
+            focusSaveAlertOrFallback("copy-corrupt-save-raw");
+          }
         }
       };
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -34391,19 +34740,28 @@ const ART = {
     if (m1Act === "copy-corrupt-meta-raw") {
       const rawTxt = metaReadError && metaReadError.raw ? metaReadError.raw : "";
       if (!rawTxt) { showToast("当前无可复制的受损元存档原文"); return; }
+      const origFocusEl = (document.activeElement && document.activeElement !== document.body) ? document.activeElement : t;
       const fallbackCopy = () => {
+        const prevActive = (document.activeElement && document.activeElement !== document.body) ? document.activeElement : origFocusEl;
+        let ta = null;
         try {
-          const ta = document.createElement("textarea");
+          ta = document.createElement("textarea");
           ta.value = rawTxt;
           ta.style.position = "fixed";
           ta.style.opacity = "0";
           document.body.appendChild(ta);
           ta.select();
           document.execCommand("copy");
-          document.body.removeChild(ta);
           showToast("已复制受损元存档原文（本地原数据未修改）");
         } catch (e) {
           showToast("请手动在浏览器开发者工具查看本地元存档键值");
+        } finally {
+          if (ta && ta.parentNode) ta.parentNode.removeChild(ta);
+          if (isElementFocusable(prevActive)) {
+            try { prevActive.focus({ preventScroll: true }); } catch (e) {}
+          } else {
+            focusSaveAlertOrFallback("copy-corrupt-meta-raw");
+          }
         }
       };
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -34439,13 +34797,24 @@ const ART = {
         showToast(`⚠ 元存档重置写入失败：${errMsg}`);
         return;
       }
-      closeModal();
+      // R2A-5: Re-render welcome banner / HUD save alert BEFORE closeModal() so detached trigger never drops focus to BODY!
       const ws = document.getElementById("welcome-screen");
-      if (!game || (ws && ws.style.display !== "none")) {
+      const onWelcomeNow = !game || (ws && ws.style.display !== "none");
+      if (onWelcomeNow) {
         renderWelcomeScreen();
       } else {
         renderHudSaveAlert();
         updateHud();
+      }
+      closeModal();
+      if (onWelcomeNow) {
+        if (document.activeElement === document.body || !isElementFocusable(document.activeElement)) {
+          restoreTriggerFocus(null);
+        }
+      } else {
+        if (document.activeElement === document.body || !isElementFocusable(document.activeElement)) {
+          focusSaveAlertOrFallback();
+        }
       }
       showToast("已确认重置元存档并恢复写入。");
       return;
@@ -34551,6 +34920,7 @@ const ART = {
       clearTransientChoiceQueues();
       sandboxMode = false;
       preSandboxSnapshot = null;
+      practiceFormalSnapshot = null;
       const s = res.bundle;
       recordLoadedSaveMeta(res);
       saveReadOnlyMode = false;
@@ -34558,6 +34928,7 @@ const ART = {
       storageWriteError = null;
       saveAlertDismissed = false;
       game = normalizeLoadedGame(s.game);
+      resetRuntimeCombatOverrides();
       arena.stanceIdx = ((Math.floor(num(s.stanceIdx, 0)) % SWORD_STANCES.length) + SWORD_STANCES.length) % SWORD_STANCES.length;
       arena.stageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(s.stageIdx, 0))));
       resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
@@ -34630,6 +35001,7 @@ const ART = {
     if (m1Act === "return-title-safe") {
       // F07: Flush formal game (including game.pendingRewards) BEFORE clearing transient UI pointers!
       const wasSandbox = sandboxMode;
+      const wasPractice = isPracticeModeActive();
       if (wasSandbox) {
         if (preSandboxSnapshot && preSandboxSnapshot.meta) {
           Object.keys(metaState).forEach(k => { if (!(k in preSandboxSnapshot.meta)) delete metaState[k]; });
@@ -34638,27 +35010,42 @@ const ART = {
         }
         sandboxMode = false;
         preSandboxSnapshot = null;
+      } else if (wasPractice || practiceFormalSnapshot) {
+        endPracticeModeIsolation();
       } else if (game && !saveReadOnlyMode && !saveConflictState) {
         revertActivePendingRewardToPending();
         saveGame();
       }
       clearTransientChoiceQueues();
       game = null;
+      practiceFormalSnapshot = null;
       lastSavedPayloadChecksum = null;
       arena.stageEpoch += 1;
+      arena.bossRush = null;
+      arena.celestialSpire = null;
+      arena.customSeedRun = null;
+      arena.tribulation = null;
+      arena.sectDefense = null;
+      arena.cloudFlight = null;
+      arena.bladeClash = null;
       resetStageTransitionState();
       resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
+      resetRuntimeCombatOverrides();
       releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       arena.nearbyProp = null;
       arena.defeatPending = null;
+      lastModalTriggerEl = null;
+      lastDrawerTriggerEl = null;
       const sbBadge = document.getElementById("hud-sandbox-badge");
       if (sbBadge) sbBadge.style.display = "none";
+      const ws = document.getElementById("welcome-screen");
+      if (ws) ws.style.display = "flex";
+      renderWelcomeScreen();
       closeModal();
       closeDrawer();
       syncPendingRewardsBadge();
-      document.getElementById("welcome-screen").style.display = "flex";
-      renderWelcomeScreen();
-      showToast(wasSandbox ? "已退出演武沙盒并返回标题主菜单（正式存档未受影响）！" : "已保全当前进度并返回标题主菜单！");
+      restoreTriggerFocus(null);
+      showToast(wasSandbox ? "已退出演武沙盒并返回标题主菜单（正式存档未受影响）！" : wasPractice ? "已结束演武练习并返回标题主菜单（正式存档未受影响）！" : "已保全当前进度并返回标题主菜单！");
       return;
     }
     if (m1Act === "confirm-reset-save") {
@@ -34789,6 +35176,7 @@ const ART = {
       }
       clearTransientChoiceQueues();
       game = null;
+      practiceFormalSnapshot = null;
       clearLoadedSaveMeta();
       lastSavedPayloadChecksum = null;
       saveReadOnlyMode = false;
@@ -34796,18 +35184,30 @@ const ART = {
       storageWriteError = null;
       storageReadError = null;
       arena.stageEpoch += 1;
+      arena.bossRush = null;
+      arena.celestialSpire = null;
+      arena.customSeedRun = null;
+      arena.tribulation = null;
+      arena.sectDefense = null;
+      arena.cloudFlight = null;
+      arena.bladeClash = null;
       resetStageTransitionState();
       resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
+      resetRuntimeCombatOverrides();
       releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       arena.nearbyProp = null;
       arena.defeatPending = null;
+      lastModalTriggerEl = null;
+      lastDrawerTriggerEl = null;
+      const wsReset = document.getElementById("welcome-screen");
+      if (wsReset) wsReset.style.display = "flex";
+      renderWelcomeScreen();
       closeModal();
       closeDrawer();
       syncPendingRewardsBadge();
-      document.getElementById("welcome-screen").style.display = "flex";
-      renderWelcomeScreen();
       pendingCompareGear = null;
       renderGearCompareCard();
+      restoreTriggerFocus(null);
       showToast("已清空当前本地存档。");
       return;
     }
@@ -34960,10 +35360,7 @@ const ART = {
     }
 
     if (t.id === "btn-sanctum-hub" || t.getAttribute("data-action") === "enter-sanctum") {
-      if (arena.tribulation) {
-        showToast("⚡ 天劫正在降临！无法御剑遁回洞府，请迎雷渡劫或于力竭后主动抉择散功避劫！");
-        return;
-      }
+      if (!guardNotInTribulation("往返洞府与秘境")) return;
       closeModal();
       closeDrawer();
       if (arena.sanctumMode) initArenaStage(arena.stageIdx, false);
@@ -34977,6 +35374,7 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-claim-ach")) {
+      if (!guardNotPracticeMode("领取成就赏赐")) return;
       const aid = t.getAttribute("data-claim-ach");
       const spec = ACHIEVEMENTS.find(a => a.id === aid);
       if (spec && game && game.achievements.includes(aid) && !game.claimedAchievements.includes(aid)) {
@@ -34991,6 +35389,7 @@ const ART = {
     }
 
     if (t.hasAttribute("data-buy-gear")) {
+      if (!guardNotPracticeMode("百宝坊购装")) return;
       const idx = Number(t.getAttribute("data-buy-gear"));
       const it = game.marketStock[idx];
       if (!it) return;
@@ -35019,6 +35418,7 @@ const ART = {
       return;
     }
     if (t.getAttribute("data-action") === "smelt-all-gear") {
+      if (!guardNotPracticeMode("一键熔炼行囊")) return;
       if (!game.gearBag.length) return;
       const gained = game.gearBag.reduce((s, x) => s + (x.sell || 15), 0);
       const count = game.gearBag.length;
@@ -35157,10 +35557,12 @@ const ART = {
       return;
     }
     if (t.id === "btn-coop-2p" || t.getAttribute("data-action") === "toggle-coop-2p") {
+      if (photoMode.active || arena.paused) return;
       toggleLocalCoop2P();
       return;
     }
     if (t.id === "btn-celestial-time" || t.getAttribute("data-action") === "cycle-celestial-time") {
+      if (photoMode.active || arena.paused) return;
       cycleCelestialTimePhase();
       return;
     }
@@ -35179,6 +35581,12 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-craft-open")) {
+      if (!canRefillGourdInAlchemyDrawer()) {
+        showToast(arena.tribulation
+          ? "⚡ 正在渡劫中，无法开启【太虚百工炉鼎】！"
+          : "🔥 请先按 H 返回【听雨洞府】静息状态，再开启八卦炼丹 / 星火锻剑！", { critical: true });
+        return;
+      }
       openTaixuCraftMinigameModal(t.getAttribute("data-craft-open"));
       return;
     }
@@ -35340,6 +35748,7 @@ const ART = {
     }
     if (t.id === "btn-star-chart" || t.getAttribute("data-action") === "open-star-chart") { openStarChartModal(); return; }
     if (t.getAttribute("data-action") === "buy-star-point") {
+      if (!guardNotPracticeMode("凝炼星魂点")) return;
       if (game.stones < 60) { showToast("凝炼星魂需 60 灵石"); return; }
       game.stones -= 60;
       game.bonusStarPts = (game.bonusStarPts || 0) + 1;
@@ -35348,6 +35757,7 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-light-star")) {
+      if (!guardNotPracticeMode("二十八星宿点星")) return;
       const mid = t.getAttribute("data-light-star");
       if (!Array.isArray(game.litStars)) game.litStars = [];
       if (game.litStars.includes(mid)) return;
@@ -35385,6 +35795,7 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-awaken-primordial")) {
+      if (!guardNotPracticeMode("鸿蒙紫气突破")) return;
       const sl = t.getAttribute("data-awaken-primordial");
       const eq = game && game.equippedGear ? game.equippedGear[sl] : null;
       if (!eq || eq.rarity >= 5) return;
@@ -35442,6 +35853,7 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-gift-npc")) {
+      if (!guardNotPracticeMode("故人赠礼晋阶")) return;
       const nid = t.getAttribute("data-gift-npc");
       const curT = getCompanionBondTier(game, nid);
       if (curT >= 3) return;
@@ -35526,6 +35938,7 @@ const ART = {
       return;
     }
     if (t.getAttribute("data-action") === "return-hub-after-rush") {
+      if (!guardNotInTribulation("返回洞府")) return;
       closeModal();
       enterSanctumHub();
       return;
@@ -35627,6 +36040,10 @@ const ART = {
         resetDojoTrainingStats();
         showToast("已重置演武训练计数！");
       } else if (dAct === "refill-training") {
+        if (!isSanctumDojoActive() || arena.tribulation) {
+          showToast("演武赐福仅可在听雨洞府试剑演武时使用！", { critical: true });
+          return;
+        }
         if (game) {
           const st = getCombatStats(game);
           game.hp = st.maxHp;
@@ -35640,6 +36057,10 @@ const ART = {
       } else if (dAct === "toggle-sandbox-slots") {
         setSandboxSlotPrototype(!sandboxSlotPrototype);
       } else if (dAct === "fill-intent") {
+        if (!isSanctumDojoActive() || arena.tribulation) {
+          showToast("演武剑意赐福仅可在听雨洞府试剑演武时使用！", { critical: true });
+          return;
+        }
         arena.swordIntent = 100;
         arena.player.ultCd = 0; arena.player.allyCd = 0; arena.player.dashCd = 0; arena.player.recallCd = 0;
         Sound.fanfare();
@@ -35834,6 +36255,7 @@ const ART = {
     }
 
     if (t.hasAttribute("data-enhance-slot")) {
+      if (!guardNotPracticeMode("神兵淬火强化")) return;
       const sl = t.getAttribute("data-enhance-slot");
       const eq = game && game.equippedGear ? game.equippedGear[sl] : null;
       if (!eq) return;
@@ -35850,11 +36272,13 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-reforge-slot")) {
+      if (!guardNotPracticeMode("定向词条刻录")) return;
       const sl = t.getAttribute("data-reforge-slot");
       openAffixEngraveModal(sl);
       return;
     }
     if (t.hasAttribute("data-engrave-slot")) {
+      if (!guardNotPracticeMode("定向词条刻录")) return;
       const sl = t.getAttribute("data-engrave-slot");
       const afId = t.getAttribute("data-engrave-affix");
       const eq = game && game.equippedGear ? game.equippedGear[sl] : null;
@@ -35995,10 +36419,7 @@ const ART = {
     }
     // F15: Explicit Enter CTA executes travel after preview
     if (t.hasAttribute("data-map-enter")) {
-      if (arena.tribulation) {
-        showToast("⚡ 天劫正在降临！渡劫期间不可御剑离境！");
-        return;
-      }
+      if (!guardNotInTribulation("九州舆图传送")) return;
       const nid = t.getAttribute("data-map-enter");
       const nd = KYUSHU_MAP_NODES.find(x => x.id === nid);
       if (!nd) return;
@@ -36284,6 +36705,7 @@ const ART = {
     if (t.id === "btn-open-profile") { toggleDrawer("cultivate"); return; }
     if (t.id === "btn-quick-map") {
       if (!game) return;
+      if (!guardNotInTribulation("太虚锁妖古塔")) return;
       if (game.status === "ascended") {
         openEndingModal();
         return;
@@ -36324,6 +36746,7 @@ const ART = {
     }
 
     if (t.hasAttribute("data-warp-stage")) {
+      if (!guardNotInTribulation("秘境传送")) return;
       const targetIdx = Number(t.getAttribute("data-warp-stage"));
       const stg = STAGES[targetIdx];
       if (stg && rankOf(game.realm) < rankOf(stg.min)) {
@@ -36425,6 +36848,7 @@ const ART = {
 
     const act = t.getAttribute("data-action");
     if (act === "challenge-tower") {
+      if (!guardNotInTribulation("太虚锁妖古塔")) return;
       if (!guardEcosystemAccess("demon_tower")) return;
       const bd = document.getElementById("modal-backdrop");
       if (bd && bd.classList.contains("open")) closeModal();
@@ -36433,6 +36857,7 @@ const ART = {
       initArenaStage(3, true);
       saveGame();
     } else if (act === "feed-pet" && game.pet.id) {
+      if (!guardNotPracticeMode("灵宠喂养进阶")) return;
       const curLv = Math.max(1, Math.min(5, Math.floor(num(game.pet.level, 1))));
       if (curLv >= 5) { showToast("灵兽已臻化境 Lv.5"); return; }
       const cost = getPetNextFeedCost(curLv);
@@ -36463,6 +36888,7 @@ const ART = {
         if (trig && isElementFocusable(trig)) lastModalTriggerEl = trig;
       }
     } else if (act === "gamble-jade") {
+      if (!guardNotPracticeMode("原石切玉")) return;
       if (isAllDaoLawsCollected(game)) {
         showToast("诸天大道法则已尽数参悟，无需再行切玉赌注！");
         if (drawerOpen) renderDrawerContent();

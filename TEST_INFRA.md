@@ -30,10 +30,10 @@ Opaque-box, requirement-driven E2E Acceptance Test Suite for **《尘缘问道 �
 - `tests/e2e/tiers/tier2-boundaries.mjs` — **Tier 2 (12 tests)**: Boundary & corner cases, including all 5 mandatory save scenarios (fresh start, legacy `eb0ea67` resume/migration, reload, `QuotaExceededError`, multi-tab contention)
 - `tests/e2e/tiers/tier3-combinations.mjs` — **Tier 3 (10 tests)**: Cross-feature pairwise combinations
 - `tests/e2e/tiers/tier4-journeys.mjs` — **Tier 4 (3 tests)**: Real-world end-user gameplay journeys
-- `tests/e2e/tiers/tier5-adversarial.mjs` — **Tier 5 (8 tests)**: White-box adversarial hardening (`E2E-T5-01..E2E-T5-08`) permanently encoding all 19 reproduced Surface A (`A-1..A-11`) & Surface B (`B-1..B-8`) defects
+- `tests/e2e/tiers/tier5-adversarial.mjs` — **Tier 5 (10 tests)**: White-box adversarial hardening (`E2E-T5-01..E2E-T5-10`) permanently encoding all 19 Round 1 (`A-1..A-11`, `B-1..B-8`) & 13 Round 2 (`R2A-1..R2A-6`, `R2B-1..R2B-6`, `DEFECT-R1-2A/2B/2C`) reproduced defects
 
 ## Opaque-Box & Compliance Rules
 1. Assertions inspect observable UI text, DOM state, focus/accessibility behavior, `localStorage`, and (for T8/T9) repo files/scripts.
 2. `window.__CHENYUAN_V25__` (and legacy debug globals) are used **only** for setting up preconditions (e.g., reaching a late realm or spawning a boss), never for asserting internal implementation details.
 3. All save fixtures (including `eb0ea67`-format legacy saves and corrupted saves) are generated dynamically in code; no real player saves are committed.
-4. Executed unconditionally in `.github/workflows/e2e.yml` (`npm run test:e2e -- --report test-results/e2e-report.json`, 64 tests across Tiers 1–5) alongside the 65-suite regression runner (`npm run test:regression`, covering M1–M4, P1–P5, R2–R7, Q0–Q2, and T5; `schemaVersion: 2` report) and art provenance check (`npm run art:manifest:check`).
+4. Executed unconditionally in `.github/workflows/e2e.yml` (`npm run test:e2e -- --report test-results/e2e-report.json`, 66 tests across Tiers 1–5) alongside the 72-suite regression runner (`npm run test:regression`, covering M1–M4, P1–P5, R2–R7, Q0–Q3, and T5; `schemaVersion: 2` report) and art provenance check (`npm run art:manifest:check`).

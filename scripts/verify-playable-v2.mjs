@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P5 + R2–R7 + Q0–Q3 + T5 · 共 70 项）
+ * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P5 + R2–R7 + Q0–Q3 + T5 · 共 72 项）
  *
  * 用法：
  *   node scripts/verify-playable-v2.mjs
@@ -10452,6 +10452,600 @@ try {
     assert.equal(b8AfterDepart.meditating, false, "B-8: Departure must stop meditation");
     assert.equal(b8AfterDepart.dirty, false, "B-8: Departure must clear meditateAgedDirty");
     assert.equal(b8AfterDepart.diskMonths, b8AfterDepart.memMonths, `B-8: Departure must flush meditateAgedDirty to STORAGE_KEY (mem=${b8AfterDepart.memMonths}, disk=${b8AfterDepart.diskMonths})`);
+    await ctx.close();
+  });
+
+  await runSuite("T5-6", "M7b R2 Surface A: R2A-1 跨标签删档防复活 + R2A-2 双标签兵解防CRDT回弹刷点 + R2A-3/2C 磁盘对账与焦点 + R2A-4/5 焦点归位 + R2A-6 仙阁叠层 + 2B 练习返回标题清态", async () => {
+    // Part A (R2A-1): Cross-tab deletion during Practice Mode, Sandbox Mode, and synchronous saveGame() race must NOT resurrect deleted save
+    const ctx1 = await newIsolatedContext(browser);
+    const tab1 = await ctx1.newPage();
+    attachErrorListeners(tab1, "T5-6-R2A1-T1");
+    await tab1.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tab1.evaluate(() => localStorage.clear());
+    await tab1.reload({ waitUntil: "domcontentloaded" });
+    await tab1.click("#btn-start-new");
+    await tab1.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await dismissOpeningScroll(tab1);
+    await tab1.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "spirit";
+      api.saveGame();
+      api.startBossRushGauntlet(7);
+    });
+    const tab2 = await ctx1.newPage();
+    attachErrorListeners(tab2, "T5-6-R2A1-T2");
+    await tab2.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tab2.waitForSelector("#btn-continue-save");
+    await tab2.click("#btn-continue-save");
+    await tab2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await tab2.click("#btn-open-settings");
+    await tab2.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+    await tab2.click('#modal-backdrop.open [data-sys-tab="controls"]');
+    await tab2.waitForSelector('#modal-backdrop.open [data-action="confirm-reset-save"]');
+    await tab2.click('#modal-backdrop.open [data-action="confirm-reset-save"]');
+    await tab2.waitForSelector('#modal-backdrop.open [data-action="execute-reset-save"]');
+    await tab2.click('#modal-backdrop.open [data-action="execute-reset-save"]');
+    await tab2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "flex");
+    await tab1.waitForFunction((sk) => localStorage.getItem(sk) === null && Boolean(window.__CHENYUAN_V25__.getPersistenceState().saveConflictState?.deleted), STORAGE_KEY, { timeout: 3000 });
+    const r2a1Practice = await tab1.evaluate((sk) => {
+      const api = window.__CHENYUAN_V25__;
+      const ps = api.getPersistenceState();
+      const saveOk = api.saveGame();
+      return {
+        conflictDeleted: Boolean(ps.saveConflictState && ps.saveConflictState.deleted),
+        saveOk,
+        diskRaw: localStorage.getItem(sk)
+      };
+    }, STORAGE_KEY);
+    assert.equal(r2a1Practice.conflictDeleted, true, "R2A-1 (Practice): Cross-tab deletion must trigger deleted saveConflictState even in Practice Mode");
+    assert.equal(r2a1Practice.saveOk, false, "R2A-1 (Practice): saveGame() must refuse resurrecting deleted save");
+    assert.equal(r2a1Practice.diskRaw, null, "R2A-1 (Practice): Deleted STORAGE_KEY must remain null on disk");
+
+    // Sandbox Mode cross-tab deletion -> exitSandboxMode surfaces deletion conflict & blocks resurrection
+    await tab1.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.closeModal();
+      api.enterSanctumHub({ skipSave: true });
+      api.saveGame({ forceOverwrite: true });
+      api.enterSandboxMode();
+    });
+    await tab2.waitForFunction((sk) => Boolean(localStorage.getItem(sk)), STORAGE_KEY, { timeout: 3000 });
+    await tab2.evaluate((sk) => { localStorage.removeItem(sk); }, STORAGE_KEY);
+    await tab1.waitForFunction((sk) => localStorage.getItem(sk) === null, STORAGE_KEY, { timeout: 3000 });
+    const r2a1Sandbox = await tab1.evaluate((sk) => {
+      const api = window.__CHENYUAN_V25__;
+      api.exitSandboxMode();
+      const ps = api.getPersistenceState();
+      const saveOk = api.saveGame();
+      return {
+        conflictDeleted: Boolean(ps.saveConflictState && ps.saveConflictState.deleted),
+        saveOk,
+        diskRaw: localStorage.getItem(sk)
+      };
+    }, STORAGE_KEY);
+    assert.equal(r2a1Sandbox.conflictDeleted, true, "R2A-1 (Sandbox): exitSandboxMode must detect cross-tab save deletion");
+    assert.equal(r2a1Sandbox.saveOk, false, "R2A-1 (Sandbox): saveGame() after exitSandboxMode must NOT resurrect deleted save");
+    assert.equal(r2a1Sandbox.diskRaw, null, "R2A-1 (Sandbox): STORAGE_KEY must stay null");
+
+    // Synchronous delete race in saveGame()
+    const r2a1Sync = await tab1.evaluate((sk) => {
+      const api = window.__CHENYUAN_V25__;
+      api.closeModal();
+      api.saveGame({ forceOverwrite: true });
+      localStorage.removeItem(sk);
+      const saveOk = api.saveGame();
+      const ps = api.getPersistenceState();
+      return {
+        saveOk,
+        conflictDeleted: Boolean(ps.saveConflictState && ps.saveConflictState.deleted),
+        diskRaw: localStorage.getItem(sk)
+      };
+    }, STORAGE_KEY);
+    assert.equal(r2a1Sync.saveOk, false, "R2A-1 (Sync): saveGame() must return false when loadedSaveRev > 0 and disk is missing");
+    assert.equal(r2a1Sync.conflictDeleted, true, "R2A-1 (Sync): saveGame() must trigger deleted conflict state");
+    assert.equal(r2a1Sync.diskRaw, null, "R2A-1 (Sync): STORAGE_KEY must remain null");
+    await ctx1.close();
+
+    // Part B (R2A-2): 2-tab bingjie executeReincarnation under removeItem SecurityError -> ZERO monotonic +40 CRDT bounce-back farming!
+    const ctx2 = await newIsolatedContext(browser);
+    const p1 = await ctx2.newPage();
+    attachErrorListeners(p1, "T5-6-R2A2-P1");
+    await p1.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await p1.evaluate(() => localStorage.clear());
+    await p1.reload({ waitUntil: "domcontentloaded" });
+    await p1.click("#btn-start-new");
+    await p1.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await dismissOpeningScroll(p1);
+
+    const p2 = await ctx2.newPage();
+    attachErrorListeners(p2, "T5-6-R2A2-P2");
+    await p2.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await p2.waitForSelector("#btn-continue-save");
+    await p2.click("#btn-continue-save");
+    await p2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await p2.evaluate(() => { window.__CHENYUAN_V25__.saveMeta(); });
+    await p1.waitForTimeout(100);
+
+    await p1.evaluate((sk) => {
+      window.__r2a2OrigRm = Storage.prototype.removeItem;
+      Storage.prototype.removeItem = function (k) {
+        if (k === sk) throw new DOMException("Read-only storage", "SecurityError");
+        return window.__r2a2OrigRm.call(this, k);
+      };
+      window.__CHENYUAN_V25__.openLifespanExhaustedModal(true);
+    }, STORAGE_KEY);
+    for (let i = 0; i < 2; i++) {
+      await p1.waitForSelector('#modal-backdrop.open [data-action="confirm-bingjie-reincarnate"]');
+      await p1.click('#modal-backdrop.open [data-action="confirm-bingjie-reincarnate"]');
+      await p1.waitForTimeout(220);
+    }
+    const r2a2Res = await p1.evaluate(({ sk, mk }) => {
+      Storage.prototype.removeItem = window.__r2a2OrigRm;
+      return {
+        memPts: Number(window.__CHENYUAN_V25__.getMetaState().reincarnationPoints) || 0,
+        diskPts: Number(JSON.parse(localStorage.getItem(mk) || "{}").reincarnationPoints) || 0,
+        saveExists: Boolean(localStorage.getItem(sk))
+      };
+    }, { sk: STORAGE_KEY, mk: META_KEY });
+    assert.equal(r2a2Res.memPts, 0, `R2A-2: 2-tab bingjie removeItem SecurityError must NOT farm +40 pts in memory, got ${r2a2Res.memPts}`);
+    assert.equal(r2a2Res.diskPts, 0, `R2A-2: 2-tab bingjie removeItem SecurityError must NOT bounce-back +40 pts onto META_KEY, got ${r2a2Res.diskPts}`);
+    assert.equal(r2a2Res.saveExists, true, "R2A-2: Primary save must remain intact");
+    await ctx2.close();
+
+    // Part C (R2A-3 / DEFECT-R1-2C): Live-disk reconciliation, stale modal closure, and alert-opened A-4 off-BODY focus
+    const { ctx: ctx3, page: page3 } = await startCleanGamePage(browser, "T5-6-R2A3", true);
+    const r2a3Checks = await page3.evaluate((sk) => {
+      const api = window.__CHENYUAN_V25__;
+      for (let i = 0; i < 4; i++) api.saveGame();
+      const liveEnv = JSON.parse(localStorage.getItem(sk));
+      // 1. Stale lower-rev foreign event while live disk is owned by this tab -> ignored!
+      const staleEnv = Object.assign({}, liveEnv, { saveRev: Math.max(1, liveEnv.saveRev - 1), tabId: "tab_stale_r2a3" });
+      window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: JSON.stringify(staleEnv) }));
+      const staleConflict = Boolean(api.getPersistenceState().saveConflictState);
+
+      // 2. Live disk deleted + delayed valid v99 event -> deleted:true (rev 0), NOT bogus v99!
+      const futureEnv = Object.assign({}, liveEnv, { saveRev: 99, tabId: "tab_future_r2a3" });
+      localStorage.removeItem(sk);
+      window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: JSON.stringify(futureEnv) }));
+      const delConf = api.getPersistenceState().saveConflictState;
+
+      // 3. Corrupt StorageEvent over open save_conflict modal -> closes save_conflict modal & sets storageReadError
+      localStorage.setItem(sk, "{CORRUPT_R2A3_4D");
+      window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: "{CORRUPT_R2A3_4D" }));
+      const afterCorruptEvt = {
+        modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open")),
+        hasReadErr: Boolean(api.getPersistenceState().storageReadError),
+        hasConflict: Boolean(api.getPersistenceState().saveConflictState)
+      };
+
+      // Restore clean save for 4th check (DEFECT-R1-2C / p4e)
+      api.saveGame({ forceOverwrite: true });
+      const cleanEnv = JSON.parse(localStorage.getItem(sk));
+      const foreignEnv = Object.assign({}, cleanEnv, { saveRev: cleanEnv.saveRev + 5, tabId: "tab_foreign_4e" });
+      localStorage.setItem(sk, JSON.stringify(foreignEnv));
+      window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: JSON.stringify(foreignEnv) }));
+      api.closeModal();
+      return { staleConflict, delConf, afterCorruptEvt, validDelayedRaw: JSON.stringify(foreignEnv) };
+    }, STORAGE_KEY);
+    assert.equal(r2a3Checks.staleConflict, false, "R2A-3 (p4c): Stale foreign StorageEvent older than locally-owned disk must be ignored");
+    assert.equal(Boolean(r2a3Checks.delConf && r2a3Checks.delConf.deleted === true && r2a3Checks.delConf.externalRev === 0), true, "R2A-3 (p4b): Deleted live disk + delayed v99 event must report deleted:true (rev 0)");
+    assert.equal(r2a3Checks.afterCorruptEvt.modalOpen, false, "R2A-3 (p4d): Corrupt StorageEvent must close stale save_conflict modal");
+    assert.equal(r2a3Checks.afterCorruptEvt.hasReadErr, true, "R2A-3 (p4d): Corrupt StorageEvent must set storageReadError");
+    assert.equal(r2a3Checks.afterCorruptEvt.hasConflict, false, "R2A-3 (p4d): Corrupt StorageEvent must clear saveConflictState");
+
+    // DEFECT-R1-2C / p4e: open save_conflict from #hud-save-alert, corrupt live disk, dispatch delayed valid StorageEvent -> focus MUST stay off BODY
+    await page3.waitForSelector('#hud-save-alert [data-action="open-save-conflict"]');
+    await page3.focus('#hud-save-alert [data-action="open-save-conflict"]');
+    await page3.click('#hud-save-alert [data-action="open-save-conflict"]');
+    await page3.waitForSelector('#modal-backdrop.open [data-action="stay-readonly-save"]');
+    const p4eFocus = await page3.evaluate(({ sk, raw }) => {
+      localStorage.setItem(sk, "{CORRUPT_R2A3_4E");
+      window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: raw }));
+      return {
+        modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open")),
+        isBody: document.activeElement === document.body,
+        activeTag: document.activeElement?.tagName,
+        activeAction: document.activeElement?.getAttribute?.("data-action") || null
+      };
+    }, { sk: STORAGE_KEY, raw: r2a3Checks.validDelayedRaw });
+    assert.equal(p4eFocus.modalOpen, false, "DEFECT-R1-2C: Live disk corruption must close open save_conflict modal");
+    assert.equal(p4eFocus.isBody, false, `DEFECT-R1-2C: Closing alert-opened save_conflict on live corruption must NOT drop focus to BODY (got ${p4eFocus.activeTag})`);
+    await ctx3.close();
+
+    // Part D (R2A-4, R2A-5, R2A-6, DEFECT-R1-2B): Pavilion-over-drawer layering, fallbackCopy focus, confirm-reset-corrupt-meta focus, Practice return-title-safe cleanup & welcome focus
+    const { ctx: ctx4, page: page4 } = await startCleanGamePage(browser, "T5-6-Focus", true);
+    // R2A-6: Pavilion popover over open drawer -> Tab stays in popover, 1st Escape closes popover & leaves drawer open
+    await page4.click('.nav-tab-btn[data-tab="cultivate"]');
+    await page4.waitForSelector("#jade-panel.drawer-open");
+    await page4.click("#btn-pavilion-menu");
+    await page4.waitForSelector("#pavilion-popover.open");
+    await page4.focus("#btn-ascension-roadmap");
+    await page4.keyboard.press("Tab");
+    const r2a6Tab = await page4.evaluate(() => {
+      const pop = document.getElementById("pavilion-popover");
+      const panel = document.getElementById("jade-panel");
+      return {
+        inPopover: Boolean(pop && pop.contains(document.activeElement)),
+        inDrawer: Boolean(panel && panel.contains(document.activeElement))
+      };
+    });
+    assert.equal(r2a6Tab.inPopover, true, "R2A-6: Tab inside open #pavilion-popover over drawer must stay inside popover");
+    assert.equal(r2a6Tab.inDrawer, false, "R2A-6: Tab must NOT rip focus into underlying #jade-panel");
+    await page4.keyboard.press("Escape");
+    const r2a6Esc = await page4.evaluate(() => ({
+      popOpen: Boolean(document.getElementById("pavilion-popover")?.classList.contains("open")),
+      drawerOpen: Boolean(document.getElementById("jade-panel")?.classList.contains("drawer-open")),
+      activeId: document.activeElement?.id || ""
+    }));
+    assert.equal(r2a6Esc.popOpen, false, "R2A-6: 1st Escape must close #pavilion-popover");
+    assert.equal(r2a6Esc.drawerOpen, true, "R2A-6: 1st Escape must leave underlying drawer open");
+    assert.equal(r2a6Esc.activeId, "btn-pavilion-menu", "R2A-6: Closing #pavilion-popover must return focus to #btn-pavilion-menu");
+    await page4.keyboard.press("Escape");
+    await page4.waitForFunction(() => !document.getElementById("jade-panel")?.classList.contains("drawer-open"));
+
+    // R2A-5: fallbackCopy + in-game confirm-reset-corrupt-meta keep focus off BODY
+    await page4.evaluate((mk) => {
+      Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true });
+      localStorage.setItem(mk, "{CORRUPT_META_R2A5");
+      window.__CHENYUAN_V25__.saveMeta();
+    }, META_KEY);
+    await page4.waitForSelector('#hud-save-alert [data-action="copy-corrupt-meta-raw"]');
+    await page4.focus('#hud-save-alert [data-action="copy-corrupt-meta-raw"]');
+    await page4.click('#hud-save-alert [data-action="copy-corrupt-meta-raw"]');
+    const fallbackCopyFocus = await page4.evaluate(() => ({ isBody: document.activeElement === document.body, tag: document.activeElement?.tagName }));
+    assert.equal(fallbackCopyFocus.isBody, false, `R2A-5: fallbackCopy must restore focus off BODY (got ${fallbackCopyFocus.tag})`);
+
+    await page4.focus('#hud-save-alert [data-action="prompt-reset-corrupt-meta"]');
+    await page4.click('#hud-save-alert [data-action="prompt-reset-corrupt-meta"]');
+    await page4.waitForSelector('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
+    await page4.click('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
+    await page4.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    const inGameMetaResetFocus = await page4.evaluate(() => ({ isBody: document.activeElement === document.body, tag: document.activeElement?.tagName }));
+    assert.equal(inGameMetaResetFocus.isBody, false, `R2A-5: In-game confirm-reset-corrupt-meta must keep focus off BODY (got ${inGameMetaResetFocus.tag})`);
+
+    // DEFECT-R1-2B + R2A-4 + R2A-5 (welcome): Enter Boss Rush Wave 7 Practice Mode, corrupt META_KEY, return-title-safe -> focus inside welcome screen, Enter does NOT open Settings, isPracticeModeActive === false, and welcome confirm-reset-corrupt-meta succeeds with off-BODY focus!
+    await page4.evaluate((mk) => {
+      const api = window.__CHENYUAN_V25__;
+      api.getState().game.realm = "spirit";
+      api.startBossRushGauntlet(7);
+      localStorage.setItem(mk, "{CORRUPT_META_WELCOME_2B");
+    }, META_KEY);
+    await page4.focus("#btn-open-settings");
+    await page4.click("#btn-open-settings");
+    await page4.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+    await page4.click('#modal-backdrop.open [data-sys-tab="controls"]');
+    await page4.waitForSelector('#modal-backdrop.open [data-action="return-title-safe"]');
+    await page4.click('#modal-backdrop.open [data-action="return-title-safe"]');
+    await page4.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "flex");
+    const afterReturnTitle = await page4.evaluate(() => {
+      const ws = document.getElementById("welcome-screen");
+      const ae = document.activeElement;
+      return {
+        inWelcome: Boolean(ws && ws.contains(ae)),
+        activeId: ae?.id || "",
+        isPractice: window.__CHENYUAN_V25__.isPracticeModeActive(),
+        hasMetaResetBtn: Boolean(document.querySelector('#save-status-banner [data-action="prompt-reset-corrupt-meta"]'))
+      };
+    });
+    assert.equal(afterReturnTitle.inWelcome, true, `R2A-4: return-title-safe must land focus inside #welcome-screen (got #${afterReturnTitle.activeId})`);
+    assert.equal(afterReturnTitle.isPractice, false, "DEFECT-R1-2B: return-title-safe from Practice Mode must clear isPracticeModeActive()");
+    assert.equal(afterReturnTitle.hasMetaResetBtn, true, "DEFECT-R1-2B: Welcome screen must display corrupt-meta reset button");
+
+    await page4.focus('#save-status-banner [data-action="prompt-reset-corrupt-meta"]');
+    await page4.click('#save-status-banner [data-action="prompt-reset-corrupt-meta"]');
+    await page4.waitForSelector('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
+    await page4.click('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
+    await page4.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    const afterWelcomeMetaReset = await page4.evaluate((mk) => ({
+      metaReadErr: Boolean(window.__CHENYUAN_V25__.getPersistenceState().metaReadError),
+      diskRawValid: (() => { try { JSON.parse(localStorage.getItem(mk)); return true; } catch { return false; } })(),
+      isBody: document.activeElement === document.body,
+      inWelcome: Boolean(document.getElementById("welcome-screen")?.contains(document.activeElement))
+    }), META_KEY);
+    assert.equal(afterWelcomeMetaReset.metaReadErr, false, "DEFECT-R1-2B: Welcome corrupt-meta reset must clear metaReadError after returning from Practice Mode");
+    assert.equal(afterWelcomeMetaReset.diskRawValid, true, "DEFECT-R1-2B: Welcome corrupt-meta reset must write valid META_KEY");
+    assert.equal(afterWelcomeMetaReset.isBody, false, "R2A-5: Welcome confirm-reset-corrupt-meta must keep focus off BODY");
+    assert.equal(afterWelcomeMetaReset.inWelcome, true, "R2A-5: Welcome confirm-reset-corrupt-meta must keep focus inside #welcome-screen");
+
+    // R2A-4: execute-reset-save also lands focus inside #welcome-screen (never occluded #btn-open-settings)
+    await page4.click("#btn-continue-save");
+    await page4.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await page4.focus("#btn-open-settings");
+    await page4.click("#btn-open-settings");
+    await page4.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+    await page4.click('#modal-backdrop.open [data-sys-tab="controls"]');
+    await page4.waitForSelector('#modal-backdrop.open [data-action="confirm-reset-save"]');
+    await page4.click('#modal-backdrop.open [data-action="confirm-reset-save"]');
+    await page4.waitForSelector('#modal-backdrop.open [data-action="execute-reset-save"]');
+    await page4.click('#modal-backdrop.open [data-action="execute-reset-save"]');
+    await page4.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "flex");
+    const afterResetFocus = await page4.evaluate(() => ({
+      inWelcome: Boolean(document.getElementById("welcome-screen")?.contains(document.activeElement)),
+      activeId: document.activeElement?.id || ""
+    }));
+    assert.equal(afterResetFocus.inWelcome, true, `R2A-4: execute-reset-save must focus inside #welcome-screen (got #${afterResetFocus.activeId})`);
+    await ctx4.close();
+  });
+
+  await runSuite("T5-7", "M7b R2 Surface B: R2B-1/2A 渡劫全域切换守卫 + R2B-2 练习快照隔离与战败撤回 + R2B-3 战中炼丹/茶叙禁满酿 + R2B-4 沙盒战斗残留清零 + R2B-5 拍照按钮拦截 + R2B-6 直进模式闭关落盘", async () => {
+    // Part A (R2B-1 / DEFECT-R1-2A): Active Hardcore Defiant Live Tribulation blocks ALL travel/mode/sandbox launchers
+    const { ctx, page } = await startCleanGamePage(browser, "T5-7", true);
+    const tribRes = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "spirit";
+      s.game.xp = 99999;
+      s.game.elapsedMonths = 24;
+      s.game.tribulationFails = 0;
+      s.game.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
+      s.game.seenCutscenes = Object.assign({}, s.game.seenCutscenes, { enter_sect: true, enter_secret: true });
+      api.initArenaStage(1, false);
+      api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+      s.game.hp = 16;
+      s.game.gourd.charges = 0;
+
+      // Attempt every previously unguarded escape/overlap vector
+      api.openBossRushModal();
+      api.startBossRushGauntlet(7);
+      api.openCelestialSpireModal();
+      api.startCelestialSpireRun(9);
+      api.openCustomWorkshopModal();
+      window.__CHENYUAN_V22__.launchCustomSeedEncounter();
+      api.startSectDefenseSiege();
+      api.startCloudSeaAerialStage();
+      api.enterSandboxMode();
+      window.__CHENYUAN_V23__.openTaixuCraftMinigameModal("alchemy");
+      const teaBlocked = api.triggerCompanionHubAction("shen", "tea");
+
+      return {
+        tribActive: Boolean(s.arena.tribulation),
+        sanctumMode: s.arena.sanctumMode,
+        towerMode: s.arena.towerMode,
+        bossRush: Boolean(s.arena.bossRush && s.arena.bossRush.active),
+        spire: Boolean(s.arena.celestialSpire && s.arena.celestialSpire.active),
+        custom: Boolean(s.arena.customSeedRun && s.arena.customSeedRun.active),
+        cloud: Boolean(s.arena.cloudFlight && s.arena.cloudFlight.active),
+        defense: Boolean(s.arena.sectDefense && s.arena.sectDefense.active),
+        sandbox: api.isSandboxMode(),
+        isPractice: api.isPracticeModeActive(),
+        hp: s.game.hp,
+        gourd: s.game.gourd.charges,
+        teaBlocked
+      };
+    });
+    assert.equal(tribRes.tribActive, true, "R2B-1: Live Tribulation must remain active after all blocked escape/mode launchers");
+    assert.equal(tribRes.sanctumMode, false, "R2B-1: Must not escape to Sanctum during Live Tribulation");
+    assert.equal(tribRes.towerMode, false, "R2B-1: Must not escape to Tower during Live Tribulation");
+    assert.equal(tribRes.bossRush, false, "R2B-1: Must not launch Boss Rush during Live Tribulation");
+    assert.equal(tribRes.spire, false, "R2B-1: Must not launch Celestial Spire during Live Tribulation");
+    assert.equal(tribRes.custom, false, "R2B-1: Must not launch Custom Workshop during Live Tribulation");
+    assert.equal(tribRes.cloud, false, "R2B-1: Must not launch Cloud Sea during Live Tribulation");
+    assert.equal(tribRes.defense, false, "R2B-1: Must not launch Sect Defense during Live Tribulation");
+    assert.equal(tribRes.sandbox, false, "R2B-1: Must not enter Sandbox Mode during Live Tribulation");
+    assert.equal(tribRes.isPractice, false, "DEFECT-R1-2A: Must never carry active tribulation into Practice Mode");
+    assert.equal(tribRes.gourd, 0, "R2B-1/R2B-3: Must not refill gourd mid-tribulation");
+    assert.equal(tribRes.teaBlocked, false, "R2B-3: Companion tea must be rejected during Live Tribulation");
+
+    // Also test real UI clicks during active Live Tribulation: Explore [data-warp-stage="0"], Pavilion #btn-quick-map, #btn-toggle-arcana-all & Goals [data-route-goal="hub"]
+    await page.click("#nav-btn-explore");
+    await page.waitForSelector('#jade-panel.drawer-open [data-warp-stage="0"]');
+    await page.click('#jade-panel.drawer-open [data-warp-stage="0"]');
+    await page.keyboard.press("Escape");
+    await page.click("#btn-pavilion-menu");
+    await page.waitForSelector("#pavilion-popover.open #btn-quick-map");
+    await page.click("#btn-quick-map");
+    await page.click("#btn-pavilion-menu");
+    await page.waitForSelector("#pavilion-popover.open #btn-toggle-arcana-all");
+    await page.click("#btn-toggle-arcana-all");
+    await page.click("#btn-goals-modal");
+    await page.waitForSelector("#modal-backdrop.open");
+    await page.evaluate(() => {
+      const btn = document.querySelector('#modal-backdrop.open [data-route-goal="hub"]') || document.querySelector('#modal-backdrop.open [data-route-goal]');
+      if (btn) btn.click();
+    });
+    await page.evaluate(() => { window.__CHENYUAN_V25__.closeModal(); });
+    const afterUiEscapes = await page.evaluate(() => ({
+      tribActive: Boolean(window.__CHENYUAN_V25__.getState().arena.tribulation),
+      towerMode: window.__CHENYUAN_V25__.getState().arena.towerMode,
+      stageIdx: window.__CHENYUAN_V25__.getState().arena.stageIdx
+    }));
+    assert.equal(afterUiEscapes.tribActive, true, "DEFECT-R1-2A: [data-warp-stage] and #btn-quick-map must NOT abort Live Tribulation");
+    assert.equal(afterUiEscapes.towerMode, false, "R2B-1: #btn-quick-map must NOT warp to Tower during Live Tribulation");
+    assert.equal(afterUiEscapes.stageIdx, 1, "DEFECT-R1-2A: [data-warp-stage=0] must NOT warp out of Stage 1 during Live Tribulation");
+
+    // Part B (R2B-3): Active combat disables [data-craft-open="alchemy"] & [data-comp-act="tea"] and prevents mid-combat gourd refill
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.arena.tribulation = null;
+      api.initArenaStage(2, false);
+      s.game.hp = 40;
+      s.game.mp = 0;
+      s.game.gourd.charges = 0;
+    });
+    await page.click("#nav-btn-alchemy");
+    await page.waitForSelector('#jade-panel.drawer-open [data-craft-open="alchemy"]');
+    const r2b3Combat = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const v23 = window.__CHENYUAN_V23__;
+      const btn = document.querySelector('#jade-panel [data-craft-open="alchemy"]');
+      const disabledInCombat = Boolean(btn && btn.disabled);
+      v23.openTaixuCraftMinigameModal("alchemy");
+      v23.strikeTaixuCraftMinigame(true);
+      v23.strikeTaixuCraftMinigame(true);
+      v23.strikeTaixuCraftMinigame(true);
+      api.closeModal();
+      const s = api.getState();
+      const hpBeforeTea = s.game.hp;
+      const teaOk = api.triggerCompanionHubAction("shen", "tea");
+      return {
+        disabledInCombat,
+        gourdAfterCraft: s.game.gourd.charges,
+        hpBeforeTea,
+        hpAfterTea: s.game.hp,
+        teaOk
+      };
+    });
+    assert.equal(r2b3Combat.disabledInCombat, true, "R2B-3: [data-craft-open=alchemy] must be disabled during active combat");
+    assert.equal(r2b3Combat.gourdAfterCraft, 0, "R2B-3: strikeTaixuCraftMinigame must NOT refill gourd outside calm Sanctum");
+    assert.equal(r2b3Combat.teaOk, false, "R2B-3: Companion tea must be blocked outside calm Sanctum");
+    assert.equal(r2b3Combat.hpAfterTea, r2b3Combat.hpBeforeTea, "R2B-3: Companion tea must NOT full-heal during active combat");
+
+    // Part C (R2B-2): Practice Mode snapshot/restore isolation + full-bag purchase guard + batch enhance guard + defeat retreat-sanctum fix
+    const r2b2Before = await page.evaluate((sk) => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      api.closeDrawer();
+      api.enterSanctumHub();
+      s.game.realm = "spirit";
+      s.game.stones = 2500;
+      s.game.retreats = 0;
+      s.game.inventory.healing_pill = 3;
+      s.game.inventory.spirit_pill = 3;
+      s.game.equippedGear.weapon.lvl = 0;
+      s.game.gearBag = Array.from({ length: api.GEAR_BAG_LIMIT }, () => api.rollGearItem(1, 0, "weapon"));
+      api.saveGame();
+      const rawBefore = localStorage.getItem(sk);
+      api.startBossRushGauntlet(7);
+      // Try blocked economy & batch enhance inside Practice Mode
+      const batchRes = api.executeGearBatchEnhance("weapon", 3);
+      const karmaOk = api.buyKarmaSpecialItem("km_demon_core");
+      // Consume combat pill inside Practice Mode, then die and retreat-sanctum
+      api.consumeInventoryItem("spirit_pill");
+      api.openDefeatDecisionModal(false);
+      return {
+        rawBefore,
+        batchOk: Boolean(batchRes && batchRes.ok),
+        karmaOk,
+        stonesInPractice: s.game.stones,
+        wpnLvlInPractice: s.game.equippedGear.weapon.lvl
+      };
+    }, STORAGE_KEY);
+    assert.equal(r2b2Before.batchOk, false, "R2B-2: executeGearBatchEnhance must be blocked in Practice Mode");
+    assert.equal(r2b2Before.karmaOk, false, "R2B-2: buyKarmaSpecialItem must be blocked in Practice Mode");
+    assert.equal(r2b2Before.stonesInPractice, 2500, "R2B-2: Stones must not change in Practice Mode");
+    assert.equal(r2b2Before.wpnLvlInPractice, 0, "R2B-2: Weapon lvl must not change in Practice Mode");
+
+    await page.waitForSelector('#modal-backdrop.open [data-defeat-act="retreat-sanctum"]');
+    await page.click('#modal-backdrop.open [data-defeat-act="retreat-sanctum"]');
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    const r2b2After = await page.evaluate((sk) => {
+      const s = window.__CHENYUAN_V25__.getState();
+      return {
+        retreats: s.game.retreats,
+        stones: s.game.stones,
+        spiritPill: s.game.inventory.spirit_pill,
+        healingPill: s.game.inventory.healing_pill,
+        wpnLvl: s.game.equippedGear.weapon.lvl,
+        rawAfter: localStorage.getItem(sk)
+      };
+    }, STORAGE_KEY);
+    assert.equal(r2b2After.retreats, 0, "R2B-2: Defeat retreat-sanctum from Practice Mode must NOT increment formal retreats");
+    assert.equal(r2b2After.spiritPill, 3, "R2B-2: Practice Mode snapshot restore must restore consumed spirit_pill");
+    assert.equal(r2b2After.stones, 2500, "R2B-2: Formal stones must remain intact after Practice Mode retreat");
+    assert.equal(r2b2After.rawAfter, r2b2Before.rawBefore, "R2B-2: STORAGE_KEY must remain byte-identical after Practice Mode defeat retreat-sanctum");
+
+    // Part D (R2B-4 & R2B-5): exitSandboxMode resets runtime combat overrides + Photo Mode hides & blocks #btn-coop-2p / #btn-celestial-time
+    const r2b4Res = await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const v23 = window.__CHENYUAN_V23__;
+      const s = api.getState();
+      s.game.realm = "mortal";
+      s.game.aids = { shen: false, pei: false, lu: false, yan: false };
+      s.game.bondTiers = { shen: 0, pei: 0, lu: 0, yan: 0 };
+      api.initArenaStage(0, false);
+      api.saveGame();
+      api.enterSandboxMode();
+      v23.toggleLocalCoop2P(true, "pei");
+      s.arena.playableCharId = "shen";
+      s.arena.swordIntent = 100;
+      const inSandboxCoop = v23.getState().coop2P.active;
+      api.exitSandboxMode();
+      return {
+        inSandboxCoop,
+        coopAfter: v23.getState().coop2P.active,
+        playableAfter: api.getState().arena.playableCharId,
+        swordIntentAfter: api.getState().arena.swordIntent
+      };
+    });
+    assert.equal(r2b4Res.inSandboxCoop, true, "R2B-4 precondition: 2P Co-Op active in Sandbox");
+    assert.equal(r2b4Res.coopAfter, false, "R2B-4: exitSandboxMode must reset arena.coop2P.active to false");
+    assert.equal(r2b4Res.playableAfter, "player", "R2B-4: exitSandboxMode must reset arena.playableCharId to player");
+    assert.equal(r2b4Res.swordIntentAfter, 0, "R2B-4: exitSandboxMode must reset arena.swordIntent to 0");
+
+    // R2B-5: Photo Mode hides #arcana-vault-wrap & #tag-team-hud-pill and blocks #btn-coop-2p / #btn-celestial-time clicks
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "golden";
+      s.game.aids = { shen: true, pei: true, lu: true, yan: true };
+      s.game.bondTiers = { shen: 2, pei: 2, lu: 2, yan: 2 };
+      s.game.karmaScore = 60;
+      s.arena.player.shieldHp = 0;
+      window.__CHENYUAN_V23__.setCelestialTimePhase(0, true);
+      api.focusBattlefield();
+    });
+    await page.keyboard.press("KeyP");
+    await page.waitForTimeout(80);
+    const r2b5Photo = await page.evaluate(() => {
+      const vault = document.getElementById("arcana-vault-wrap");
+      const tagPill = document.getElementById("tag-team-hud-pill");
+      const vaultPe = vault ? getComputedStyle(vault).pointerEvents : "";
+      const tagPe = tagPill ? getComputedStyle(tagPill).pointerEvents : "";
+      document.getElementById("btn-coop-2p")?.click();
+      for (let i = 0; i < 4; i++) document.getElementById("btn-celestial-time")?.click();
+      return {
+        vaultPe,
+        tagPe,
+        coopActive: window.__CHENYUAN_V23__.getState().coop2P.active,
+        shieldHp: window.__CHENYUAN_V25__.getState().arena.player.shieldHp
+      };
+    });
+    assert.equal(r2b5Photo.vaultPe, "none", "R2B-5: #arcana-vault-wrap must have pointer-events: none in Photo Mode");
+    assert.equal(r2b5Photo.tagPe, "none", "R2B-5: #tag-team-hud-pill must have pointer-events: none in Photo Mode");
+    assert.equal(r2b5Photo.coopActive, false, "R2B-5: Clicking #btn-coop-2p in Photo Mode must NOT activate 2P Co-Op");
+    assert.equal(r2b5Photo.shieldHp, 0, "R2B-5: Clicking #btn-celestial-time in Photo Mode must NOT grant dawn shield");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(80);
+
+    // Part E (R2B-6): Direct transition from Sanctum meditation into Boss Rush Wave 7 flushes meditation aging BEFORE entering practice
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "spirit";
+      s.game.xp = 0;
+      s.game.elapsedMonths = 11;
+      api.enterSanctumHub();
+      api.saveGame();
+      api.focusBattlefield();
+    });
+    await page.keyboard.press("KeyB");
+    await page.waitForFunction(() => window.__CHENYUAN_V25__.getState().arena.player.meditating === true);
+    await page.evaluate(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      s.arena.player.meditateAgeTick = 2.95;
+    });
+    await page.waitForFunction(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      return s.game.elapsedMonths >= 12 && s.arena.player.meditateAgedDirty === true;
+    }, null, { timeout: 2500 });
+    const r2b6After = await page.evaluate((sk) => {
+      const api = window.__CHENYUAN_V25__;
+      api.startBossRushGauntlet(7);
+      const s = api.getState();
+      const disk = JSON.parse(localStorage.getItem(sk));
+      return {
+        isPractice: api.isPracticeModeActive(),
+        meditating: s.arena.player.meditating,
+        dirty: s.arena.player.meditateAgedDirty,
+        diskMonths: disk?.game?.elapsedMonths
+      };
+    }, STORAGE_KEY);
+    assert.equal(r2b6After.isPractice, true, "R2B-6: Must enter Boss Rush Wave 7 Practice Mode");
+    assert.equal(r2b6After.meditating, false, "R2B-6: Direct entry to Boss Rush must stop meditation");
+    assert.equal(r2b6After.dirty, false, "R2B-6: Direct entry to Boss Rush must clear meditateAgedDirty");
+    assert.ok(r2b6After.diskMonths >= 12, `R2B-6: Pre-practice meditation aging must flush to STORAGE_KEY (diskMonths=${r2b6After.diskMonths})`);
     await ctx.close();
   });
 } finally {
