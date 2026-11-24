@@ -207,6 +207,8 @@
 
   function playStoryEventInPortraitBar(storyId, onFinish = null) {
     if (!game) return false;
+    if (!guardNotInTribulation("故人机缘演绎")) return false;
+    if (!guardNotPracticeMode("故人机缘演绎")) return false;
     const stSpec = STORIES.find(s => s.id === storyId);
     if (!stSpec || game.choices[storyId]) return false;
     const npc = NPC_META[stSpec.npc];
@@ -234,6 +236,8 @@
 
   function resolveStoryChoice(sid, oid, fromPortraitBar = false) {
     if (!game) return false;
+    if (!guardNotInTribulation("故人机缘演绎")) return false;
+    if (!guardNotPracticeMode("故人机缘演绎")) return false;
     const stSpec = STORIES.find(s => s.id === sid);
     const opt = stSpec ? stSpec.options.find(o => o.id === oid) : null;
     if (!stSpec || !opt || game.choices[sid]) return false;

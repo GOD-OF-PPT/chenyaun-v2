@@ -172,6 +172,10 @@
       showReincarnationInlineError("⚔ 演武练习模式禁止【轮回转世】（不计寿元与正式存档），请先按 H 返回听雨洞府！");
       return false;
     }
+    if (!guardNotInTribulation("轮回转世")) {
+      showReincarnationInlineError("⚡ 正在九霄紫霄雷劫渡劫中，无法进行【轮回转世】！请迎雷破境或于力竭后主动抉择中止渡劫。");
+      return false;
+    }
     if (storageReadError) {
       saveAlertDismissed = false;
       renderWelcomeSaveStatusBanner();
@@ -377,7 +381,9 @@
   }
 
   function openPetSkillChoiceModal(tier) {
-    if (!game || !game.pet || !game.pet.id || !hasOwn(SPIRIT_PETS, game.pet.id)) return false;
+    if (!game || isWelcomeScreenVisible() || cutscene.active || !game.pet || !game.pet.id || !hasOwn(SPIRIT_PETS, game.pet.id)) return false;
+    if (!guardNotInTribulation("择定灵宠神通")) return false;
+    if (!guardNotPracticeMode("择定灵宠神通")) return false;
     const safeTier = tier === 5 ? 5 : 3;
     if ((game.pet.level || 1) < safeTier) {
       showToast(`灵宠达到 Lv.${safeTier} 后方可择定此阶灵技！`);
@@ -755,6 +761,7 @@
     }
 
     if (act === "gift") {
+      if (!guardNotInTribulation("故人赠礼晋阶")) return false;
       const curT = getCompanionBondTier(game, npcId);
       if (curT >= 3) return false;
       const useMat = (game.inventory[dlg.favMat] || 0) >= dlg.favCount;
@@ -1329,7 +1336,9 @@
   }
 
   function claimMainlineStepReward(stepId) {
-    if (!game) return;
+    if (!game) return false;
+    if (!guardNotInTribulation("领取主线赏赐")) return false;
+    if (!guardNotPracticeMode("领取主线赏赐")) return false;
     const resolvedId = canonicalizeStepId(stepId);
     if (!resolvedId) return;
     let found = null;

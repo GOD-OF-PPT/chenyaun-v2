@@ -1497,7 +1497,7 @@
 
 
   function openAffixEngraveModal(slot) {
-    if (!game || !game.equippedGear || !game.equippedGear[slot]) return false;
+    if (!game || isWelcomeScreenVisible() || cutscene.active || !game.equippedGear || !game.equippedGear[slot]) return false;
     if (!guardNotInTribulation("定向词条刻录")) return false;
     if (!guardNotPracticeMode("定向词条刻录")) return false;
     const eq = game.equippedGear[slot];
@@ -1628,6 +1628,7 @@
 
   function buyKarmaSpecialItem(specialId) {
     if (!game) return false;
+    if (!guardNotInTribulation("正魔特供购置")) return false;
     if (!guardNotPracticeMode("正魔特供购置")) return false;
     if (!game.karmaMarketBought) game.karmaMarketBought = {};
     if (game.karmaMarketBought[specialId]) {

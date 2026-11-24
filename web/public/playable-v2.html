@@ -9583,7 +9583,7 @@ const ART = {
 
 
   function openAffixEngraveModal(slot) {
-    if (!game || !game.equippedGear || !game.equippedGear[slot]) return false;
+    if (!game || isWelcomeScreenVisible() || cutscene.active || !game.equippedGear || !game.equippedGear[slot]) return false;
     if (!guardNotInTribulation("定向词条刻录")) return false;
     if (!guardNotPracticeMode("定向词条刻录")) return false;
     const eq = game.equippedGear[slot];
@@ -9714,6 +9714,7 @@ const ART = {
 
   function buyKarmaSpecialItem(specialId) {
     if (!game) return false;
+    if (!guardNotInTribulation("正魔特供购置")) return false;
     if (!guardNotPracticeMode("正魔特供购置")) return false;
     if (!game.karmaMarketBought) game.karmaMarketBought = {};
     if (game.karmaMarketBought[specialId]) {
@@ -9982,6 +9983,8 @@ const ART = {
 
   function playStoryEventInPortraitBar(storyId, onFinish = null) {
     if (!game) return false;
+    if (!guardNotInTribulation("故人机缘演绎")) return false;
+    if (!guardNotPracticeMode("故人机缘演绎")) return false;
     const stSpec = STORIES.find(s => s.id === storyId);
     if (!stSpec || game.choices[storyId]) return false;
     const npc = NPC_META[stSpec.npc];
@@ -10009,6 +10012,8 @@ const ART = {
 
   function resolveStoryChoice(sid, oid, fromPortraitBar = false) {
     if (!game) return false;
+    if (!guardNotInTribulation("故人机缘演绎")) return false;
+    if (!guardNotPracticeMode("故人机缘演绎")) return false;
     const stSpec = STORIES.find(s => s.id === sid);
     const opt = stSpec ? stSpec.options.find(o => o.id === oid) : null;
     if (!stSpec || !opt || game.choices[sid]) return false;
@@ -17507,6 +17512,8 @@ const ART = {
 
   function assignExpeditionNode(g, nodeId, heroId) {
     if (!g) return { ok: false, reason: "no_game" };
+    if (!guardNotInTribulation("调遣远征驻防")) return { ok: false, reason: "tribulation" };
+    if (!guardNotPracticeMode("调遣远征驻防")) return { ok: false, reason: "practice_mode" };
     const node = EXPEDITION_NODES.find(n => n.id === nodeId);
     if (!node) return { ok: false, reason: "invalid_node" };
     const ex = ensureExpeditionState(g);
@@ -17659,6 +17666,7 @@ const ART = {
 
   function claimExpeditionRewards() {
     if (!game) return null;
+    if (!guardNotInTribulation("征收远征军资")) return null;
     if (!guardNotPracticeMode("征收远征军资")) return null;
     const ex = ensureExpeditionState(game);
     const activeNodes = EXPEDITION_NODES.filter(nd => ex.assignments && ex.assignments[nd.id]);
@@ -22709,6 +22717,10 @@ const ART = {
       showReincarnationInlineError("⚔ 演武练习模式禁止【轮回转世】（不计寿元与正式存档），请先按 H 返回听雨洞府！");
       return false;
     }
+    if (!guardNotInTribulation("轮回转世")) {
+      showReincarnationInlineError("⚡ 正在九霄紫霄雷劫渡劫中，无法进行【轮回转世】！请迎雷破境或于力竭后主动抉择中止渡劫。");
+      return false;
+    }
     if (storageReadError) {
       saveAlertDismissed = false;
       renderWelcomeSaveStatusBanner();
@@ -22914,7 +22926,9 @@ const ART = {
   }
 
   function openPetSkillChoiceModal(tier) {
-    if (!game || !game.pet || !game.pet.id || !hasOwn(SPIRIT_PETS, game.pet.id)) return false;
+    if (!game || isWelcomeScreenVisible() || cutscene.active || !game.pet || !game.pet.id || !hasOwn(SPIRIT_PETS, game.pet.id)) return false;
+    if (!guardNotInTribulation("择定灵宠神通")) return false;
+    if (!guardNotPracticeMode("择定灵宠神通")) return false;
     const safeTier = tier === 5 ? 5 : 3;
     if ((game.pet.level || 1) < safeTier) {
       showToast(`灵宠达到 Lv.${safeTier} 后方可择定此阶灵技！`);
@@ -23292,6 +23306,7 @@ const ART = {
     }
 
     if (act === "gift") {
+      if (!guardNotInTribulation("故人赠礼晋阶")) return false;
       const curT = getCompanionBondTier(game, npcId);
       if (curT >= 3) return false;
       const useMat = (game.inventory[dlg.favMat] || 0) >= dlg.favCount;
@@ -23866,7 +23881,9 @@ const ART = {
   }
 
   function claimMainlineStepReward(stepId) {
-    if (!game) return;
+    if (!game) return false;
+    if (!guardNotInTribulation("领取主线赏赐")) return false;
+    if (!guardNotPracticeMode("领取主线赏赐")) return false;
     const resolvedId = canonicalizeStepId(stepId);
     if (!resolvedId) return;
     let found = null;
@@ -37327,7 +37344,9 @@ const ART = {
   }
 
   function openSoulSealRefineConfirmModal(sid) {
-    if (!game || !hasOwn(SOUL_SPIRITS, sid)) return;
+    if (!game || isWelcomeScreenVisible() || cutscene.active || !hasOwn(SOUL_SPIRITS, sid)) return false;
+    if (!guardNotInTribulation("镇妖魂印炼化")) return false;
+    if (!guardNotPracticeMode("镇妖魂印炼化")) return false;
     const nw = SOUL_SPIRITS[sid];
     const curId = hasOwn(SOUL_SPIRITS, game.equippedSoul) ? game.equippedSoul : "blood_warden";
     const cur = SOUL_SPIRITS[curId];
@@ -37409,6 +37428,10 @@ const ART = {
 
   function strikeFurnaceNeedle() {
     if (!game || !furnaceGame.active) return;
+    if (!guardNotInTribulation("控火炼丹")) {
+      furnaceGame.active = false;
+      return;
+    }
     if (!guardNotPracticeMode("控火炼丹")) {
       furnaceGame.active = false;
       return;
@@ -38652,6 +38675,8 @@ const ART = {
       return;
     }
     if (m4QuickAct === "lifespan-use-pill") {
+      if (!guardNotInTribulation("渡劫中服延寿丹")) return;
+      if (!guardNotPracticeMode("正式服丹成长")) return;
       if (!game || (game.inventory.longevity_pill || 0) < 1) {
         showToast("行囊中暂无【延寿青莲丹】！");
         return;
@@ -38723,11 +38748,15 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-open-pet-skill-tier")) {
+      if (!guardNotInTribulation("择定灵宠神通")) return;
+      if (!guardNotPracticeMode("择定灵宠神通")) return;
       const tier = Number(t.getAttribute("data-open-pet-skill-tier")) === 5 ? 5 : 3;
       openPetSkillChoiceModal(tier);
       return;
     }
     if (t.hasAttribute("data-pick-pet-skill")) {
+      if (!guardNotInTribulation("择定灵宠神通")) return;
+      if (!guardNotPracticeMode("择定灵宠神通")) return;
       if (!game || !game.pet || !game.pet.id) return;
       const skId = t.getAttribute("data-pick-pet-skill");
       const tier = Number(t.getAttribute("data-pet-skill-tier")) === 5 ? 5 : 3;
@@ -38895,6 +38924,8 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-soul-refine")) {
+      if (!guardNotInTribulation("镇妖魂印炼化")) return;
+      if (!guardNotPracticeMode("镇妖魂印炼化")) return;
       const mode = t.getAttribute("data-soul-refine");
       const sid = pendingSoulRefineId || t.getAttribute("data-soul-id");
       pendingSoulRefineId = null;
@@ -39824,6 +39855,8 @@ const ART = {
       return;
     }
     if (m1Act === "compare-smelt-new" && pendingCompareGear && game) {
+      if (!guardNotInTribulation("熔炼仙装")) return;
+      if (!guardNotPracticeMode("熔炼仙装")) return;
       const targetItem = pendingCompareGear;
       const itemKey = targetItem.uid || targetItem.name;
       const gain = Math.max(1, Math.floor(num(targetItem.sell, 15)));
@@ -40002,6 +40035,8 @@ const ART = {
       return;
     }
     if (t.getAttribute("data-action") === "refresh-market") {
+      if (!guardNotInTribulation("刷新百宝阁")) return;
+      if (!guardNotPracticeMode("刷新百宝阁")) return;
       if (game.stones < 15) { showToast("刷新百宝阁需 15 灵石"); return; }
       game.stones -= 15;
       refreshMarketStock();
@@ -40410,6 +40445,8 @@ const ART = {
       if (!sp) return;
       if (!Array.isArray(game.unlockedSouls)) game.unlockedSouls = ["blood_warden"];
       if (!game.unlockedSouls.includes(sid)) {
+        if (!guardNotInTribulation("镇妖魂印炼化")) return;
+        if (!guardNotPracticeMode("镇妖魂印炼化")) return;
         if (game.stones < 80) { showToast(`需击败对应妖王或消耗 80 灵石炼化【${sp.shortLbl}】`); return; }
         openSoulSealRefineConfirmModal(sid);
         return;
@@ -40953,6 +40990,8 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-toggle-pact")) {
+      if (!guardNotInTribulation("缔结天道劫印")) return;
+      if (!guardNotPracticeMode("缔结天道劫印")) return;
       if (!guardEcosystemAccess("heavenly_pacts")) return;
       const pid = t.getAttribute("data-toggle-pact");
       if (!game.pactSeals) game.pactSeals = [];
@@ -41007,6 +41046,8 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-claim-bounty")) {
+      if (!guardNotInTribulation("交割宗门悬赏")) return;
+      if (!guardNotPracticeMode("交割宗门悬赏")) return;
       const bSlot = t.getAttribute("data-claim-bounty");
       const chain = SECT_BOUNTY_CHAINS.find(c => c.slot === bSlot);
       if (chain) {
@@ -41026,6 +41067,8 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-claim-star-chest")) {
+      if (!guardNotInTribulation("开启星辉宝箱")) return;
+      if (!guardNotPracticeMode("开启星辉宝箱")) return;
       const cid = t.getAttribute("data-claim-star-chest");
       const chest = STAR_MILESTONE_CHESTS.find(c => c.id === cid);
       if (chest && !game.claimedStarChests.includes(cid) && getTotalStageStars(game) >= chest.need) {
@@ -41413,6 +41456,7 @@ const ART = {
     }
     if (t.hasAttribute("data-enc-id")) {
       if (!guardNotInTribulation("上古奇遇抉择")) return;
+      if (!guardNotPracticeMode("上古奇遇抉择")) return;
       const eid = t.getAttribute("data-enc-id");
       const oid = t.getAttribute("data-enc-opt");
       const karmaMode = t.getAttribute("data-enc-karma");
@@ -41532,6 +41576,8 @@ const ART = {
       return;
     }
     if (t.id === "btn-omen-banner" && game) {
+      if (!guardNotInTribulation("重卜天机")) return;
+      if (!guardNotPracticeMode("重卜天机")) return;
       if (game.stones < 20) { showToast("改换星象需 20 灵石"); return; }
       game.stones -= 20;
       game.omenIndex = ((game.omenIndex || 0) + 1) % CELESTIAL_OMENS.length;
@@ -41588,6 +41634,10 @@ const ART = {
         showToast(`需达【${REALMS[sk.min].name}】方可领悟`);
         return;
       }
+      if (!game.learned.includes(sk.id)) {
+        if (!guardNotInTribulation("研习新神通")) return;
+        if (!guardNotPracticeMode("研习新神通")) return;
+      }
       if (game.learned.includes(sk.id) || game.stones >= sk.price) {
         if (!game.learned.includes(sk.id)) { game.stones -= sk.price; game.learned.push(sk.id); }
         game.loadout[sk.slot] = sk.id;
@@ -41601,6 +41651,10 @@ const ART = {
       if (!guardEcosystemAccess("spirit_pet")) return;
       const pid = t.getAttribute("data-pet");
       if (!hasOwn(SPIRIT_PETS, pid)) return;
+      if (!game.pet.id) {
+        if (!guardNotInTribulation("契约本命灵宠")) return;
+        if (!guardNotPracticeMode("契约本命灵宠")) return;
+      }
       game.pet.id = pid;
       if (!game.pet.level) game.pet.level = 1;
       if (!game.pet.skills || typeof game.pet.skills !== "object") game.pet.skills = { tier3: null, tier5: null };

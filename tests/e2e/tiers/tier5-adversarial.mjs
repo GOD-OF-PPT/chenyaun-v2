@@ -3093,6 +3093,144 @@ export const tests = [
       assert.equal(e2eNewSession.glide, null, "R9B-1 E2E: fresh session has no hijacked ravineGlide");
       assert.equal(e2eNewSession.z, 0, "R9B-1 E2E: fresh session grounded (z === 0)");
       assert.equal(e2eNewSession.buff, 0, "R9B-1 E2E: fresh session has 0 leaked ravineBuffTimer");
+
+      // 5h. Round 11 Convergence: R10B-1, R10B-2, R10B-3, Reviewer 1/2 (#btn-omen-banner, soul refine, skill), Challenger A cutscene engrave, & exhaustive audit guards
+      const e2eR11 = await page.evaluate((sk) => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        const cutActive = Boolean(document.getElementById("story-dialogue-bar")?.classList.contains("open"));
+        const affixInCut = api.openAffixEngraveModal("weapon");
+        document.getElementById("btn-dlg-skip")?.click();
+
+        const g = s.game;
+        g.realm = "spirit";
+        g.xp = api.REALMS.spirit.xpCap;
+        g.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
+        g.stageStars = { 0: 3, 1: 3 };
+        g.stones = 2000;
+        g.karmaScore = 35;
+        g.karmaMarketBought = { km_longevity: true };
+        g.bondTiers = { shen: 1, pei: 0, lu: 0, yan: 0 };
+        g.choices = {};
+        g.inventory.herb = 20;
+        g.inventory.healing_pill = 2;
+        g.inventory.spirit_pill = 2;
+        g.unlockedSouls = ["blood_warden"];
+        g.equippedSoul = "blood_warden";
+        g.learned = ["sword_m1", "sword_b1", "sword_f1"];
+        g.pet = { id: "fox", level: 3, skills: { tier3: null, tier5: null } };
+        g.expeditions = { assignments: {}, bankedStones: 180, bankedStars: 2, supportThunderCount: 0, tickTimer: 8.5 };
+        g.claimedStepIds = [];
+        g.claimedStarChests = [];
+        g.pactSeals = [];
+        g.goalStats = { slay: 999, tech: 999, craftOrLoot: 999 };
+        g.bountyTiers = { slay: 1, tech: 1, craft: 1 };
+        g.bonusStarPts = 0;
+        g.omenIndex = 0;
+        api.enterSanctumHub();
+        api.saveGame({ forceOverwrite: true });
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        const revBefore = JSON.parse(localStorage.getItem(sk) || "{}").saveRev || 0;
+
+        // R10B-1
+        api.toggleDrawer("story");
+        document.querySelector('#jade-panel [data-open-comp-modal="shen"]')?.click();
+        document.querySelector('#modal-content [data-comp-act="gift"][data-comp-npc="shen"]')?.click();
+        api.closeModal();
+        const giftDirect = api.triggerCompanionHubAction("shen", "gift");
+        const storyBarDirect = api.playStoryEventInPortraitBar("shen_return");
+        const storyChoiceDirect = api.resolveStoryChoice("shen_return", "warm", false);
+        api.toggleDrawer("story");
+        document.querySelector('#jade-panel [data-story-id]')?.click();
+        api.closeDrawer();
+        const dlgOpen = Boolean(document.getElementById("story-dialogue-bar")?.classList.contains("open"));
+
+        // R10B-2 + Reviewer 1/2
+        api.toggleDrawer("bag");
+        document.querySelector('#jade-panel [data-buy-karma-item="km_lotus_bundle"]')?.click();
+        const karmaDirect = api.buyKarmaSpecialItem("km_lotus_bundle");
+        document.querySelector('#jade-panel [data-action="refresh-market"]')?.click();
+        const karmaBoughtStill = Boolean(g.karmaMarketBought && g.karmaMarketBought.km_longevity);
+
+        api.toggleDrawer("cultivate");
+        document.querySelector('#jade-panel [data-equip-soul="frost_phoenix"]')?.click();
+        const soulModalOpen = document.getElementById("modal-backdrop")?.classList.contains("open");
+        document.querySelector('#jade-panel [data-skill="sword_still"]')?.click();
+        document.getElementById("btn-omen-banner")?.click();
+        const petSkDirect = api.openPetSkillChoiceModal(3);
+        const reincTrib = api.executeReincarnation({ source: "bingjie" });
+        api.closeDrawer();
+
+        // R10B-3 + Audit
+        api.openObjectivesModal("mainline");
+        document.querySelector('#modal-content [data-claim-step]')?.click();
+        api.openObjectivesModal("bounties");
+        document.querySelector('#modal-content [data-claim-bounty]')?.click();
+        document.querySelector('#modal-content [data-claim-star-chest]')?.click();
+        api.openObjectivesModal("endgame");
+        document.querySelector('#modal-content [data-toggle-pact]')?.click();
+        api.closeModal();
+
+        api.openExpeditionSandboxModal();
+        document.querySelector('#modal-content #btn-claim-expedition')?.click();
+        const expClaim = api.claimExpeditionRewards();
+        const expAssign = api.assignExpeditionNode(g, "qinglan_vein", "shen");
+        api.closeModal();
+
+        const revAfter = JSON.parse(localStorage.getItem(sk) || "{}").saveRev || 0;
+        const tribZeroMut = g.stones === 2000
+          && g.inventory.herb === 20
+          && g.inventory.healing_pill === 2
+          && g.bondTiers.shen === 1
+          && Object.keys(g.choices).length === 0
+          && g.unlockedSouls.length === 1
+          && g.learned.length === 3
+          && g.omenIndex === 0
+          && g.claimedStepIds.length === 0
+          && g.bountyTiers.slay === 1
+          && g.claimedStarChests.length === 0
+          && g.pactSeals.length === 0
+          && g.expeditions.bankedStones === 180
+          && g.bonusStarPts === 0;
+
+        // Practice Mode parity
+        s.arena.tribulation = null;
+        api.startBossRushGauntlet(6);
+        const pracStory = api.playStoryEventInPortraitBar("shen_return");
+        const pracAssign = api.assignExpeditionNode(g, "qinglan_vein", "shen");
+        const pracPetSk = api.openPetSkillChoiceModal(3);
+        document.getElementById("btn-omen-banner")?.click();
+        const pracOmenStill = g.omenIndex === 0 && g.stones === 2000;
+        api.enterSanctumHub();
+
+        return {
+          cutActive, affixInCut, revBefore, revAfter,
+          giftDirect, storyBarDirect, storyChoiceDirect, dlgOpen,
+          karmaDirect, karmaBoughtStill, soulModalOpen, petSkDirect, reincTrib,
+          expClaim, expAssign: expAssign && expAssign.reason, tribZeroMut,
+          pracStory, pracAssign: pracAssign && pracAssign.reason, pracPetSk, pracOmenStill
+        };
+      }, STORAGE_KEY);
+
+      assert.equal(e2eR11.cutActive, true, "R11 E2E: opening_scroll cutscene active on fresh session");
+      assert.equal(e2eR11.affixInCut, false, "R11 E2E: openAffixEngraveModal blocked during cutscene");
+      assert.equal(e2eR11.giftDirect, false, "R10B-1 E2E: companion gift blocked mid-tribulation");
+      assert.equal(e2eR11.storyBarDirect, false, "R10B-1 E2E: playStoryEventInPortraitBar blocked mid-tribulation");
+      assert.equal(e2eR11.storyChoiceDirect, false, "R10B-1 E2E: resolveStoryChoice blocked mid-tribulation");
+      assert.equal(e2eR11.dlgOpen, false, "R10B-1 E2E: #story-dialogue-bar stays closed mid-tribulation");
+      assert.equal(e2eR11.karmaDirect, false, "R10B-2 E2E: buyKarmaSpecialItem blocked mid-tribulation");
+      assert.equal(e2eR11.karmaBoughtStill, true, "R10B-2 E2E: refresh-market blocked mid-tribulation");
+      assert.equal(e2eR11.soulModalOpen, false, "R10B-2 E2E: locked soul refine blocked mid-tribulation");
+      assert.equal(e2eR11.petSkDirect, false, "R11 Audit E2E: openPetSkillChoiceModal blocked mid-tribulation");
+      assert.equal(e2eR11.reincTrib, false, "R11 Audit E2E: executeReincarnation blocked mid-tribulation");
+      assert.equal(e2eR11.expClaim, null, "R10B-3 E2E: claimExpeditionRewards blocked mid-tribulation");
+      assert.equal(e2eR11.expAssign, "tribulation", "R11 Audit E2E: assignExpeditionNode blocked mid-tribulation");
+      assert.equal(e2eR11.revAfter, e2eR11.revBefore, "R11 E2E: 0 formal saveRev writes across blocked mid-tribulation attempts");
+      assert.equal(e2eR11.tribZeroMut, true, "R11 E2E: 0 state mutation across R10B-1/2/3 & audited mid-tribulation guards");
+      assert.equal(e2eR11.pracStory, false, "R10B-1 E2E Practice: playStoryEventInPortraitBar blocked");
+      assert.equal(e2eR11.pracAssign, "practice_mode", "R11 E2E Practice: assignExpeditionNode blocked");
+      assert.equal(e2eR11.pracPetSk, false, "R11 E2E Practice: openPetSkillChoiceModal blocked");
+      assert.equal(e2eR11.pracOmenStill, true, "R11 E2E Practice: #btn-omen-banner blocked");
     }
   }
 ];

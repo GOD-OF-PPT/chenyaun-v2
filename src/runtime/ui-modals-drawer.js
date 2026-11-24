@@ -3284,7 +3284,9 @@
   }
 
   function openSoulSealRefineConfirmModal(sid) {
-    if (!game || !hasOwn(SOUL_SPIRITS, sid)) return;
+    if (!game || isWelcomeScreenVisible() || cutscene.active || !hasOwn(SOUL_SPIRITS, sid)) return false;
+    if (!guardNotInTribulation("镇妖魂印炼化")) return false;
+    if (!guardNotPracticeMode("镇妖魂印炼化")) return false;
     const nw = SOUL_SPIRITS[sid];
     const curId = hasOwn(SOUL_SPIRITS, game.equippedSoul) ? game.equippedSoul : "blood_warden";
     const cur = SOUL_SPIRITS[curId];
@@ -3366,6 +3368,10 @@
 
   function strikeFurnaceNeedle() {
     if (!game || !furnaceGame.active) return;
+    if (!guardNotInTribulation("控火炼丹")) {
+      furnaceGame.active = false;
+      return;
+    }
     if (!guardNotPracticeMode("控火炼丹")) {
       furnaceGame.active = false;
       return;

@@ -512,6 +512,8 @@
 
   function assignExpeditionNode(g, nodeId, heroId) {
     if (!g) return { ok: false, reason: "no_game" };
+    if (!guardNotInTribulation("调遣远征驻防")) return { ok: false, reason: "tribulation" };
+    if (!guardNotPracticeMode("调遣远征驻防")) return { ok: false, reason: "practice_mode" };
     const node = EXPEDITION_NODES.find(n => n.id === nodeId);
     if (!node) return { ok: false, reason: "invalid_node" };
     const ex = ensureExpeditionState(g);
@@ -664,6 +666,7 @@
 
   function claimExpeditionRewards() {
     if (!game) return null;
+    if (!guardNotInTribulation("征收远征军资")) return null;
     if (!guardNotPracticeMode("征收远征军资")) return null;
     const ex = ensureExpeditionState(game);
     const activeNodes = EXPEDITION_NODES.filter(nd => ex.assignments && ex.assignments[nd.id]);
