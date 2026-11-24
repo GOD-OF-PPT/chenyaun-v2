@@ -168,3 +168,74 @@ test("buildVol5ResonanceSnapshot accurately evaluates D01/D04 conservative Vol 5
   assert.equal(s1.companionStatus.find(c => c.id === "shen").done, true);
   assert.equal(s1.companionStatus.find(c => c.id === "yan").done, false);
 });
+
+test("getExpeditionNodeStageSynergy supports plain-object runtime stageStars, legacy arrays, and hostile inputs (R6B-4)", () => {
+  const plain3WithBoss = getExpeditionNodeStageSynergy(
+    makeCleanGame({ stageStars: { 0: 3 }, defeatedStageBosses: { 0: true } }),
+    "qinglan_vein"
+  );
+  assert.equal(plain3WithBoss.mult, 1.30);
+  assert.equal(plain3WithBoss.tier, "full_star");
+  assert.equal(plain3WithBoss.stars, 3);
+  assert.ok(plain3WithBoss.label.includes("青岚破庙三星共鸣 +30%"));
+
+  const plain3NoBossFlag = getExpeditionNodeStageSynergy(
+    makeCleanGame({ stageStars: { 0: 3 }, defeatedStageBosses: {} }),
+    "qinglan_vein"
+  );
+  assert.equal(plain3NoBossFlag.mult, 1.30);
+  assert.equal(plain3NoBossFlag.tier, "full_star");
+  assert.equal(plain3NoBossFlag.stars, 3);
+
+  const plain1 = getExpeditionNodeStageSynergy(
+    makeCleanGame({ stageStars: { 1: 1 }, defeatedStageBosses: {} }),
+    "qingyun_peak"
+  );
+  assert.equal(plain1.mult, 1.15);
+  assert.equal(plain1.tier, "cleared");
+  assert.equal(plain1.stars, 1);
+
+  const bossOnly = getExpeditionNodeStageSynergy(
+    makeCleanGame({ stageStars: {}, defeatedStageBosses: { 2: true } }),
+    "zhaoying_lake"
+  );
+  assert.equal(bossOnly.mult, 1.15);
+  assert.equal(bossOnly.tier, "cleared");
+  assert.equal(bossOnly.stars, 0);
+
+  const legacyArr = getExpeditionNodeStageSynergy(
+    makeCleanGame({ stageStars: [0, 0, 3, 0, 0], defeatedStageBosses: {} }),
+    "zhaoying_lake"
+  );
+  assert.equal(legacyArr.mult, 1.30);
+  assert.equal(legacyArr.tier, "full_star");
+  assert.equal(legacyArr.stars, 3);
+
+  const inheritedProto = Object.create({ 0: 3 });
+  const protoRes = getExpeditionNodeStageSynergy(
+    makeCleanGame({ stageStars: inheritedProto, defeatedStageBosses: {} }),
+    "qinglan_vein"
+  );
+  assert.equal(protoRes.mult, 1.0);
+  assert.equal(protoRes.tier, "base");
+  assert.equal(protoRes.stars, 0);
+
+  for (const badStars of [null, "bad", { 0: NaN }, { 0: Infinity }, { 0: -5 }]) {
+    const r = getExpeditionNodeStageSynergy(
+      makeCleanGame({ stageStars: badStars, defeatedStageBosses: {} }),
+      "qinglan_vein"
+    );
+    assert.equal(r.mult, 1.0);
+    assert.equal(r.tier, "base");
+    assert.equal(r.stars, 0);
+  }
+
+  const clampedHigh = getExpeditionNodeStageSynergy(
+    makeCleanGame({ stageStars: { 0: 99 }, defeatedStageBosses: {} }),
+    "qinglan_vein"
+  );
+  assert.equal(clampedHigh.mult, 1.30);
+  assert.equal(clampedHigh.tier, "full_star");
+  assert.equal(clampedHigh.stars, 3);
+});
+

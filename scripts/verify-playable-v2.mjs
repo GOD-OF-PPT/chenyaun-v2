@@ -11279,22 +11279,17 @@ try {
     attachErrorListeners(tab2, "T5-2-Tab2");
     await tab2.goto(targetUrl, { waitUntil: "domcontentloaded" });
     await tab2.waitForSelector("#btn-continue-save", { state: "visible" });
-    await tab2.click("#btn-continue-save");
-    await tab2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-    await tab2.click("#btn-open-settings");
-    await tab2.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
-    await tab2.click('[data-sys-tab="controls"]');
-    await tab2.waitForSelector('[data-action="confirm-reset-save"]');
-    await tab2.click('[data-action="confirm-reset-save"]');
-    await tab2.waitForSelector('[data-action="execute-reset-save"]');
-    await tab2.click('[data-action="execute-reset-save"]');
-    await tab2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display !== "none");
-    await tab2.click("#btn-toggle-origin");
-    await tab2.waitForSelector("#player-name-input", { state: "visible" });
-    await tab2.fill("#player-name-input", "新世道友");
-    await tab2.click("#btn-start-new");
-    await tab2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-    await dismissOpeningScroll(tab2);
+    await tab2.evaluate(() => {
+      document.getElementById("btn-continue-save")?.click();
+      document.getElementById("btn-open-settings")?.click();
+      document.querySelector('#modal-backdrop.open [data-sys-tab="controls"]')?.click();
+      document.querySelector('#modal-backdrop.open [data-action="confirm-reset-save"]')?.click();
+      document.querySelector('#modal-backdrop.open [data-action="execute-reset-save"]')?.click();
+      const inp = document.getElementById("player-name-input");
+      if (inp) inp.value = "新世道友";
+      document.getElementById("btn-start-new")?.click();
+      document.querySelector("#story-dialogue-bar.open #btn-dlg-skip")?.click();
+    });
     await tab1.waitForFunction(() => Boolean(window.__CHENYUAN_V25__.getPersistenceState().saveConflictState), null, { timeout: 3000 });
 
     const tab1Conflict = await tab1.evaluate((sk) => {
@@ -11321,13 +11316,9 @@ try {
     // Part B (A-3): localStorage.removeItem throws SecurityError in execute-reset-save & executeReincarnation
     const ctxB = ctx;
     const pageB = tab2;
-    await pageB.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
-      api.getState().game.openingChoice = "help";
-      api.saveGame();
-    });
     await pageB.evaluate((sk) => {
       const api = window.__CHENYUAN_V25__;
+      api.getState().game.openingChoice = "help";
       api.getState().game.name = "不灭旧档";
       api.saveGame();
       window.__t5OrigRemoveItem = Storage.prototype.removeItem;
@@ -11335,16 +11326,13 @@ try {
         if (k === sk) throw new DOMException("Read-only storage", "SecurityError");
         return window.__t5OrigRemoveItem.call(this, k);
       };
+      document.getElementById("btn-open-settings")?.click();
+      document.querySelector('#modal-backdrop.open [data-sys-tab="controls"]')?.click();
+      document.querySelector('#modal-backdrop.open [data-action="confirm-reset-save"]')?.click();
+      const tc = document.getElementById("toast-container");
+      if (tc) tc.innerHTML = "";
     }, STORAGE_KEY);
-
-    await pageB.click("#btn-open-settings");
-    await pageB.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
-    await pageB.click('[data-sys-tab="controls"]');
-    await pageB.click('[data-action="confirm-reset-save"]');
-    await pageB.waitForSelector('[data-action="execute-reset-save"]');
-    await pageB.evaluate(() => { const tc = document.getElementById("toast-container"); if (tc) tc.innerHTML = ""; });
-    await pageB.click('[data-action="execute-reset-save"]');
-    await pageB.waitForTimeout(15);
+    await pageB.click('#modal-backdrop.open [data-action="execute-reset-save"]');
     const resetErrRes = await pageB.evaluate((sk) => ({
       welcomeVisible: document.getElementById("welcome-screen")?.style.display !== "none",
       hasGame: Boolean(window.__CHENYUAN_V25__.getState().game),
@@ -11555,12 +11543,12 @@ try {
     await pageM.evaluate(() => { Storage.prototype.setItem = window.__t5OrigSetItemMeta; });
 
     // Part C (A-7 + A-9 F3 on welcome screen): reuse pageM via return-title-safe (0 extra page load)
-    await pageM.click("#btn-open-settings");
-    await pageM.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
-    await pageM.click('[data-sys-tab="controls"]');
-    await pageM.click('[data-action="return-title-safe"]');
-    await pageM.waitForSelector("#welcome-screen", { state: "visible" });
-    await pageM.evaluate((sk) => { localStorage.removeItem(sk); }, STORAGE_KEY);
+    await pageM.evaluate((sk) => {
+      document.getElementById("btn-open-settings")?.click();
+      document.querySelector('#modal-backdrop.open [data-sys-tab="controls"]')?.click();
+      document.querySelector('#modal-backdrop.open [data-action="return-title-safe"]')?.click();
+      localStorage.removeItem(sk);
+    }, STORAGE_KEY);
     const ctxW = ctxM;
     const pageW = pageM;
     await pageW.keyboard.press("F3");
@@ -11568,34 +11556,28 @@ try {
     const f3WelcomeOpen = await pageW.evaluate(() => Boolean(document.getElementById("action-telemetry-panel")?.classList.contains("open")));
     assert.equal(f3WelcomeOpen, false, "A-9: F3 must NOT open #action-telemetry-panel over #welcome-screen");
 
-    await pageW.evaluate((sk) => {
+    const repeatToasts = await pageW.evaluate((sk) => {
       window.__t5OrigSetItemW = Storage.prototype.setItem;
       Storage.prototype.setItem = function (k, v) {
         if (k === sk) throw new DOMException("Quota exceeded", "QuotaExceededError");
         return window.__t5OrigSetItemW.call(this, k, v);
       };
-    }, STORAGE_KEY);
-    await pageW.click("#btn-start-new");
-    await pageW.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-    await dismissOpeningScroll(pageW);
-    await pageW.click("#btn-open-settings");
-    await pageW.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
-    await pageW.click('[data-sys-tab="controls"]');
-    await pageW.click('[data-action="return-title-safe"]');
-    await pageW.waitForFunction(() => document.getElementById("welcome-screen")?.style.display !== "none");
-    await pageW.evaluate(() => { const tc = document.getElementById("toast-container"); if (tc) tc.innerHTML = ""; });
-    await pageW.click("#btn-start-new");
-    await pageW.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-    const repeatToasts = await pageW.evaluate(() =>
-      Array.from(document.querySelectorAll("#toast-container .toast-pill")).map(x => x.textContent || "").join(" | ")
-    );
-    assert.ok(repeatToasts.includes("写入失败"), `A-7: Repeat <6s startFreshGameSession QuotaExceededError MUST emit toast, got: ${repeatToasts}`);
-    await pageW.evaluate(() => {
+      document.getElementById("btn-start-new")?.click();
+      document.querySelector("#story-dialogue-bar.open #btn-dlg-skip")?.click();
+      document.getElementById("btn-open-settings")?.click();
+      document.querySelector('#modal-backdrop.open [data-sys-tab="controls"]')?.click();
+      document.querySelector('#modal-backdrop.open [data-action="return-title-safe"]')?.click();
+      const tc = document.getElementById("toast-container");
+      if (tc) tc.innerHTML = "";
+      document.getElementById("btn-start-new")?.click();
+      const toasts = Array.from(document.querySelectorAll("#toast-container .toast-pill")).map(x => x.textContent || "").join(" | ");
       Storage.prototype.setItem = window.__t5OrigSetItemW;
       const api = window.__CHENYUAN_V25__;
       api.getState().game.openingChoice = "help";
       api.saveGame({ forceOverwrite: true });
-    });
+      return toasts;
+    }, STORAGE_KEY);
+    assert.ok(repeatToasts.includes("写入失败"), `A-7: Repeat <6s startFreshGameSession QuotaExceededError MUST emit toast, got: ${repeatToasts}`);
 
     // Part D (A-8, A-9 popover/Space, A-10 cutscene+drawer & floating card focus) — reuse pageW which just opened opening_scroll!
     const ctxK = ctxW;
@@ -11699,36 +11681,82 @@ try {
     await pageK.waitForTimeout(10);
     assert.equal(await pageK.evaluate(() => document.activeElement === document.body), false, "A-10: #btn-skip-onboarding must not drop focus to BODY");
 
-    // 2) #btn-unlock-dismiss and #btn-unlock-try
+    // 2) #btn-unlock-dismiss and #btn-unlock-try (+ R6A-4 deterministic requestCalmReevaluation focus retention)
     await pageK.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const g = api.getState().game;
       g.realm = "qi";
-      g.seenUnlockIds = [];
+      g.seenUnlockIds = ["unlock_qi_arts", "unlock_qi_eco"];
       api.queueNewUnlockCardsForState(g);
       api.flushNewUnlockCard();
     });
     await pageK.waitForSelector("#new-unlock-card #btn-unlock-dismiss", { state: "visible" });
     await pageK.focus("#btn-unlock-dismiss");
-    await pageK.keyboard.press("Enter");
-    await pageK.waitForTimeout(10);
-    assert.equal(await pageK.evaluate(() => document.activeElement === document.body), false, "A-10: #btn-unlock-dismiss must not drop focus to BODY");
-
-    await pageK.evaluate(() => {
+    const unlockCalmFocus = await pageK.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const g = api.getState().game;
-      g.realm = "qi";
-      g.seenUnlockIds = [];
+      const btnBefore = document.getElementById("btn-unlock-dismiss");
+      api.requestCalmReevaluation({ immediate: true });
+      const sameNode = document.getElementById("btn-unlock-dismiss") === btnBefore;
+      const focusAfterSame = document.activeElement?.id || "";
+      // Enqueue a 2nd card to force a genuine rem (0 -> 1) re-render while focused!
+      g.seenUnlockIds = ["unlock_qi_eco"];
       api.queueNewUnlockCardsForState(g);
-      api.flushNewUnlockCard();
+      api.requestCalmReevaluation({ immediate: true });
+      const focusAfterRemChange = document.activeElement?.id || "";
+      const hasPlusOne = (document.getElementById("new-unlock-card")?.textContent || "").includes("+1");
+      return { sameNode, focusAfterSame, focusAfterRemChange, hasPlusOne };
     });
+    assert.equal(unlockCalmFocus.sameNode, true, "R6A-4: Unchanged requestCalmReevaluation must skip #new-unlock-card innerHTML rewrite");
+    assert.equal(unlockCalmFocus.focusAfterSame, "btn-unlock-dismiss", "R6A-4: Unchanged requestCalmReevaluation must keep focus on #btn-unlock-dismiss");
+    assert.equal(unlockCalmFocus.hasPlusOne, true, "R6A-4: Enqueuing 2nd card updates +1 badge on #new-unlock-card");
+    assert.equal(unlockCalmFocus.focusAfterRemChange, "btn-unlock-dismiss", "R6A-4: rem-change re-render must preserve focus on #btn-unlock-dismiss");
+    await pageK.keyboard.press("Enter");
+    await pageK.waitForFunction(() => window.__CHENYUAN_V25__.getActiveUnlockCardId() === "unlock_qi_arts", null, { timeout: 3000 });
+    const afterUnlockDismiss = await pageK.evaluate(() => ({
+      isBody: document.activeElement === document.body,
+      seenHasCoop: (window.__CHENYUAN_V25__.getState().game.seenUnlockIds || []).includes("unlock_ally_coop")
+    }));
+    assert.equal(afterUnlockDismiss.isBody, false, "A-10: #btn-unlock-dismiss must not drop focus to BODY");
+    assert.equal(afterUnlockDismiss.seenHasCoop, true, "R6A-4: Pressing Enter on focused #btn-unlock-dismiss must dismiss unlock_ally_coop");
+
+    // Combat-hide off-BODY restore + #btn-unlock-try focus retention (active card is strictly unlock_qi_arts, empty queue)
     await pageK.waitForSelector("#new-unlock-card #btn-unlock-try", { state: "visible" });
     await pageK.focus("#btn-unlock-try");
+    const unlockCombatHide = await pageK.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      api.spawnSingleEnemy("wolf", 950, 460, 1.0, false);
+      api.requestCalmReevaluation();
+      const hiddenDisplay = document.getElementById("new-unlock-card")?.style.display || "";
+      const isBodyOnCombatHide = document.activeElement === document.body;
+      s.arena.enemies = [];
+      api.requestCalmReevaluation({ immediate: true });
+      return { hiddenDisplay, isBodyOnCombatHide, restoredId: api.getActiveUnlockCardId() };
+    });
+    assert.equal(unlockCombatHide.hiddenDisplay, "none", "R6A-4: Combat start hides #new-unlock-card");
+    assert.equal(unlockCombatHide.isBodyOnCombatHide, false, "R6A-4: Hiding focused #new-unlock-card on combat start must not drop focus to BODY");
+    assert.equal(unlockCombatHide.restoredId, "unlock_qi_arts", "R6A-4: Calm restoration re-displays unlock_qi_arts");
+
+    await pageK.waitForSelector("#new-unlock-card #btn-unlock-try", { state: "visible" });
+    await pageK.focus("#btn-unlock-try");
+    const tryFocusAfterCalm = await pageK.evaluate(() => {
+      window.__CHENYUAN_V25__.requestCalmReevaluation({ immediate: true });
+      return document.activeElement?.id || "";
+    });
+    assert.equal(tryFocusAfterCalm, "btn-unlock-try", "R6A-4: requestCalmReevaluation must keep focus on #btn-unlock-try");
     await pageK.keyboard.press("Enter");
     await pageK.waitForTimeout(10);
-    assert.equal(await pageK.evaluate(() => document.activeElement === document.body), false, "A-10: #btn-unlock-try must not drop focus to BODY");
+    const afterUnlockTry = await pageK.evaluate(() => ({
+      isBody: document.activeElement === document.body,
+      activeUnlock: window.__CHENYUAN_V25__.getActiveUnlockCardId(),
+      seenHasArts: (window.__CHENYUAN_V25__.getState().game.seenUnlockIds || []).includes("unlock_qi_arts")
+    }));
+    assert.equal(afterUnlockTry.isBody, false, "A-10: #btn-unlock-try must not drop focus to BODY");
+    assert.equal(afterUnlockTry.activeUnlock, null, "R6A-4: #btn-unlock-try Enter dismisses last unlock card cleanly");
+    assert.equal(afterUnlockTry.seenHasArts, true, "R6A-4: #btn-unlock-try marks unlock_qi_arts seen");
 
-    // 3) #gear-compare-card Step 1 smelt-arm & compare-keep-bag
+    // 3) #gear-compare-card Step 1 smelt-arm & compare-keep-bag (+ R6A-4 requestCalmReevaluation focus retention)
     await pageK.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const item = api.rollGearItem(2, 2, "weapon");
@@ -11738,18 +11766,39 @@ try {
       api.requestCalmReevaluation({ immediate: true });
     });
     await pageK.waitForSelector('#gear-compare-card [data-action="compare-smelt-new"]', { state: "visible" });
-    await pageK.waitForTimeout(260);
+    await pageK.waitForFunction(() => {
+      const gs = window.__CHENYUAN_V25__.getCompareCardGuardState();
+      return !gs.guardUntil || performance.now() >= gs.guardUntil;
+    }, null, { timeout: 2000 });
     await pageK.focus('#gear-compare-card [data-action="compare-smelt-new"]');
+    const cmpCalmFocus = await pageK.evaluate(() => {
+      const btnBefore = document.querySelector('#gear-compare-card [data-action="compare-smelt-new"]');
+      window.__CHENYUAN_V25__.requestCalmReevaluation({ immediate: true });
+      return {
+        sameNode: document.querySelector('#gear-compare-card [data-action="compare-smelt-new"]') === btnBefore,
+        activeAction: document.activeElement?.getAttribute?.("data-action") || ""
+      };
+    });
+    assert.equal(cmpCalmFocus.sameNode, true, "R6A-4: Unchanged requestCalmReevaluation must skip #gear-compare-card innerHTML rewrite");
+    assert.equal(cmpCalmFocus.activeAction, "compare-smelt-new", "R6A-4: requestCalmReevaluation must keep focus on compare-smelt-new");
     await pageK.keyboard.press("Enter");
     await pageK.waitForTimeout(10);
-    const smeltArmFocus = await pageK.evaluate(() => ({
-      isBody: document.activeElement === document.body,
-      activeAction: document.activeElement?.getAttribute?.("data-action") || ""
-    }));
+    const smeltArmFocus = await pageK.evaluate(() => {
+      window.__CHENYUAN_V25__.requestCalmReevaluation({ immediate: true });
+      return {
+        isBody: document.activeElement === document.body,
+        activeAction: document.activeElement?.getAttribute?.("data-action") || ""
+      };
+    });
     assert.equal(smeltArmFocus.isBody, false, "A-10: compare-smelt-new Step 1 must NOT drop focus to BODY");
     assert.equal(smeltArmFocus.activeAction, "compare-smelt-new", `A-10: compare-smelt-new Step 1 must refocus armed smelt button, got ${smeltArmFocus.activeAction}`);
 
     await pageK.focus('#gear-compare-card [data-action="compare-keep-bag"]');
+    const keepCalmFocus = await pageK.evaluate(() => {
+      window.__CHENYUAN_V25__.requestCalmReevaluation({ immediate: true });
+      return document.activeElement?.getAttribute?.("data-action") || "";
+    });
+    assert.equal(keepCalmFocus, "compare-keep-bag", "R6A-4: requestCalmReevaluation must keep focus on compare-keep-bag");
     await pageK.keyboard.press("Enter");
     await pageK.waitForTimeout(10);
     assert.equal(await pageK.evaluate(() => document.activeElement === document.body), false, "A-10: compare-keep-bag must NOT drop focus to BODY");
@@ -12441,86 +12490,74 @@ try {
     await page4.waitForFunction(() => !document.getElementById("jade-panel")?.classList.contains("drawer-open"));
 
     // R2A-5: fallbackCopy + in-game confirm-reset-corrupt-meta keep focus off BODY
-    await page4.evaluate((mk) => {
+    const r2a5AndReturn = await page4.evaluate((mk) => {
       Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true });
       localStorage.setItem(mk, "{CORRUPT_META_R2A5");
       window.__CHENYUAN_V25__.saveMeta();
-    }, META_KEY);
-    await page4.waitForSelector('#hud-save-alert [data-action="copy-corrupt-meta-raw"]');
-    await page4.focus('#hud-save-alert [data-action="copy-corrupt-meta-raw"]');
-    await page4.click('#hud-save-alert [data-action="copy-corrupt-meta-raw"]');
-    const fallbackCopyFocus = await page4.evaluate(() => ({ isBody: document.activeElement === document.body, tag: document.activeElement?.tagName }));
-    assert.equal(fallbackCopyFocus.isBody, false, `R2A-5: fallbackCopy must restore focus off BODY (got ${fallbackCopyFocus.tag})`);
+      const copyBtn = document.querySelector('#hud-save-alert [data-action="copy-corrupt-meta-raw"]');
+      copyBtn?.focus();
+      copyBtn?.click();
+      const fallbackCopyFocus = { isBody: document.activeElement === document.body, tag: document.activeElement?.tagName };
 
-    await page4.focus('#hud-save-alert [data-action="prompt-reset-corrupt-meta"]');
-    await page4.click('#hud-save-alert [data-action="prompt-reset-corrupt-meta"]');
-    await page4.waitForSelector('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
-    await page4.click('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
-    await page4.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
-    const inGameMetaResetFocus = await page4.evaluate(() => ({ isBody: document.activeElement === document.body, tag: document.activeElement?.tagName }));
-    assert.equal(inGameMetaResetFocus.isBody, false, `R2A-5: In-game confirm-reset-corrupt-meta must keep focus off BODY (got ${inGameMetaResetFocus.tag})`);
+      const promptBtn = document.querySelector('#hud-save-alert [data-action="prompt-reset-corrupt-meta"]');
+      promptBtn?.focus();
+      promptBtn?.click();
+      document.querySelector('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]')?.click();
+      const inGameMetaResetFocus = { isBody: document.activeElement === document.body, tag: document.activeElement?.tagName };
 
-    // DEFECT-R1-2B + R2A-4 + R2A-5 (welcome): Enter Boss Rush Wave 7 Practice Mode, corrupt META_KEY, return-title-safe -> focus inside welcome screen, Enter does NOT open Settings, isPracticeModeActive === false, and welcome confirm-reset-corrupt-meta succeeds with off-BODY focus!
-    await page4.evaluate((mk) => {
+      // DEFECT-R1-2B + R2A-4 + R2A-5 (welcome)
       const api = window.__CHENYUAN_V25__;
       api.getState().game.realm = "spirit";
       api.startBossRushGauntlet(7);
       localStorage.setItem(mk, "{CORRUPT_META_WELCOME_2B");
-    }, META_KEY);
-    await page4.focus("#btn-open-settings");
-    await page4.click("#btn-open-settings");
-    await page4.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
-    await page4.click('#modal-backdrop.open [data-sys-tab="controls"]');
-    await page4.waitForSelector('#modal-backdrop.open [data-action="return-title-safe"]');
-    await page4.click('#modal-backdrop.open [data-action="return-title-safe"]');
-    await page4.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "flex");
-    const afterReturnTitle = await page4.evaluate(() => {
+      const setBtn = document.getElementById("btn-open-settings");
+      setBtn?.focus();
+      setBtn?.click();
+      document.querySelector('#modal-backdrop.open [data-sys-tab="controls"]')?.click();
+      document.querySelector('#modal-backdrop.open [data-action="return-title-safe"]')?.click();
       const ws = document.getElementById("welcome-screen");
       const ae = document.activeElement;
-      return {
+      const afterReturnTitle = {
         inWelcome: Boolean(ws && ws.contains(ae)),
         activeId: ae?.id || "",
-        isPractice: window.__CHENYUAN_V25__.isPracticeModeActive(),
+        isPractice: api.isPracticeModeActive(),
         hasMetaResetBtn: Boolean(document.querySelector('#save-status-banner [data-action="prompt-reset-corrupt-meta"]'))
       };
-    });
-    assert.equal(afterReturnTitle.inWelcome, true, `R2A-4: return-title-safe must land focus inside #welcome-screen (got #${afterReturnTitle.activeId})`);
-    assert.equal(afterReturnTitle.isPractice, false, "DEFECT-R1-2B: return-title-safe from Practice Mode must clear isPracticeModeActive()");
-    assert.equal(afterReturnTitle.hasMetaResetBtn, true, "DEFECT-R1-2B: Welcome screen must display corrupt-meta reset button");
 
-    await page4.focus('#save-status-banner [data-action="prompt-reset-corrupt-meta"]');
-    await page4.click('#save-status-banner [data-action="prompt-reset-corrupt-meta"]');
-    await page4.waitForSelector('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
-    await page4.click('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
-    await page4.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
-    const afterWelcomeMetaReset = await page4.evaluate((mk) => ({
-      metaReadErr: Boolean(window.__CHENYUAN_V25__.getPersistenceState().metaReadError),
-      diskRawValid: (() => { try { JSON.parse(localStorage.getItem(mk)); return true; } catch { return false; } })(),
-      isBody: document.activeElement === document.body,
-      inWelcome: Boolean(document.getElementById("welcome-screen")?.contains(document.activeElement))
-    }), META_KEY);
-    assert.equal(afterWelcomeMetaReset.metaReadErr, false, "DEFECT-R1-2B: Welcome corrupt-meta reset must clear metaReadError after returning from Practice Mode");
-    assert.equal(afterWelcomeMetaReset.diskRawValid, true, "DEFECT-R1-2B: Welcome corrupt-meta reset must write valid META_KEY");
-    assert.equal(afterWelcomeMetaReset.isBody, false, "R2A-5: Welcome confirm-reset-corrupt-meta must keep focus off BODY");
-    assert.equal(afterWelcomeMetaReset.inWelcome, true, "R2A-5: Welcome confirm-reset-corrupt-meta must keep focus inside #welcome-screen");
+      const wPrompt = document.querySelector('#save-status-banner [data-action="prompt-reset-corrupt-meta"]');
+      wPrompt?.focus();
+      wPrompt?.click();
+      document.querySelector('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]')?.click();
+      const afterWelcomeMetaReset = {
+        metaReadErr: Boolean(api.getPersistenceState().metaReadError),
+        diskRawValid: (() => { try { JSON.parse(localStorage.getItem(mk)); return true; } catch { return false; } })(),
+        isBody: document.activeElement === document.body,
+        inWelcome: Boolean(ws && ws.contains(document.activeElement))
+      };
 
-    // R2A-4: execute-reset-save also lands focus inside #welcome-screen (never occluded #btn-open-settings)
-    await page4.click("#btn-continue-save");
-    await page4.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-    await page4.focus("#btn-open-settings");
-    await page4.click("#btn-open-settings");
-    await page4.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
-    await page4.click('#modal-backdrop.open [data-sys-tab="controls"]');
-    await page4.waitForSelector('#modal-backdrop.open [data-action="confirm-reset-save"]');
-    await page4.click('#modal-backdrop.open [data-action="confirm-reset-save"]');
-    await page4.waitForSelector('#modal-backdrop.open [data-action="execute-reset-save"]');
-    await page4.click('#modal-backdrop.open [data-action="execute-reset-save"]');
-    await page4.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "flex");
-    const afterResetFocus = await page4.evaluate(() => ({
-      inWelcome: Boolean(document.getElementById("welcome-screen")?.contains(document.activeElement)),
-      activeId: document.activeElement?.id || ""
-    }));
-    assert.equal(afterResetFocus.inWelcome, true, `R2A-4: execute-reset-save must focus inside #welcome-screen (got #${afterResetFocus.activeId})`);
+      // R2A-4: execute-reset-save also lands focus inside #welcome-screen
+      document.getElementById("btn-continue-save")?.click();
+      document.getElementById("btn-open-settings")?.focus();
+      document.getElementById("btn-open-settings")?.click();
+      document.querySelector('#modal-backdrop.open [data-sys-tab="controls"]')?.click();
+      document.querySelector('#modal-backdrop.open [data-action="confirm-reset-save"]')?.click();
+      document.querySelector('#modal-backdrop.open [data-action="execute-reset-save"]')?.click();
+      const afterResetFocus = {
+        inWelcome: Boolean(ws && ws.contains(document.activeElement)),
+        activeId: document.activeElement?.id || ""
+      };
+      return { fallbackCopyFocus, inGameMetaResetFocus, afterReturnTitle, afterWelcomeMetaReset, afterResetFocus };
+    }, META_KEY);
+    assert.equal(r2a5AndReturn.fallbackCopyFocus.isBody, false, `R2A-5: fallbackCopy must restore focus off BODY (got ${r2a5AndReturn.fallbackCopyFocus.tag})`);
+    assert.equal(r2a5AndReturn.inGameMetaResetFocus.isBody, false, `R2A-5: In-game confirm-reset-corrupt-meta must keep focus off BODY (got ${r2a5AndReturn.inGameMetaResetFocus.tag})`);
+    assert.equal(r2a5AndReturn.afterReturnTitle.inWelcome, true, `R2A-4: return-title-safe must land focus inside #welcome-screen (got #${r2a5AndReturn.afterReturnTitle.activeId})`);
+    assert.equal(r2a5AndReturn.afterReturnTitle.isPractice, false, "DEFECT-R1-2B: return-title-safe from Practice Mode must clear isPracticeModeActive()");
+    assert.equal(r2a5AndReturn.afterReturnTitle.hasMetaResetBtn, true, "DEFECT-R1-2B: Welcome screen must display corrupt-meta reset button");
+    assert.equal(r2a5AndReturn.afterWelcomeMetaReset.metaReadErr, false, "DEFECT-R1-2B: Welcome corrupt-meta reset must clear metaReadError after returning from Practice Mode");
+    assert.equal(r2a5AndReturn.afterWelcomeMetaReset.diskRawValid, true, "DEFECT-R1-2B: Welcome corrupt-meta reset must write valid META_KEY");
+    assert.equal(r2a5AndReturn.afterWelcomeMetaReset.isBody, false, "R2A-5: Welcome confirm-reset-corrupt-meta must keep focus off BODY");
+    assert.equal(r2a5AndReturn.afterWelcomeMetaReset.inWelcome, true, "R2A-5: Welcome confirm-reset-corrupt-meta must keep focus inside #welcome-screen");
+    assert.equal(r2a5AndReturn.afterResetFocus.inWelcome, true, `R2A-4: execute-reset-save must focus inside #welcome-screen (got #${r2a5AndReturn.afterResetFocus.activeId})`);
     await ctx4.close();
   });
 
@@ -12884,12 +12921,13 @@ try {
         api.getState().game.inventory.spirit_pill = 1;
       });
       await p2.waitForSelector('#modal-backdrop.open [data-action="load-latest-save"]', { state: "visible" });
-      await p2.click('#modal-backdrop.open [data-action="load-latest-save"]');
-      await p2.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
-      await p2.click("#btn-open-settings");
-      await p2.click('[data-sys-tab="controls"]');
-      await p2.click('[data-action="confirm-reset-save"]');
-      await p2.click('[data-action="execute-reset-save"]');
+      await p2.evaluate(() => {
+        document.querySelector('#modal-backdrop.open [data-action="load-latest-save"]')?.click();
+        document.getElementById("btn-open-settings")?.click();
+        document.querySelector('#modal-backdrop.open [data-sys-tab="controls"]')?.click();
+        document.querySelector('#modal-backdrop.open [data-action="confirm-reset-save"]')?.click();
+        document.querySelector('#modal-backdrop.open [data-action="execute-reset-save"]')?.click();
+      });
       await p1.waitForFunction(() => {
         const ps = window.__CHENYUAN_V25__.getPersistenceState();
         return ps.saveConflictState && ps.saveConflictState.deleted === true && window.__CHENYUAN_V25__.getActiveModalKind() === "save_conflict";
@@ -12919,25 +12957,17 @@ try {
 
       // Part C (R3A-3): Delayed foreign StorageEvent with higher saveRev (real tab2HighRaw from p2 Case A) over locally-owned lower-rev disk save must be ignored
       await p2.close();
-      await p1.evaluate((sk) => {
+      const r3a3Res = await p1.evaluate(({ sk, raw }) => {
         const api = window.__CHENYUAN_V25__;
         api.closeModal();
         localStorage.removeItem(sk);
-      }, STORAGE_KEY);
-      await p1.click("#btn-open-settings");
-      await p1.click('[data-sys-tab="controls"]');
-      await p1.click('[data-action="return-title-safe"]');
-      await p1.waitForSelector("#btn-start-new", { state: "visible" });
-      if (!(await p1.isVisible("#player-name-input"))) {
-        await p1.click("#btn-toggle-origin");
-        await p1.waitForSelector("#player-name-input", { state: "visible" });
-      }
-      await p1.fill("#player-name-input", "新世初卷");
-      await p1.click("#btn-start-new");
-      await p1.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
-      await dismissOpeningScroll(p1);
-      const r3a3Res = await p1.evaluate(({ sk, raw }) => {
-        const api = window.__CHENYUAN_V25__;
+        document.getElementById("btn-open-settings")?.click();
+        document.querySelector('#modal-backdrop.open [data-sys-tab="controls"]')?.click();
+        document.querySelector('#modal-backdrop.open [data-action="return-title-safe"]')?.click();
+        const nameInp = document.getElementById("player-name-input");
+        if (nameInp) nameInp.value = "新世初卷";
+        document.getElementById("btn-start-new")?.click();
+        document.querySelector("#story-dialogue-bar.open #btn-dlg-skip")?.click();
         const liveBefore = JSON.parse(localStorage.getItem(sk));
         const ev = new StorageEvent("storage", { key: sk, newValue: raw, oldValue: null, storageArea: localStorage });
         window.dispatchEvent(ev);
@@ -12955,24 +12985,23 @@ try {
       // Parts B, D, E (R3A-2, R3A-4 + PR #26 vol1PedestalMeta, R3A-5) — reuse clean live p1 in ctxA!
       const page = p1;
       // Part B (R3A-2): #pavilion-popover dismissed on openModal / return-title-safe; Tab stays inside #welcome-screen; welcome-screen modals STILL focusable
-      await page.click("#btn-pavilion-menu");
-      await page.waitForFunction(() => document.getElementById("pavilion-popover").classList.contains("open"));
-      await page.click("#btn-open-settings");
-      await page.waitForFunction(() => document.getElementById("modal-backdrop").classList.contains("open"));
-      const popAfterModal = await page.evaluate(() => ({
-        popOpen: document.getElementById("pavilion-popover").classList.contains("open"),
-        btnOpen: document.getElementById("btn-pavilion-menu").classList.contains("open")
-      }));
+      const popAfterModal = await page.evaluate(() => {
+        document.getElementById("btn-pavilion-menu")?.click();
+        document.getElementById("btn-open-settings")?.click();
+        return {
+          popOpen: document.getElementById("pavilion-popover").classList.contains("open"),
+          btnOpen: document.getElementById("btn-pavilion-menu").classList.contains("open")
+        };
+      });
       assert.equal(popAfterModal.popOpen, false, "R3A-2: openModal() must dismiss #pavilion-popover");
       assert.equal(popAfterModal.btnOpen, false, "R3A-2: openModal() must remove .open from #btn-pavilion-menu");
       // Force-open popover behind modal & seed corrupt STORAGE_KEY so return-title-safe also renders #save-status-banner with 0 page reload!
       await page.evaluate((sk) => {
         document.getElementById("pavilion-popover").classList.add("open");
         localStorage.setItem(sk, "{CORRUPT_JSON");
+        document.querySelector('#modal-backdrop.open [data-sys-tab="controls"]')?.click();
+        document.querySelector('#modal-backdrop.open [data-action="return-title-safe"]')?.click();
       }, STORAGE_KEY);
-      await page.click('[data-sys-tab="controls"]');
-      await page.click('[data-action="return-title-safe"]');
-      await page.waitForSelector("#welcome-screen", { state: "visible" });
       await page.keyboard.press("Tab");
       await page.keyboard.press("Tab");
       const r3a2Welcome = await page.evaluate(() => {
@@ -12990,23 +13019,20 @@ try {
       assert.equal(r3a2Welcome.inPopover, false, "R3A-2: Focus must never escape into occluded #pavilion-popover");
 
       // Verify modal opened OVER #welcome-screen (corrupt save confirmation) still focuses a button inside #modal-content
-      await page.waitForSelector("#save-status-banner", { state: "visible" });
-      await page.click("#btn-start-new");
-      await page.waitForFunction(() => document.getElementById("modal-backdrop").classList.contains("open"));
       const welcomeModalFocus = await page.evaluate(() => {
+        document.getElementById("btn-start-new")?.click();
         const mc = document.getElementById("modal-content");
-        return {
+        const res = {
           inModal: mc.contains(document.activeElement),
           activeTag: document.activeElement?.tagName
         };
+        // Start fresh session for Parts D & E
+        document.querySelector('#modal-backdrop.open [data-action="confirm-overwrite-corrupt-new"]')?.click();
+        document.querySelector("#story-dialogue-bar.open #btn-dlg-skip")?.click();
+        return res;
       });
       assert.equal(welcomeModalFocus.inModal, true, "R3A-2: Modals opened over #welcome-screen must still focus elements inside #modal-content");
       assert.equal(welcomeModalFocus.activeTag, "BUTTON", "R3A-2: Welcome-screen modal must focus a real button");
-
-      // Start fresh session for Parts D & E
-      await page.click('[data-action="confirm-overwrite-corrupt-new"]');
-      await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
-      await dismissOpeningScroll(page);
 
       // Part D (R3A-4 + PR #26 vol1PedestalMeta sandbox-exit guard): Legacy/no-tabId overwrite during Sandbox Mode triggers conflict & does NOT fire premature payoff save
       const r3a4Res = await page.evaluate((sk) => {
@@ -13374,7 +13400,7 @@ try {
     }
   });
 
-  await runSuite("T5-10", "M7b Round 4 & Round 5 收敛门禁全量回归(R4A-1..3 + R4B-1..3 + R5A-1/2 + R5B-1/2/3)", async () => {
+  await runSuite("T5-10", "M7b Round 4–6 收敛门禁全量回归(R4A/B + R5A/B + R6A-1..4 + R6B-1..4)", async () => {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     try {
       // Part A (R4A-2): #welcome-screen Tab/Shift+Tab focus trap & occluded HUD click guards while game === null
@@ -13660,25 +13686,36 @@ try {
       assert.equal(dojoLeaveWorkshop.caret, "▾", "R4A-3: Custom Workshop resets #lbl-dojo-caret");
 
       // Show Unlock Card on formal Stage 0, even with synthetic hidden .expanded (without .active), 1 Escape MUST dismiss Unlock Card!
-      await page1.evaluate(() => {
+      const unlockBeforeEsc = await page1.evaluate(() => {
         const api = window.__CHENYUAN_V25__;
         api.initArenaStage(0, false);
         const s = api.getState();
         s.arena.enemies = [];
         s.game.realm = "qi";
-        s.game.seenUnlockIds = [];
+        s.game.seenUnlockIds = ["unlock_qi_arts", "unlock_qi_eco"];
         api.queueNewUnlockCardsForState(s.game);
         api.flushNewUnlockCard();
         document.getElementById("dojo-control-bar").classList.add("expanded");
         api.focusBattlefield();
+        return {
+          activeUnlock: api.getActiveUnlockCardId(),
+          pendingQueueLen: api.getPendingUnlockCardQueue().length
+        };
       });
-      await page1.waitForFunction(() => Boolean(window.__CHENYUAN_V25__.getActiveUnlockCardId()));
+      assert.equal(unlockBeforeEsc.activeUnlock, "unlock_ally_coop", "R4A-3 precondition: strictly unlock_ally_coop is active");
+      assert.equal(unlockBeforeEsc.pendingQueueLen, 0, "R4A-3 precondition: pendingUnlockCardQueue is empty before Escape");
+      await page1.waitForFunction(() => window.__CHENYUAN_V25__.getActiveUnlockCardId() === "unlock_ally_coop");
       await page1.keyboard.press("Escape");
-      const unlockAfter1Esc = await page1.evaluate(() => ({
-        activeUnlock: window.__CHENYUAN_V25__.getActiveUnlockCardId(),
-        dojoActive: document.getElementById("dojo-control-bar").classList.contains("active")
-      }));
+      const unlockAfter1Esc = await page1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        return {
+          activeUnlock: api.getActiveUnlockCardId(),
+          seenUnlockIds: (api.getState().game.seenUnlockIds || []).slice(),
+          dojoActive: document.getElementById("dojo-control-bar").classList.contains("active")
+        };
+      });
       assert.equal(unlockAfter1Esc.activeUnlock, null, "R4A-3: 1st Escape must dismiss visible Unlock Card even if hidden Dojo bar has .expanded");
+      assert.equal(unlockAfter1Esc.seenUnlockIds.includes("unlock_ally_coop"), true, "R4A-3: Dismissed unlock_ally_coop must be persisted in seenUnlockIds");
       await page1.evaluate(() => { document.getElementById("dojo-control-bar").classList.remove("expanded"); });
 
       // Part D (R4B-1): Active trial modes block Live Tribulation; encounter_stele / boon_stele / modals blocked during Live Tribulation
@@ -14007,27 +14044,21 @@ try {
       assert.equal(r4b3Res.shieldAfterHardcoreBolt, 2, "R4B-3: Pre-existing game.tribShield must remain preserved untouched in Hardcore Defiant mode");
 
       // Part G (R5A-1 reset-save & corrupt-meta inline role="alert" errors + R5A-2 all 3 title-return Sanctum/Dojo DOM cleanups)
-      await page1.evaluate(() => {
+      await page1.evaluate((sk) => {
         const api = window.__CHENYUAN_V25__;
         api.enterSanctumHub();
         api.saveGame({ forceOverwrite: true });
-      });
-      await page1.click("#btn-toggle-dojo-bar");
-      await page1.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
-      // R5A-1 Case C: confirm-reset-save SecurityError shows visible inline #reset-save-error-msg role="alert"
-      await page1.click("#btn-open-settings");
-      await page1.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
-      await page1.click('[data-sys-tab="controls"]');
-      await page1.click('[data-action="confirm-reset-save"]');
-      await page1.waitForSelector('#modal-backdrop.open [data-action="execute-reset-save"]');
-      await page1.evaluate((sk) => {
+        document.getElementById("btn-toggle-dojo-bar")?.click();
+        document.getElementById("btn-open-settings")?.click();
+        document.querySelector('#modal-backdrop.open [data-sys-tab="controls"]')?.click();
+        document.querySelector('#modal-backdrop.open [data-action="confirm-reset-save"]')?.click();
         window.__t510OrigRm = Storage.prototype.removeItem;
         Storage.prototype.removeItem = function(k) {
           if (k === sk) throw new DOMException("Read-only storage", "SecurityError");
           return window.__t510OrigRm.call(this, k);
         };
       }, STORAGE_KEY);
-      await page1.click('[data-action="execute-reset-save"]');
+      await page1.click('#modal-backdrop.open [data-action="execute-reset-save"]');
       const resetErrCheck = await page1.evaluate((sk) => {
         const el = document.getElementById("reset-save-error-msg");
         const cs = el ? getComputedStyle(el) : null;
@@ -14047,27 +14078,26 @@ try {
       assert.equal(resetErrCheck.visible, true, "R5A-1 reset-save: #reset-save-error-msg visibly rendered inside open modal");
       assert.ok(resetErrCheck.text.includes("SecurityError"), `R5A-1 reset-save: error text includes SecurityError, got: ${resetErrCheck.text}`);
       assert.equal(resetErrCheck.savePreserved, true, "R5A-1 reset-save: primary save preserved on SecurityError");
-      await page1.click('[data-modal-close="1"]');
-      await page1.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
 
       // R5A-2 Path 1 (return-title-safe) + seed corrupt META_KEY for R5A-1 Case B
-      await page1.evaluate((mk) => { localStorage.setItem(mk, "{bad_meta_r5"); }, META_KEY);
-      await page1.click("#btn-open-settings");
-      await page1.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
-      await page1.click('[data-sys-tab="controls"]');
-      await page1.click('[data-action="return-title-safe"]');
-      await page1.waitForSelector("#welcome-screen", { state: "visible" });
-      const r5a2ReturnTitle = await page1.evaluate(() => {
+      const r5a2ReturnTitle = await page1.evaluate((mk) => {
+        localStorage.setItem(mk, "{bad_meta_r5");
+        document.querySelector('#modal-backdrop.open [data-modal-close="1"]')?.click();
+        document.getElementById("btn-open-settings")?.click();
+        document.querySelector('#modal-backdrop.open [data-sys-tab="controls"]')?.click();
+        document.querySelector('#modal-backdrop.open [data-action="return-title-safe"]')?.click();
         const db = document.getElementById("dojo-control-bar");
         const hud = document.getElementById("dojo-training-hud");
         return {
+          welcomeVisible: document.getElementById("welcome-screen")?.style.display !== "none",
           sanctumMode: window.__CHENYUAN_V25__.getState().arena.sanctumMode,
           dojoActive: db.classList.contains("active"),
           dojoExpanded: db.classList.contains("expanded"),
           caret: (document.getElementById("lbl-dojo-caret")?.textContent || "").trim(),
           trainingHudActive: Boolean(hud && hud.classList.contains("active"))
         };
-      });
+      }, META_KEY);
+      assert.equal(r5a2ReturnTitle.welcomeVisible, true, "R5A-2 return-title-safe: returned to welcome screen");
       assert.equal(r5a2ReturnTitle.sanctumMode, false, "R5A-2 return-title-safe: sanctumMode cleared");
       assert.equal(r5a2ReturnTitle.dojoActive, false, "R5A-2 return-title-safe: dojo bar .active cleared");
       assert.equal(r5a2ReturnTitle.dojoExpanded, false, "R5A-2 return-title-safe: dojo bar .expanded cleared");
@@ -14075,17 +14105,15 @@ try {
       assert.equal(r5a2ReturnTitle.trainingHudActive, false, "R5A-2 return-title-safe: #dojo-training-hud .active cleared");
 
       // R5A-1 Case B: confirm-reset-corrupt-meta QuotaExceededError shows visible inline #corrupt-meta-reset-error-msg role="alert"
-      await page1.waitForSelector('[data-action="prompt-reset-corrupt-meta"]', { state: "visible" });
-      await page1.click('[data-action="prompt-reset-corrupt-meta"]');
-      await page1.waitForSelector('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
       await page1.evaluate((mk) => {
+        document.querySelector('[data-action="prompt-reset-corrupt-meta"]')?.click();
         window.__t510OrigSetMeta = Storage.prototype.setItem;
         Storage.prototype.setItem = function(k, v) {
           if (k === mk) throw new DOMException("Quota exceeded", "QuotaExceededError");
           return window.__t510OrigSetMeta.call(this, k, v);
         };
       }, META_KEY);
-      await page1.click('[data-action="confirm-reset-corrupt-meta"]');
+      await page1.click('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
       const metaErrCheck = await page1.evaluate((mk) => {
         const el = document.getElementById("corrupt-meta-reset-error-msg");
         const cs = el ? getComputedStyle(el) : null;
@@ -14105,26 +14133,21 @@ try {
       assert.equal(metaErrCheck.visible, true, "R5A-1 corrupt-meta: #corrupt-meta-reset-error-msg visibly rendered inside open modal");
       assert.ok(metaErrCheck.text.includes("QuotaExceededError"), `R5A-1 corrupt-meta: error text includes QuotaExceededError, got: ${metaErrCheck.text}`);
       assert.equal(metaErrCheck.corruptPreserved, true, "R5A-1 corrupt-meta: corrupt META_KEY preserved untouched");
-      await page1.click('[data-action="confirm-reset-corrupt-meta"]');
-      await page1.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
 
       // R5A-2 Path 2 (execute-reset-save) & Path 3 (executeReincarnation) from Sanctum Hub with expanded Dojo bar
-      await page1.click("#btn-continue-save");
-      await page1.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
-      await page1.evaluate(() => { window.__CHENYUAN_V25__.enterSanctumHub(); });
-      await page1.click("#btn-toggle-dojo-bar");
-      await page1.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
-      await page1.click("#btn-open-settings");
-      await page1.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
-      await page1.click('[data-sys-tab="controls"]');
-      await page1.click('[data-action="confirm-reset-save"]');
-      await page1.waitForSelector('#modal-backdrop.open [data-action="execute-reset-save"]');
-      await page1.click('[data-action="execute-reset-save"]');
-      await page1.waitForSelector("#welcome-screen", { state: "visible" });
       const r5a2ResetSave = await page1.evaluate(() => {
+        document.querySelector('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]')?.click();
+        document.getElementById("btn-continue-save")?.click();
+        window.__CHENYUAN_V25__.enterSanctumHub();
+        document.getElementById("btn-toggle-dojo-bar")?.click();
+        document.getElementById("btn-open-settings")?.click();
+        document.querySelector('#modal-backdrop.open [data-sys-tab="controls"]')?.click();
+        document.querySelector('#modal-backdrop.open [data-action="confirm-reset-save"]')?.click();
+        document.querySelector('#modal-backdrop.open [data-action="execute-reset-save"]')?.click();
         const db = document.getElementById("dojo-control-bar");
         const hud = document.getElementById("dojo-training-hud");
         return {
+          welcomeVisible: document.getElementById("welcome-screen")?.style.display !== "none",
           sanctumMode: window.__CHENYUAN_V25__.getState().arena.sanctumMode,
           dojoActive: db.classList.contains("active"),
           dojoExpanded: db.classList.contains("expanded"),
@@ -14132,19 +14155,18 @@ try {
           trainingHudActive: Boolean(hud && hud.classList.contains("active"))
         };
       });
+      assert.equal(r5a2ResetSave.welcomeVisible, true, "R5A-2 execute-reset-save: returned to welcome screen");
       assert.equal(r5a2ResetSave.sanctumMode, false, "R5A-2 execute-reset-save: sanctumMode cleared");
       assert.equal(r5a2ResetSave.dojoActive, false, "R5A-2 execute-reset-save: dojo bar .active cleared");
       assert.equal(r5a2ResetSave.dojoExpanded, false, "R5A-2 execute-reset-save: dojo bar .expanded cleared");
       assert.equal(r5a2ResetSave.caret, "▾", "R5A-2 execute-reset-save: dojo caret reset");
       assert.equal(r5a2ResetSave.trainingHudActive, false, "R5A-2 execute-reset-save: #dojo-training-hud .active cleared");
 
-      await page1.click("#btn-start-new");
-      await page1.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
-      await dismissOpeningScroll(page1);
-      await page1.evaluate(() => { window.__CHENYUAN_V25__.enterSanctumHub(); });
-      await page1.click("#btn-toggle-dojo-bar");
-      await page1.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
       const r5a2Reinc = await page1.evaluate(() => {
+        document.getElementById("btn-start-new")?.click();
+        document.querySelector("#story-dialogue-bar.open #btn-dlg-skip")?.click();
+        window.__CHENYUAN_V25__.enterSanctumHub();
+        document.getElementById("btn-toggle-dojo-bar")?.click();
         const ok = window.__CHENYUAN_V25__.executeReincarnation({ source: "bingjie" });
         const db = document.getElementById("dojo-control-bar");
         const hud = document.getElementById("dojo-training-hud");
@@ -14163,6 +14185,664 @@ try {
       assert.equal(r5a2Reinc.dojoExpanded, false, "R5A-2 executeReincarnation: dojo bar .expanded cleared");
       assert.equal(r5a2Reinc.caret, "▾", "R5A-2 executeReincarnation: dojo caret reset");
       assert.equal(r5a2Reinc.trainingHudActive, false, "R5A-2 executeReincarnation: #dojo-training-hud .active cleared");
+
+      // ==================== Part H (Round 6): R6A-1 (Option 1B), R6A-2 (+ Batch/Settings), R6A-3, Minor-3, R6B-1..4 (+ P4c) ====================
+      // H.1 Minor-3: exitSandboxMode with game === null (from welcome screen) clears Sanctum/Dojo DOM & keeps focus off BODY
+      const minor3Res = await page1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const entered = api.enterSandboxMode({ source: "preset", preset: "golden" });
+        api.enterSanctumHub();
+        const db = document.getElementById("dojo-control-bar");
+        if (db) db.classList.add("expanded");
+        const exited = api.exitSandboxMode();
+        const hud = document.getElementById("dojo-training-hud");
+        return {
+          entered,
+          exited,
+          sanctumMode: api.getState().arena.sanctumMode,
+          dojoActive: Boolean(db && db.classList.contains("active")),
+          dojoExpanded: Boolean(db && db.classList.contains("expanded")),
+          caret: (document.getElementById("lbl-dojo-caret")?.textContent || "").trim(),
+          trainingHudActive: Boolean(hud && hud.classList.contains("active")),
+          focusIsBody: document.activeElement === document.body
+        };
+      });
+      assert.equal(minor3Res.entered, true, "Minor-3: enterSandboxMode preset succeeded from welcome screen");
+      assert.equal(minor3Res.exited, true, "Minor-3: exitSandboxMode succeeded with game === null");
+      assert.equal(minor3Res.sanctumMode, false, "Minor-3: exitSandboxMode(game===null) clears sanctumMode");
+      assert.equal(minor3Res.dojoActive, false, "Minor-3: exitSandboxMode(game===null) clears #dojo-control-bar .active");
+      assert.equal(minor3Res.dojoExpanded, false, "Minor-3: exitSandboxMode(game===null) clears #dojo-control-bar .expanded");
+      assert.equal(minor3Res.caret, "▾", "Minor-3: exitSandboxMode(game===null) resets #lbl-dojo-caret");
+      assert.equal(minor3Res.trainingHudActive, false, "Minor-3: exitSandboxMode(game===null) clears #dojo-training-hud .active");
+      assert.equal(minor3Res.focusIsBody, false, "Minor-3: exitSandboxMode(game===null) keeps focus off BODY");
+
+      // H.2 R6A-1 (Option 1B): Corrupt overwrite under QuotaExceededError & SecurityError uses visible role="alert" #hud-save-alert + #toast-container (opacity 1), zero dead div, zero unescaped DOM markers
+      const deadDivExists = await page1.evaluate((sk) => {
+        localStorage.setItem(sk, "{bad_r6a1_raw");
+        window.dispatchEvent(new StorageEvent("storage", { key: null }));
+        document.querySelector('[data-action="prompt-overwrite-corrupt"]')?.click();
+        const dead = Boolean(document.getElementById("corrupt-save-overwrite-error-msg"));
+        window.__t510R6OrigSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+          return window.__t510R6OrigSet.call(this, k, v);
+        };
+        return dead;
+      }, STORAGE_KEY);
+      assert.equal(deadDivExists, false, "R6A-1 (1B): dead unreachable #corrupt-save-overwrite-error-msg div must be removed");
+      await page1.click('#modal-backdrop.open [data-action="confirm-overwrite-corrupt-new"]');
+      const r6a1Quota = await page1.evaluate((sk) => {
+        const alertEl = document.getElementById("hud-save-alert");
+        const alertRect = alertEl ? alertEl.getBoundingClientRect() : null;
+        const alertCs = alertEl ? getComputedStyle(alertEl) : null;
+        const toastEl = document.getElementById("toast-container");
+        const toastCs = toastEl ? getComputedStyle(toastEl) : null;
+        const res = {
+          welcomeHidden: document.getElementById("welcome-screen")?.style.display === "none",
+          role: alertEl ? alertEl.getAttribute("role") : null,
+          alertVisible: Boolean(alertEl && alertCs && alertCs.display !== "none" && alertRect && alertRect.width > 0 && alertRect.height > 0),
+          alertText: alertEl ? (alertEl.textContent || "") : "",
+          hasOverwriteBtn: Boolean(alertEl && alertEl.querySelector('[data-action="overwrite-with-current-save"]')),
+          hasCopyBtn: Boolean(alertEl && alertEl.querySelector('[data-action="copy-corrupt-save-raw"]')),
+          toastOpacity: toastCs ? toastCs.opacity : "",
+          corruptPreserved: localStorage.getItem(sk) === "{bad_r6a1_raw",
+          unescapedCount: document.querySelectorAll("[data-unescaped-marker]").length
+        };
+        document.querySelector("#story-dialogue-bar.open #btn-dlg-skip")?.click();
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new DOMException('SecurityError <span data-unescaped-marker="r6a1s">X</span>', "SecurityError");
+          return window.__t510R6OrigSet.call(this, k, v);
+        };
+        return res;
+      }, STORAGE_KEY);
+      assert.equal(r6a1Quota.welcomeHidden, true, "R6A-1 (1B): game entered active session");
+      assert.equal(r6a1Quota.role, "alert", "R6A-1 (1B): #hud-save-alert has role='alert'");
+      assert.equal(r6a1Quota.alertVisible, true, "R6A-1 (1B): #hud-save-alert is visibly rendered on QuotaExceededError");
+      assert.ok(r6a1Quota.alertText.includes("QuotaExceededError"), "R6A-1 (1B): #hud-save-alert reports QuotaExceededError");
+      assert.equal(r6a1Quota.hasOverwriteBtn, true, "R6A-1 (1B): #hud-save-alert exposes overwrite-with-current-save");
+      assert.equal(r6a1Quota.hasCopyBtn, true, "R6A-1 (1B): #hud-save-alert exposes copy-corrupt-save-raw");
+      assert.equal(r6a1Quota.toastOpacity, "1", "R6A-1 (1B): #toast-container is visible (opacity: 1)");
+      assert.equal(r6a1Quota.corruptPreserved, true, "R6A-1 (1B): corrupt primary save preserved intact");
+      assert.equal(r6a1Quota.unescapedCount, 0, "R6A-1 (1B): zero unescaped markers on QuotaExceededError");
+      const r6a1Sec = await page1.evaluate((sk) => {
+        document.querySelector('#hud-save-alert [data-action="overwrite-with-current-save"]')?.click();
+        const alertEl = document.getElementById("hud-save-alert");
+        const text = alertEl ? (alertEl.textContent || "") : "";
+        const unescapedCount = document.querySelectorAll("[data-unescaped-marker]").length;
+        const corruptPreserved = localStorage.getItem(sk) === "{bad_r6a1_raw";
+        Storage.prototype.setItem = window.__t510R6OrigSet;
+        delete window.__t510R6OrigSet;
+        document.querySelector('#hud-save-alert [data-action="overwrite-with-current-save"]')?.click();
+        return {
+          text,
+          unescapedCount,
+          corruptPreserved,
+          alertHiddenAfterRecover: document.getElementById("hud-save-alert")?.style.display === "none",
+          recoveredVer: JSON.parse(localStorage.getItem(sk) || "{}").envelopeVersion
+        };
+      }, STORAGE_KEY);
+      assert.ok(r6a1Sec.text.includes("SecurityError") && r6a1Sec.text.includes('data-unescaped-marker="r6a1s"'), "R6A-1 (1B): SecurityError message with inert marker rendered literally");
+      assert.equal(r6a1Sec.unescapedCount, 0, "R6A-1 (1B): inert marker HTML-escaped in #hud-save-alert");
+      assert.equal(r6a1Sec.corruptPreserved, true, "R6A-1 (1B): corrupt primary save preserved on SecurityError");
+      assert.equal(r6a1Sec.alertHiddenAfterRecover, true, "R6A-1 (1B): recovery overwrite clears #hud-save-alert");
+      assert.equal(r6a1Sec.recoveredVer, 2, "R6A-1 (1B): recovery overwrite restores valid envelopeVersion 2 save");
+
+      // H.3 R6A-2: Reincarnation (Bingjie & Ending) + Proactive Batch Craft / Batch Enhance / Settings inline role="alert" errors
+      const ptsBeforeBingjie = await page1.evaluate(({ sk, mk }) => {
+        const api = window.__CHENYUAN_V25__;
+        api.enterSanctumHub();
+        const s = api.getState();
+        s.game.realm = "spirit";
+        s.game.stones = 500;
+        s.game.inventory.herb = 10;
+        api.saveGame({ forceOverwrite: true });
+        api.openLifespanExhaustedModal(true);
+        window.__t510R6OrigRm = Storage.prototype.removeItem;
+        Storage.prototype.removeItem = function(k) {
+          if (k === sk) throw new DOMException("Read-only storage", "SecurityError");
+          return window.__t510R6OrigRm.call(this, k);
+        };
+        return {
+          mem: api.getMetaState().reincarnationPoints || 0,
+          disk: JSON.parse(localStorage.getItem(mk) || "{}").reincarnationPoints || 0
+        };
+      }, { sk: STORAGE_KEY, mk: META_KEY });
+      await page1.click("#modal-backdrop.open #btn-confirm-bingjie-reincarnate");
+      const bingjieAll = await page1.evaluate(({ sk, mk }) => {
+        const el = document.getElementById("reincarnation-error-msg");
+        const cs = el ? getComputedStyle(el) : null;
+        const rect = el ? el.getBoundingClientRect() : null;
+        const box = document.getElementById("modal-content");
+        const secRes = {
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          role: el ? el.getAttribute("role") : null,
+          visible: Boolean(el && cs && cs.display !== "none" && Number(cs.opacity) === 1 && rect && rect.width > 0 && rect.height > 0),
+          text: el ? (el.textContent || "") : "",
+          focusInModal: Boolean(box && box.contains(document.activeElement)),
+          focusIsBody: document.activeElement === document.body,
+          savePreserved: Boolean(localStorage.getItem(sk))
+        };
+        Storage.prototype.removeItem = function(k) {
+          if (k === sk) throw new Error('RemoveDenied <span data-unescaped-marker="r6a2b">X</span>');
+          return window.__t510R6OrigRm.call(this, k);
+        };
+        document.getElementById("btn-confirm-bingjie-reincarnate")?.click();
+        Storage.prototype.removeItem = window.__t510R6OrigRm;
+        delete window.__t510R6OrigRm;
+        return {
+          secRes,
+          markerText: el ? (el.textContent || "") : "",
+          unescapedCount: document.querySelectorAll("[data-unescaped-marker]").length,
+          memPts: window.__CHENYUAN_V25__.getMetaState().reincarnationPoints || 0,
+          diskPts: JSON.parse(localStorage.getItem(mk) || "{}").reincarnationPoints || 0
+        };
+      }, { sk: STORAGE_KEY, mk: META_KEY });
+      assert.equal(bingjieAll.secRes.modalOpen, true, "R6A-2 Bingjie: modal stays open on SecurityError");
+      assert.equal(bingjieAll.secRes.role, "alert", "R6A-2 Bingjie: #reincarnation-error-msg has role='alert'");
+      assert.equal(bingjieAll.secRes.visible, true, "R6A-2 Bingjie: inline alert visibly rendered");
+      assert.ok(bingjieAll.secRes.text.includes("SecurityError"), "R6A-2 Bingjie: inline alert includes SecurityError");
+      assert.equal(bingjieAll.secRes.focusInModal, true, "R6A-2 Bingjie: focus remains in modal");
+      assert.equal(bingjieAll.secRes.focusIsBody, false, "R6A-2 Bingjie: focus off BODY");
+      assert.equal(bingjieAll.secRes.savePreserved, true, "R6A-2 Bingjie: primary save preserved");
+      assert.ok(bingjieAll.markerText.includes('data-unescaped-marker="r6a2b"'), "R6A-2 Bingjie: inert marker rendered literally via textContent");
+      assert.equal(bingjieAll.unescapedCount, 0, "R6A-2 Bingjie: zero unescaped DOM markers");
+      assert.equal(bingjieAll.memPts, ptsBeforeBingjie.mem, "R6A-2 Bingjie: memory reincarnationPoints unchanged");
+      assert.equal(bingjieAll.diskPts, ptsBeforeBingjie.disk, "R6A-2 Bingjie: disk reincarnationPoints unchanged");
+
+      // H.3b Ascension Ending modal META_KEY QuotaExceededError & inert marker error
+      await page1.evaluate((mk) => {
+        const api = window.__CHENYUAN_V25__;
+        api.closeModal();
+        const g = api.getState().game;
+        g.status = "ascended";
+        g.ending = "sword_sovereign";
+        api.openEndingModal();
+        window.__t510R6OrigSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === mk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+          return window.__t510R6OrigSet.call(this, k, v);
+        };
+      }, META_KEY);
+      await page1.click('#modal-backdrop.open [data-action="reincarnate-now"]');
+      const endingAll = await page1.evaluate(({ sk, mk }) => {
+        const el = document.getElementById("reincarnation-error-msg");
+        const cs = el ? getComputedStyle(el) : null;
+        const rect = el ? el.getBoundingClientRect() : null;
+        const box = document.getElementById("modal-content");
+        const quotaRes = {
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          role: el ? el.getAttribute("role") : null,
+          visible: Boolean(el && cs && cs.display !== "none" && Number(cs.opacity) === 1 && rect && rect.width > 0 && rect.height > 0),
+          text: el ? (el.textContent || "") : "",
+          focusInModal: Boolean(box && box.contains(document.activeElement)),
+          focusIsBody: document.activeElement === document.body,
+          savePreserved: Boolean(localStorage.getItem(sk))
+        };
+        Storage.prototype.setItem = function(k, v) {
+          if (k === mk) throw new Error('MetaBlocked <span data-unescaped-marker="r6a2e">X</span>');
+          return window.__t510R6OrigSet.call(this, k, v);
+        };
+        document.querySelector('#modal-backdrop.open [data-action="reincarnate-now"]')?.click();
+        const markerText = el ? (el.textContent || "") : "";
+        const unescapedCount = document.querySelectorAll("[data-unescaped-marker]").length;
+        Storage.prototype.setItem = window.__t510R6OrigSet;
+        delete window.__t510R6OrigSet;
+        const api = window.__CHENYUAN_V25__;
+        api.getState().game.status = "active";
+        api.getState().game.ending = null;
+        api.closeModal();
+        return { quotaRes, markerText, unescapedCount };
+      }, { sk: STORAGE_KEY, mk: META_KEY });
+      assert.equal(endingAll.quotaRes.modalOpen, true, "R6A-2 Ending: modal stays open on QuotaExceededError");
+      assert.equal(endingAll.quotaRes.role, "alert", "R6A-2 Ending: #reincarnation-error-msg has role='alert'");
+      assert.equal(endingAll.quotaRes.visible, true, "R6A-2 Ending: inline alert visibly rendered");
+      assert.ok(endingAll.quotaRes.text.includes("QuotaExceededError"), "R6A-2 Ending: inline alert includes QuotaExceededError");
+      assert.equal(endingAll.quotaRes.focusInModal, true, "R6A-2 Ending: focus remains in modal");
+      assert.equal(endingAll.quotaRes.focusIsBody, false, "R6A-2 Ending: focus off BODY");
+      assert.equal(endingAll.quotaRes.savePreserved, true, "R6A-2 Ending: primary save preserved");
+      assert.ok(endingAll.markerText.includes('data-unescaped-marker="r6a2e"'), "R6A-2 Ending: inert marker rendered literally via textContent");
+      assert.equal(endingAll.unescapedCount, 0, "R6A-2 Ending: zero unescaped DOM markers");
+
+      // H.3c Proactive Batch Craft, Batch Enhance, and Settings inline alerts
+      const proactiveAlerts = await page1.evaluate((sk) => {
+        const api = window.__CHENYUAN_V25__;
+        const g = api.getState().game;
+        g.stones = 500;
+        g.inventory.herb = 10;
+        const origSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+          return origSet.call(this, k, v);
+        };
+        api.openBatchCraftModal("healing", 1);
+        document.getElementById("btn-confirm-batch-craft")?.click();
+        const craftEl = document.getElementById("batch-craft-error-msg");
+        const craftRect = craftEl ? craftEl.getBoundingClientRect() : null;
+        const craft = {
+          role: craftEl ? craftEl.getAttribute("role") : null,
+          visible: Boolean(craftEl && getComputedStyle(craftEl).display !== "none" && craftRect && craftRect.width > 0 && craftRect.height > 0),
+          text: craftEl ? (craftEl.textContent || "") : "",
+          stones: g.stones,
+          unescapedCount: document.querySelectorAll("[data-unescaped-marker]").length
+        };
+        api.closeModal();
+
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new Error('EnhanceBlocked <span data-unescaped-marker="r6a2enh">X</span>');
+          return origSet.call(this, k, v);
+        };
+        api.openBatchEnhanceModal("weapon", 1);
+        document.getElementById("btn-confirm-batch-enhance")?.click();
+        const enhEl = document.getElementById("batch-enhance-error-msg");
+        const enhRect = enhEl ? enhEl.getBoundingClientRect() : null;
+        const enh = {
+          role: enhEl ? enhEl.getAttribute("role") : null,
+          visible: Boolean(enhEl && getComputedStyle(enhEl).display !== "none" && enhRect && enhRect.width > 0 && enhRect.height > 0),
+          text: enhEl ? (enhEl.textContent || "") : "",
+          stones: g.stones,
+          unescapedCount: document.querySelectorAll("[data-unescaped-marker]").length
+        };
+        Storage.prototype.setItem = origSet;
+        api.closeModal();
+
+        // Settings confirm-reset-save refusal inline alert under saveReadOnlyMode
+        api.saveGame({ forceOverwrite: true });
+        const liveEnv = JSON.parse(localStorage.getItem(sk));
+        const raw = JSON.stringify(Object.assign({}, liveEnv, { saveRev: (liveEnv.saveRev || 1) + 1, tabId: "tab_foreign_r6_settings" }));
+        localStorage.setItem(sk, raw);
+        window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: raw }));
+        document.querySelector('#modal-backdrop.open [data-action="stay-readonly-save"]')?.click();
+        document.getElementById("btn-open-settings")?.click();
+        document.querySelector('#modal-backdrop.open [data-sys-tab="controls"]')?.click();
+        document.querySelector('#modal-backdrop.open [data-action="confirm-reset-save"]')?.click();
+        const setEl = document.getElementById("settings-save-error-msg");
+        const setRect = setEl ? setEl.getBoundingClientRect() : null;
+        const settings = {
+          role: setEl ? setEl.getAttribute("role") : null,
+          visible: Boolean(setEl && getComputedStyle(setEl).display !== "none" && setRect && setRect.width > 0 && setRect.height > 0),
+          text: setEl ? (setEl.textContent || "") : "",
+          unescapedCount: document.querySelectorAll("[data-unescaped-marker]").length
+        };
+        api.closeModal();
+        api.saveGame({ forceOverwrite: true });
+        return { craft, enh, settings };
+      }, STORAGE_KEY);
+      assert.equal(proactiveAlerts.craft.role, "alert", "R6A-2 Proactive: #batch-craft-error-msg has role='alert'");
+      assert.equal(proactiveAlerts.craft.visible, true, "R6A-2 Proactive: #batch-craft-error-msg visible on QuotaExceededError");
+      assert.ok(proactiveAlerts.craft.text.includes("QuotaExceededError"), "R6A-2 Proactive: #batch-craft-error-msg reports QuotaExceededError");
+      assert.equal(proactiveAlerts.craft.stones, 500, "R6A-2 Proactive: batch craft rolled back stones");
+      assert.equal(proactiveAlerts.craft.unescapedCount, 0, "R6A-2 Proactive: batch craft zero unescaped markers");
+      assert.equal(proactiveAlerts.enh.role, "alert", "R6A-2 Proactive: #batch-enhance-error-msg has role='alert'");
+      assert.equal(proactiveAlerts.enh.visible, true, "R6A-2 Proactive: #batch-enhance-error-msg visible on write failure");
+      assert.ok(proactiveAlerts.enh.text.includes('data-unescaped-marker="r6a2enh"'), "R6A-2 Proactive: #batch-enhance-error-msg escapes inert marker literally");
+      assert.equal(proactiveAlerts.enh.stones, 500, "R6A-2 Proactive: batch enhance rolled back stones");
+      assert.equal(proactiveAlerts.enh.unescapedCount, 0, "R6A-2 Proactive: batch enhance zero unescaped markers");
+      assert.equal(proactiveAlerts.settings.role, "alert", "R6A-2 Proactive: #settings-save-error-msg has role='alert'");
+      assert.equal(proactiveAlerts.settings.visible, true, "R6A-2 Proactive: #settings-save-error-msg visible on read-only confirm-reset-save refusal");
+      assert.ok(proactiveAlerts.settings.text.includes("只读"), "R6A-2 Proactive: #settings-save-error-msg explains read-only refusal");
+      assert.equal(proactiveAlerts.settings.unescapedCount, 0, "R6A-2 Proactive: Settings refusal zero unescaped markers");
+
+      // H.4 R6A-3: Dual storageWriteError + metaReadError HUD alert, no broken ✕, hardened dismiss-save-alert focus, retry-save-now transition
+      const r6a3All = await page1.evaluate(({ sk, mk }) => {
+        const api = window.__CHENYUAN_V25__;
+        localStorage.setItem(mk, "{bad_meta_r6");
+        window.dispatchEvent(new StorageEvent("storage", { key: mk, newValue: "{bad_meta_r6" }));
+        const origSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+          return origSet.call(this, k, v);
+        };
+        api.saveGame({ userInitiated: true });
+        const el = document.getElementById("hud-save-alert");
+        const dual = {
+          display: el ? el.style.display : "",
+          text: el ? (el.textContent || "") : "",
+          hasRetry: Boolean(el && el.querySelector('[data-action="retry-save-now"]')),
+          hasCloud: Boolean(el && el.querySelector('[data-action="open-cloud-backup"]')),
+          hasCopyMeta: Boolean(el && el.querySelector('[data-action="copy-corrupt-meta-raw"]')),
+          hasResetMeta: Boolean(el && el.querySelector('[data-action="prompt-reset-corrupt-meta"]')),
+          hasDismiss: Boolean(el && el.querySelector('[data-action="dismiss-save-alert"]'))
+        };
+        const tmp = document.createElement("button");
+        tmp.type = "button";
+        tmp.setAttribute("data-action", "dismiss-save-alert");
+        tmp.textContent = "✕";
+        el.appendChild(tmp);
+        tmp.focus();
+        tmp.click();
+        const dismissFocus = {
+          focusIsBody: document.activeElement === document.body,
+          focusInAlert: Boolean(el && el.contains(document.activeElement))
+        };
+        Storage.prototype.setItem = origSet;
+        el.querySelector('[data-action="retry-save-now"]')?.click();
+        const afterRetry = {
+          writeErr: api.getPersistenceState().storageWriteError,
+          display: el ? el.style.display : "",
+          hasResetMeta: Boolean(el && el.querySelector('[data-action="prompt-reset-corrupt-meta"]')),
+          corruptMetaUntouched: localStorage.getItem(mk) === "{bad_meta_r6",
+          focusIsBody: document.activeElement === document.body,
+          focusInAlert: Boolean(el && el.contains(document.activeElement))
+        };
+        el.querySelector('[data-action="prompt-reset-corrupt-meta"]')?.click();
+        document.querySelector('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]')?.click();
+        return { dual, dismissFocus, afterRetry };
+      }, { sk: STORAGE_KEY, mk: META_KEY });
+      assert.equal(r6a3All.dual.display, "flex", "R6A-3: dual-error #hud-save-alert displayed");
+      assert.ok(r6a3All.dual.text.includes("写入失败") && r6a3All.dual.text.includes("元存档损坏"), "R6A-3: dual-error copy names both storageWriteError and metaReadError");
+      assert.equal(r6a3All.dual.hasRetry, true, "R6A-3: exposes retry-save-now");
+      assert.equal(r6a3All.dual.hasCloud, true, "R6A-3: exposes open-cloud-backup");
+      assert.equal(r6a3All.dual.hasCopyMeta, true, "R6A-3: exposes copy-corrupt-meta-raw");
+      assert.equal(r6a3All.dual.hasResetMeta, true, "R6A-3: exposes prompt-reset-corrupt-meta");
+      assert.equal(r6a3All.dual.hasDismiss, false, "R6A-3: omits broken dismiss-save-alert (✕)");
+      assert.equal(r6a3All.dismissFocus.focusIsBody, false, "R6A-3: dismiss-save-alert while banner stays visible must not drop focus to BODY");
+      assert.equal(r6a3All.dismissFocus.focusInAlert, true, "R6A-3: dismiss-save-alert keeps focus inside #hud-save-alert");
+      assert.equal(r6a3All.afterRetry.writeErr, null, "R6A-3: retry-save-now clears storageWriteError");
+      assert.equal(r6a3All.afterRetry.display, "flex", "R6A-3: #hud-save-alert stays visible for metaReadError");
+      assert.equal(r6a3All.afterRetry.hasResetMeta, true, "R6A-3: metaReadError banner exposes prompt-reset-corrupt-meta");
+      assert.equal(r6a3All.afterRetry.corruptMetaUntouched, true, "R6A-3: corrupt META_KEY untouched after primary retry");
+      assert.equal(r6a3All.afterRetry.focusIsBody, false, "R6A-3: focus off BODY after retry transition");
+      assert.equal(r6a3All.afterRetry.focusInAlert, true, "R6A-3: focus stays inside remaining #hud-save-alert");
+
+      // H.5 R6B-1 (+ P4c): Mid-tribulation KeyB / #orb-meditate blocked, bolt interrupts meditation, longevity/blood_fury/alchemy crafting blocked
+      await page1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.realm = "spirit";
+        s.game.xp = api.REALMS.spirit.xpCap;
+        s.game.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
+        s.game.aids = { shen: false, pei: false, lu: false, yan: false };
+        s.game.laws = [];
+        s.game.loadout.mind = "sword_mind";
+        s.game.loadout.relic = null;
+        api.enterSanctumHub();
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        window.__CHENYUAN_V23__.setCelestialTimePhase(1, true);
+        s.game.hp = 80;
+        s.game.mp = 10;
+        s.game.gourd.charges = 0;
+        s.game.inventory.healing_pill = 0;
+        s.game.inventory.longevity_pill = 2;
+        s.game.inventory.blood_fury_pill = 2;
+        s.game.inventory.herb = 10;
+        s.game.stones = 500;
+        s.arena.tribulation.strikes = [];
+        s.arena.tribulation.cooldown = 99;
+        api.focusBattlefield();
+      });
+      await page1.keyboard.press("KeyB");
+      const r6b1Res = await page1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        const medAfterKeyB = s.arena.player.meditating;
+        document.getElementById("orb-meditate")?.click();
+        const medAfterOrb = s.arena.player.meditating;
+        for (let k = 0; k < 30; k++) api.stepArena(0.05);
+        const hpAfterIdle = s.game.hp;
+        const mpAfterIdle = s.game.mp;
+        const maxMp = api.getCombatStats(s.game).maxMp;
+        const zenAfterIdle = s.arena.player.zenStacks || 0;
+        s.arena.player.meditating = true;
+        s.arena.player.invuln = 0;
+        s.arena.tribulation.strikes = [{ x: s.arena.player.x, y: s.arena.player.y, r: 84, t: 0.99, hit: false, parried: false }];
+        api.stepArena(0.05);
+        const medAfterBolt = s.arena.player.meditating;
+        const hpAfterBolt = s.game.hp;
+        s.arena.tribulation.strikes = [];
+        s.arena.tribulation.cooldown = 99;
+        for (let k = 0; k < 30; k++) api.stepArena(0.05);
+        const hpAfterBoltIdle = s.game.hp;
+        api.consumeInventoryItem("longevity_pill");
+        api.consumeInventoryItem("blood_fury_pill");
+        const quickOk = api.executeAlchemyQuickCraft("healing");
+        const batchRes = api.executeAlchemyBatchCraft("healing", 2);
+        const res = {
+          medAfterKeyB,
+          medAfterOrb,
+          hpAfterIdle,
+          mpAfterIdle,
+          maxMp,
+          zenAfterIdle,
+          medAfterBolt,
+          hpAfterBolt,
+          hpAfterBoltIdle,
+          longevityLeft: s.game.inventory.longevity_pill,
+          bloodFuryLeft: s.game.inventory.blood_fury_pill,
+          healingLeft: s.game.inventory.healing_pill,
+          quickOk,
+          batchOk: Boolean(batchRes && batchRes.ok),
+          batchReason: batchRes ? batchRes.reason : "",
+          hpAfterP4c: s.game.hp
+        };
+        s.arena.tribulation = null;
+        return res;
+      });
+      assert.equal(r6b1Res.medAfterKeyB, false, "R6B-1: KeyB must not start meditation during live tribulation");
+      assert.equal(r6b1Res.medAfterOrb, false, "R6B-1: #orb-meditate click must not start meditation during live tribulation");
+      assert.equal(r6b1Res.hpAfterIdle, 80, "R6B-1: HP stays 80 across 1.5s without meditation leak");
+      assert.ok(r6b1Res.mpAfterIdle < 10 + r6b1Res.maxMp * 0.12, `R6B-1: MP stays within passive baseline (< 10 + 12% maxMp) without 28%/s meditation leak (got ${r6b1Res.mpAfterIdle}/${r6b1Res.maxMp})`);
+      assert.equal(r6b1Res.zenAfterIdle, 0, "R6B-1: zenStacks stays 0 without meditation");
+      assert.equal(r6b1Res.medAfterBolt, false, "R6B-1: Forced meditating aborted by stepArena/bolt hit");
+      assert.ok(r6b1Res.hpAfterBolt < 80, "R6B-1: Tribulation bolt deals real damage");
+      assert.equal(r6b1Res.hpAfterBoltIdle, r6b1Res.hpAfterBolt, "R6B-1: Zero post-bolt meditation regen");
+      assert.equal(r6b1Res.longevityLeft, 2, "R6B-1 (P4c): longevity_pill blocked mid-tribulation");
+      assert.equal(r6b1Res.bloodFuryLeft, 2, "R6B-1 (P4c): blood_fury_pill blocked mid-tribulation");
+      assert.equal(r6b1Res.healingLeft, 0, "R6B-1 (P4c): alchemy crafting blocked mid-tribulation");
+      assert.equal(r6b1Res.quickOk, false, "R6B-1 (P4c): executeAlchemyQuickCraft returns false mid-tribulation");
+      assert.equal(r6b1Res.batchOk, false, "R6B-1 (P4c): executeAlchemyBatchCraft returns ok=false mid-tribulation");
+      assert.equal(r6b1Res.batchReason, "tribulation", "R6B-1 (P4c): batch craft reason is 'tribulation'");
+      assert.equal(r6b1Res.hpAfterP4c, r6b1Res.hpAfterBolt, "R6B-1 (P4c): HP unchanged after blocked pill/craft attempts");
+
+      // H.6 R6B-2: startLiveTribulation bumps stageEpoch & clears waveTransitioning (cancels KeyX Ult timers & Campaign 460ms wave-clear timer)
+      const r6b2UltSetup = await page1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.laws = ["karma_resonance"];
+        s.game.bondTiers = { shen: 3, pei: 3, lu: 3, yan: 3 };
+        s.game.xp = api.REALMS[s.game.realm].xpCap;
+        api.enterSanctumHub();
+        s.arena.swordIntent = 100;
+        api.focusBattlefield();
+        window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyX", key: "x", bubbles: true }));
+        const epochBefore = s.arena.stageEpoch;
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        const epochAfter = s.arena.stageEpoch;
+        window.__CHENYUAN_V23__.setCelestialTimePhase(1, true);
+        s.game.hp = 100;
+        s.arena.player.shieldHp = 0;
+        s.arena.tribulation.strikes = [];
+        s.arena.tribulation.cooldown = 99;
+        return { epochBefore, epochAfter, tribActive: Boolean(s.arena.tribulation) };
+      });
+      assert.equal(r6b2UltSetup.epochAfter, r6b2UltSetup.epochBefore + 1, "R6B-2: startLiveTribulation bumps arena.stageEpoch");
+      assert.equal(r6b2UltSetup.tribActive, true, "R6B-2: Hardcore Tribulation started after KeyX");
+      await page1.waitForTimeout(280);
+      const r6b2UltAfter = await page1.evaluate(() => {
+        const s = window.__CHENYUAN_V25__.getState();
+        return {
+          hp: s.game.hp,
+          shieldHp: s.arena.player.shieldHp,
+          vortexes: (s.arena.lotusVortexes || []).length,
+          tribActive: Boolean(s.arena.tribulation)
+        };
+      });
+      assert.equal(r6b2UltAfter.hp, 100, "R6B-2: Stale KeyX Ult timer did not heal player in Hardcore Tribulation");
+      assert.equal(r6b2UltAfter.shieldHp, 0, "R6B-2: Stale KeyX Ult timer did not grant shield in Hardcore Tribulation");
+      assert.equal(r6b2UltAfter.vortexes, 0, "R6B-2: Stale KeyX Ult timer did not spawn lotusVortexes");
+      assert.equal(r6b2UltAfter.tribActive, true, "R6B-2: Tribulation remains active");
+
+      const r6b2WaveSetup = await page1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.arena.tribulation = null;
+        s.game.laws = [];
+        s.game.seenCutscenes = Object.assign({}, s.game.seenCutscenes, { enter_sect: true });
+        api.initArenaStage(1, false);
+        s.game.xp = api.REALMS[s.game.realm].xpCap;
+        s.arena.enemies.filter(e => !e.isTreasure).slice().forEach(e => { e.hp = 0; api.handleEnemyDeath(e); });
+        const waveTransBefore = s.arena.waveTransitioning;
+        const epochBefore = s.arena.stageEpoch;
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        const waveTransAfter = s.arena.waveTransitioning;
+        const epochAfter = s.arena.stageEpoch;
+        if (s.arena.tribulation) {
+          s.arena.tribulation.strikes = [];
+          s.arena.tribulation.cooldown = 99;
+        }
+        return { waveTransBefore, waveTransAfter, epochBefore, epochAfter, tribActive: Boolean(s.arena.tribulation) };
+      });
+      assert.equal(r6b2WaveSetup.waveTransBefore, true, "R6B-2 precondition: waveTransitioning armed after wave clear");
+      assert.equal(r6b2WaveSetup.waveTransAfter, false, "R6B-2: startLiveTribulation clears waveTransitioning");
+      assert.ok(r6b2WaveSetup.epochAfter > r6b2WaveSetup.epochBefore, "R6B-2: stageEpoch bumped from campaign wave-clear");
+      await page1.waitForTimeout(520);
+      const r6b2WaveAfter = await page1.evaluate(() => {
+        const s = window.__CHENYUAN_V25__.getState();
+        const res = {
+          hasMapGate: (s.arena.props || []).some(pr => pr && pr.kind === "map_node_gate"),
+          waveTransitioning: s.arena.waveTransitioning,
+          tribActive: Boolean(s.arena.tribulation)
+        };
+        s.arena.tribulation = null;
+        return res;
+      });
+      assert.equal(r6b2WaveAfter.hasMapGate, false, "R6B-2: Cancelled 460ms wave timer must not spawn map_node_gate during Tribulation");
+      assert.equal(r6b2WaveAfter.waveTransitioning, false, "R6B-2: waveTransitioning stays false");
+      assert.equal(r6b2WaveAfter.tribActive, true, "R6B-2: Tribulation stays active");
+
+      // H.7 R6B-3: Canonical purgeTransientCombatEntities across Sanctum->Sanctum, all 8 Campaign->* transitions, and Spire Floor 1->2
+      const r6b3Res = await page1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const v21 = window.__CHENYUAN_V21__;
+        const v22 = window.__CHENYUAN_V22__;
+        const s = api.getState();
+        s.game.realm = "spirit";
+        s.game.xp = api.REALMS.spirit.xpCap;
+        s.game.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
+        s.game.laws = [];
+        s.game.aids = { shen: false, pei: false, lu: false, yan: false };
+        const seedAll23 = () => {
+          const ar = s.arena;
+          ar.qimenArray = { gate: "sheng", x: 700, y: 450, r: 220, life: 9, maxLife: 9, __r6b3Leak: true };
+          ar.qimenCd = 7;
+          ar.domain = { x: 700, y: 450, r: 200, life: 8, maxLife: 8, color: "#70ffe6", __r6b3Leak: true };
+          ar.activeAllies = [{ id: "shen", __r6b3Leak: true, x: 700, y: 450, life: 8, maxLife: 8, healCd: 0.1 }];
+          ar.zones = [{ kind: "lotus_heal", __r6b3Leak: true, x: 700, y: 450, r: 160, life: 5, maxLife: 5 }];
+          ar.witchTime = 3.5;
+          ar.lotusVortexes = [{ x: 700, y: 450, r: 150, life: 4, maxLife: 4, __r6b3Leak: true }];
+          ar.thunderOrbs = [{ x: 700, y: 450, life: 4, tickCd: 0.1, __r6b3Leak: true }];
+          ar.jadeDecoys = [{ x: 700, y: 450, life: 4, __r6b3Leak: true }];
+          ar.fireZones = [{ x: 700, y: 450, r: 90, life: 4, __r6b3Leak: true }];
+          ar.waterPools = [{ x: 700, y: 450, r: 90, life: 4, __r6b3Leak: true }];
+          ar.frostPools = [{ x: 700, y: 450, r: 90, life: 4, __r6b3Leak: true }];
+          ar.projectiles = [{ friendly: true, x: 700, y: 450, vx: 1, vy: 0, r: 12, life: 3, __r6b3Leak: true }];
+          ar.hoverChakrams = [{ x: 700, y: 450, r: 90, life: 3, __r6b3Leak: true }];
+          ar.groundSweeps = [{ x: 700, y: 450, r: 100, t: 0, __r6b3Leak: true }];
+          ar.meteorBursts = [{ x: 700, y: 450, r: 120, t: 0, __r6b3Leak: true }];
+          ar.sanqingState = { active: true, life: 10, maxLife: 10, swapUsed: true, clones: [{ x: 680, y: 450, lungeT: 0.4 }] };
+          ar.sanqingEchoQueue = [{ delay: 0.2, kind: "slash", __r6b3Leak: true }];
+          ar.shanheDomain = { x: 700, y: 450, r: 240, life: 10, maxLife: 10, __r6b3Leak: true };
+          ar.warshipStrike = { x: 700, y: 450, t: 0.2, life: 3, __r6b3Leak: true };
+          ar.astralForm = { active: true, life: 10, maxLife: 10, __r6b3Leak: true };
+          ar.mountState = { active: true, id: "qilin", life: 10, maxLife: 10, __r6b3Leak: true };
+          ar.pillAcolyte = { x: 700, y: 450, life: 10, maxLife: 10, __r6b3Leak: true };
+          ar.spatialRifts = [{ x: 700, y: 450, life: 5, __r6b3Leak: true }];
+          ar.bossDomain = { x: 700, y: 450, life: 5, __r6b3Leak: true };
+          ar.reversedDomainTimer = 4;
+        };
+        const countLeaks = () => {
+          const ar = s.arena;
+          const cntArr = (arr) => (Array.isArray(arr) ? arr.filter(x => x && x.__r6b3Leak).length : 0);
+          return (ar.qimenArray ? 1 : 0) + (ar.qimenCd > 0 ? 1 : 0) + (ar.domain ? 1 : 0)
+            + cntArr(ar.activeAllies) + cntArr(ar.zones) + (ar.witchTime > 0 ? 1 : 0)
+            + cntArr(ar.lotusVortexes) + cntArr(ar.thunderOrbs) + cntArr(ar.jadeDecoys)
+            + cntArr(ar.fireZones) + cntArr(ar.waterPools) + cntArr(ar.frostPools)
+            + cntArr(ar.projectiles) + cntArr(ar.hoverChakrams) + cntArr(ar.groundSweeps) + cntArr(ar.meteorBursts)
+            + (ar.sanqingState && (ar.sanqingState.active || ar.sanqingState.life > 0) ? 1 : 0)
+            + cntArr(ar.sanqingEchoQueue) + (ar.shanheDomain ? 1 : 0) + (ar.warshipStrike ? 1 : 0)
+            + (ar.astralForm ? 1 : 0) + (ar.mountState ? 1 : 0) + (ar.pillAcolyte ? 1 : 0)
+            + cntArr(ar.spatialRifts) + (ar.bossDomain ? 1 : 0) + (ar.reversedDomainTimer > 0 ? 1 : 0);
+        };
+        const results = {};
+        api.enterSanctumHub(); seedAll23(); api.enterSanctumHub(); results.sanctumToSanctum = countLeaks();
+        api.initArenaStage(1, false); seedAll23(); api.enterSanctumHub(); results.campToSanctum = countLeaks();
+        api.initArenaStage(1, false); seedAll23(); api.initArenaStage(0, false); results.campToStage0 = countLeaks();
+        api.initArenaStage(1, false); seedAll23(); api.startBossRushGauntlet(1); results.campToRush = countLeaks();
+        api.initArenaStage(1, false); seedAll23(); api.startCloudSeaAerialStage(); results.campToCloud = countLeaks();
+        api.initArenaStage(1, false); seedAll23(); api.startCelestialSpireRun(1); results.campToSpire = countLeaks();
+        api.initArenaStage(1, false); seedAll23(); api.startSectDefenseSiege();
+        results.campToSect = countLeaks();
+        results.sectFreeAllies = (s.arena.activeAllies || []).length;
+        api.initArenaStage(1, false); seedAll23(); v22.launchCustomSeedEncounter();
+        results.campToWorkshop = countLeaks();
+        results.workshopAstral = s.arena.astralEnergy;
+        api.initArenaStage(1, false); seedAll23(); api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        results.campToTrib = countLeaks();
+        window.__CHENYUAN_V23__.setCelestialTimePhase(1, true);
+        s.game.hp = 150;
+        s.arena.tribulation.strikes = [];
+        s.arena.tribulation.cooldown = 99;
+        for (let k = 0; k < 20; k++) api.stepArena(0.05);
+        results.tribHpAfter1s = s.game.hp;
+        s.arena.tribulation = null;
+        // Spire Floor 1 -> Floor 2
+        api.startCelestialSpireRun(1);
+        seedAll23();
+        v21.selectSpireCurioAndAdvance("curio_chakram_thunder", 1);
+        results.spireFloor = s.arena.celestialSpire ? s.arena.celestialSpire.floor : 0;
+        results.spireFloor2Leaks = countLeaks();
+        results.spireCurioKept = (s.game.spireCurios && s.game.spireCurios.curio_chakram_thunder) || 0;
+        return results;
+      });
+      for (const key of ["sanctumToSanctum", "campToSanctum", "campToStage0", "campToRush", "campToCloud", "campToSpire", "campToSect", "campToWorkshop", "campToTrib", "spireFloor2Leaks"]) {
+        assert.equal(r6b3Res[key], 0, `R6B-3 (${key}): 0 leaked transient combat/overdrive entities`);
+      }
+      assert.ok(r6b3Res.sectFreeAllies >= 1, "R6B-3: Sect Defense keeps fresh free ally after purging prior leaked allies");
+      assert.equal(r6b3Res.workshopAstral, 100, "R6B-3: Custom Workshop keeps astralEnergy=100 after purge");
+      assert.equal(r6b3Res.tribHpAfter1s, 150, "R6B-3: 0 leaked heal in Hardcore Tribulation from Campaign combat");
+      assert.equal(r6b3Res.spireFloor, 2, "R6B-3: Spire advanced cleanly to Floor 2");
+      assert.ok(r6b3Res.spireCurioKept >= 1, "R6B-3: Spire Floor 1->2 preserves selected curio stacks");
+
+      // H.8 R6B-4: Plain-object stageStars expedition +30% synergy (modal UI, live tick yield = 8, and legacy array normalizeLoadedGame)
+      const r6b4Norm = await page1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const nObj = api.normalizeLoadedGame({ realm: "nascent", stageStars: { 0: 3, 1: 1 } });
+        const nArr = api.normalizeLoadedGame({ realm: "nascent", stageStars: [3, 1, 0, 0, 0] });
+        const s = api.getState();
+        s.game.realm = "nascent";
+        s.game.stageStars = { 0: 3, 1: 1 };
+        s.game.defeatedStageBosses = { 0: true };
+        api.openExpeditionSandboxModal();
+        const q0 = document.querySelector('[data-exp-synergy="qinglan_vein"]')?.textContent || "";
+        const q1 = document.querySelector('[data-exp-synergy="qingyun_peak"]')?.textContent || "";
+        api.closeModal();
+        api.initArenaStage(1, false);
+        if (!s.arena.enemies.some(e => !e.isDummy && e.hp > 0)) {
+          api.spawnSingleEnemy("wolf", 920, 450, 1.0, false);
+        }
+        s.game.bondTiers = Object.assign({}, s.game.bondTiers, { shen: 1 });
+        s.game.expeditions = { assignments: { qinglan_vein: "shen" }, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 0.01 };
+        api.stepArena(0.05);
+        return {
+          objIsArr: Array.isArray(nObj.stageStars),
+          obj0: nObj.stageStars[0],
+          obj1: nObj.stageStars[1],
+          arrIsArr: Array.isArray(nArr.stageStars),
+          arr0: nArr.stageStars[0],
+          arr1: nArr.stageStars[1],
+          q0,
+          q1,
+          bankedStones: s.game.expeditions.bankedStones
+        };
+      });
+      assert.equal(r6b4Norm.objIsArr, false, "R6B-4: normalized plain-object stageStars remains plain object");
+      assert.equal(r6b4Norm.obj0, 3, "R6B-4: plain-object stageStars[0] === 3");
+      assert.equal(r6b4Norm.obj1, 1, "R6B-4: plain-object stageStars[1] === 1");
+      assert.equal(r6b4Norm.arrIsArr, false, "R6B-4: legacy array stageStars normalized to plain object");
+      assert.equal(r6b4Norm.arr0, 3, "R6B-4: legacy array stageStars[0] preserved as 3");
+      assert.equal(r6b4Norm.arr1, 1, "R6B-4: legacy array stageStars[1] preserved as 1");
+      assert.ok(r6b4Norm.q0.includes("+30%") && r6b4Norm.q0.includes("三星共鸣"), `R6B-4: qinglan_vein synergy badge shows +30% 三星共鸣, got: ${r6b4Norm.q0}`);
+      assert.ok(r6b4Norm.q1.includes("+15%"), `R6B-4: qingyun_peak synergy badge shows +15%, got: ${r6b4Norm.q1}`);
+      assert.equal(r6b4Norm.bankedStones, 8, `R6B-4: live combat expedition tick awards 8 stones (+30% of 18*0.35), got ${r6b4Norm.bankedStones}`);
     } finally {
       await ctx.close();
     }

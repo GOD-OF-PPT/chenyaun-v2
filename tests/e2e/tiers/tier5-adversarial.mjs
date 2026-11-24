@@ -123,17 +123,20 @@ export const tests = [
       await page.click("#btn-import-cloud-save");
       await page.waitForSelector("#btn-confirm-cloud-import");
       await page.click("#btn-confirm-cloud-import");
-      await page.waitForTimeout(160);
-      const alreadyOpen2 = await page.evaluate(() => {
+      await page.waitForFunction(() => {
         const bd = document.getElementById("modal-backdrop");
         const h2 = document.querySelector("#modal-content h2")?.textContent || "";
-        return Boolean(bd && bd.classList.contains("open") && (h2.includes("MARK_CLOUD") || h2.includes("E2E_CLOUD")));
+        if (bd && bd.classList.contains("open") && (h2.includes("MARK_CLOUD") || h2.includes("E2E_CLOUD"))) return true;
+        const btn = document.getElementById("btn-pending-rewards");
+        return Boolean((!bd || !bd.classList.contains("open")) && btn && getComputedStyle(btn).display !== "none");
+      }, null, { timeout: 3000 });
+      await page.evaluate(() => {
+        const bd = document.getElementById("modal-backdrop");
+        const h2 = document.querySelector("#modal-content h2")?.textContent || "";
+        if (!(bd && bd.classList.contains("open") && (h2.includes("MARK_CLOUD") || h2.includes("E2E_CLOUD")))) {
+          window.__CHENYUAN_V25__.openPendingRewardsManually();
+        }
       });
-      if (!alreadyOpen2) {
-        await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
-        await page.waitForSelector("#btn-pending-rewards", { state: "visible" });
-        await page.click("#btn-pending-rewards");
-      }
       await page.waitForSelector("#modal-backdrop.open #modal-content h2");
       const cloudXss = await page.evaluate((m) => ({
         liveNode: !!document.querySelector("[data-unescaped-marker]"),
@@ -503,9 +506,9 @@ export const tests = [
         Math.random = () => (++n <= 12 ? 0.001 : window.__e2eOrigRand());
       });
       await page.click('#modal-backdrop.open [data-start-rush="1"]');
-      await page.waitForTimeout(300);
+      await page.waitForFunction(() => (window.__CHENYUAN_V25__.getState().arena.bossRush?.elapsed || 0) > 0.04, null, { timeout: 3000 });
       const t0 = await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.bossRush?.elapsed || 0);
-      await page.waitForTimeout(300);
+      await page.waitForFunction((prev) => (window.__CHENYUAN_V25__.getState().arena.bossRush?.elapsed || 0) > prev + 0.1, t0, { timeout: 3000 });
       const t1 = await page.evaluate(() => {
         Math.random = window.__e2eOrigRand;
         return window.__CHENYUAN_V25__.getState().arena.bossRush?.elapsed || 0;
@@ -1266,6 +1269,7 @@ export const tests = [
       await openSettingsTab(p2, "controls");
       await p2.click('[data-action="confirm-reset-save"]');
       await p2.click('[data-action="execute-reset-save"]');
+      await p1.waitForFunction(() => Boolean(window.__CHENYUAN_V25__.getPersistenceState().saveConflictState?.deleted), null, { timeout: 3000 });
       await p2.close();
       await p1.evaluate(() => window.__CHENYUAN_V25__.closeModal());
       await openSettingsTab(p1, "controls");
@@ -1779,23 +1783,35 @@ export const tests = [
         const s = api.getState();
         s.arena.enemies = [];
         s.game.realm = "qi";
-        s.game.seenUnlockIds = [];
+        s.game.seenUnlockIds = ["unlock_qi_arts", "unlock_qi_eco"];
         api.queueNewUnlockCardsForState(s.game);
         api.flushNewUnlockCard();
         db.classList.add("expanded");
         api.focusBattlefield();
-        return { afterStage, afterWorkshop };
+        return {
+          afterStage,
+          afterWorkshop,
+          activeBeforeEsc: api.getActiveUnlockCardId(),
+          pendingQueueLen: api.getPendingUnlockCardQueue().length
+        };
       });
       assert.equal(r4a3.afterStage.active, false, "R4A-3: initArenaStage clears .active");
       assert.equal(r4a3.afterStage.expanded, false, "R4A-3: initArenaStage clears .expanded");
       assert.equal(r4a3.afterWorkshop.active, false, "R4A-3: Custom Workshop clears .active");
       assert.equal(r4a3.afterWorkshop.expanded, false, "R4A-3: Custom Workshop clears .expanded");
+      assert.equal(r4a3.activeBeforeEsc, "unlock_ally_coop", "R4A-3 precondition: strictly unlock_ally_coop is active");
+      assert.equal(r4a3.pendingQueueLen, 0, "R4A-3 precondition: pendingUnlockCardQueue is empty so Escape dismisses cleanly");
       await p1.keyboard.press("Escape");
       const cardAfterEsc = await p1.evaluate(() => {
         document.getElementById("dojo-control-bar").classList.remove("expanded");
-        return window.__CHENYUAN_V25__.getActiveUnlockCardId();
+        const api = window.__CHENYUAN_V25__;
+        return {
+          activeUnlock: api.getActiveUnlockCardId(),
+          seenUnlockIds: (api.getState().game.seenUnlockIds || []).slice()
+        };
       });
-      assert.equal(cardAfterEsc, null, "R4A-3: 1st Escape dismisses visible Unlock Card without being stolen by hidden Dojo bar");
+      assert.equal(cardAfterEsc.activeUnlock, null, "R4A-3: 1st Escape dismisses visible Unlock Card without being stolen by hidden Dojo bar");
+      assert.equal(cardAfterEsc.seenUnlockIds.includes("unlock_ally_coop"), true, "R4A-3: Dismissed unlock_ally_coop recorded in seenUnlockIds");
 
       // 4. R4B-1 + R4B-2 + R4B-3: Trial-mode tribulation block, stele guards, Sanctum overdrive purge & Hardcore tribShield bypass
       const r4bAll = await p1.evaluate(() => {
@@ -1910,11 +1926,11 @@ export const tests = [
     }
   },
 
-  // ==================== E2E-T5-14: Round 5 Final Convergence Fixes (R5A-1/2 + R5B-1/2/3) ====================
+  // ==================== E2E-T5-14: Round 5 & Round 6 Final Convergence Fixes (R5A/B + R6A-1..4 + R6B-1..4) ====================
   {
     id: "E2E-T5-14",
-    title: "R5A-1/2 & R5B-1/2/3: Visible inline modal role=alert storage errors, title-return Dojo cleanup, Qimen/Domain/Allies/Zones purge, Karma Dilemma & Demon Tower tribulation guards",
-    features: ["R5A-1", "R5A-2", "R5B-1", "R5B-2", "R5B-3", "T2", "T6", "S10", "G7"],
+    title: "R5A/B & R6A/B: Visible modal/HUD role=alert errors, floating-card focus retention, Dojo cleanup, 23-entity cross-scene purge, mid-tribulation & stageEpoch guards, and plain-object stageStars expedition synergy",
+    features: ["R5A-1", "R5A-2", "R5B-1", "R5B-2", "R5B-3", "R6A-1", "R6A-2", "R6A-3", "R6A-4", "R6B-1", "R6B-2", "R6B-3", "R6B-4", "T2", "T6", "S10", "G7"],
     async fn(env) {
       const page = await env.openPage("t5-14");
       await env.startFreshGame(page, "五轮终审");
@@ -2203,6 +2219,505 @@ export const tests = [
       assert.equal(reincOk, true, "R5A-2: executeReincarnation succeeded");
       const cleanReinc = await checkDojoClean();
       assert.deepEqual(cleanReinc, { sanctumMode: false, active: false, expanded: false, caret: "▾", trainingHud: false }, "R5A-2: executeReincarnation clears Sanctum/Dojo DOM");
+
+      // 5. Round 6 Convergence: Minor-3, R6A-1 (Option 1B), R6A-4, R6A-2 (+ Batch/Settings), R6A-3, R6B-1..4 (+ P4c)
+      // 5a. Minor-3: exitSandboxMode with game === null clears Sanctum/Dojo DOM & keeps focus off BODY
+      const minor3E2e = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const entered = api.enterSandboxMode({ source: "preset", preset: "golden" });
+        api.enterSanctumHub();
+        const db = document.getElementById("dojo-control-bar");
+        if (db) db.classList.add("expanded");
+        const exited = api.exitSandboxMode();
+        const hud = document.getElementById("dojo-training-hud");
+        return {
+          entered,
+          exited,
+          sanctumMode: api.getState().arena.sanctumMode,
+          dojoActive: Boolean(db && db.classList.contains("active")),
+          dojoExpanded: Boolean(db && db.classList.contains("expanded")),
+          caret: (document.getElementById("lbl-dojo-caret")?.textContent || "").trim(),
+          trainingHudActive: Boolean(hud && hud.classList.contains("active")),
+          focusIsBody: document.activeElement === document.body
+        };
+      });
+      assert.equal(minor3E2e.entered, true, "Minor-3 E2E: enterSandboxMode preset succeeded");
+      assert.equal(minor3E2e.exited, true, "Minor-3 E2E: exitSandboxMode succeeded with game === null");
+      assert.equal(minor3E2e.sanctumMode, false, "Minor-3 E2E: sanctumMode cleared");
+      assert.equal(minor3E2e.dojoActive, false, "Minor-3 E2E: dojo bar .active cleared");
+      assert.equal(minor3E2e.dojoExpanded, false, "Minor-3 E2E: dojo bar .expanded cleared");
+      assert.equal(minor3E2e.caret, "▾", "Minor-3 E2E: dojo caret reset");
+      assert.equal(minor3E2e.trainingHudActive, false, "Minor-3 E2E: #dojo-training-hud .active cleared");
+      assert.equal(minor3E2e.focusIsBody, false, "Minor-3 E2E: focus off BODY");
+
+      // 5b. R6A-1 (Option 1B): Corrupt overwrite under QuotaExceededError & SecurityError uses visible role="alert" #hud-save-alert + #toast-container (opacity 1)
+      await page.evaluate((sk) => {
+        localStorage.setItem(sk, "{bad_r6a1_e2e");
+        window.dispatchEvent(new StorageEvent("storage", { key: null }));
+      }, STORAGE_KEY);
+      await page.waitForSelector('[data-action="prompt-overwrite-corrupt"]', { state: "visible" });
+      await page.click('[data-action="prompt-overwrite-corrupt"]');
+      await page.waitForSelector('#modal-backdrop.open [data-action="confirm-overwrite-corrupt-new"]');
+      assert.equal(await page.evaluate(() => Boolean(document.getElementById("corrupt-save-overwrite-error-msg"))), false, "R6A-1 (1B) E2E: dead #corrupt-save-overwrite-error-msg removed");
+      await page.evaluate((sk) => {
+        window.__e2eR6OrigSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+          return window.__e2eR6OrigSet.call(this, k, v);
+        };
+      }, STORAGE_KEY);
+      await page.click('[data-action="confirm-overwrite-corrupt-new"]');
+      await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      const r6a1E2e = await page.evaluate((sk) => {
+        const alertEl = document.getElementById("hud-save-alert");
+        const rect = alertEl ? alertEl.getBoundingClientRect() : null;
+        const toastEl = document.getElementById("toast-container");
+        return {
+          role: alertEl ? alertEl.getAttribute("role") : null,
+          visible: Boolean(alertEl && getComputedStyle(alertEl).display !== "none" && rect && rect.width > 0 && rect.height > 0),
+          text: alertEl ? (alertEl.textContent || "") : "",
+          toastOpacity: toastEl ? getComputedStyle(toastEl).opacity : "",
+          corruptPreserved: localStorage.getItem(sk) === "{bad_r6a1_e2e",
+          unescapedCount: document.querySelectorAll("[data-unescaped-marker]").length
+        };
+      }, STORAGE_KEY);
+      assert.equal(r6a1E2e.role, "alert", "R6A-1 (1B) E2E: #hud-save-alert has role='alert'");
+      assert.equal(r6a1E2e.visible, true, "R6A-1 (1B) E2E: #hud-save-alert visible on QuotaExceededError");
+      assert.ok(r6a1E2e.text.includes("QuotaExceededError"), "R6A-1 (1B) E2E: #hud-save-alert names QuotaExceededError");
+      assert.equal(r6a1E2e.toastOpacity, "1", "R6A-1 (1B) E2E: #toast-container opacity === 1");
+      assert.equal(r6a1E2e.corruptPreserved, true, "R6A-1 (1B) E2E: corrupt primary save preserved");
+      assert.equal(r6a1E2e.unescapedCount, 0, "R6A-1 (1B) E2E: zero unescaped markers");
+      await env.dismissOpeningIfAny(page);
+      await page.evaluate((sk) => {
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new DOMException('SecurityError <span data-unescaped-marker="e2e_r6a1s">X</span>', "SecurityError");
+          return window.__e2eR6OrigSet.call(this, k, v);
+        };
+      }, STORAGE_KEY);
+      await page.click('#hud-save-alert [data-action="overwrite-with-current-save"]');
+      const r6a1SecE2e = await page.evaluate((sk) => {
+        const el = document.getElementById("hud-save-alert");
+        Storage.prototype.setItem = window.__e2eR6OrigSet;
+        delete window.__e2eR6OrigSet;
+        return {
+          text: el ? (el.textContent || "") : "",
+          unescapedCount: document.querySelectorAll("[data-unescaped-marker]").length,
+          corruptPreserved: localStorage.getItem(sk) === "{bad_r6a1_e2e"
+        };
+      }, STORAGE_KEY);
+      assert.ok(r6a1SecE2e.text.includes('data-unescaped-marker="e2e_r6a1s"'), "R6A-1 (1B) E2E: inert marker escaped literally on SecurityError");
+      assert.equal(r6a1SecE2e.unescapedCount, 0, "R6A-1 (1B) E2E: zero unescaped markers on SecurityError");
+      assert.equal(r6a1SecE2e.corruptPreserved, true, "R6A-1 (1B) E2E: corrupt primary save preserved on SecurityError");
+      await page.click('#hud-save-alert [data-action="overwrite-with-current-save"]');
+      await page.waitForFunction(() => document.getElementById("hud-save-alert").style.display === "none");
+
+      // 5c. R6A-4: Floating #new-unlock-card & #gear-compare-card requestCalmReevaluation focus retention
+      await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        api.enterSanctumHub();
+        const g = api.getState().game;
+        g.realm = "qi";
+        g.seenUnlockIds = ["unlock_qi_arts", "unlock_qi_eco"];
+        api.queueNewUnlockCardsForState(g);
+        api.flushNewUnlockCard();
+      });
+      await page.waitForSelector("#new-unlock-card #btn-unlock-dismiss", { state: "visible" });
+      await page.focus("#btn-unlock-dismiss");
+      const r6a4Unlock = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const before = document.getElementById("btn-unlock-dismiss");
+        api.requestCalmReevaluation({ immediate: true });
+        return {
+          sameNode: document.getElementById("btn-unlock-dismiss") === before,
+          activeId: document.activeElement?.id || ""
+        };
+      });
+      assert.equal(r6a4Unlock.sameNode, true, "R6A-4 E2E: Unchanged requestCalmReevaluation preserves #btn-unlock-dismiss DOM node");
+      assert.equal(r6a4Unlock.activeId, "btn-unlock-dismiss", "R6A-4 E2E: Focus stays on #btn-unlock-dismiss");
+      await page.keyboard.press("Enter");
+      const r6a4UnlockAfter = await page.evaluate(() => ({
+        activeUnlock: window.__CHENYUAN_V25__.getActiveUnlockCardId(),
+        seenHasCoop: (window.__CHENYUAN_V25__.getState().game.seenUnlockIds || []).includes("unlock_ally_coop"),
+        isBody: document.activeElement === document.body
+      }));
+      assert.equal(r6a4UnlockAfter.activeUnlock, null, "R6A-4 E2E: Enter dismisses unlock card cleanly");
+      assert.equal(r6a4UnlockAfter.seenHasCoop, true, "R6A-4 E2E: unlock_ally_coop recorded in seenUnlockIds");
+      assert.equal(r6a4UnlockAfter.isBody, false, "R6A-4 E2E: Focus stays off BODY after unlock dismiss");
+
+      await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const it = api.rollGearItem(2, 2, "weapon");
+        it.name = "玄品·冷静试剑";
+        it.sell = 36;
+        api.acquireGearItem(it);
+        api.requestCalmReevaluation({ immediate: true });
+      });
+      await page.waitForSelector('#gear-compare-card [data-action="compare-smelt-new"]', { state: "visible" });
+      await page.waitForFunction(() => {
+        const gs = window.__CHENYUAN_V25__.getCompareCardGuardState();
+        return !gs.guardUntil || performance.now() >= gs.guardUntil;
+      }, null, { timeout: 2000 });
+      await page.focus('#gear-compare-card [data-action="compare-smelt-new"]');
+      const r6a4Cmp = await page.evaluate(() => {
+        const before = document.querySelector('#gear-compare-card [data-action="compare-smelt-new"]');
+        window.__CHENYUAN_V25__.requestCalmReevaluation({ immediate: true });
+        return {
+          sameNode: document.querySelector('#gear-compare-card [data-action="compare-smelt-new"]') === before,
+          activeAction: document.activeElement?.getAttribute?.("data-action") || ""
+        };
+      });
+      assert.equal(r6a4Cmp.sameNode, true, "R6A-4 E2E: Unchanged requestCalmReevaluation preserves #gear-compare-card DOM node");
+      assert.equal(r6a4Cmp.activeAction, "compare-smelt-new", "R6A-4 E2E: Focus stays on compare-smelt-new");
+      await page.keyboard.press("Enter");
+      const r6a4Arm = await page.evaluate(() => {
+        window.__CHENYUAN_V25__.requestCalmReevaluation({ immediate: true });
+        return document.activeElement?.getAttribute?.("data-action") || "";
+      });
+      assert.equal(r6a4Arm, "compare-smelt-new", "R6A-4 E2E: Armed smelt button retains focus across requestCalmReevaluation");
+      await page.focus('#gear-compare-card [data-action="compare-keep-bag"]');
+      await page.keyboard.press("Enter");
+      assert.equal(await page.evaluate(() => document.activeElement === document.body), false, "R6A-4 E2E: compare-keep-bag keeps focus off BODY");
+
+      // 5d. R6A-2: Reincarnation (Bingjie & Ending) + Proactive Batch Craft/Enhance/Settings inline role="alert" errors
+      await page.evaluate((sk) => {
+        const api = window.__CHENYUAN_V25__;
+        const g = api.getState().game;
+        g.realm = "spirit";
+        g.stones = 500;
+        g.inventory.herb = 10;
+        api.saveGame({ forceOverwrite: true });
+        api.openLifespanExhaustedModal(true);
+        window.__e2eR6OrigRm = Storage.prototype.removeItem;
+        Storage.prototype.removeItem = function(k) {
+          if (k === sk) throw new Error('SecurityError <span data-unescaped-marker="e2e_r6a2b">X</span>');
+          return window.__e2eR6OrigRm.call(this, k);
+        };
+      }, STORAGE_KEY);
+      await page.waitForSelector("#modal-backdrop.open #btn-confirm-bingjie-reincarnate");
+      await page.click("#btn-confirm-bingjie-reincarnate");
+      const e2eBingjie = await page.evaluate((sk) => {
+        const el = document.getElementById("reincarnation-error-msg");
+        const rect = el ? el.getBoundingClientRect() : null;
+        Storage.prototype.removeItem = window.__e2eR6OrigRm;
+        delete window.__e2eR6OrigRm;
+        return {
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          role: el ? el.getAttribute("role") : null,
+          visible: Boolean(el && getComputedStyle(el).display !== "none" && rect && rect.width > 0 && rect.height > 0),
+          text: el ? (el.textContent || "") : "",
+          unescapedCount: document.querySelectorAll("[data-unescaped-marker]").length,
+          focusIsBody: document.activeElement === document.body,
+          savePreserved: Boolean(localStorage.getItem(sk))
+        };
+      }, STORAGE_KEY);
+      assert.equal(e2eBingjie.modalOpen, true, "R6A-2 E2E Bingjie: modal stays open");
+      assert.equal(e2eBingjie.role, "alert", "R6A-2 E2E Bingjie: role='alert'");
+      assert.equal(e2eBingjie.visible, true, "R6A-2 E2E Bingjie: inline error visibly rendered");
+      assert.ok(e2eBingjie.text.includes('data-unescaped-marker="e2e_r6a2b"'), "R6A-2 E2E Bingjie: marker rendered literally via textContent");
+      assert.equal(e2eBingjie.unescapedCount, 0, "R6A-2 E2E Bingjie: zero unescaped markers");
+      assert.equal(e2eBingjie.focusIsBody, false, "R6A-2 E2E Bingjie: focus off BODY");
+      assert.equal(e2eBingjie.savePreserved, true, "R6A-2 E2E Bingjie: primary save preserved");
+
+      await page.evaluate((mk) => {
+        const api = window.__CHENYUAN_V25__;
+        api.closeModal();
+        const g = api.getState().game;
+        g.status = "ascended";
+        g.ending = "sword_sovereign";
+        api.openEndingModal();
+        window.__e2eR6OrigSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === mk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+          return window.__e2eR6OrigSet.call(this, k, v);
+        };
+      }, META_KEY);
+      await page.waitForSelector('#modal-backdrop.open [data-action="reincarnate-now"]');
+      await page.click('[data-action="reincarnate-now"]');
+      const e2eEnding = await page.evaluate((sk) => {
+        const el = document.getElementById("reincarnation-error-msg");
+        const rect = el ? el.getBoundingClientRect() : null;
+        Storage.prototype.setItem = window.__e2eR6OrigSet;
+        delete window.__e2eR6OrigSet;
+        const api = window.__CHENYUAN_V25__;
+        api.getState().game.status = "active";
+        api.getState().game.ending = null;
+        api.closeModal();
+        return {
+          role: el ? el.getAttribute("role") : null,
+          visible: Boolean(el && getComputedStyle(el).display !== "none" && rect && rect.width > 0 && rect.height > 0),
+          text: el ? (el.textContent || "") : "",
+          savePreserved: Boolean(localStorage.getItem(sk))
+        };
+      }, STORAGE_KEY);
+      assert.equal(e2eEnding.role, "alert", "R6A-2 E2E Ending: role='alert'");
+      assert.equal(e2eEnding.visible, true, "R6A-2 E2E Ending: inline error visibly rendered");
+      assert.ok(e2eEnding.text.includes("QuotaExceededError"), "R6A-2 E2E Ending: reports QuotaExceededError");
+      assert.equal(e2eEnding.savePreserved, true, "R6A-2 E2E Ending: primary save preserved");
+
+      // Proactive Batch Craft + Batch Enhance + Settings refusal spot-check
+      await page.evaluate((sk) => {
+        const api = window.__CHENYUAN_V25__;
+        api.openBatchCraftModal("healing", 1);
+        window.__e2eR6OrigSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+          return window.__e2eR6OrigSet.call(this, k, v);
+        };
+      }, STORAGE_KEY);
+      await page.click("#btn-confirm-batch-craft");
+      const e2eBatchCraft = await page.evaluate(() => {
+        const el = document.getElementById("batch-craft-error-msg");
+        const rect = el ? el.getBoundingClientRect() : null;
+        return { role: el?.getAttribute("role"), visible: Boolean(el && getComputedStyle(el).display !== "none" && rect && rect.width > 0 && rect.height > 0), text: el?.textContent || "" };
+      });
+      assert.equal(e2eBatchCraft.role, "alert", "R6A-2 E2E Proactive: #batch-craft-error-msg role='alert'");
+      assert.equal(e2eBatchCraft.visible, true, "R6A-2 E2E Proactive: #batch-craft-error-msg visible");
+      assert.ok(e2eBatchCraft.text.includes("QuotaExceededError"), "R6A-2 E2E Proactive: #batch-craft-error-msg reports QuotaExceededError");
+      await page.evaluate(() => {
+        window.__CHENYUAN_V25__.closeModal();
+        window.__CHENYUAN_V25__.openBatchEnhanceModal("weapon", 1);
+      });
+      await page.click("#btn-confirm-batch-enhance");
+      const e2eBatchEnh = await page.evaluate(() => {
+        const el = document.getElementById("batch-enhance-error-msg");
+        const rect = el ? el.getBoundingClientRect() : null;
+        Storage.prototype.setItem = window.__e2eR6OrigSet;
+        delete window.__e2eR6OrigSet;
+        window.__CHENYUAN_V25__.closeModal();
+        return { role: el?.getAttribute("role"), visible: Boolean(el && getComputedStyle(el).display !== "none" && rect && rect.width > 0 && rect.height > 0), text: el?.textContent || "" };
+      });
+      assert.equal(e2eBatchEnh.role, "alert", "R6A-2 E2E Proactive: #batch-enhance-error-msg role='alert'");
+      assert.equal(e2eBatchEnh.visible, true, "R6A-2 E2E Proactive: #batch-enhance-error-msg visible");
+      assert.ok(e2eBatchEnh.text.includes("QuotaExceededError"), "R6A-2 E2E Proactive: #batch-enhance-error-msg reports QuotaExceededError");
+
+      // 5e. R6A-3: Dual storageWriteError + metaReadError HUD alert & clean retry transition
+      await page.evaluate(({ sk, mk }) => {
+        const api = window.__CHENYUAN_V25__;
+        localStorage.setItem(mk, "{bad_meta_e2e_r6");
+        window.dispatchEvent(new StorageEvent("storage", { key: mk, newValue: "{bad_meta_e2e_r6" }));
+        window.__e2eR6OrigSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+          return window.__e2eR6OrigSet.call(this, k, v);
+        };
+        api.saveGame({ userInitiated: true });
+      }, { sk: STORAGE_KEY, mk: META_KEY });
+      const e2eR6a3 = await page.evaluate(() => {
+        const el = document.getElementById("hud-save-alert");
+        return {
+          display: el ? el.style.display : "",
+          hasRetry: Boolean(el && el.querySelector('[data-action="retry-save-now"]')),
+          hasResetMeta: Boolean(el && el.querySelector('[data-action="prompt-reset-corrupt-meta"]')),
+          hasDismiss: Boolean(el && el.querySelector('[data-action="dismiss-save-alert"]'))
+        };
+      });
+      assert.equal(e2eR6a3.display, "flex", "R6A-3 E2E: dual-error banner displayed");
+      assert.equal(e2eR6a3.hasRetry, true, "R6A-3 E2E: exposes retry-save-now");
+      assert.equal(e2eR6a3.hasResetMeta, true, "R6A-3 E2E: exposes prompt-reset-corrupt-meta");
+      assert.equal(e2eR6a3.hasDismiss, false, "R6A-3 E2E: omits broken ✕");
+      await page.evaluate(() => {
+        Storage.prototype.setItem = window.__e2eR6OrigSet;
+        delete window.__e2eR6OrigSet;
+      });
+      await page.click('#hud-save-alert [data-action="retry-save-now"]');
+      const e2eR6a3Retry = await page.evaluate((mk) => ({
+        writeErr: window.__CHENYUAN_V25__.getPersistenceState().storageWriteError,
+        corruptMetaUntouched: localStorage.getItem(mk) === "{bad_meta_e2e_r6",
+        focusIsBody: document.activeElement === document.body
+      }), META_KEY);
+      assert.equal(e2eR6a3Retry.writeErr, null, "R6A-3 E2E: retry-save-now clears storageWriteError");
+      assert.equal(e2eR6a3Retry.corruptMetaUntouched, true, "R6A-3 E2E: corrupt META_KEY untouched");
+      assert.equal(e2eR6a3Retry.focusIsBody, false, "R6A-3 E2E: focus stays off BODY");
+      await page.click('#hud-save-alert [data-action="prompt-reset-corrupt-meta"]');
+      await page.waitForSelector('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
+      await page.click('[data-action="confirm-reset-corrupt-meta"]');
+      await page.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+
+      // 5f. R6B-1 (+ P4c) + R6B-2 + R6B-3 + R6B-4
+      await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.realm = "spirit";
+        s.game.xp = api.REALMS.spirit.xpCap;
+        s.game.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
+        s.game.aids = { shen: false, pei: false, lu: false, yan: false };
+        s.game.laws = [];
+        s.game.loadout.mind = "sword_mind";
+        s.game.loadout.relic = null;
+        api.enterSanctumHub();
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        window.__CHENYUAN_V23__.setCelestialTimePhase(1, true);
+        s.game.hp = 80;
+        s.game.mp = 10;
+        s.game.gourd.charges = 0;
+        s.game.inventory.healing_pill = 0;
+        s.game.inventory.longevity_pill = 2;
+        s.game.inventory.blood_fury_pill = 2;
+        s.game.inventory.herb = 10;
+        s.game.stones = 500;
+        s.arena.tribulation.strikes = [];
+        s.arena.tribulation.cooldown = 99;
+        api.focusBattlefield();
+      });
+      await page.keyboard.press("KeyB");
+      assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.player.meditating), false, "R6B-1 E2E: KeyB blocked mid-tribulation");
+      await page.click("#orb-meditate");
+      const e2eR6b1 = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        const medOrb = s.arena.player.meditating;
+        for (let k = 0; k < 30; k++) api.stepArena(0.05);
+        const hpIdle = s.game.hp;
+        const mpIdle = s.game.mp;
+        const maxMp = api.getCombatStats(s.game).maxMp;
+        const zenIdle = s.arena.player.zenStacks || 0;
+        s.arena.player.meditating = true;
+        s.arena.player.invuln = 0;
+        s.arena.tribulation.strikes = [{ x: s.arena.player.x, y: s.arena.player.y, r: 84, t: 0.99, hit: false, parried: false }];
+        api.stepArena(0.05);
+        const medBolt = s.arena.player.meditating;
+        const hpBolt = s.game.hp;
+        api.consumeInventoryItem("longevity_pill");
+        api.consumeInventoryItem("blood_fury_pill");
+        const quickOk = api.executeAlchemyQuickCraft("healing");
+        const batchRes = api.executeAlchemyBatchCraft("healing", 2);
+        s.arena.tribulation = null;
+        return { medOrb, hpIdle, mpIdle, maxMp, zenIdle, medBolt, hpBolt, longLeft: s.game.inventory.longevity_pill, furyLeft: s.game.inventory.blood_fury_pill, healLeft: s.game.inventory.healing_pill, quickOk, batchReason: batchRes?.reason };
+      });
+      assert.equal(e2eR6b1.medOrb, false, "R6B-1 E2E: #orb-meditate blocked mid-tribulation");
+      assert.equal(e2eR6b1.hpIdle, 80, "R6B-1 E2E: HP unchanged without meditation");
+      assert.ok(e2eR6b1.mpIdle < 10 + e2eR6b1.maxMp * 0.12, `R6B-1 E2E: MP stays within passive baseline without 28%/s meditation leak (got ${e2eR6b1.mpIdle}/${e2eR6b1.maxMp})`);
+      assert.equal(e2eR6b1.zenIdle, 0, "R6B-1 E2E: zenStacks stays 0 without meditation");
+      assert.equal(e2eR6b1.medBolt, false, "R6B-1 E2E: forced meditation aborted on bolt");
+      assert.ok(e2eR6b1.hpBolt < 80, "R6B-1 E2E: bolt deals real damage");
+      assert.equal(e2eR6b1.longLeft, 2, "R6B-1 E2E (P4c): longevity_pill blocked mid-tribulation");
+      assert.equal(e2eR6b1.furyLeft, 2, "R6B-1 E2E (P4c): blood_fury_pill blocked mid-tribulation");
+      assert.equal(e2eR6b1.healLeft, 0, "R6B-1 E2E (P4c): crafting blocked mid-tribulation");
+      assert.equal(e2eR6b1.quickOk, false, "R6B-1 E2E (P4c): quick craft returns false");
+      assert.equal(e2eR6b1.batchReason, "tribulation", "R6B-1 E2E (P4c): batch craft reason === tribulation");
+
+      // R6B-2: stageEpoch bump & waveTransitioning reset in startLiveTribulation
+      const e2eR6b2 = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.laws = ["karma_resonance"];
+        s.game.bondTiers = { shen: 3, pei: 3, lu: 3, yan: 3 };
+        s.game.xp = api.REALMS[s.game.realm].xpCap;
+        api.enterSanctumHub();
+        s.arena.swordIntent = 100;
+        api.focusBattlefield();
+        window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyX", key: "x", bubbles: true }));
+        const ep0 = s.arena.stageEpoch;
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        const ep1 = s.arena.stageEpoch;
+        window.__CHENYUAN_V23__.setCelestialTimePhase(1, true);
+        s.game.hp = 100;
+        s.arena.player.shieldHp = 0;
+        s.arena.tribulation.strikes = [];
+        s.arena.tribulation.cooldown = 99;
+        return { ep0, ep1 };
+      });
+      assert.equal(e2eR6b2.ep1, e2eR6b2.ep0 + 1, "R6B-2 E2E: startLiveTribulation bumps stageEpoch");
+      await page.waitForTimeout(480);
+      const e2eR6b2After = await page.evaluate(() => {
+        const s = window.__CHENYUAN_V25__.getState();
+        const res = { hp: s.game.hp, shield: s.arena.player.shieldHp, vortexes: (s.arena.lotusVortexes || []).length };
+        s.arena.tribulation = null;
+        return res;
+      });
+      assert.equal(e2eR6b2After.hp, 100, "R6B-2 E2E: cancelled KeyX Ult did not heal");
+      assert.equal(e2eR6b2After.shield, 0, "R6B-2 E2E: cancelled KeyX Ult did not grant shield");
+      assert.equal(e2eR6b2After.vortexes, 0, "R6B-2 E2E: cancelled KeyX Ult did not spawn lotusVortexes");
+
+      // R6B-3 (23 entities across all transitions + Spire 1->2) & R6B-4 (plain-object stageStars +30% yield = 8)
+      const e2eR6b34 = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const v21 = window.__CHENYUAN_V21__;
+        const v22 = window.__CHENYUAN_V22__;
+        const s = api.getState();
+        s.game.laws = [];
+        s.game.seenCutscenes = Object.assign({}, s.game.seenCutscenes, { enter_sect: true });
+        const seedAll23 = () => {
+          const ar = s.arena;
+          ar.qimenArray = { gate: "sheng", x: 700, y: 450, r: 220, life: 9, maxLife: 9, __r6b3Leak: true };
+          ar.qimenCd = 7;
+          ar.domain = { x: 700, y: 450, r: 200, life: 8, maxLife: 8, color: "#70ffe6", __r6b3Leak: true };
+          ar.activeAllies = [{ id: "shen", __r6b3Leak: true, x: 700, y: 450, life: 8, maxLife: 8, healCd: 0.1 }];
+          ar.zones = [{ kind: "lotus_heal", __r6b3Leak: true, x: 700, y: 450, r: 160, life: 5, maxLife: 5 }];
+          ar.witchTime = 3.5;
+          ar.lotusVortexes = [{ x: 700, y: 450, r: 150, life: 4, maxLife: 4, __r6b3Leak: true }];
+          ar.thunderOrbs = [{ x: 700, y: 450, life: 4, tickCd: 0.1, __r6b3Leak: true }];
+          ar.jadeDecoys = [{ x: 700, y: 450, life: 4, __r6b3Leak: true }];
+          ar.fireZones = [{ x: 700, y: 450, r: 90, life: 4, __r6b3Leak: true }];
+          ar.waterPools = [{ x: 700, y: 450, r: 90, life: 4, __r6b3Leak: true }];
+          ar.frostPools = [{ x: 700, y: 450, r: 90, life: 4, __r6b3Leak: true }];
+          ar.projectiles = [{ friendly: true, x: 700, y: 450, vx: 1, vy: 0, r: 12, life: 3, __r6b3Leak: true }];
+          ar.hoverChakrams = [{ x: 700, y: 450, r: 90, life: 3, __r6b3Leak: true }];
+          ar.groundSweeps = [{ x: 700, y: 450, r: 100, t: 0, __r6b3Leak: true }];
+          ar.meteorBursts = [{ x: 700, y: 450, r: 120, t: 0, __r6b3Leak: true }];
+          ar.sanqingState = { active: true, life: 10, maxLife: 10, swapUsed: true, clones: [{ x: 680, y: 450, lungeT: 0.4 }] };
+          ar.sanqingEchoQueue = [{ delay: 0.2, kind: "slash", __r6b3Leak: true }];
+          ar.shanheDomain = { x: 700, y: 450, r: 240, life: 10, maxLife: 10, __r6b3Leak: true };
+          ar.warshipStrike = { x: 700, y: 450, t: 0.2, life: 3, __r6b3Leak: true };
+          ar.astralForm = { active: true, life: 10, maxLife: 10, __r6b3Leak: true };
+          ar.mountState = { active: true, id: "qilin", life: 10, maxLife: 10, __r6b3Leak: true };
+          ar.pillAcolyte = { x: 700, y: 450, life: 10, maxLife: 10, __r6b3Leak: true };
+          ar.spatialRifts = [{ x: 700, y: 450, life: 5, __r6b3Leak: true }];
+          ar.bossDomain = { x: 700, y: 450, life: 5, __r6b3Leak: true };
+          ar.reversedDomainTimer = 4;
+        };
+        const countLeaks = () => {
+          const ar = s.arena;
+          const cntArr = (arr) => (Array.isArray(arr) ? arr.filter(x => x && x.__r6b3Leak).length : 0);
+          return (ar.qimenArray ? 1 : 0) + (ar.qimenCd > 0 ? 1 : 0) + (ar.domain ? 1 : 0)
+            + cntArr(ar.activeAllies) + cntArr(ar.zones) + (ar.witchTime > 0 ? 1 : 0)
+            + cntArr(ar.lotusVortexes) + cntArr(ar.thunderOrbs) + cntArr(ar.jadeDecoys)
+            + cntArr(ar.fireZones) + cntArr(ar.waterPools) + cntArr(ar.frostPools)
+            + cntArr(ar.projectiles) + cntArr(ar.hoverChakrams) + cntArr(ar.groundSweeps) + cntArr(ar.meteorBursts)
+            + (ar.sanqingState && (ar.sanqingState.active || ar.sanqingState.life > 0) ? 1 : 0)
+            + cntArr(ar.sanqingEchoQueue) + (ar.shanheDomain ? 1 : 0) + (ar.warshipStrike ? 1 : 0)
+            + (ar.astralForm ? 1 : 0) + (ar.mountState ? 1 : 0) + (ar.pillAcolyte ? 1 : 0)
+            + cntArr(ar.spatialRifts) + (ar.bossDomain ? 1 : 0) + (ar.reversedDomainTimer > 0 ? 1 : 0);
+        };
+        const leaks = {};
+        api.enterSanctumHub(); seedAll23(); api.enterSanctumHub(); leaks.sanctum = countLeaks();
+        api.initArenaStage(1, false); seedAll23(); api.enterSanctumHub(); leaks.campSanctum = countLeaks();
+        api.initArenaStage(1, false); seedAll23(); api.initArenaStage(0, false); leaks.campStage0 = countLeaks();
+        api.initArenaStage(1, false); seedAll23(); api.startBossRushGauntlet(1); leaks.campRush = countLeaks();
+        api.initArenaStage(1, false); seedAll23(); api.startCloudSeaAerialStage(); leaks.campCloud = countLeaks();
+        api.initArenaStage(1, false); seedAll23(); api.startCelestialSpireRun(1); leaks.campSpire = countLeaks();
+        api.initArenaStage(1, false); seedAll23(); api.startSectDefenseSiege(); leaks.campSect = countLeaks();
+        api.initArenaStage(1, false); seedAll23(); v22.launchCustomSeedEncounter(); leaks.campWorkshop = countLeaks();
+        api.initArenaStage(1, false); seedAll23(); api.startLiveTribulation({ confirmed: true, mode: "defiant" }); leaks.campTrib = countLeaks();
+        s.arena.tribulation = null;
+        api.startCelestialSpireRun(1); seedAll23(); v21.selectSpireCurioAndAdvance("curio_chakram_thunder", 1);
+        leaks.spireFloor2 = countLeaks();
+        const spireFloor = s.arena.celestialSpire ? s.arena.celestialSpire.floor : 0;
+
+        // R6B-4
+        const nArr = api.normalizeLoadedGame({ realm: "nascent", stageStars: [3, 1, 0, 0, 0] });
+        s.game.realm = "nascent";
+        s.game.stageStars = { 0: 3, 1: 1 };
+        s.game.defeatedStageBosses = { 0: true };
+        api.openExpeditionSandboxModal();
+        const q0 = document.querySelector('[data-exp-synergy="qinglan_vein"]')?.textContent || "";
+        api.closeModal();
+        api.initArenaStage(1, false);
+        if (!s.arena.enemies.some(e => !e.isDummy && e.hp > 0)) {
+          api.spawnSingleEnemy("wolf", 920, 450, 1.0, false);
+        }
+        s.game.bondTiers = Object.assign({}, s.game.bondTiers, { shen: 1 });
+        s.game.expeditions = { assignments: { qinglan_vein: "shen" }, bankedStones: 0, bankedStars: 0, supportThunderCount: 0, tickTimer: 0.01 };
+        api.stepArena(0.05);
+        return { leaks, spireFloor, arrStar0: nArr.stageStars[0], q0, bankedStones: s.game.expeditions.bankedStones };
+      });
+      for (const [k, v] of Object.entries(e2eR6b34.leaks)) {
+        assert.equal(v, 0, `R6B-3 E2E (${k}): 0 leaked combat/overdrive entities`);
+      }
+      assert.equal(e2eR6b34.spireFloor, 2, "R6B-3 E2E: Spire Floor 1->2 transition clean");
+      assert.equal(e2eR6b34.arrStar0, 3, "R6B-4 E2E: legacy array stageStars preserved on normalizeLoadedGame");
+      assert.ok(e2eR6b34.q0.includes("+30%") && e2eR6b34.q0.includes("三星共鸣"), `R6B-4 E2E: qinglan_vein shows +30% 三星共鸣, got: ${e2eR6b34.q0}`);
+      assert.equal(e2eR6b34.bankedStones, 8, `R6B-4 E2E: expedition combat tick awards 8 stones, got ${e2eR6b34.bankedStones}`);
     }
   }
 ];

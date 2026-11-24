@@ -264,7 +264,7 @@ export function getExpeditionNodeStageSynergy(g, nodeId) {
     return { mult: 1.0, tier: "base", label: "基础产出", stageIdx: -1, stageName: "", stars: 0 };
   }
   const idx = mapped.stageIdx;
-  const rawStars = (g && Array.isArray(g.stageStars)) ? num(g.stageStars[idx], 0) : 0;
+  const rawStars = (g && g.stageStars && typeof g.stageStars === "object" && hasOwn(g.stageStars, String(idx))) ? num(g.stageStars[idx], 0) : 0;
   const stars = Math.max(0, Math.min(3, Math.floor(rawStars)));
   const bossDefeated = Boolean(g && g.defeatedStageBosses && g.defeatedStageBosses[idx]);
   if (stars >= 3) {
