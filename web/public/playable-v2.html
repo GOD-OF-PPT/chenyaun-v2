@@ -4730,7 +4730,7 @@ const ART = {
     },
     ensure() {
       if (this.muted) return null;
-      if (typeof navigator !== "undefined" && navigator.userActivation && !navigator.userActivation.hasBeenActivated) return null;
+      if (typeof navigator !== "undefined" && navigator.userActivation && !navigator.userActivation.hasBeenActive) return null;
       if (!this.ctx) {
         const AC = window.AudioContext || window.webkitAudioContext;
         if (AC) this.ctx = new AC();
@@ -4998,10 +4998,9 @@ const ART = {
     },
     slash(heavy, step = 0) {
       const bScale = this.stems ? this.stems.blade : 1.0;
+      const ctx = (bScale > 0.0005) ? this.ensure() : null;
       this.recordCue(heavy ? "slash_heavy" : "slash_light", heavy ? "heavy" : "light", { stem: "blade", step });
-      if (bScale <= 0.01) return;
-      const ctx = this.ensure();
-      if (!ctx) return;
+      if (bScale <= 0.0005 || !ctx || this.muted) return;
       const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
@@ -5028,6 +5027,8 @@ const ART = {
       }
     },
     fanfare() {
+      const qScale = this.stems ? this.stems.guqin : 1.0;
+      if (qScale > 0.0005) this.ensure();
       this.recordCue("fanfare", "ui", { stem: "guqin" });
       [261.63, 329.63, 392.0, 523.25, 659.25].forEach((n, i) => {
         setTimeout(() => this.pluck(n, 0.52, 0.105, "triangle"), i * 72);
@@ -5035,6 +5036,8 @@ const ART = {
     },
     deflectClang() {
       // Sekiro / Black Myth style resonant bronze-steel parry ring!
+      const bScale = this.stems ? this.stems.blade : 1.0;
+      if (bScale > 0.0005) this.ensure();
       this.recordCue("deflect_clang", "deflect", { stem: "blade" });
       this.clang(1.42, 0.20);
       this.bianzhong(783.99, 0.11);
@@ -5042,10 +5045,9 @@ const ART = {
     },
     shieldAbsorb(kind = "player") {
       const cScale = this.stems ? this.stems.chime : 1.0;
+      const ctx = (cScale > 0.0005) ? this.ensure() : null;
       this.recordCue("shield_absorb", "block", { kind, stem: "chime" });
-      if (cScale <= 0.0005) return;
-      const ctx = this.ensure();
-      if (!ctx || this.muted) return;
+      if (cScale <= 0.0005 || !ctx || this.muted) return;
       const now = ctx.currentTime;
       const baseF = kind === "enemy" ? 460 : 620;
       [1.0, 1.498].forEach((ratio, idx) => {
@@ -5062,13 +5064,12 @@ const ART = {
     },
     postureBreak() {
       const dScale = this.stems ? this.stems.drum : 1.0;
+      const ctx = (dScale > 0.0005) ? this.ensure() : null;
       this.recordCue("posture_break", "break", { stem: "drum" });
       this.drum(0.30);
       this.clang(0.84, 0.18);
       this.bianzhong(440.0, 0.10);
-      if (dScale <= 0.0005) return;
-      const ctx = this.ensure();
-      if (!ctx || this.muted) return;
+      if (dScale <= 0.0005 || !ctx || this.muted) return;
       const now = ctx.currentTime;
       const sub = ctx.createOscillator();
       const g = ctx.createGain();
@@ -5082,10 +5083,9 @@ const ART = {
     },
     playerHurt(isHeavy = false) {
       const dScale = this.stems ? this.stems.drum : 1.0;
+      const ctx = (dScale > 0.0005) ? this.ensure() : null;
       this.recordCue("player_hurt", "hurt", { isHeavy: !!isHeavy, stem: "drum" });
-      if (dScale <= 0.0005) return;
-      const ctx = this.ensure();
-      if (!ctx || this.muted) return;
+      if (dScale <= 0.0005 || !ctx || this.muted) return;
       const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
@@ -5111,24 +5111,25 @@ const ART = {
     },
     dialogueCue() {
       const qScale = this.stems ? this.stems.guqin : 1.0;
+      if (qScale > 0.0005) this.ensure();
       this.recordCue("dialogue_cue", "ui", { stem: "guqin" });
       if (qScale <= 0.0005) return;
       this.pluck(523.25, 0.18, 0.045, "sine");
     },
     noticeCue(tier = 2) {
       const cScale = this.stems ? this.stems.chime : 1.0;
+      if (cScale > 0.0005) this.ensure();
       this.recordCue("notice_cue", "ui", { noticeTier: tier, stem: "chime" });
       if (cScale <= 0.0005) return;
       this.bianzhong(tier <= 1 ? 659.25 : 587.33, tier <= 1 ? 0.065 : 0.042);
     },
     perilousGong() {
       const cScale = this.stems ? this.stems.chime : 1.0;
+      const ctx = (cScale > 0.0005) ? this.ensure() : null;
       this.recordCue("perilous_gong", "ui", { perilous: true, stem: "chime" });
       this.triggerDucking(460, 0.34, 900);
-      if (cScale <= 0.0005) return;
+      if (cScale <= 0.0005 || !ctx || this.muted) return;
       // Unmistakable ominous 【危】 warning chime!
-      const ctx = this.ensure();
-      if (!ctx || this.muted) return;
       const now = ctx.currentTime;
       [196.0, 207.65, 392.0].forEach((f, idx) => {
         const osc = ctx.createOscillator();
@@ -5145,10 +5146,9 @@ const ART = {
     },
     thunderCrack() {
       const dScale = this.stems ? this.stems.drum : 1.0;
+      const ctx = (dScale > 0.0005) ? this.ensure() : null;
       this.recordCue("thunder_crack", "heavy", { stem: "drum" });
-      if (dScale <= 0.0005) return;
-      const ctx = this.ensure();
-      if (!ctx || this.muted) return;
+      if (dScale <= 0.0005 || !ctx || this.muted) return;
       const now = ctx.currentTime;
       this.drum(0.20);
       if (this.noiseBuf) {
@@ -5167,10 +5167,9 @@ const ART = {
     },
     fleshHit(tier = 1) {
       const bScale = this.stems ? this.stems.blade : 1.0;
+      const ctx = (bScale > 0.0005) ? this.ensure() : null;
       this.recordCue(tier >= 2 ? "flesh_heavy" : "flesh_light", tier >= 2 ? "heavy" : "light", { hitTier: tier, stem: "blade" });
-      if (bScale <= 0.0005) return;
-      const ctx = this.ensure();
-      if (!ctx || this.muted) return;
+      if (bScale <= 0.0005 || !ctx || this.muted) return;
       const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
@@ -5202,9 +5201,11 @@ const ART = {
       });
     },
     switchStanceChime(toHeavy = false) {
-      this.recordCue(toHeavy ? "stance_heavy" : "stance_light", "ui", { stem: toHeavy ? "chime" : "guqin" });
-      const ctx = this.ensure();
-      if (!ctx || this.muted) return;
+      const stemKey = toHeavy ? "chime" : "guqin";
+      const stScale = this.stems ? this.stems[stemKey] : 1.0;
+      const ctx = (stScale > 0.0005) ? this.ensure() : null;
+      this.recordCue(toHeavy ? "stance_heavy" : "stance_light", "ui", { stem: stemKey });
+      if (stScale <= 0.0005 || !ctx || this.muted) return;
       if (toHeavy) {
         this.bianzhong(293.66, 0.11);
         this.drum(0.22);
@@ -5215,10 +5216,9 @@ const ART = {
     },
     shieldBreakSub() {
       const dScale = this.stems ? this.stems.drum : 1.0;
+      const ctx = (dScale > 0.0005) ? this.ensure() : null;
       this.recordCue("shield_break", "break", { stem: "drum" });
-      if (dScale <= 0.0005) return;
-      const ctx = this.ensure();
-      if (!ctx || this.muted) return;
+      if (dScale <= 0.0005 || !ctx || this.muted) return;
       const now = ctx.currentTime;
       const sub = ctx.createOscillator();
       const g = ctx.createGain();
@@ -7600,10 +7600,9 @@ const ART = {
   function formatGearStats(it) {
     if (!it) return "未佩带";
     const parts = [];
-    const enh = 1 + (it.lvl || 0) * GEAR_ENHANCE_STEP_PCT;
-    if (it.atk) parts.push(`攻+${Math.round(it.atk * enh)}`);
-    if (it.hp) parts.push(`血+${Math.round(it.hp * enh)}`);
-    if (it.dr) parts.push(`减伤+${Math.round(it.dr * enh)}`);
+    if (it.atk) parts.push(`攻+${effectiveGearVal(it, "atk")}`);
+    if (it.hp) parts.push(`血+${effectiveGearVal(it, "hp")}`);
+    if (it.dr) parts.push(`减伤+${effectiveGearVal(it, "dr")}`);
     if (it.crit) parts.push(`暴+${Math.round(it.crit * 100)}%`);
     if (it.spd) parts.push(`速+${Math.round(it.spd * 100)}%`);
     if (it.bonusSword) parts.push(`飞剑+${it.bonusSword}`);
@@ -8514,6 +8513,9 @@ const ART = {
   function setPerfDegradeOverride(level) {
     if (level === null || level === undefined) {
       perfTelemetry.degradeOverride = null;
+      perfTelemetry.degradeLevel = 0;
+      perfTelemetry.slowStreak1 = 0;
+      perfTelemetry.slowStreak2 = 0;
       return getEffectivePerfDegradeLevel();
     }
     const n = Math.max(0, Math.min(2, Math.floor(Number(level) || 0)));
@@ -8530,6 +8532,8 @@ const ART = {
     perfTelemetry.longFrames50 = 0;
     perfTelemetry.maxFrameMs = 0;
     perfTelemetry.rollingAvgMs = 16.67;
+    perfTelemetry.slowStreak1 = 0;
+    perfTelemetry.slowStreak2 = 0;
     if (perfTelemetry.degradeOverride === null) perfTelemetry.degradeLevel = 0;
   }
   function getPerfStats() {
@@ -10802,7 +10806,7 @@ const ART = {
           right_halberd: { id: "right_halberd", name: "右裂天雷戟",   ox: 128,  oy: 34,  r: 56, hp: armHp, maxHp: armHp, broken: false }
         },
         mech: "colossal_titan", wardHp: 0, maxWardHp: 0, mirrorTimer: 0, blinkCd: 99, beamCd: 4.2,
-        x: tx, y: ty, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
+        x: tx, y: ty, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1, facing: -1,
         r: 108, hp: titanHp, maxHp: titanHp,
         posture: titanPos, maxPosture: titanPos,
         partHp: eyeHp, maxPartHp: eyeHp,
@@ -10831,7 +10835,7 @@ const ART = {
         isBoss: true, isInnerDemon: true, isTreasure: false, enraged: false,
         demonPosture: "qinglian", postureSwapCd: 4.2, demonParryTimer: 0, swordOrbitAng: 0,
         mech: "mirror_demon", wardHp: 0, maxWardHp: 0, mirrorTimer: 0, blinkCd: 3.4, beamCd: 4.0,
-        x: pos.x, y: pos.y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
+        x: pos.x, y: pos.y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1, facing: -1,
         r: 46, hp: demonHp, maxHp: demonHp,
         posture: demonPos, maxPosture: demonPos,
         partHp: Math.round(demonHp * 0.28), maxPartHp: Math.round(demonHp * 0.28),
@@ -13274,7 +13278,7 @@ const ART = {
           right_halberd: { id: "right_halberd", name: "右裂天雷戟",   ox: 128,  oy: 34,  r: 56, hp: armHp, maxHp: armHp, broken: false }
         },
         mech: "colossal_titan", wardHp: 0, maxWardHp: 0, mirrorTimer: 0, blinkCd: 99, beamCd: 3.8,
-        x, y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
+        x, y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1, facing: -1,
         r: 108, hp: titanHp, maxHp: titanHp, posture: 170, maxPosture: 170,
         partHp: eyeHp, maxPartHp: eyeHp, weakpointExposed: true, partSevered: false,
         atk: Math.max(20, Math.round(st.maxHp * 0.13)), heavy: Math.max(32, Math.round(st.maxHp * 0.21)),
@@ -13294,7 +13298,7 @@ const ART = {
         isBoss: true, isInnerDemon: true, isTreasure: false, enraged: false,
         demonPosture: "qinglian", postureSwapCd: 4.0, demonParryTimer: 0, swordOrbitAng: 0,
         mech: "mirror_demon", wardHp: 0, maxWardHp: 0, mirrorTimer: 0, blinkCd: 3.4, beamCd: 4.0,
-        x: pos.x, y: pos.y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
+        x: pos.x, y: pos.y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1, facing: -1,
         r: 46, hp: demonHp, maxHp: demonHp, posture: 130, maxPosture: 130,
         partHp: Math.round(demonHp * 0.28), maxPartHp: Math.round(demonHp * 0.28),
         weakpointExposed: true, partSevered: false,
@@ -16871,11 +16875,9 @@ const ART = {
     ["weapon", "armor", "ring"].forEach(sl => {
       const it = g.equippedGear[sl];
       if (it && typeof it === "object") {
-        const lvl = Math.max(0, num(it.lvl, 0));
-        const enh = 1 + lvl * GEAR_ENHANCE_STEP_PCT;
-        tot.atk += Math.round(Math.max(0, num(it.atk, 0)) * enh);
-        tot.hp += Math.round(Math.max(0, num(it.hp, 0)) * enh);
-        tot.dr += Math.round(Math.max(0, num(it.dr, 0)) * enh);
+        tot.atk += effectiveGearVal(it, "atk");
+        tot.hp += effectiveGearVal(it, "hp");
+        tot.dr += effectiveGearVal(it, "dr");
         tot.crit += Math.max(0, num(it.crit, 0));
         tot.spd += Math.max(0, num(it.spd, 0)) + (it.affix === "wind_rider" ? 0.10 : 0);
         tot.bonusSword += Math.max(0, num(it.bonusSword, 0));
@@ -17270,13 +17272,13 @@ const ART = {
     const validUnlockIds = new Set(UNLOCK_TUTORIAL_CATALOG.map(c => c.id));
     if (raw.vol1PedestalMeta && typeof raw.vol1PedestalMeta === "object" && !Array.isArray(raw.vol1PedestalMeta)) {
       const ch = raw.vol1PedestalMeta.choice === "help" || raw.vol1PedestalMeta.choice === "trade" ? raw.vol1PedestalMeta.choice : null;
-      g.vol1PedestalMeta = ch ? { choice: ch, payoffShown: Boolean(raw.vol1PedestalMeta.payoffShown) } : null;
+      g.vol1PedestalMeta = ch ? { choice: ch, payoffShown: raw.vol1PedestalMeta.payoffShown === true } : null;
     } else {
       g.vol1PedestalMeta = null;
     }
     if (raw.vol1Prep && typeof raw.vol1Prep === "object" && !Array.isArray(raw.vol1Prep)) {
       g.vol1Prep = {
-        upgradeDone: Boolean(raw.vol1Prep.upgradeDone),
+        upgradeDone: raw.vol1Prep.upgradeDone === true,
         lastLabel: safeText(raw.vol1Prep.lastLabel, "").slice(0, 48)
       };
     } else {
@@ -19022,9 +19024,15 @@ const ART = {
 
   function effectiveGearVal(it, key, overrideLvl = null) {
     if (!it) return 0;
-    const lvl = overrideLvl !== null ? overrideLvl : (it.lvl || 0);
-    const enh = 1 + lvl * GEAR_ENHANCE_STEP_PCT;
-    if (key === "atk" || key === "hp" || key === "dr") return Math.round((it[key] || 0) * enh);
+    const lvl = Math.max(0, Math.floor(num(overrideLvl !== null ? overrideLvl : (it.lvl || 0), 0)));
+    if (key === "atk" || key === "hp" || key === "dr") {
+      const base = Math.max(0, num(it[key], 0));
+      if (base <= 0) return 0;
+      const baseInt = Math.round(base);
+      if (lvl <= 0) return baseInt;
+      const scaled = Math.round(base * (1 + lvl * GEAR_ENHANCE_STEP_PCT));
+      return base >= 1 ? Math.max(baseInt + lvl, scaled) : scaled;
+    }
     return it[key] || 0;
   }
 
@@ -28203,7 +28211,7 @@ const ART = {
   }
 
   function activatePedestalChoice(pr) {
-    if (!game) return;
+    if (!game || game.openingChoice) return;
     const choice = (typeof pr === "string") ? pr : (pr && pr.choice);
     if (choice !== "help" && choice !== "trade") return;
     game.openingChoice = choice;
@@ -29487,7 +29495,7 @@ const ART = {
           ctx.fillText("危", 0, 0);
         } else if (prog > 0.35) {
           ctx.globalCompositeOperation = "lighter";
-          ctx.translate(e.x + (e.x > arena.player.x ? -22 : 22), e.y - 22);
+          ctx.translate(e.x + ((e.facing !== undefined ? e.facing < 0 : e.x > arena.player.x) ? -22 : 22), e.y - 22);
           ctx.rotate(nowSec * 6);
           ctx.fillStyle = "#fff6cc";
           for (let g = 0; g < 2; g++) {
@@ -30308,7 +30316,7 @@ const ART = {
             ctx.beginPath(); ctx.arc(qs.x, qs.y, 3.6, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
           }
-          const levY = Math.sin(nowSec * 4) * 5;
+          const levY = rm ? 0 : Math.sin(nowSec * 4) * 5;
           drawSprite("char_player_seated", p.x, p.y - 20 + levY, 102, p.facing < 0, false);
         } else {
           ctx.strokeStyle = p.invuln > 0 ? "#8affea" : arena.weaponPosture === "xuanzhong" ? "#ffb84d" : SWORD_STANCES[arena.stanceIdx].color;
@@ -31076,6 +31084,9 @@ const ART = {
       const cf = arena.cloudFlight;
       const skyBoss = arena.enemies.find(e => e.isBoss && e.hp > 0);
       bossBanner.style.display = "flex";
+      const rcc = document.getElementById("region-cinema-card");
+      if (rcc) rcc.classList.remove("show");
+      if (regionCardTimer) { clearTimeout(regionCardTimer); regionCardTimer = null; }
       if (titanHud) titanHud.classList.remove("active");
       if (climbBtn) climbBtn.classList.remove("active");
       document.getElementById("boss-banner-name").textContent = skyBoss ? `☁ ${skyBoss.name}` : "☁ 九霄云海 · 高速御剑破阵航程";
@@ -31089,6 +31100,9 @@ const ART = {
       const rMeta = SPIRE_ROOM_TYPES.find(x => x.id === sp.roomType) || SPIRE_ROOM_TYPES[0];
       const rem = arena.enemies.filter(e => e.hp > 0).length;
       bossBanner.style.display = "flex";
+      const rcc = document.getElementById("region-cinema-card");
+      if (rcc) rcc.classList.remove("show");
+      if (regionCardTimer) { clearTimeout(regionCardTimer); regionCardTimer = null; }
       if (titanHud) titanHud.classList.remove("active");
       if (climbBtn) climbBtn.classList.remove("active");
       const spPractice = Boolean(sp.practiceMode || (sp.startFloor && sp.startFloor > 1));
@@ -31103,6 +31117,9 @@ const ART = {
     if (arena.sectDefense && arena.sectDefense.active && bossBanner) {
       const sd = arena.sectDefense;
       bossBanner.style.display = "flex";
+      const rcc = document.getElementById("region-cinema-card");
+      if (rcc) rcc.classList.remove("show");
+      if (regionCardTimer) { clearTimeout(regionCardTimer); regionCardTimer = null; }
       if (titanHud) titanHud.classList.remove("active");
       if (climbBtn) climbBtn.classList.remove("active");
       document.getElementById("boss-banner-name").textContent = `🛡 护山大阵 · 第 ${sd.wave}/${sd.maxWaves} 波百鬼夜行`;

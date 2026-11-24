@@ -9729,9 +9729,17 @@ try {
   await runSuite("Q4-4", "Q4 F27 七层音效遥测、400ms水墨转场与横幅修复、完全减弱动效及无截断性能基线", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "Q4-4", true);
     try {
-      // 1. Verify 7-tier Sound cue layering + stem zeroing telemetry
+      // 1. Verify real Chromium user activation -> Sound.ctx creation, first-cue audible, 7-tier Sound cue layering, and GainNode suppression on stem=0 / muted=true
+      await page.mouse.click(720, 450);
       const audioCheck = await page.evaluate(() => {
         const api = window.__CHENYUAN_V25__;
+        const hasBeenActive = Boolean(navigator.userActivation && navigator.userActivation.hasBeenActive);
+        if (api.Sound.ctx && typeof api.Sound.ctx.close === "function") {
+          try { api.Sound.ctx.close(); } catch (e) {}
+        }
+        api.Sound.ctx = null;
+        api.Sound.noiseBuf = null;
+        api.Sound.muted = false;
         api.clearAudioCueTelemetry();
         api.Sound.fleshHit(1);
         api.Sound.fleshHit(2);
@@ -9743,20 +9751,84 @@ try {
         api.Sound.noticeCue(1);
         const logAll = api.getAudioCueTelemetry().cueLog;
         const tiers = Array.from(new Set(logAll.map(x => x.tier)));
+        const soundCtxExists = Boolean(api.Sound.ctx);
+        const firstCueAudible = Boolean(logAll[0] && logAll[0].audible === true);
+        const allActiveAudible = logAll.length > 0 && logAll.every(x => x.audible === true);
 
-        // Zero blade stem and verify stemMuted telemetry flag
+        // Instrument AudioContext.createGain to prove real Web Audio synthesis vs suppression
         const prevBlade = api.Sound.stems.blade;
-        api.Sound.stems.blade = 0;
-        api.Sound.fleshHit(1);
-        const mutedRec = api.getAudioCueTelemetry().lastCue;
-        api.Sound.stems.blade = prevBlade;
-        return { tiers, count: logAll.length, mutedRec };
+        const prevMuted = api.Sound.muted;
+        let activeSlashGains = 0;
+        let stemZeroGains = 0;
+        let mutedGains = 0;
+        let mutedRec = null;
+        let stemZeroSlashRec = null;
+        let globalMutedRec = null;
+        const origCreateGain = api.Sound.ctx ? api.Sound.ctx.createGain.bind(api.Sound.ctx) : null;
+        let gainCounter = 0;
+        if (api.Sound.ctx && origCreateGain) {
+          api.Sound.ctx.createGain = (...args) => {
+            gainCounter += 1;
+            return origCreateGain(...args);
+          };
+        }
+        try {
+          gainCounter = 0;
+          api.Sound.stems.blade = 1.0;
+          api.Sound.muted = false;
+          api.Sound.slash(true);
+          activeSlashGains = gainCounter;
+
+          // Zero blade stem and verify stemMuted telemetry flag + 0 GainNodes
+          gainCounter = 0;
+          api.Sound.stems.blade = 0;
+          api.Sound.fleshHit(1);
+          mutedRec = api.getAudioCueTelemetry().lastCue;
+          api.Sound.slash(true);
+          stemZeroSlashRec = api.getAudioCueTelemetry().lastCue;
+          stemZeroGains = gainCounter;
+
+          // Global mute and verify 0 GainNodes + audible=false
+          gainCounter = 0;
+          api.Sound.stems.blade = 1.0;
+          api.Sound.muted = true;
+          api.Sound.slash(true);
+          globalMutedRec = api.getAudioCueTelemetry().lastCue;
+          mutedGains = gainCounter;
+        } finally {
+          if (api.Sound.ctx && origCreateGain) api.Sound.ctx.createGain = origCreateGain;
+          api.Sound.stems.blade = prevBlade;
+          api.Sound.muted = prevMuted;
+        }
+        return {
+          hasBeenActive,
+          soundCtxExists,
+          firstCueAudible,
+          allActiveAudible,
+          activeSlashGains,
+          stemZeroGains,
+          mutedGains,
+          stemZeroSlashRec,
+          globalMutedRec,
+          tiers,
+          count: logAll.length,
+          mutedRec
+        };
       });
+      assert.equal(audioCheck.hasBeenActive, true, "Real Chromium user click must activate navigator.userActivation.hasBeenActive");
+      assert.equal(audioCheck.soundCtxExists, true, "Sound.ensure() must create real AudioContext after user activation in Chromium");
+      assert.equal(audioCheck.firstCueAudible, true, "First post-gesture cue must initialize AudioContext before recordCue so audible=true");
+      assert.equal(audioCheck.allActiveAudible, true, "All unmuted active cues across 7 tiers must log audible=true");
+      assert.ok(audioCheck.activeSlashGains > 0, `Active unmuted Sound.slash(true) must synthesize Web Audio GainNodes, got ${audioCheck.activeSlashGains}`);
       for (const reqTier of ["light", "heavy", "block", "deflect", "break", "hurt", "ui"]) {
         assert.ok(audioCheck.tiers.includes(reqTier), `Missing audio tier "${reqTier}" in Sound telemetry: ${audioCheck.tiers.join(", ")}`);
       }
       assert.equal(audioCheck.mutedRec.stemMuted, true, "Zeroing blade stem must mark cue stemMuted=true");
       assert.equal(audioCheck.mutedRec.audible, false, "Zeroing blade stem must prevent audible output");
+      assert.equal(audioCheck.stemZeroSlashRec.audible, false, "Zeroing blade stem must prevent slash audible output");
+      assert.equal(audioCheck.stemZeroGains, 0, `Zeroing blade stem must create 0 GainNodes, got ${audioCheck.stemZeroGains}`);
+      assert.equal(audioCheck.globalMutedRec.audible, false, "Global Sound.muted=true must mark cue audible=false");
+      assert.equal(audioCheck.mutedGains, 0, `Global Sound.muted=true must create 0 GainNodes, got ${audioCheck.mutedGains}`);
 
       // 2. Verify 400ms semantic ink-wash scene transition & #region-cinema-card "show" dismissal when boss appears
       const transCheck = await page.evaluate(() => {
@@ -9828,13 +9900,14 @@ try {
         api.spawnSingleEnemy("wolf", 680, 480, 1.0, false);
         s.arena.enemies[0].state = "windup";
         const specAtDeg2 = api.getEnemyAttackSpec(s.arena.enemies[0]);
-        api.setPerfDegradeOverride(null);
-        return { stats, degStats, specAtDeg2 };
+        const clearedDegLevel = api.setPerfDegradeOverride(null);
+        return { stats, degStats, specAtDeg2, clearedDegLevel };
       });
       assert.ok(perfCheck.stats.sampleCount >= 3, `Expected perf ring samples >= 3, got ${perfCheck.stats.sampleCount}`);
       assert.ok(perfCheck.stats.firstInteractiveMs !== null && perfCheck.stats.firstInteractiveMs >= 0);
       assert.ok(perfCheck.stats.firstPlayableMs !== null && perfCheck.stats.firstPlayableMs >= 0);
       assert.equal(perfCheck.degStats.degradeLevel, 2);
+      assert.equal(perfCheck.clearedDegLevel, 0, "Clearing perf degrade override to null must immediately reset degradeLevel to 0");
       assert.equal(perfCheck.specAtDeg2.shape, "rect", "Graceful degradation level 2 must NEVER degrade combat telegraphs");
     } finally {
       await ctx.close();
@@ -9898,7 +9971,13 @@ try {
         const sanctumPhase = api.getVol1JourneyPhase();
         const coachTextBefore = document.getElementById("onboarding-coach-bar")?.textContent || "";
         s.game.stones = 200;
+        const wpnName = s.game.equippedGear.weapon ? s.game.equippedGear.weapon.name : "";
+        const beforeAtk = api.getCombatStats(s.game).atk;
+        const enhPreview = api.computeBatchEnhancePreview(s.game, "weapon", 1);
         const enhRes = api.executeGearBatchEnhance("weapon", 1);
+        const afterAtk = api.getCombatStats(s.game).atk;
+        const sanctumToasts = Array.from(document.querySelectorAll("#toast-container .toast-pill")).map(el => el.textContent || "");
+        const lastUpgradeRec = api.getPlaytestTelemetry().sanctumUpgrades.slice(-1)[0] || null;
         const prepDone = Boolean(s.game.vol1Prep && s.game.vol1Prep.upgradeDone);
         const coachTextAfter = document.getElementById("onboarding-coach-bar")?.textContent || "";
         const sanctumCoachBtnCount = document.querySelectorAll("#onboarding-coach-bar button").length;
@@ -9939,6 +10018,12 @@ try {
           hasLockedBackquoteHint,
           sanctumPhase,
           coachTextBefore,
+          wpnName,
+          beforeAtk,
+          afterAtk,
+          enhPreviewDelta: enhPreview ? enhPreview.dAtk : 0,
+          sanctumToasts,
+          lastUpgradeRec,
           enhResOk: enhRes.ok,
           prepDone,
           coachTextAfter,
@@ -10005,6 +10090,12 @@ try {
       assert.equal(vol1Flow.sanctumPhase, "sanctum_prep");
       assert.ok(vol1Flow.coachTextBefore.includes("仙葫已满酿") && vol1Flow.coachTextBefore.includes("绝不强制炼丹"), `Sanctum prep coach bar missing D01 guidance: ${vol1Flow.coachTextBefore}`);
       assert.equal(vol1Flow.enhResOk, true);
+      assert.equal(vol1Flow.wpnName, "凡品·青竹灵剑", `Expected default starter sword equipped, got ${vol1Flow.wpnName}`);
+      assert.ok(vol1Flow.enhPreviewDelta >= 1, `Starter sword +1 preview must show >= +1 ATK, got ${vol1Flow.enhPreviewDelta}`);
+      assert.ok(vol1Flow.afterAtk > vol1Flow.beforeAtk, `Quenching starter sword +1 in Sanctum must increase ATK (${vol1Flow.beforeAtk} -> ${vol1Flow.afterAtk})`);
+      assert.equal(vol1Flow.afterAtk - vol1Flow.beforeAtk, vol1Flow.enhPreviewDelta, "Starter sword +1 actual ATK delta must match upfront preview");
+      assert.ok(vol1Flow.sanctumToasts.some(t => t.includes("✦ 洞府整备生效") && t.includes("攻击 +1")), `Expected visible Sanctum stat-delta toast with 攻击 +1, got: ${vol1Flow.sanctumToasts.join(" | ")}`);
+      assert.ok(vol1Flow.lastUpgradeRec && vol1Flow.lastUpgradeRec.delta.includes("攻击 +1"), `Expected telemetry delta to record 攻击 +1, got: ${JSON.stringify(vol1Flow.lastUpgradeRec)}`);
       assert.equal(vol1Flow.prepDone, true);
       assert.ok(vol1Flow.coachTextAfter.includes("已完成1项整备强化"), `Sanctum prep coach bar must mark upgrade done: ${vol1Flow.coachTextAfter}`);
       assert.equal(vol1Flow.sanctumCoachBtnCount, 0, "Sanctum shortest prep coach bar must add 0 extra HUD <button> elements");
