@@ -7,7 +7,23 @@
 | 条目 | 当前状态 | 事实说明 |
 |---|---|---|
 | **F29（观察式真人试玩）** | **`NOT_RUN`** | 实际完成真人试玩人数：`0 / 5~8` 名新玩家。仅完成遥测结构与导出自检，未以自动化代替真人验收。 |
-| **F37（非核心扩展：扫荡/移动端/自动连升）** | **`SUPERSEDED_BY_R3_D08`** | Q6 阶段按保守基线记为 `DEFERRED`；2026-11-24 定稿 D08 由 Round 3 `R3-M3` 接管实施三星扫荡与长按连续养成（仍明确不做移动端适配，维持 1440×900 桌面键鼠）。 |
+| **F37（非核心扩展：扫荡/移动端/自动连升）** | **`SUPERSEDED_BY_R3_D08`** | Q6 阶段按保守基线记为 `DEFERRED`；2026-11-24 定稿 D08 已由 Round 3 `R3-M3` 落地三星/S 级免耗寿扫荡与强化/炼丹长按连续养成，同时明确不做移动端适配（维持 1440×900 桌面键鼠）。 |
+
+---
+
+## Round 3 · R3-M3（D08）— 三星免耗寿关卡扫荡、强化/炼丹长按连续养成与桌面边界（R3-F07 / R3-F08）
+
+- **R3-F07 关卡扫荡（限 3★ / S 级、显式确认、免耗寿、真实掉落与原子回滚）**：
+  - 新增第 11 个纯 ESM 模块 `src/rules/sweep-rules.mjs`（加入 `scripts/build-playable.mjs` `ESM_MODULE_ORDER` 并暴露于 `window.__CHENYUAN_DEBUG__.rules`），导出 `STAGE_SWEEP_MAX_PER_DAY = 3`、`STAGE_SWEEP_COOLDOWN_MS = 60_000`、`STAGE_SWEEP_LIFESPAN_MONTHS = 0`、`formatLocalDayKey`、`sanitizeStageSweepState`、`getStageSweepStatus`、`computeStageSweepPreview` 与 `rollStageSweepRewards`。
+  - 在 `createFreshGame()` 与 `normalizeLoadedGame()` 新增并严格校验持久化字段 `game.stageSweepState`（自动纳入 envelope v2 + FNV-1a 校验）；扫荡掉落严格复用真实 `CAMPAIGN_ACTS`（9 波次小怪 + 1 首领）、`ENEMIES`、`computeMainlineRealmScaling`（保留低关修为衰减）、`gainRealmXp` 与 `rollGearItem`/`acquireGearItem`（24/24 行囊满安全记入 `game.pendingRewards` `gear_overflow`，绝不自动熔炼、绝不扣除寿元、不发放 `bonusStarPts`/`soul_unlock`/过场剧情）。
+  - 为 `acquireGearItem()` 增加 `opts.deferSave` 与自动穿戴 `opts.silentToast` 守卫，确保 `executeStageSweep()` 单次 `saveGame()` 提交并在写入失败（含 `QuotaExceededError` 与多标签冲突）时原子回滚全部状态与次数。
+  - 在九州舆图预览条新增 `#btn-map-sweep-stage`，并将历练抽屉外层关卡卡由 `<button>` 重构为 `<div class="visual-tile stage-card-tile">` 内置并列 `[data-warp-stage]` 与 `[data-open-stage-sweep]` 按钮（零嵌套 `<button>`）；注册 `MODAL_PRIORITY.stage_sweep = 40`，显式确认弹窗展示免耗寿（0 月）、剩余次数/冷却与真实战果预览，取消/`Esc` 与确认后准确返焦。
+- **R3-F08 长按连续养成（强化 / 炼丹）与桌面 1440×900 边界**：
+  - 完整保留 Q2 F18 显式批量强化（`[data-open-batch-enhance]`）与批量炼丹（`[data-open-batch-craft]`）确认弹窗。
+  - 抽离单步原子回滚执行器 `executeSingleGearEnhance()` 与 `executeSingleAlchemyCraft()`，并实现模块级长按控制器（`HOLD_START_DELAY_MS = 380`、`HOLD_REPEAT_INTERVAL_MS = 220`、短按严格 1 次、触发连步后吞掉尾随 `click` 杜绝双扣、按钮旁单次扣费提示 + `#jade-panel` 顶部零布局偏移悬浮状态条 `#hold-progression-status`、跨 `renderDrawerContent()` DOM 重建保持 `.is-holding`/滚动位置/键盘焦点）。
+  - 接通全部 11 项立即停止条件（`pointerup`、`pointercancel`、`pointermove` 移出按钮、`window.blur`/`visibilitychange(hidden)`、键盘 `keyup`、关抽屉/切页/弹模态、灵石不足、炼丹缺料绝不自动花灵石补购或中途弹补购窗、满级 `+10`、炼丹触及 100% 大限保护、存档写失败原子回滚），支持指针与键盘 `Space`/`Enter` 一致操作；顺带微调 `src/rules/campaign-q6.mjs` 护山大阵共鸣文案守卫。
+  - **明确不做 9:16 移动端适配**，唯一验收环境维持 1440×900 桌面 Chromium 键鼠；同步更新 `docs/analysis/q6-decisions-and-boundary.md` 与 `Q6-4` 回归断言（F29 真人试玩仍如实标记 `NOT_RUN`）。
+- **测试覆盖**：新增 `tests/unit/sweep-rules.test.mjs` 与 `build-parity.test.mjs` D08 校验（单测 `39 → 42`），并在 `scripts/verify-playable-v2.mjs` 新增 `R3-D08-1` 与 `R3-D08-2`（回归套件 `79 → 81`，保持 `window.__CHENYUAN_DEBUG__` 370 顶层键契约不变）。
 
 ---
 

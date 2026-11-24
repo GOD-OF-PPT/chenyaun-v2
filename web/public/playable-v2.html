@@ -3966,6 +3966,83 @@
     font-size: 10px;
     color: #b8d4ce;
   }
+  /* ==================== D08 (R3-F07 / R3-F08): STAGE SWEEP & LONG-PRESS PROGRESSION ==================== */
+  .stage-card-tile {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 8px;
+    cursor: default;
+  }
+  .stage-card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .stage-card-actions {
+    display: flex;
+    gap: 5px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    padding-top: 4px;
+    border-top: 1px solid rgba(216, 179, 106, 0.16);
+  }
+  .stage-card-btn {
+    padding: 3px 8px;
+    font-size: var(--fs-xs);
+    white-space: nowrap;
+  }
+  .stage-card-btn.is-sweep-ready {
+    border-color: rgba(112, 255, 230, 0.58);
+    color: #9effec;
+  }
+  .sweep-zero-lifespan-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(16, 62, 54, 0.92);
+    border: 1px solid rgba(112, 255, 230, 0.65);
+    color: #9effec;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+  }
+  #hold-progression-status {
+    position: absolute;
+    top: 10px;
+    left: 14px;
+    right: 14px;
+    z-index: 30;
+    pointer-events: none;
+    padding: 8px 11px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, rgba(46, 30, 10, 0.96), rgba(14, 42, 46, 0.95));
+    border: 1px solid rgba(255, 214, 122, 0.78);
+    color: #fff2c6;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    line-height: 1.45;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+  }
+  #hold-progression-status[hidden] {
+    display: none;
+  }
+  .hold-cost-hint {
+    font-size: 10.5px;
+    color: #9ad8cd;
+    line-height: 1.35;
+  }
+  .hold-cost-hint.is-warn {
+    color: #ffd8a8;
+  }
+  button.is-holding {
+    outline: 2px solid var(--gold-bright);
+    outline-offset: 1px;
+    box-shadow: 0 0 0 3px rgba(255, 214, 122, 0.28);
+    filter: brightness(1.12);
+  }
 
 </style>
 </head>
@@ -4166,6 +4243,7 @@
     </section>
 
     <section id="jade-panel" role="dialog" aria-modal="true" aria-label="修行与卷宗抽屉" tabindex="-1">
+      <div id="hold-progression-status" role="status" aria-live="polite" aria-atomic="true" hidden></div>
       <div id="panel-scroll-body"></div>
     </section>
     <div id="combo-rank-seal">
@@ -6379,8 +6457,9 @@ const ART = {
       summary: "击退三波百鬼夜行守卫护山大阵",
       check: (g) => {
         const grade = (g && typeof g.sectDefenseBestGrade === "string") ? g.sectDefenseBestGrade.trim() : "";
-        const active = Boolean(g && (g.sectDefenseCleared || (grade && ["C", "B", "A", "S"].includes(grade))));
-        return { active, progressText: active ? `${grade || "已破"} 级 ✓` : "待守阵" };
+        const validGrade = ["C", "B", "A", "S"].includes(grade);
+        const active = Boolean(g && (g.sectDefenseCleared || validGrade));
+        return { active, progressText: active ? (validGrade ? `${grade} 级 ✓` : "已破 ✓") : "待守阵" };
       }
     }
   ];
@@ -7470,6 +7549,311 @@ const ART = {
       { grade: "S", title: "万古剑帝" }
     ];
     return GRADE_TABLE[tier];
+  }
+
+  // --- [module] src/rules/sweep-rules.mjs ---
+  // Pure D08 (R3-F07 / R3-F08) stage sweep eligibility, quota/cooldown, authentic drop calculation, and hold progression constants.
+  const STAGE_SWEEP_MAX_PER_DAY = 3;
+  const STAGE_SWEEP_COOLDOWN_MS = 60_000;
+  const STAGE_SWEEP_LIFESPAN_MONTHS = 0;
+
+  const HOLD_START_DELAY_MS = 380;
+  const HOLD_REPEAT_INTERVAL_MS = 220;
+
+  function formatLocalDayKey(nowMs = Date.now()) {
+    const ts = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+    const d = new Date(ts);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function sanitizeStageSweepState(raw, maxStages = 5) {
+    const out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    const limit = Math.max(1, Math.floor(num(maxStages, 5)));
+    for (let i = 0; i < limit; i++) {
+      const k = String(i);
+      if (!hasOwn(raw, k)) continue;
+      const entry = raw[k];
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+      const rawDay = typeof entry.dayKey === "string" ? entry.dayKey.trim() : "";
+      const dayKey = /^\d{4}-\d{2}-\d{2}$/.test(rawDay) ? rawDay : "";
+      const usedToday = dayKey
+        ? Math.max(0, Math.min(STAGE_SWEEP_MAX_PER_DAY, Math.floor(num(entry.usedToday, 0))))
+        : 0;
+      const rawLast = Number(entry.lastSweepAt);
+      const lastSweepAt = (Number.isFinite(rawLast) && rawLast >= 0) ? Math.floor(rawLast) : 0;
+      const totalSweeps = Math.max(0, Math.floor(num(entry.totalSweeps, 0)));
+      out[k] = { dayKey, usedToday, lastSweepAt, totalSweeps };
+    }
+    return out;
+  }
+
+  function getStageSweepStatus(g, stageIdx, nowMs = Date.now(), env = {}) {
+    const stagesList = (env && Array.isArray(env.STAGES))
+      ? env.STAGES
+      : (typeof STAGES !== "undefined" ? STAGES : []);
+    const ts = Number.isFinite(Number(nowMs)) ? Number(nowMs) : Date.now();
+    const dayKey = formatLocalDayKey(ts);
+    const isIntIdx = typeof stageIdx === "number" && Number.isInteger(stageIdx) && stageIdx >= 0 && stageIdx < stagesList.length;
+    if (!g || !isIntIdx) {
+      return {
+        eligible: false,
+        canSweep: false,
+        reason: "invalid_stage",
+        reasonText: "秘境编号无效",
+        stars: 0,
+        grade: "C",
+        remaining: 0,
+        maxPerDay: STAGE_SWEEP_MAX_PER_DAY,
+        cooldownRemainMs: 0,
+        cooldownSec: 0,
+        lifespanMonths: STAGE_SWEEP_LIFESPAN_MONTHS,
+        dayKey,
+        usedToday: 0
+      };
+    }
+
+    const stg = stagesList[stageIdx];
+    const stars = Math.max(0, Math.min(3, Math.floor(num(g.stageStars && g.stageStars[stageIdx], 0))));
+    const grade = stageStarsToGrade(stars);
+    const practiceMode = (env && "practiceMode" in env)
+      ? Boolean(env.practiceMode)
+      : (typeof isPracticeModeActive === "function" ? Boolean(isPracticeModeActive()) : false);
+    const realmUnlocked = rankOf(g.realm) >= rankOf(stg.min);
+
+    const sweepState = sanitizeStageSweepState(g.stageSweepState, stagesList.length);
+    const entry = sweepState[String(stageIdx)] || null;
+    const usedToday = (entry && entry.dayKey === dayKey) ? entry.usedToday : 0;
+    const remaining = Math.max(0, STAGE_SWEEP_MAX_PER_DAY - usedToday);
+    const lastSweepAt = entry ? entry.lastSweepAt : 0;
+    const cooldownRemainMs = lastSweepAt > 0 ? Math.max(0, (lastSweepAt + STAGE_SWEEP_COOLDOWN_MS) - ts) : 0;
+    const cooldownSec = cooldownRemainMs > 0 ? Math.ceil(cooldownRemainMs / 1000) : 0;
+
+    const base = {
+      stars,
+      grade,
+      remaining,
+      maxPerDay: STAGE_SWEEP_MAX_PER_DAY,
+      cooldownRemainMs,
+      cooldownSec,
+      lifespanMonths: STAGE_SWEEP_LIFESPAN_MONTHS,
+      dayKey,
+      usedToday
+    };
+
+    if (practiceMode) {
+      return Object.assign({ eligible: false, canSweep: false, reason: "practice_mode", reasonText: "练习模式不产出正式奖励，无法扫荡" }, base);
+    }
+    if (!realmUnlocked) {
+      const reqName = (REALMS[stg.min] && REALMS[stg.min].name) || stg.min;
+      return Object.assign({ eligible: false, canSweep: false, reason: "stage_locked", reasonText: `需先晋升【${reqName}】解锁该秘境` }, base);
+    }
+    if (stars < 3 || grade !== "S") {
+      return Object.assign({ eligible: false, canSweep: false, reason: "requires_three_stars", reasonText: "需先达成三星（S 级）通关方可扫荡" }, base);
+    }
+    if (remaining <= 0) {
+      return Object.assign({ eligible: true, canSweep: false, reason: "quota_exhausted", reasonText: `今日扫荡次数已用尽（0/${STAGE_SWEEP_MAX_PER_DAY}）` }, base);
+    }
+    if (cooldownRemainMs > 0) {
+      return Object.assign({ eligible: true, canSweep: false, reason: "on_cooldown", reasonText: `该秘境扫荡冷却中（剩余 ${cooldownSec} 秒）` }, base);
+    }
+    return Object.assign({ eligible: true, canSweep: true, reason: "ok", reasonText: `可扫荡（免耗寿 · 今日余 ${remaining}/${STAGE_SWEEP_MAX_PER_DAY}）` }, base);
+  }
+
+  function computeStageSweepPreview(g, stageIdx, env = {}) {
+    const actsList = (env && Array.isArray(env.CAMPAIGN_ACTS))
+      ? env.CAMPAIGN_ACTS
+      : (typeof CAMPAIGN_ACTS !== "undefined" ? CAMPAIGN_ACTS : []);
+    const enemiesMap = (env && env.ENEMIES && typeof env.ENEMIES === "object")
+      ? env.ENEMIES
+      : (typeof ENEMIES !== "undefined" ? ENEMIES : {});
+    const isIntIdx = typeof stageIdx === "number" && Number.isInteger(stageIdx) && stageIdx >= 0 && stageIdx < actsList.length;
+    if (!g || !isIntIdx) {
+      return { valid: false, stageIdx, lifespanMonths: STAGE_SWEEP_LIFESPAN_MONTHS };
+    }
+
+    const act = actsList[stageIdx];
+    const r = REALMS[g.realm] || REALMS.mortal;
+    const calDrop = getCalamityCycleSpec(g);
+    const daoDropB = getDaoBonuses(g);
+    const wolfStarMult = (currentOmen(g).id === "wolf_star" ? COMBAT_RULE_PARAMS.omens.wolf_star.stoneMult : 1.0)
+      * (calDrop.rewardMult || 1.0)
+      * daoDropB.stoneMult;
+    const playerRank = rankOf(g.realm);
+    const stageDelta = playerRank - stageIdx;
+    const realmPenalty = stageDelta <= 0 ? 1.0 : stageDelta === 1 ? 0.55 : stageDelta === 2 ? 0.28 : 0.12;
+    const pactCount = getActivePactCount(g);
+    const hasGreedOrPact = hasGearAffix(g, "greed_wolf") || pactCount > 0;
+    const pactGreedMult = 1 + pactCount * 0.25;
+
+    const mobScaling = computeMainlineRealmScaling(stageIdx, g.realm, false);
+    const bossScaling = computeMainlineRealmScaling(stageIdx, g.realm, true);
+    const waveMobs = Array.isArray(act.waves) ? act.waves.flat() : [];
+
+    let rawXp = 0;
+    let stones = 0;
+
+    const accumulateEnemy = (enemyId, isBoss) => {
+      const specD = enemiesMap[enemyId] || enemiesMap.wolf || { xp: 14, loot: {} };
+      const baseEnemyXp = (specD.xp || 14) * (1 + stageIdx * 0.25);
+      const roomXpMult = isBoss ? 3.2 : 1.0;
+      const capShare = (r.xpCap || 60) * (isBoss ? 0.18 : 0.036) * realmPenalty;
+      const rawXpOrb = stageDelta >= 2
+        ? Math.max(2, Math.round(baseEnemyXp * roomXpMult * realmPenalty))
+        : Math.max(Math.min(baseEnemyXp * roomXpMult, capShare * 1.45), capShare);
+      const xpOrbVal = Math.max(2, Math.round(rawXpOrb * (calDrop.rewardMult || 1.0)));
+      rawXp += xpOrbVal;
+
+      const rs = isBoss ? bossScaling : mobScaling;
+      const realmStoneMult = rs.active ? Math.max(1, num(rs.stoneMult, 1)) : 1.0;
+      const baseStone = isBoss ? (48 + stageIdx * 24) : (10 + stageIdx * 5);
+      stones += Math.round(baseStone * wolfStarMult * realmStoneMult);
+      if (hasGreedOrPact) {
+        stones += Math.round((isBoss ? 18 : 4) * pactGreedMult);
+      }
+    };
+
+    for (let i = 0; i < waveMobs.length; i++) {
+      accumulateEnemy(waveMobs[i], false);
+    }
+    accumulateEnemy(act.boss, true);
+
+    // Stage clear bonus stones (matches spawnCurrentWave waveIdx > 4 for stages 0..3)
+    const clearBonusStones = stageIdx < 4 ? (48 + stageIdx * 16) : 0;
+    stones += clearBonusStones;
+
+    // Effective XP after gainRealmXp multipliers
+    const omenMult = currentOmen(g).id === "tide" ? 1.45 : 1.0;
+    const mindMult = (g.loadout && (g.loadout.mind === "sword_still" || g.loadout.mind === "talisman_calm"))
+      ? COMBAT_RULE_PARAMS.skills.sword_still.xpMult
+      : 1.0;
+    const lf = getLifespanInfo(g);
+    const effectiveXp = rawXp > 0 ? Math.max(1, Math.round(rawXp * omenMult * mindMult * lf.xpEfficiencyMult)) : 0;
+    const xpCap = Math.max(0, num(r.xpCap, 0));
+    const curXp = Math.max(0, num(g.xp, 0));
+    const willCapXp = xpCap > 0 && (curXp + effectiveXp) >= xpCap;
+    const willOverflowXp = xpCap > 0 && (curXp + effectiveXp) > xpCap;
+    const ascendedBonusStones = xpCap <= 0 && effectiveXp > 0 ? Math.max(4, Math.round(effectiveXp * 0.35)) : 0;
+
+    // Guaranteed boss + stage clear materials
+    const guaranteedMats = { core: 1 };
+    const bossSpec = enemiesMap[act.boss] || enemiesMap.wolf || { loot: {} };
+    const bossMatSet = new Set([...(act.bossMats || []), ...Object.keys(bossSpec.loot || {})]);
+    bossMatSet.forEach(matKey => {
+      if (ITEMS[matKey]) {
+        guaranteedMats[matKey] = (guaranteedMats[matKey] || 0) + 1;
+      }
+    });
+    if (stageIdx < 4) {
+      (act.bossMats || []).forEach(matKey => {
+        if (ITEMS[matKey]) {
+          guaranteedMats[matKey] = (guaranteedMats[matKey] || 0) + 1;
+        }
+      });
+    }
+
+    // Wave mob material drop pool
+    const wavePoolSet = new Set();
+    (act.matDrops || []).forEach(k => { if (ITEMS[k]) wavePoolSet.add(k); });
+    waveMobs.forEach(eid => {
+      const ms = enemiesMap[eid];
+      if (ms && ms.loot) {
+        Object.keys(ms.loot).forEach(k => { if (ITEMS[k]) wavePoolSet.add(k); });
+      }
+    });
+    const waveMatPool = Array.from(wavePoolSet);
+
+    // Guaranteed boss gear tier range
+    const minRarity = stageIdx === 4
+      ? 4
+      : Math.min(4, 2 + Math.floor(stageIdx / 2) + (calDrop.dropBonus || 0));
+    const minRarityName = (RARITIES[minRarity] && RARITIES[minRarity].name) || "玄品";
+    const maxRarityName = (RARITIES[4] && RARITIES[4].name) || "鸿蒙";
+    const gearBagCount = Array.isArray(g.gearBag) ? g.gearBag.length : 0;
+    const bagLimit = (env && Number.isFinite(Number(env.GEAR_BAG_LIMIT)))
+      ? Math.max(1, Math.floor(Number(env.GEAR_BAG_LIMIT)))
+      : (typeof GEAR_BAG_LIMIT !== "undefined" ? GEAR_BAG_LIMIT : 24);
+
+    return {
+      valid: true,
+      stageIdx,
+      stageName: act.name,
+      mapName: act.mapName,
+      actLabel: act.actLabel,
+      bossName: act.bossName,
+      waveMobCount: waveMobs.length,
+      stones,
+      clearBonusStones,
+      rawXp,
+      effectiveXp,
+      omenMult,
+      mindMult,
+      lifeXpMult: lf.xpEfficiencyMult,
+      willCapXp,
+      willOverflowXp,
+      ascendedBonusStones,
+      lifespanMonths: STAGE_SWEEP_LIFESPAN_MONTHS,
+      guaranteedMats,
+      waveMatPool,
+      minRarity,
+      minRarityName,
+      maxRarityName,
+      realmScaled: bossScaling.active,
+      realmStoneMult: bossScaling.stoneMult,
+      gearBagCount,
+      gearBagLimit: bagLimit,
+      bagFull: gearBagCount >= bagLimit
+    };
+  }
+
+  function rollStageSweepRewards(g, stageIdx, opts = {}) {
+    const rng = (opts && typeof opts.rng === "function") ? opts.rng : Math.random;
+    const env = (opts && opts.env && typeof opts.env === "object") ? opts.env : opts;
+    const preview = computeStageSweepPreview(g, stageIdx, env);
+    if (!preview || !preview.valid) {
+      return { valid: false, stageIdx, lifespanMonths: STAGE_SWEEP_LIFESPAN_MONTHS };
+    }
+
+    const actsList = (env && Array.isArray(env.CAMPAIGN_ACTS))
+      ? env.CAMPAIGN_ACTS
+      : (typeof CAMPAIGN_ACTS !== "undefined" ? CAMPAIGN_ACTS : []);
+    const enemiesMap = (env && env.ENEMIES && typeof env.ENEMIES === "object")
+      ? env.ENEMIES
+      : (typeof ENEMIES !== "undefined" ? ENEMIES : {});
+    const act = actsList[stageIdx];
+    const waveMobs = Array.isArray(act.waves) ? act.waves.flat() : [];
+
+    const materials = Object.assign({}, preview.guaranteedMats);
+    for (let i = 0; i < waveMobs.length; i++) {
+      if (rng() < 0.56) {
+        const mobSpec = enemiesMap[waveMobs[i]] || enemiesMap.wolf || { loot: {} };
+        const matPool = [...(act.matDrops || ["herb"]), ...Object.keys(mobSpec.loot || {})].filter(k => ITEMS[k]);
+        const chosen = matPool.length ? matPool[Math.floor(rng() * matPool.length)] : "herb";
+        materials[chosen] = (materials[chosen] || 0) + 1;
+      }
+    }
+
+    const gear = rollGearItem(stageIdx, preview.minRarity, null, {
+      usePity: true,
+      rng,
+      game: g,
+      arena: null
+    });
+
+    return {
+      valid: true,
+      stageIdx,
+      stones: preview.stones,
+      rawXp: preview.rawXp,
+      effectiveXp: preview.effectiveXp,
+      lifespanMonths: STAGE_SWEEP_LIFESPAN_MONTHS,
+      materials,
+      gear,
+      preview
+    };
   }
 
   // --- [module] src/state/save-rules.mjs ---
@@ -8589,6 +8973,7 @@ const ART = {
   let activeMatSourceJump = null;
   let pendingBatchCraft = null;
   let pendingBatchEnhance = null;
+  let pendingStageSweep = null;
 
   function createFreshEncounterTelemetry() {
     return {
@@ -9849,7 +10234,10 @@ const ART = {
     pointer.worldActive = false;
     pointer.moveTarget = null;
   }
-  window.addEventListener("blur", clearTransientInputs);
+  window.addEventListener("blur", () => {
+    clearTransientInputs();
+    if (typeof stopHoldProgression === "function") stopHoldProgression("window_blur");
+  });
 
   let pendingCompareGear = null;
   let activeRunBoonChoices = [];
@@ -18813,6 +19201,7 @@ const ART = {
       destinyFruits: [],
       stageStars: {},
       defeatedStageBosses: {},
+      stageSweepState: {},
       claimedStepIds: [],
       claimedStarChests: [],
       bountyTiers: { slay: 1, tech: 1, craft: 1 },
@@ -18997,6 +19386,7 @@ const ART = {
       if (num(g.stageStars[idx], 0) >= 1) g.defeatedStageBosses[idx] = true;
     });
     if (g.trialCompleted === true) g.defeatedStageBosses[4] = true;
+    g.stageSweepState = sanitizeStageSweepState(raw.stageSweepState, STAGES.length);
     // Legacy save migration (S1): never regress a save whose realm already surpassed lower gates,
     // without minting fake stars in g.stageStars and without mutating g.trialCompleted.
     const migratedRank = rankOf(g.realm);
@@ -19956,7 +20346,10 @@ const ART = {
   }
   window.addEventListener("pagehide", flushSaveOnLifecycle);
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") flushSaveOnLifecycle();
+    if (document.visibilityState === "hidden") {
+      if (typeof stopHoldProgression === "function") stopHoldProgression("window_blur");
+      flushSaveOnLifecycle();
+    }
   });
 
   function getClearedCampaignStageIndices(g) {
@@ -19989,6 +20382,7 @@ const ART = {
     lifespan_exhausted: 40,
     batch_craft: 40,
     batch_enhance: 40,
+    stage_sweep: 40,
     default: 20
   };
 
@@ -21327,35 +21721,44 @@ const ART = {
   }
 
   function acquireGearItem(item, opts = {}) {
-    if (!game || !item) return;
+    if (!game || !item) return { destination: null };
     if (game.goalStats) game.goalStats.craftOrLoot = (game.goalStats.craftOrLoot || 0) + 1;
     const cur = game.equippedGear[item.slot];
+    let destination = "bag";
     if (!cur) {
+      destination = "equipped";
       game.equippedGear[item.slot] = item;
       syncFlyingSwords();
       addFloat(`✦ ${item.name}↑`, arena.player.x, arena.player.y - 54, RARITIES[item.rarity].color, 14, true, { banner: false, kind: "gear" });
-      showToast(`★ 穿戴仙装【${item.name}】（${formatGearStats(item)}）`, { tier: 2, category: "gear" });
+      if (!opts.silentToast) {
+        showToast(`★ 穿戴仙装【${item.name}】（${formatGearStats(item)}）`, { tier: 2, category: "gear" });
+      }
     } else if (game.gearBag.length < GEAR_BAG_LIMIT) {
       // Never silently overwrite an occupied or enhanced slot! Store safely & show non-blocking compare card when calm.
+      destination = "bag";
       game.gearBag.unshift(item);
       pendingCompareGear = item;
       clearCompareSmeltConfirm();
-      renderGearCompareCard();
+      if (!opts.deferSave) renderGearCompareCard();
       addFloat(`✦ ${item.name}`, arena.player.x, arena.player.y - 48, RARITIES[item.rarity].color, 14, false, { banner: false, kind: "gear" });
       if (!opts.silentToast) {
         showToast(`✦ 拾获【${item.name}】已收入行囊（静默后可对比换装）`, { tier: 2, category: "gear" });
       }
     } else {
       // F07/F10/G9-1: Full bag (24/24) — NEVER auto-smelt! Persist in game.pendingRewards and defer modal until calm.
-      enqueuePendingReward({ kind: "gear_overflow", payload: { item }, persist: false });
+      destination = "overflow";
+      enqueuePendingReward({ kind: "gear_overflow", payload: { item }, persist: false, deferUi: Boolean(opts.deferSave) });
       if (!opts.silentToast) {
         showToast(`行囊已满 (${GEAR_BAG_LIMIT}/${GEAR_BAG_LIMIT})，【${item.name}】已记入待处置！`, { tier: 2, category: "gear" });
       }
     }
-    saveGame();
-    updateHud();
-    syncPendingRewardsBadge();
-    requestCalmReevaluation();
+    if (!opts.deferSave) {
+      saveGame();
+      updateHud();
+      syncPendingRewardsBadge();
+      requestCalmReevaluation();
+    }
+    return { destination };
   }
 
   // --- [runtime] src/runtime/sanctum-ecosystem.js ---
@@ -26661,7 +27064,23 @@ const ART = {
               return `<div id="world-map-vol-brief" style="font-size:var(--fs-xs);color:#9effec;line-height:1.4;">⚔ 考题（${escapeHtml(guide.enemyExam.bossName)}）：${escapeHtml(guide.enemyExam.counter)} ｜ 收益：${escapeHtml(guide.growthPayoff)}${escapeHtml(vol5Extra)}</div>`;
             })()}
           </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+          <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">
+            ${sel.kind === "stage" ? (() => {
+              const sw = getStageSweepStatus(game, sel.stageIdx);
+              const swLabel = sw.canSweep
+                ? `⚡ 扫荡秘境 (免耗寿 · 余 ${sw.remaining}/${sw.maxPerDay})`
+                : sw.reason === "on_cooldown"
+                  ? `⏳ 扫荡冷却 (${sw.cooldownSec}s)`
+                  : sw.reason === "quota_exhausted"
+                    ? `今日已扫荡满 (0/${sw.maxPerDay})`
+                    : sw.reason === "practice_mode"
+                      ? "🔒 练习模式禁扫荡"
+                      : sw.reason === "stage_locked"
+                        ? "🔒 未解锁"
+                        : "🔒 需三星(S级)扫荡";
+              const hardDisabled = !sw.eligible;
+              return `<button type="button" id="btn-map-sweep-stage" class="${sw.canSweep ? "btn-secondary btn-jade" : "btn-tertiary btn-ghost is-locked"}" data-open-stage-sweep="${sel.stageIdx}" data-sweep-origin="world_map" ${hardDisabled ? "disabled" : ""} aria-disabled="${sw.canSweep ? "false" : "true"}" title="${escapeHtml(sw.reasonText)}">${escapeHtml(swLabel)}</button>`;
+            })() : ""}
             <button type="button" id="btn-map-enter-node" class="${sel.unlocked ? "btn-primary btn-gold" : "btn-tertiary btn-ghost is-locked"}" data-map-enter="${escapeHtml(sel.id)}" ${sel.unlocked ? "" : "disabled"}>${escapeHtml(enterBtnLabel)}</button>
           </div>
         </div>
@@ -33371,6 +33790,7 @@ const ART = {
       }
     }
 
+    if (typeof stopHoldProgression === "function") stopHoldProgression("ui_closed");
     clearTransientInputs();
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
@@ -33414,6 +33834,7 @@ const ART = {
     pendingAlchemyCraft = null;
     pendingBatchCraft = null;
     pendingBatchEnhance = null;
+    pendingStageSweep = null;
     pendingSoulRefineId = null;
     if (activeMatSourceJump && activeMatSourceJump.inModal) activeMatSourceJump = null;
     const closingKind = activeModalKind;
@@ -33497,6 +33918,7 @@ const ART = {
     if (tipEl) tipEl.style.display = "none";
     if (drawerOpen && currentTab === tab) { closeDrawer(); return; }
     if (activeMatSourceJump && !activeMatSourceJump.inModal) activeMatSourceJump = null;
+    if (typeof stopHoldProgression === "function") stopHoldProgression("ui_closed");
     clearTransientInputs();
     const panel = document.getElementById("jade-panel");
     if (!drawerOpen) {
@@ -33517,6 +33939,7 @@ const ART = {
   }
 
   function closeDrawer() {
+    if (typeof stopHoldProgression === "function") stopHoldProgression("ui_closed");
     clearTransientInputs();
     if (activeMatSourceJump && !activeMatSourceJump.inModal) {
       activeMatSourceJump = null;
@@ -33758,8 +34181,9 @@ const ART = {
                           <span style="color:var(--text-sub);">适用：${escapeHtml(up.sceneText)}</span>
                         </div>` : ""}
                       ${eq ? `
+                        <div class="hold-cost-hint" data-hold-hint="enhance_${meta.slot}">${eqLvl >= 10 ? "已达圆满 +10" : `单点 +1 / 长按连淬 · 单次 ${enhCost} 灵石`}</div>
                         <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;">
-                          <button type="button" class="gear-action-mini ${game.stones < enhCost && eqLvl < 10 ? "is-locked" : ""}" data-enhance-slot="${meta.slot}" data-reminder-tier="${game.stones >= enhCost && eqLvl < 10 ? "2" : "3"}" data-tip="神兵淬火强化|消耗 ${enhCost} 灵石提升基础属性 +8%（最高+10）">${eqLvl >= 10 ? "已满+10" : `淬火+${eqLvl + 1}(${enhCost}石)`}</button>
+                          <button type="button" class="gear-action-mini ${game.stones < enhCost && eqLvl < 10 ? "is-locked" : ""}" data-enhance-slot="${meta.slot}" data-reminder-tier="${game.stones >= enhCost && eqLvl < 10 ? "2" : "3"}" data-tip="神兵淬火强化|消耗 ${enhCost} 灵石提升基础属性 +8%（最高+10）；支持长按连续淬火，松手/石尽/满级即停">${eqLvl >= 10 ? "已满+10" : `淬火+${eqLvl + 1}(${enhCost}石)`}</button>
                           ${showBatchBtn ? `<button type="button" class="gear-action-mini" data-open-batch-enhance="${meta.slot}" data-tip="显式多阶淬火|自选 +1/+3/+5 阶并预览总灵石与属性增幅，确认后一次性扣除">多阶…</button>` : ""}
                           ${showFoundTier ? `<button type="button" class="gear-action-mini" data-reforge-slot="${meta.slot}" data-tip="定向词条刻录|消耗 35 灵石 100% 确定自选心仪圣品神通词条">定刻(35石)</button>` : ""}
                           ${showGoldTier ? (eqRar >= 5 ? `<span class="tag-chip mythic" style="font-size:var(--fs-xs);">★紫气已醒</span>` : `<button type="button" class="gear-action-mini" style="border-color:#ff9eff;color:#ffd6ff;" data-awaken-primordial="${meta.slot}" data-tip="鸿蒙紫气突破 (圣品之上)|消耗 120 灵石将神兵晋升为【紫气鸿蒙】至高品阶并觉醒专属太初本源词条！">紫气突破(120石)</button>`) : ""}
@@ -34231,18 +34655,36 @@ const ART = {
             const active = !arena.sanctumMode && ((!arena.towerMode && arena.stageIdx === idx) || (arena.towerMode && idx === 3));
             const isMainStg = idx === activeStageRoute;
             const act = CAMPAIGN_ACTS[idx];
+            const stgStars = Math.max(0, Math.min(3, Math.floor(num(game.stageStars && game.stageStars[idx], 0))));
+            const stgGrade = stageStarsToGrade(stgStars);
+            const sw = getStageSweepStatus(game, idx);
+            const swBtnTxt = sw.canSweep
+              ? `⚡ 扫荡 (${sw.remaining}/${sw.maxPerDay})`
+              : sw.reason === "on_cooldown"
+                ? `⏳ 冷却 ${sw.cooldownSec}s`
+                : sw.reason === "quota_exhausted"
+                  ? `已满 (0/${sw.maxPerDay})`
+                  : "🔒 需3★扫荡";
+            const swHardDis = !sw.eligible;
             return `
-              <button class="visual-tile ${active ? "equipped" : ""} ${ok ? "" : "is-locked"}" data-warp-stage="${idx}" ${!ok ? "disabled" : ""} data-tip="${escTip(`${act.actLabel} · ${s.name}`, `首领：${s.bossName} · 产出：${s.dropPreview}`)}">
-                <img src="${ART[s.arenaArt]}" alt="${s.name}" style="object-fit:cover;" />
-                <div>
-                  <div style="font-size:var(--fs-sm);font-weight:700;">${act.actLabel}·${act.mapName.replace(/^⚡\s*/, "")}</div>
-                  <div style="font-size:var(--fs-xs);color:#9ed4cb;">${s.bossName} · ${s.dropPreview.split(" · ").slice(0, 2).join("/")}</div>
-                  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;">
-                    ${isMainStg ? renderSemanticTag("main", "主线目标") : ""}
-                    <span class="tag-chip ${ok ? (active ? "done" : "") : "is-locked"}">${ok ? (active ? "当前征战" : "可出征") : `${REALMS[s.min].name}解锁`}</span>
+              <div class="visual-tile stage-card-tile ${active ? "equipped" : ""} ${ok ? "" : "is-locked"}" data-stage-card="${idx}" data-tip="${escTip(`${act.actLabel} · ${s.name}`, `首领：${s.bossName} · 产出：${s.dropPreview}`)}">
+                <div class="stage-card-head">
+                  <img src="${ART[s.arenaArt]}" alt="${s.name}" style="object-fit:cover;flex-shrink:0;" />
+                  <div style="min-width:0;flex:1;">
+                    <div style="font-size:var(--fs-sm);font-weight:700;">${act.actLabel}·${act.mapName.replace(/^⚡\s*/, "")}</div>
+                    <div style="font-size:var(--fs-xs);color:#9ed4cb;">${s.bossName} · ${s.dropPreview.split(" · ").slice(0, 2).join("/")}</div>
+                    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;">
+                      ${isMainStg ? renderSemanticTag("main", "主线目标") : ""}
+                      <span class="tag-chip ${stgStars >= 3 ? "mythic" : stgStars > 0 ? "done" : ""}">${stgGrade} 级 (${"★".repeat(stgStars)}${"☆".repeat(3 - stgStars)})</span>
+                      <span class="tag-chip ${ok ? (active ? "done" : "") : "is-locked"}">${ok ? (active ? "当前征战" : "可出征") : `${REALMS[s.min].name}解锁`}</span>
+                    </div>
                   </div>
                 </div>
-              </button>`;
+                <div class="stage-card-actions">
+                  <button type="button" class="btn-secondary btn-jade stage-card-btn ${ok ? "" : "is-locked"}" data-warp-stage="${idx}" ${!ok ? "disabled" : ""}>${ok ? (active ? "当前征战" : "出征") : `${REALMS[s.min].name}解锁`}</button>
+                  <button type="button" class="btn-tertiary btn-ghost stage-card-btn ${sw.canSweep ? "is-sweep-ready" : "is-locked"}" data-open-stage-sweep="${idx}" data-sweep-origin="drawer" ${swHardDis ? "disabled" : ""} aria-disabled="${sw.canSweep ? "false" : "true"}" title="${escapeHtml(sw.reasonText)}">${escapeHtml(swBtnTxt)}</button>
+                </div>
+              </div>`;
           }).join("")}
         </div>
 
@@ -34406,6 +34848,7 @@ const ART = {
                     </div>
                   </div>
                   ${missChips ? `<div style="display:flex;gap:4px;flex-wrap:wrap;">${missChips}</div>` : ""}
+                  ${!lockedByCaul ? `<div class="hold-cost-hint ${bd.hasMissing ? "is-warn" : ""}" data-hold-hint="alchemy_${rec.id}">${bd.hasMissing ? "缺料需单点确认补购，不支持长按" : `单点 ×1 / 长按连炼 · 单次 ${bd.baseStones} 石 · ⏳${craftMonths}月`}</div>` : ""}
                   <div style="display:flex;gap:5px;justify-content:flex-end;flex-wrap:wrap;">
                     <button type="button" class="btn-secondary btn-jade ${(lockedByCaul || game.stones < bd.totalStoneCost) ? "is-locked" : ""}" style="padding:4px 8px;font-size:var(--fs-xs);white-space:nowrap;" data-quick-craft="${rec.id}" ${(lockedByCaul || game.stones < bd.totalStoneCost) ? "disabled" : ""}>${lockedByCaul ? "未封" : bd.hasMissing ? "补料稳炼" : "稳炼"}</button>
                     ${!lockedByCaul ? `<button type="button" class="btn-tertiary btn-ghost" style="padding:4px 8px;font-size:var(--fs-xs);white-space:nowrap;" data-open-batch-craft="${rec.id}" data-tip="显式批量炼丹|自选 ×1/×3/×5 份，核对总灵石、灵材与寿元月数后确认炼制">批量…</button>` : ""}
@@ -34609,34 +35052,8 @@ const ART = {
 
 
   function executeAlchemyQuickCraft(recId) {
-    if (!game) return false;
-    const rec = RECIPES[recId];
-    if (!rec) return false;
-    const bd = computeRecipeCostBreakdown(game, rec);
-    if (game.stones < bd.totalStoneCost) {
-      showToast(`灵石不足（共需 ${bd.totalStoneCost} 灵石）`);
-      return false;
-    }
-    game.stones -= bd.totalStoneCost;
-    Object.entries(rec.inputs).forEach(([k, req]) => {
-      game.inventory[k] = Math.max(0, (game.inventory[k] || 0) - req);
-    });
-    const count = (hasLaw(game, "nine_pill") || currentOmen(game).id === "alchemy_star") ? 2 : 1;
-    game.inventory[rec.output] = (game.inventory[rec.output] || 0) + count;
-    if (getSanctumLevel(game, "cauldron") >= 4) {
-      game.inventory.healing_pill = (game.inventory.healing_pill || 0) + 1;
-    }
-    game.immortalPills = (game.immortalPills || 0) + 1;
-    const craftMonths = Math.max(1, Math.floor(num(rec.months, 3)));
-    const ageRes = advanceLifespanMonths(craftMonths, "alchemy");
-    unlockAchievement("ach_pill");
-    Sound.qiOrb(4);
-    const outSpec = ITEMS[rec.output];
-    const ageSuffix = ageRes && ageRes.aged > 0 ? ` · 耗寿 ${ageRes.aged} 月` : "";
-    showToast(`速炼成丹 ×${count} · 【${outSpec.name}】${bd.hasMissing ? `（含购入缺料 ${bd.matBuyCost} 灵石，共耗 ${bd.totalStoneCost} 石${ageSuffix}）` : `（消耗 ${bd.baseStones} 石${ageSuffix}）`}`);
-    saveGame(); updateHud();
-    if (drawerOpen) renderDrawerContent();
-    return true;
+    const res = executeSingleAlchemyCraft(recId, { silentToast: false, fromHold: false });
+    return Boolean(res && res.ok);
   }
 
   function openAlchemyBuyConfirmModal(recId, mode = "quick") {
@@ -34954,6 +35371,713 @@ const ART = {
     updateHud();
     if (drawerOpen) renderDrawerContent();
     return { ok: true, slot, steps: preview.steps, toLvl: eq.lvl, totalCost: preview.totalCost };
+  }
+
+  // ==================== D08 (R3-F07): 3-STAR / S-RANK STAGE SWEEP (EXPLICIT CONFIRM, 0 LIFESPAN, ATOMIC ROLLBACK) ====================
+  function openStageSweepConfirmModal(stageIdx, opts = {}) {
+    if (!game) return false;
+    const nowMs = (opts && Number.isFinite(Number(opts.nowMs))) ? Number(opts.nowMs) : Date.now();
+    const st = getStageSweepStatus(game, stageIdx, nowMs);
+    if (!st.canSweep) {
+      showToast(st.reasonText);
+      return false;
+    }
+    const preview = computeStageSweepPreview(game, stageIdx);
+    if (!preview || !preview.valid) return false;
+    const origin = (opts && opts.origin) || (drawerOpen ? "drawer" : "other");
+    const mapNodeId = (opts && opts.mapNodeId) || selectedWorldMapNodeId || null;
+    pendingStageSweep = { stageIdx, origin, mapNodeId };
+
+    const guaranteedMatSummary = Object.entries(preview.guaranteedMats)
+      .filter(([k, n]) => ITEMS[k] && n > 0)
+      .map(([k, n]) => `${ITEMS[k].name} ×${n}`)
+      .join(" · ");
+    const wavePoolSummary = preview.waveMatPool
+      .filter(k => ITEMS[k])
+      .map(k => ITEMS[k].name)
+      .join(" / ");
+    const cancelAttrs = origin === "world_map"
+      ? `data-action="cancel-stage-sweep"`
+      : `data-modal-close="1"`;
+
+    openModal(`
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          ${renderSemanticTag("main", "三星扫荡 · 显式确认")}
+          <h2 style="font-family:var(--font-serif);font-size:var(--fs-xl);color:var(--gold-bright);">扫荡秘境 · ${escapeHtml(preview.actLabel)} ${escapeHtml(preview.stageName)}</h2>
+          <span class="tag-chip mythic">S 级 (★★★)</span>
+        </div>
+        <button type="button" class="btn-tertiary btn-ghost" ${cancelAttrs}>取消 ✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span id="sweep-zero-lifespan-pill" class="sweep-zero-lifespan-pill">✦ 免耗寿元（消耗 0 月寿元）</span>
+          <span class="tag-chip done">本次消耗 1 次 · 剩余 ${st.remaining}/${st.maxPerDay} 次</span>
+          <span class="tag-chip">扫荡后该秘境冷却 ${Math.round(STAGE_SWEEP_COOLDOWN_MS / 1000)} 秒</span>
+        </div>
+        <div class="jade-card batch-summary-table" style="gap:6px;">
+          <div style="font-size:var(--fs-sm);color:var(--gold-bright);font-weight:700;">真实战果预览（确认前绝不扣次或发奖 · 共 9 小怪 + 1 首领【${escapeHtml(preview.bossName)}】）</div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);"><span>预计灵石收益：</span><b style="color:var(--gold-bright);">+${preview.stones} 灵石${preview.realmScaled ? `（境界同步 ×${preview.realmStoneMult}）` : ""}</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);"><span>预计修为收益：</span><b style="color:var(--jade);">${preview.ascendedBonusStones > 0 ? `飞升转化 +${preview.ascendedBonusStones} 灵石` : `+${preview.effectiveXp} 修为${preview.willOverflowXp ? "（含溢出）" : preview.willCapXp ? "（满上限）" : ""}`}</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);gap:10px;"><span>必掉首领/通关灵材：</span><b style="text-align:right;">${escapeHtml(guaranteedMatSummary)}</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--fs-xs);color:var(--text-sub);gap:10px;"><span>波次小怪随机灵材池（56%/只）：</span><span style="text-align:right;">${escapeHtml(wavePoolSummary || "无")}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);"><span>必掉首领仙装：</span><b style="color:#d69eff;">1 件（${escapeHtml(preview.minRarityName)}～${escapeHtml(preview.maxRarityName)} · 吃保底）</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);"><span>寿元消耗：</span><b style="color:#9effec;">0 月（免耗寿）</b></div>
+          ${preview.bagFull ? `<div id="sweep-bag-full-warn" class="lifespan-preview-strip warn">⚠ 行囊已满 (${preview.gearBagCount}/${preview.gearBagLimit})，本次扫荡掉落仙装将安全记入【待处置】，绝不自动熔炼。</div>` : ""}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-cancel-stage-sweep" class="btn-tertiary btn-ghost" ${cancelAttrs}>取消</button>
+        <button type="button" id="btn-confirm-stage-sweep" class="btn-primary btn-gold" data-action="confirm-stage-sweep">⚡ 确认扫荡（免耗寿 · 余 ${st.remaining}/${st.maxPerDay}）</button>
+      </div>
+    `, true, { kind: "stage_sweep", tier: "decision" });
+    return true;
+  }
+
+  function executeStageSweep(stageIdx, opts = {}) {
+    if (!game) return { ok: false, reason: "no_game" };
+    const nowMs = (opts && Number.isFinite(Number(opts.nowMs))) ? Number(opts.nowMs) : Date.now();
+    const st = getStageSweepStatus(game, stageIdx, nowMs);
+    if (!st.canSweep) {
+      if (!(opts && opts.silentToast)) showToast(st.reasonText);
+      return { ok: false, reason: st.reason, reasonText: st.reasonText };
+    }
+
+    const snap = {
+      stones: game.stones,
+      xp: game.xp,
+      overflowXp: game.overflowXp,
+      hp: game.hp,
+      mp: game.mp,
+      inventory: Object.assign({}, game.inventory),
+      equippedGear: JSON.parse(JSON.stringify(game.equippedGear || {})),
+      gearBag: JSON.parse(JSON.stringify(game.gearBag || [])),
+      pity: JSON.parse(JSON.stringify(game.pity || {})),
+      hasPendingRewardsKey: Object.prototype.hasOwnProperty.call(game, "pendingRewards"),
+      pendingRewards: Array.isArray(game.pendingRewards) ? JSON.parse(JSON.stringify(game.pendingRewards)) : [],
+      hasResolvedRewardIdsKey: Object.prototype.hasOwnProperty.call(game, "resolvedRewardIds"),
+      resolvedRewardIds: Array.isArray(game.resolvedRewardIds) ? game.resolvedRewardIds.slice() : [],
+      stageSweepState: JSON.parse(JSON.stringify(game.stageSweepState || {})),
+      goalStats: game.goalStats ? Object.assign({}, game.goalStats) : null,
+      journalLen: Array.isArray(game.journal) ? game.journal.length : 0,
+      pendingCompareGear
+    };
+
+    const rolled = rollStageSweepRewards(game, stageIdx, { rng: opts && opts.rng });
+    if (!rolled || !rolled.valid) {
+      return { ok: false, reason: "invalid_stage" };
+    }
+
+    game.stones += rolled.stones;
+    if (rolled.rawXp > 0) gainRealmXp(rolled.rawXp);
+    Object.entries(rolled.materials || {}).forEach(([matKey, qty]) => {
+      if (ITEMS[matKey] && qty > 0) {
+        game.inventory[matKey] = Math.max(0, Math.floor(num(game.inventory[matKey], 0))) + qty;
+      }
+    });
+    const gearRes = rolled.gear ? acquireGearItem(rolled.gear, { deferSave: true, silentToast: true }) : { destination: null };
+
+    if (!game.stageSweepState || typeof game.stageSweepState !== "object" || Array.isArray(game.stageSweepState)) {
+      game.stageSweepState = {};
+    }
+    const k = String(stageIdx);
+    const prevEntry = game.stageSweepState[k];
+    const prevTotal = prevEntry ? Math.max(0, Math.floor(num(prevEntry.totalSweeps, 0))) : 0;
+    const nextUsed = Math.min(STAGE_SWEEP_MAX_PER_DAY, st.usedToday + 1);
+    game.stageSweepState[k] = {
+      dayKey: st.dayKey,
+      usedToday: nextUsed,
+      lastSweepAt: Math.floor(nowMs),
+      totalSweeps: prevTotal + 1
+    };
+    if (Array.isArray(game.journal)) {
+      game.journal.unshift(`【秘境扫荡】免耗寿扫荡【${rolled.preview.stageName}】（+${rolled.stones} 灵石）`);
+    }
+
+    if (!sandboxMode) {
+      const savedOk = saveGame();
+      if (!savedOk) {
+        game.stones = snap.stones;
+        game.xp = snap.xp;
+        game.overflowXp = snap.overflowXp;
+        game.hp = snap.hp;
+        game.mp = snap.mp;
+        game.inventory = snap.inventory;
+        game.equippedGear = snap.equippedGear;
+        game.gearBag = snap.gearBag;
+        game.pity = snap.pity;
+        if (snap.hasPendingRewardsKey) game.pendingRewards = snap.pendingRewards;
+        else delete game.pendingRewards;
+        if (snap.hasResolvedRewardIdsKey) game.resolvedRewardIds = snap.resolvedRewardIds;
+        else delete game.resolvedRewardIds;
+        game.stageSweepState = snap.stageSweepState;
+        if (snap.goalStats) game.goalStats = snap.goalStats;
+        if (Array.isArray(game.journal) && game.journal.length > snap.journalLen) {
+          game.journal.splice(0, game.journal.length - snap.journalLen);
+        }
+        pendingCompareGear = snap.pendingCompareGear;
+        syncFlyingSwords();
+        renderGearCompareCard();
+        syncPendingRewardsBadge();
+        updateHud();
+        if (drawerOpen) renderDrawerContent();
+        showToast("⚠ 存档写入失败，已回滚本次扫荡（未扣除扫荡次数）", { critical: true, key: "stage_sweep_rollback", throttleMs: 2500 });
+        return { ok: false, rolledBack: true, reason: "save_failed" };
+      }
+    }
+
+    Sound.fanfare();
+    renderGearCompareCard();
+    updateHud();
+    syncPendingRewardsBadge();
+    if (drawerOpen) renderDrawerContent();
+    requestCalmReevaluation();
+
+    const afterRemaining = Math.max(0, STAGE_SWEEP_MAX_PER_DAY - nextUsed);
+    const matSummary = Object.entries(rolled.materials || {})
+      .filter(([mk, qty]) => ITEMS[mk] && qty > 0)
+      .map(([mk, qty]) => `${ITEMS[mk].name}×${qty}`)
+      .slice(0, 4)
+      .join("、");
+    const gearSuffix = rolled.gear
+      ? ` · 获【${rolled.gear.name}】${gearRes && gearRes.destination === "overflow" ? "(入待处置)" : ""}`
+      : "";
+    const shortName = String(rolled.preview.mapName || rolled.preview.stageName || "").replace(/^⚡\s*/, "");
+    showToast(`⚡ 扫荡【${shortName}】完成（免耗寿）！+${rolled.stones}石 · +${rolled.effectiveXp}修为${matSummary ? ` · ${matSummary}` : ""}${gearSuffix} · 余 ${afterRemaining}/${STAGE_SWEEP_MAX_PER_DAY}`);
+
+    return {
+      ok: true,
+      stageIdx,
+      stones: rolled.stones,
+      rawXp: rolled.rawXp,
+      effectiveXp: rolled.effectiveXp,
+      lifespanMonths: STAGE_SWEEP_LIFESPAN_MONTHS,
+      materials: rolled.materials,
+      gear: rolled.gear,
+      gearDestination: gearRes ? gearRes.destination : null,
+      remaining: afterRemaining,
+      maxPerDay: STAGE_SWEEP_MAX_PER_DAY,
+      cooldownMs: STAGE_SWEEP_COOLDOWN_MS
+    };
+  }
+
+  // ==================== D08 (R3-F08): ATOMIC SINGLE-STEP ENHANCE/ALCHEMY & LONG-PRESS CONTINUOUS PROGRESSION ====================
+  function executeSingleGearEnhance(slot, opts = {}) {
+    const silentToast = Boolean(opts && opts.silentToast);
+    const fromHold = Boolean(opts && opts.fromHold);
+    const eq = game && game.equippedGear ? game.equippedGear[slot] : null;
+    if (!eq) return { ok: false, stopReason: "missing_slot" };
+    const curLvl = Math.max(0, Math.floor(num(eq.lvl, 0)));
+    if (curLvl >= 10) {
+      if (!silentToast) showToast("该仙装已淬火至圆满 +10！");
+      return { ok: false, stopReason: "max_level", itemName: eq.name, curLvl };
+    }
+    const cost = getGearEnhanceCost(game, eq);
+    if (num(game.stones, 0) < cost) {
+      if (!silentToast) showToast(`淬火需 ${cost} 灵石`);
+      return { ok: false, stopReason: "insufficient_stones", cost, itemName: eq.name, curLvl };
+    }
+
+    const beforeStats = getCombatStats(game);
+    const snap = {
+      stones: game.stones,
+      lvl: eq.lvl,
+      craftOrLoot: game.goalStats ? game.goalStats.craftOrLoot : 0
+    };
+
+    game.stones -= cost;
+    eq.lvl = curLvl + 1;
+    if (game.goalStats) game.goalStats.craftOrLoot = (game.goalStats.craftOrLoot || 0) + 1;
+
+    if (!sandboxMode && !isPracticeModeActive()) {
+      const savedOk = saveGame();
+      if (!savedOk) {
+        game.stones = snap.stones;
+        eq.lvl = snap.lvl;
+        if (game.goalStats) game.goalStats.craftOrLoot = snap.craftOrLoot;
+        updateHud();
+        if (drawerOpen) renderDrawerContent();
+        showToast("⚠ 存档写入失败，已原子回滚本次淬火（未扣除灵石）", { critical: true, key: "single_enh_rollback", throttleMs: 2500 });
+        return { ok: false, rolledBack: true, stopReason: "save_failed", itemName: eq.name, curLvl };
+      }
+    }
+
+    Sound.clang(1.35, 0.14);
+    if (!fromHold) Sound.fanfare();
+    if (!silentToast) {
+      showToast(`淬火功成！【${eq.name} +${eq.lvl}】基础属性大幅跃升！`);
+    }
+    recordVol1PrepUpgradeDelta(beforeStats, `${eq.name} +${eq.lvl}`);
+    updateHud();
+    if (drawerOpen) renderDrawerContent();
+    return {
+      ok: true,
+      stopReason: null,
+      cost,
+      prevLvl: curLvl,
+      newLvl: eq.lvl,
+      itemName: eq.name,
+      nextCost: eq.lvl < 10 ? getGearEnhanceCost(game, eq) : 0
+    };
+  }
+
+  function executeSingleAlchemyCraft(recId, opts = {}) {
+    const silentToast = Boolean(opts && opts.silentToast);
+    const fromHold = Boolean(opts && opts.fromHold);
+    if (!game || !hasOwn(RECIPES, recId)) return { ok: false, stopReason: "invalid_recipe" };
+    const rec = RECIPES[recId];
+    const outSpec = ITEMS[rec.output];
+    const caulLv = getSanctumLevel(game, "cauldron");
+    if (rec.reqCauldronLv && caulLv < rec.reqCauldronLv) {
+      if (!silentToast) showToast(`需将洞府【紫微丹鼎】升至 Lv.${rec.reqCauldronLv} 方可炼制！`);
+      return { ok: false, stopReason: "cauldron_locked", itemName: outSpec ? outSpec.name : recId };
+    }
+    const bd = computeRecipeCostBreakdown(game, rec);
+    // CRITICAL D08 GUARD: Long-press NEVER auto-buys missing materials and NEVER opens buy-confirm modal mid-hold!
+    if (fromHold && bd.hasMissing) {
+      return { ok: false, stopReason: "missing_materials", itemName: outSpec.name };
+    }
+    const neededStones = fromHold ? bd.baseStones : bd.totalStoneCost;
+    if (num(game.stones, 0) < neededStones) {
+      if (!silentToast) showToast(`灵石不足（共需 ${neededStones} 灵石）`);
+      return { ok: false, stopReason: "insufficient_stones", cost: neededStones, itemName: outSpec.name };
+    }
+    const craftMonths = Math.max(1, Math.floor(num(rec.months, 3)));
+    if (fromHold) {
+      const lfPrev = previewLifespanImpact(game, craftMonths);
+      if (lfPrev.willExhaust) {
+        return { ok: false, stopReason: "lifespan_guard", itemName: outSpec.name };
+      }
+    }
+
+    const snap = {
+      stones: game.stones,
+      inventory: Object.assign({}, game.inventory),
+      immortalPills: game.immortalPills,
+      elapsedMonths: game.elapsedMonths,
+      hasPendingRewardsKey: Object.prototype.hasOwnProperty.call(game, "pendingRewards"),
+      pendingRewards: Array.isArray(game.pendingRewards) ? JSON.parse(JSON.stringify(game.pendingRewards)) : [],
+      hasResolvedRewardIdsKey: Object.prototype.hasOwnProperty.call(game, "resolvedRewardIds"),
+      resolvedRewardIds: Array.isArray(game.resolvedRewardIds) ? game.resolvedRewardIds.slice() : [],
+      pendingLifespanExhaustedPrompt,
+      journalLen: Array.isArray(game.journal) ? game.journal.length : 0
+    };
+
+    const willAge = !sandboxMode && !isPracticeModeActive() && game.realm !== "ascended" && craftMonths > 0;
+    const prevLf = getLifespanInfo(game);
+    const ageDelta = willAge ? Math.max(1, Math.round(craftMonths)) : 0;
+
+    game.stones -= neededStones;
+    Object.entries(rec.inputs).forEach(([k, req]) => {
+      game.inventory[k] = Math.max(0, (game.inventory[k] || 0) - req);
+    });
+    const count = (hasLaw(game, "nine_pill") || currentOmen(game).id === "alchemy_star") ? 2 : 1;
+    game.inventory[rec.output] = (game.inventory[rec.output] || 0) + count;
+    if (getSanctumLevel(game, "cauldron") >= 4) {
+      game.inventory.healing_pill = (game.inventory.healing_pill || 0) + 1;
+    }
+    game.immortalPills = (game.immortalPills || 0) + 1;
+
+    let nextLf = prevLf;
+    let queuedExhaustedReward = false;
+    if (willAge) {
+      game.elapsedMonths = Math.max(0, Math.floor(num(game.elapsedMonths, 0))) + ageDelta;
+      nextLf = getLifespanInfo(game);
+      if (nextLf.status === "exhausted" && !lifespanExhaustedPromptDismissed) {
+        pendingLifespanExhaustedPrompt = true;
+        const prevPrLen = Array.isArray(game.pendingRewards) ? game.pendingRewards.length : 0;
+        enqueuePendingReward({ kind: "lifespan_exhausted", payload: {}, persist: false, deferUi: true });
+        queuedExhaustedReward = Array.isArray(game.pendingRewards) && game.pendingRewards.length > prevPrLen;
+      }
+    }
+
+    if (!sandboxMode && !isPracticeModeActive()) {
+      const savedOk = saveGame();
+      if (!savedOk) {
+        game.stones = snap.stones;
+        game.inventory = snap.inventory;
+        game.immortalPills = snap.immortalPills;
+        game.elapsedMonths = snap.elapsedMonths;
+        if (snap.hasPendingRewardsKey) game.pendingRewards = snap.pendingRewards;
+        else delete game.pendingRewards;
+        if (snap.hasResolvedRewardIdsKey) game.resolvedRewardIds = snap.resolvedRewardIds;
+        else delete game.resolvedRewardIds;
+        pendingLifespanExhaustedPrompt = snap.pendingLifespanExhaustedPrompt;
+        if (Array.isArray(game.journal) && game.journal.length > snap.journalLen) {
+          game.journal.splice(0, game.journal.length - snap.journalLen);
+        }
+        syncPendingRewardsBadge();
+        updateHud();
+        if (drawerOpen) renderDrawerContent();
+        showToast("⚠ 存档写入失败，已原子回滚本次炼丹（未扣除灵石/灵材/寿元）", { critical: true, key: "single_craft_rollback", throttleMs: 2500 });
+        return { ok: false, rolledBack: true, stopReason: "save_failed", itemName: outSpec.name };
+      }
+    }
+
+    if (willAge) {
+      applyLifespanPostAdvanceEffects(prevLf, nextLf, { skipEnqueue: true, silentToast: fromHold });
+      if (queuedExhaustedReward) {
+        syncPendingRewardsBadge();
+        requestCalmReevaluation();
+      }
+    }
+
+    unlockAchievement("ach_pill");
+    Sound.qiOrb(4);
+    if (!silentToast) {
+      const ageSuffix = ageDelta > 0 ? ` · 耗寿 ${ageDelta} 月` : "";
+      showToast(`速炼成丹 ×${count} · 【${outSpec.name}】${bd.hasMissing ? `（含购入缺料 ${bd.matBuyCost} 灵石，共耗 ${bd.totalStoneCost} 石${ageSuffix}）` : `（消耗 ${bd.baseStones} 石${ageSuffix}）`}`);
+    }
+    updateHud();
+    if (drawerOpen) renderDrawerContent();
+
+    const nextBd = computeRecipeCostBreakdown(game, rec);
+    return {
+      ok: true,
+      stopReason: null,
+      cost: neededStones,
+      crafted: count,
+      months: ageDelta,
+      reqMonths: craftMonths,
+      itemName: outSpec.name,
+      nextCost: nextBd.baseStones,
+      nextHasMissing: nextBd.hasMissing
+    };
+  }
+
+  const HOLD_STOP_REASON_LABELS = {
+    released: "松手停止",
+    pointer_cancel: "指针中断已停",
+    pointer_leave: "移出按钮已停",
+    window_blur: "切窗失焦已停",
+    ui_closed: "界面切换已停",
+    insufficient_stones: "灵石不足，已停止",
+    missing_materials: "灵材不足，已停止（缺料补购请单点确认）",
+    max_level: "已达圆满 +10，自动停止",
+    lifespan_guard: "再炼将触及大限，已自动停止",
+    save_failed: "存档写入失败，已回滚"
+  };
+
+  const holdProgression = {
+    active: false,
+    kind: null,
+    key: null,
+    inputType: null,
+    keyCode: null,
+    pointerId: null,
+    pointerX: 0,
+    pointerY: 0,
+    startTimer: null,
+    repeatTimer: null,
+    didRepeat: false,
+    steps: 0,
+    totalStones: 0,
+    totalOutput: 0,
+    totalMonths: 0,
+    startLvl: 0,
+    endLvl: 0,
+    itemName: "",
+    lastStopReason: null,
+    lastSummary: null
+  };
+  let suppressClickTarget = null;
+
+  function armSuppressClick(kind, key) {
+    const now = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+    suppressClickTarget = { kind, key, until: now + 400 };
+  }
+
+  function consumeSuppressedClick(kind, key) {
+    if (!suppressClickTarget) return false;
+    const now = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+    if (now > suppressClickTarget.until) {
+      suppressClickTarget = null;
+      return false;
+    }
+    if (suppressClickTarget.kind === kind && suppressClickTarget.key === key) {
+      suppressClickTarget = null;
+      return true;
+    }
+    return false;
+  }
+
+  function getHoldTargetButton(kind, key) {
+    const panel = document.getElementById("jade-panel");
+    if (!panel || !kind || !key) return null;
+    if (kind === "enhance") return panel.querySelector(`[data-enhance-slot="${key}"]`);
+    if (kind === "alchemy") return panel.querySelector(`[data-quick-craft="${key}"]`);
+    return null;
+  }
+
+  function syncHoldProgressionVisuals(nextCostText = "") {
+    const statusEl = document.getElementById("hold-progression-status");
+    const panel = document.getElementById("jade-panel");
+    if (panel) {
+      panel.querySelectorAll("button.is-holding").forEach(b => b.classList.remove("is-holding"));
+    }
+    if (holdProgression.active) {
+      const btn = getHoldTargetButton(holdProgression.kind, holdProgression.key);
+      if (btn) btn.classList.add("is-holding");
+    }
+    if (!statusEl) return;
+    if (holdProgression.active && holdProgression.didRepeat) {
+      statusEl.hidden = false;
+      if (holdProgression.kind === "enhance") {
+        statusEl.textContent = `🔥 长按连淬中【${holdProgression.itemName}】已 +${holdProgression.steps} 阶（共耗 ${holdProgression.totalStones} 石）· ${nextCostText} · 松手即停`;
+      } else {
+        statusEl.textContent = `🔥 长按连炼中【${holdProgression.itemName}】已成 ${holdProgression.steps} 炉（产 ×${holdProgression.totalOutput} · 共耗 ${holdProgression.totalStones} 石 · ⏳${holdProgression.totalMonths}月）· ${nextCostText} · 松手即停`;
+      }
+    } else {
+      statusEl.hidden = true;
+      statusEl.textContent = "";
+    }
+  }
+
+  function isPointWithinHoldButton(btn, x, y) {
+    if (!btn || typeof btn.getBoundingClientRect !== "function") return false;
+    const rect = btn.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return false;
+    return x >= rect.left - 4 && x <= rect.right + 4 && y >= rect.top - 4 && y <= rect.bottom + 4;
+  }
+
+  function checkHoldPointerBounds(clientX, clientY) {
+    if (!holdProgression.active || holdProgression.inputType !== "pointer") return;
+    holdProgression.pointerX = clientX;
+    holdProgression.pointerY = clientY;
+    const btn = getHoldTargetButton(holdProgression.kind, holdProgression.key);
+    if (!btn || !isPointWithinHoldButton(btn, clientX, clientY)) {
+      stopHoldProgression("pointer_leave");
+    }
+  }
+
+  function getHoldProgressionState() {
+    return {
+      active: holdProgression.active,
+      kind: holdProgression.kind,
+      key: holdProgression.key,
+      inputType: holdProgression.inputType,
+      keyCode: holdProgression.keyCode,
+      didRepeat: holdProgression.didRepeat,
+      steps: holdProgression.steps,
+      totalStones: holdProgression.totalStones,
+      totalOutput: holdProgression.totalOutput,
+      totalMonths: holdProgression.totalMonths,
+      startLvl: holdProgression.startLvl,
+      endLvl: holdProgression.endLvl,
+      itemName: holdProgression.itemName,
+      lastStopReason: holdProgression.lastStopReason,
+      lastSummary: holdProgression.lastSummary ? Object.assign({}, holdProgression.lastSummary) : null
+    };
+  }
+
+  function runHoldStep() {
+    if (!holdProgression.active || !game) return false;
+    const bdEl = document.getElementById("modal-backdrop");
+    const modalOpenNow = !!(bdEl && bdEl.classList.contains("open"));
+    const expectedTab = holdProgression.kind === "enhance" ? "cultivate" : "alchemy";
+    if (!drawerOpen || modalOpenNow || cutscene.active || currentTab !== expectedTab) {
+      stopHoldProgression("ui_closed");
+      return false;
+    }
+    if (holdProgression.inputType === "pointer") {
+      const curBtn = getHoldTargetButton(holdProgression.kind, holdProgression.key);
+      if (!curBtn || !isPointWithinHoldButton(curBtn, holdProgression.pointerX, holdProgression.pointerY)) {
+        stopHoldProgression("pointer_leave");
+        return false;
+      }
+    }
+
+    const scrollBodyEl = document.getElementById("panel-scroll-body");
+    const prevScrollTop = scrollBodyEl ? scrollBodyEl.scrollTop : 0;
+
+    const res = holdProgression.kind === "enhance"
+      ? executeSingleGearEnhance(holdProgression.key, { silentToast: true, fromHold: true })
+      : executeSingleAlchemyCraft(holdProgression.key, { silentToast: true, fromHold: true });
+
+    if (scrollBodyEl) scrollBodyEl.scrollTop = prevScrollTop;
+
+    const refreshedBtn = getHoldTargetButton(holdProgression.kind, holdProgression.key);
+    if (refreshedBtn) {
+      refreshedBtn.classList.add("is-holding");
+      if ((holdProgression.inputType === "keyboard" || !document.activeElement || document.activeElement === document.body) && isElementFocusable(refreshedBtn)) {
+        try { refreshedBtn.focus({ preventScroll: true }); } catch (e) {}
+      }
+    }
+
+    if (!res || !res.ok) {
+      stopHoldProgression((res && res.stopReason) || "released");
+      return false;
+    }
+
+    holdProgression.steps += 1;
+    holdProgression.totalStones += res.cost || 0;
+    holdProgression.itemName = res.itemName || holdProgression.itemName;
+    armSuppressClick(holdProgression.kind, holdProgression.key);
+
+    if (holdProgression.kind === "enhance") {
+      holdProgression.endLvl = res.newLvl;
+      if (res.newLvl >= 10) {
+        syncHoldProgressionVisuals("已达圆满 +10");
+        stopHoldProgression("max_level");
+        return false;
+      }
+      if (num(game.stones, 0) < res.nextCost) {
+        syncHoldProgressionVisuals(`下一阶需 ${res.nextCost} 石`);
+        stopHoldProgression("insufficient_stones");
+        return false;
+      }
+      syncHoldProgressionVisuals(`下一阶需 ${res.nextCost} 石`);
+    } else {
+      holdProgression.totalOutput += res.crafted || 0;
+      holdProgression.totalMonths += res.months || 0;
+      if (res.nextHasMissing) {
+        syncHoldProgressionVisuals("灵材不足");
+        stopHoldProgression("missing_materials");
+        return false;
+      }
+      if (num(game.stones, 0) < res.nextCost) {
+        syncHoldProgressionVisuals(`下次需 ${res.nextCost} 石`);
+        stopHoldProgression("insufficient_stones");
+        return false;
+      }
+      const nextLfPrev = previewLifespanImpact(game, res.reqMonths || 3);
+      if (nextLfPrev.willExhaust) {
+        syncHoldProgressionVisuals("再炼将触及大限");
+        stopHoldProgression("lifespan_guard");
+        return false;
+      }
+      syncHoldProgressionVisuals(`下次需 ${res.nextCost} 石`);
+    }
+
+    if (holdProgression.inputType === "pointer" && refreshedBtn && !isPointWithinHoldButton(refreshedBtn, holdProgression.pointerX, holdProgression.pointerY)) {
+      stopHoldProgression("pointer_leave");
+      return false;
+    }
+    return true;
+  }
+
+  function startHoldProgression(cfg) {
+    if (!cfg || !game || !drawerOpen || cutscene.active) return false;
+    const bdEl = document.getElementById("modal-backdrop");
+    if (bdEl && bdEl.classList.contains("open")) return false;
+    suppressClickTarget = null;
+    if (holdProgression.active) stopHoldProgression("ui_closed");
+
+    const kind = cfg.kind;
+    const key = cfg.key;
+    let itemName = "";
+    let startLvl = 0;
+    if (kind === "enhance") {
+      const eq = game.equippedGear && game.equippedGear[key];
+      if (!eq) return false;
+      itemName = eq.name;
+      startLvl = Math.max(0, Math.floor(num(eq.lvl, 0)));
+    } else if (kind === "alchemy") {
+      const rec = RECIPES[key];
+      if (!rec || !ITEMS[rec.output]) return false;
+      itemName = ITEMS[rec.output].name;
+    } else {
+      return false;
+    }
+
+    holdProgression.active = true;
+    holdProgression.kind = kind;
+    holdProgression.key = key;
+    holdProgression.inputType = cfg.inputType || "pointer";
+    holdProgression.keyCode = cfg.keyCode || null;
+    holdProgression.pointerId = cfg.pointerId != null ? cfg.pointerId : null;
+    holdProgression.pointerX = Number(cfg.pointerX) || 0;
+    holdProgression.pointerY = Number(cfg.pointerY) || 0;
+    holdProgression.didRepeat = false;
+    holdProgression.steps = 0;
+    holdProgression.totalStones = 0;
+    holdProgression.totalOutput = 0;
+    holdProgression.totalMonths = 0;
+    holdProgression.startLvl = startLvl;
+    holdProgression.endLvl = startLvl;
+    holdProgression.itemName = itemName;
+
+    syncHoldProgressionVisuals();
+
+    holdProgression.startTimer = setTimeout(() => {
+      holdProgression.startTimer = null;
+      if (!holdProgression.active) return;
+      holdProgression.didRepeat = true;
+      armSuppressClick(holdProgression.kind, holdProgression.key);
+      const keepGoing = runHoldStep();
+      if (keepGoing && holdProgression.active) {
+        holdProgression.repeatTimer = setInterval(() => {
+          if (!holdProgression.active) {
+            clearInterval(holdProgression.repeatTimer);
+            holdProgression.repeatTimer = null;
+            return;
+          }
+          const cont = runHoldStep();
+          if (!cont && holdProgression.repeatTimer) {
+            clearInterval(holdProgression.repeatTimer);
+            holdProgression.repeatTimer = null;
+          }
+        }, HOLD_REPEAT_INTERVAL_MS);
+      }
+    }, HOLD_START_DELAY_MS);
+    return true;
+  }
+
+  function stopHoldProgression(reason = "released") {
+    if (!holdProgression.active) return;
+    if (holdProgression.startTimer) {
+      clearTimeout(holdProgression.startTimer);
+      holdProgression.startTimer = null;
+    }
+    if (holdProgression.repeatTimer) {
+      clearInterval(holdProgression.repeatTimer);
+      holdProgression.repeatTimer = null;
+    }
+    const snap = {
+      kind: holdProgression.kind,
+      key: holdProgression.key,
+      inputType: holdProgression.inputType,
+      didRepeat: holdProgression.didRepeat,
+      steps: holdProgression.steps,
+      totalStones: holdProgression.totalStones,
+      totalOutput: holdProgression.totalOutput,
+      totalMonths: holdProgression.totalMonths,
+      startLvl: holdProgression.startLvl,
+      endLvl: holdProgression.endLvl,
+      itemName: holdProgression.itemName,
+      reason
+    };
+    if (snap.didRepeat) {
+      armSuppressClick(snap.kind, snap.key);
+    }
+    holdProgression.active = false;
+    holdProgression.kind = null;
+    holdProgression.key = null;
+    holdProgression.inputType = null;
+    holdProgression.keyCode = null;
+    holdProgression.pointerId = null;
+    holdProgression.lastStopReason = reason;
+    holdProgression.lastSummary = snap;
+
+    syncHoldProgressionVisuals();
+
+    if (snap.inputType === "keyboard" && drawerOpen && reason !== "ui_closed") {
+      const btn = getHoldTargetButton(snap.kind, snap.key);
+      if (btn && isElementFocusable(btn)) {
+        try { btn.focus({ preventScroll: true }); } catch (e) {}
+      }
+    }
+
+    const reasonLabel = HOLD_STOP_REASON_LABELS[reason] || "已停止";
+    if (snap.steps > 0) {
+      if (snap.kind === "enhance") {
+        showToast(`长按淬火完成：【${snap.itemName}】+${snap.startLvl} → +${snap.endLvl}（共 +${snap.steps} 阶，耗 ${snap.totalStones} 灵石 · ${reasonLabel}）`);
+      } else {
+        showToast(`长按炼丹完成：【${snap.itemName}】×${snap.totalOutput}（共 ${snap.steps} 炉，耗 ${snap.totalStones} 灵石 · ⏳${snap.totalMonths} 月 · ${reasonLabel}）`);
+      }
+    } else if (snap.didRepeat && reason !== "released" && reason !== "save_failed" && reason !== "ui_closed") {
+      showToast(reasonLabel);
+    }
   }
 
   function openSoulSealUnlockChoiceModal(newSoulId, recEventId = null) {
@@ -35706,6 +36830,16 @@ const ART = {
       if (ev.code === "Escape") {
         if (modalCloseable) {
           ev.preventDefault();
+          if (activeModalKind === "stage_sweep" && pendingStageSweep && pendingStageSweep.origin === "world_map") {
+            const mapNid = pendingStageSweep.mapNodeId;
+            pendingStageSweep = null;
+            openWorldMapModal(mapNid);
+            const mapSweepBtn = document.getElementById("btn-map-sweep-stage") || document.getElementById("btn-map-enter-node");
+            if (mapSweepBtn && isElementFocusable(mapSweepBtn)) {
+              try { mapSweepBtn.focus({ preventScroll: true }); } catch (e) {}
+            }
+            return;
+          }
           craftMinigame.open = false;
           closeModal();
         }
@@ -35760,6 +36894,19 @@ const ART = {
         ev.preventDefault();
         strikeFurnaceNeedle();
         return;
+      }
+      if ((ev.code === "Space" || ev.code === "Enter") && !furnaceGame.active && !isTypingTarget(ev.target)) {
+        const aeHold = document.activeElement;
+        if (aeHold && !aeHold.disabled && aeHold.closest && aeHold.closest("#jade-panel") &&
+            (aeHold.hasAttribute("data-enhance-slot") || aeHold.hasAttribute("data-quick-craft"))) {
+          ev.preventDefault();
+          if (!ev.repeat) {
+            const hKind = aeHold.hasAttribute("data-enhance-slot") ? "enhance" : "alchemy";
+            const hKey = hKind === "enhance" ? aeHold.getAttribute("data-enhance-slot") : aeHold.getAttribute("data-quick-craft");
+            startHoldProgression({ kind: hKind, key: hKey, inputType: "keyboard", keyCode: ev.code });
+          }
+          return;
+        }
       }
       return;
     }
@@ -35889,7 +37036,44 @@ const ART = {
     showToast(`战斗中 · 再按一次打开【${label}】`, { tier: 1, key: `arm_${code}`, throttleMs: 1200 });
     return false;
   }
-  window.addEventListener("keyup", (ev) => { keysDown[ev.code] = false; });
+  window.addEventListener("keyup", (ev) => {
+    keysDown[ev.code] = false;
+    if (holdProgression.active && holdProgression.inputType === "keyboard" && ev.code === holdProgression.keyCode) {
+      const wasRepeat = holdProgression.didRepeat;
+      const hKind = holdProgression.kind;
+      const hKey = holdProgression.key;
+      stopHoldProgression("released");
+      if (!wasRepeat) {
+        if (hKind === "enhance") {
+          executeSingleGearEnhance(hKey, { silentToast: false, fromHold: false });
+          const refBtn = getHoldTargetButton("enhance", hKey);
+          if (refBtn && isElementFocusable(refBtn)) {
+            try { refBtn.focus({ preventScroll: true }); } catch (e) {}
+          }
+        } else if (hKind === "alchemy") {
+          const rec = RECIPES[hKey];
+          if (rec) {
+            if (rec.reqCauldronLv && getSanctumLevel(game, "cauldron") < rec.reqCauldronLv) {
+              showToast(`需将洞府【紫微丹鼎】升至 Lv.${rec.reqCauldronLv} 方可炼制！`);
+            } else {
+              const bd = computeRecipeCostBreakdown(game, rec);
+              if (game.stones < bd.totalStoneCost) {
+                showToast(`灵石不足（共需 ${bd.totalStoneCost} 灵石${bd.hasMissing ? `，含购入缺料 ${bd.matBuyCost} 灵石` : ""}）`);
+              } else if (bd.hasMissing) {
+                openAlchemyBuyConfirmModal(rec.id, "quick");
+              } else {
+                executeAlchemyQuickCraft(rec.id);
+                const refBtn = getHoldTargetButton("alchemy", hKey);
+                if (refBtn && isElementFocusable(refBtn)) {
+                  try { refBtn.focus({ preventScroll: true }); } catch (e) {}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
 
   window.addEventListener("contextmenu", (ev) => {
     if (ev.target && ev.target.id === "fx-canvas") {
@@ -35901,6 +37085,7 @@ const ART = {
 
   document.addEventListener("pointermove", (ev) => {
     pointer.x = ev.clientX; pointer.y = ev.clientY;
+    checkHoldPointerBounds(ev.clientX, ev.clientY);
     if (photoMode.active && photoMode.dragging) {
       photoMode.panX = Math.max(-460, Math.min(460, ev.clientX - photoMode.dragStartX));
       photoMode.panY = Math.max(-320, Math.min(320, ev.clientY - photoMode.dragStartY));
@@ -35930,6 +37115,19 @@ const ART = {
     Sound.ensure();
     pointer.x = ev.clientX; pointer.y = ev.clientY;
     if (cutscene.active) return;
+    if (ev.button === 0 && drawerOpen) {
+      const bdHold = document.getElementById("modal-backdrop");
+      if (!(bdHold && bdHold.classList.contains("open"))) {
+        const pelHold = (ev.target && ev.target.nodeType === 1) ? ev.target : (ev.target && ev.target.parentElement ? ev.target.parentElement : null);
+        const holdBtn = pelHold ? pelHold.closest("#jade-panel [data-enhance-slot], #jade-panel [data-quick-craft]") : null;
+        if (holdBtn && !holdBtn.disabled) {
+          const hKind = holdBtn.hasAttribute("data-enhance-slot") ? "enhance" : "alchemy";
+          const hKey = hKind === "enhance" ? holdBtn.getAttribute("data-enhance-slot") : holdBtn.getAttribute("data-quick-craft");
+          startHoldProgression({ kind: hKind, key: hKey, inputType: "pointer", pointerId: ev.pointerId, pointerX: ev.clientX, pointerY: ev.clientY });
+          return;
+        }
+      }
+    }
     const isCanvas = ev.target && ev.target.id === "fx-canvas";
     if (isCanvas) {
       const pav = document.getElementById("pavilion-popover");
@@ -36000,11 +37198,20 @@ const ART = {
   });
 
   window.addEventListener("pointerup", () => {
+    if (holdProgression.active && holdProgression.inputType === "pointer") {
+      stopHoldProgression("released");
+    }
     photoMode.dragging = false;
     if (pointer.down && pointer.worldActive && pointer.holdTime > 0.25) {
       releaseChargedSwordVolley();
     }
     pointer.down = false; pointer.holdTime = 0; pointer.worldActive = false;
+  });
+
+  window.addEventListener("pointercancel", () => {
+    if (holdProgression.active && holdProgression.inputType === "pointer") {
+      stopHoldProgression("pointer_cancel");
+    }
   });
 
   document.addEventListener("click", (ev) => {
@@ -38014,20 +39221,8 @@ const ART = {
 
     if (t.hasAttribute("data-enhance-slot")) {
       const sl = t.getAttribute("data-enhance-slot");
-      const eq = game && game.equippedGear ? game.equippedGear[sl] : null;
-      if (!eq) return;
-      if ((eq.lvl || 0) >= 10) { showToast("该仙装已淬火至圆满 +10！"); return; }
-      const cost = getGearEnhanceCost(game, eq);
-      if (game.stones < cost) { showToast(`淬火需 ${cost} 灵石`); return; }
-      const beforeStats = getCombatStats(game);
-      game.stones -= cost;
-      eq.lvl = (eq.lvl || 0) + 1;
-      if (game.goalStats) game.goalStats.craftOrLoot = (game.goalStats.craftOrLoot || 0) + 1;
-      Sound.clang(1.35, 0.14);
-      Sound.fanfare();
-      showToast(`淬火功成！【${eq.name} +${eq.lvl}】基础属性大幅跃升！`);
-      recordVol1PrepUpgradeDelta(beforeStats, `${eq.name} +${eq.lvl}`);
-      saveGame(); updateHud(); renderDrawerContent();
+      if (consumeSuppressedClick("enhance", sl)) return;
+      executeSingleGearEnhance(sl, { silentToast: false, fromHold: false });
       return;
     }
     if (t.hasAttribute("data-reforge-slot")) {
@@ -38331,6 +39526,50 @@ const ART = {
       }
       return;
     }
+    // D08 (R3-F07): Stage Sweep Entry & Explicit Confirmation Handlers
+    if (t.hasAttribute("data-open-stage-sweep")) {
+      const stgIdx = Number(t.getAttribute("data-open-stage-sweep"));
+      const origin = t.getAttribute("data-sweep-origin") || (drawerOpen ? "drawer" : "other");
+      openStageSweepConfirmModal(stgIdx, { origin, mapNodeId: selectedWorldMapNodeId });
+      return;
+    }
+    if (t.getAttribute("data-action") === "cancel-stage-sweep") {
+      const req = pendingStageSweep;
+      pendingStageSweep = null;
+      if (req && req.origin === "world_map") {
+        openWorldMapModal(req.mapNodeId);
+        const mapSweepBtn = document.getElementById("btn-map-sweep-stage") || document.getElementById("btn-map-enter-node");
+        if (mapSweepBtn && isElementFocusable(mapSweepBtn)) {
+          try { mapSweepBtn.focus({ preventScroll: true }); } catch (e) {}
+        }
+      } else {
+        closeModal();
+      }
+      return;
+    }
+    if (t.getAttribute("data-action") === "confirm-stage-sweep") {
+      const req = pendingStageSweep;
+      if (!req || !Number.isInteger(req.stageIdx)) return;
+      const res = executeStageSweep(req.stageIdx);
+      if (res && res.ok) {
+        pendingStageSweep = null;
+        if (req.origin === "world_map") {
+          openWorldMapModal(req.mapNodeId);
+          const mapSweepBtn = document.getElementById("btn-map-sweep-stage") || document.getElementById("btn-map-enter-node");
+          if (mapSweepBtn && isElementFocusable(mapSweepBtn)) {
+            try { mapSweepBtn.focus({ preventScroll: true }); } catch (e) {}
+          }
+        } else {
+          const panel = document.getElementById("jade-panel");
+          if (drawerOpen && panel) {
+            const refreshed = panel.querySelector(`[data-open-stage-sweep="${req.stageIdx}"]`) || panel.querySelector(`[data-warp-stage="${req.stageIdx}"]`);
+            if (refreshed && isElementFocusable(refreshed)) lastModalTriggerEl = refreshed;
+          }
+          closeModal();
+        }
+      }
+      return;
+    }
     if (t.hasAttribute("data-destiny-fruit")) {
       const fid = t.getAttribute("data-destiny-fruit");
       const df = hasOwn(DESTINY_FRUITS, fid) ? DESTINY_FRUITS[fid] : null;
@@ -38575,6 +39814,7 @@ const ART = {
     }
     if (t.hasAttribute("data-quick-craft")) {
       const recId = t.getAttribute("data-quick-craft");
+      if (consumeSuppressedClick("alchemy", recId)) return;
       const rec = RECIPES[recId];
       if (!rec) return;
       if (rec.reqCauldronLv && getSanctumLevel(game, "cauldron") < rec.reqCauldronLv) {
@@ -38882,7 +40122,17 @@ const ART = {
       getExpeditionNodeStageSynergy,
       getSpireCloudSeaYieldMult,
       computeEndgameMasteryResonance,
-      buildVol5ResonanceSnapshot
+      buildVol5ResonanceSnapshot,
+      STAGE_SWEEP_MAX_PER_DAY,
+      STAGE_SWEEP_COOLDOWN_MS,
+      STAGE_SWEEP_LIFESPAN_MONTHS,
+      HOLD_START_DELAY_MS,
+      HOLD_REPEAT_INTERVAL_MS,
+      formatLocalDayKey,
+      sanitizeStageSweepState,
+      getStageSweepStatus,
+      computeStageSweepPreview,
+      rollStageSweepRewards
     },
     q6: {
       VOLUME_CAMPAIGN_GUIDE,
@@ -38910,7 +40160,13 @@ const ART = {
       stepCloudSeaFlight,
       stepSectDefenseSiege,
       startCelestialSpireRun,
-      selectSpireCurioAndAdvance
+      selectSpireCurioAndAdvance,
+      openStageSweepConfirmModal,
+      executeStageSweep,
+      executeSingleGearEnhance,
+      executeSingleAlchemyCraft,
+      getHoldProgressionState,
+      stopHoldProgression
     },
     persistence: {
       STORAGE_KEY,

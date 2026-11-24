@@ -1848,7 +1848,23 @@
               return `<div id="world-map-vol-brief" style="font-size:var(--fs-xs);color:#9effec;line-height:1.4;">⚔ 考题（${escapeHtml(guide.enemyExam.bossName)}）：${escapeHtml(guide.enemyExam.counter)} ｜ 收益：${escapeHtml(guide.growthPayoff)}${escapeHtml(vol5Extra)}</div>`;
             })()}
           </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+          <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">
+            ${sel.kind === "stage" ? (() => {
+              const sw = getStageSweepStatus(game, sel.stageIdx);
+              const swLabel = sw.canSweep
+                ? `⚡ 扫荡秘境 (免耗寿 · 余 ${sw.remaining}/${sw.maxPerDay})`
+                : sw.reason === "on_cooldown"
+                  ? `⏳ 扫荡冷却 (${sw.cooldownSec}s)`
+                  : sw.reason === "quota_exhausted"
+                    ? `今日已扫荡满 (0/${sw.maxPerDay})`
+                    : sw.reason === "practice_mode"
+                      ? "🔒 练习模式禁扫荡"
+                      : sw.reason === "stage_locked"
+                        ? "🔒 未解锁"
+                        : "🔒 需三星(S级)扫荡";
+              const hardDisabled = !sw.eligible;
+              return `<button type="button" id="btn-map-sweep-stage" class="${sw.canSweep ? "btn-secondary btn-jade" : "btn-tertiary btn-ghost is-locked"}" data-open-stage-sweep="${sel.stageIdx}" data-sweep-origin="world_map" ${hardDisabled ? "disabled" : ""} aria-disabled="${sw.canSweep ? "false" : "true"}" title="${escapeHtml(sw.reasonText)}">${escapeHtml(swLabel)}</button>`;
+            })() : ""}
             <button type="button" id="btn-map-enter-node" class="${sel.unlocked ? "btn-primary btn-gold" : "btn-tertiary btn-ghost is-locked"}" data-map-enter="${escapeHtml(sel.id)}" ${sel.unlocked ? "" : "disabled"}>${escapeHtml(enterBtnLabel)}</button>
           </div>
         </div>

@@ -792,7 +792,10 @@
   }
   window.addEventListener("pagehide", flushSaveOnLifecycle);
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") flushSaveOnLifecycle();
+    if (document.visibilityState === "hidden") {
+      if (typeof stopHoldProgression === "function") stopHoldProgression("window_blur");
+      flushSaveOnLifecycle();
+    }
   });
 
   function getClearedCampaignStageIndices(g) {
