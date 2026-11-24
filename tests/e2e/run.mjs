@@ -12,8 +12,9 @@ import * as tier1 from "./tiers/tier1-features.mjs";
 import * as tier2 from "./tiers/tier2-boundaries.mjs";
 import * as tier3 from "./tiers/tier3-combinations.mjs";
 import * as tier4 from "./tiers/tier4-journeys.mjs";
+import * as tier5 from "./tiers/tier5-adversarial.mjs";
 
-const ALL_TIERS = [tier1, tier2, tier3, tier4];
+const ALL_TIERS = [tier1, tier2, tier3, tier4, tier5];
 const DEFAULT_TIMEOUT_MS = 25000;
 const MAX_TIMEOUT_MS = 2147483647;
 
@@ -21,7 +22,7 @@ function printHelp() {
   console.log(`Usage: node tests/e2e/run.mjs [options]
 
 Options:
-  --tier <1|2|3|4|all>   Run specific tier(s), comma-separated (default: all)
+  --tier <1|2|3|4|5|all> Run specific tier(s), comma-separated (default: all)
   --filter <pattern>     Filter tests by ID, title, or feature (substring or /regex/i)
   --report <file>        Write structured JSON report to <file>
   --url <url>            Use an external HTTP/HTTPS URL instead of built-in static server
@@ -128,10 +129,10 @@ function parseArgs(argv) {
 
 function parseTierSelection(tierArg) {
   if (!tierArg || tierArg.trim() === "") {
-    throw new Error("Invalid --tier value: expected 1, 2, 3, 4, or all.");
+    throw new Error("Invalid --tier value: expected 1, 2, 3, 4, 5, or all.");
   }
   if (tierArg.trim().toLowerCase() === "all") {
-    return new Set([1, 2, 3, 4]);
+    return new Set([1, 2, 3, 4, 5]);
   }
   const rawParts = tierArg.split(",");
   const selected = new Set();
@@ -140,8 +141,8 @@ function parseTierSelection(tierArg) {
     if (!p) {
       throw new Error(`Invalid --tier value '${tierArg}': empty tier segment.`);
     }
-    if (!/^[1-4]$/.test(p)) {
-      throw new Error(`Invalid tier '${p}'. Expected 1, 2, 3, 4, or all.`);
+    if (!/^[1-5]$/.test(p)) {
+      throw new Error(`Invalid tier '${p}'. Expected 1, 2, 3, 4, 5, or all.`);
     }
     selected.add(Number(p));
   }

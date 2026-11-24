@@ -7,7 +7,7 @@ Opaque-box, requirement-driven E2E Acceptance Test Suite for **《尘缘问道 �
 - **Runner**: `tests/e2e/run.mjs`
 - **Invocation**:
   - `npm ci && npm run test:e2e` (runs `node tests/e2e/run.mjs`)
-  - `npm run test:e2e -- --tier <1|2|3|4|all>` — run a specific tier or comma-separated tiers (default: `all`)
+  - `npm run test:e2e -- --tier <1|2|3|4|5|all>` — run a specific tier or comma-separated tiers (default: `all`)
   - `npm run test:e2e -- --filter <substring|/regex/i>` — filter test cases by ID, title, or feature
   - `npm run test:e2e -- --report <file>` — write structured JSON report to `<file>`
   - `npm run test:e2e -- --url <url>` — target an external `http:`/`https:` static HTTP URL instead of the built-in server
@@ -22,7 +22,7 @@ Opaque-box, requirement-driven E2E Acceptance Test Suite for **《尘缘问道 �
 - **Isolation**: Every test case runs in a fresh `browser.newContext({ viewport: { width: 1440, height: 900 } })` with clean `localStorage` and attached `console` (`error`) + `pageerror` listeners (0 errors required).
 - **Dependency Resolution**: `loadChromium()` resolves `playwright-core` from `node_modules` (installed via `npm ci`), `web/node_modules`, or `NODE_PATH`.
 
-## Directory Structure & Canonical Tier 1–4 Definitions
+## Directory Structure & Canonical Tier 1–5 Definitions
 - `tests/e2e/run.mjs` — CLI runner, static server, browser lifecycle, reporting (`schemaVersion: 1`)
 - `tests/e2e/lib/harness.mjs` — shared page helpers, error listeners, UI/DOM/focus helpers, static server & Playwright loader
 - `tests/e2e/lib/fixtures.mjs` — dynamic save fixture builders (`eb0ea67` envelope v2 with FNV-1a checksum, corrupt saves, cloud codes, canonical M5 step IDs & 15 Dao Law IDs)
@@ -30,9 +30,10 @@ Opaque-box, requirement-driven E2E Acceptance Test Suite for **《尘缘问道 �
 - `tests/e2e/tiers/tier2-boundaries.mjs` — **Tier 2 (12 tests)**: Boundary & corner cases, including all 5 mandatory save scenarios (fresh start, legacy `eb0ea67` resume/migration, reload, `QuotaExceededError`, multi-tab contention)
 - `tests/e2e/tiers/tier3-combinations.mjs` — **Tier 3 (10 tests)**: Cross-feature pairwise combinations
 - `tests/e2e/tiers/tier4-journeys.mjs` — **Tier 4 (3 tests)**: Real-world end-user gameplay journeys
+- `tests/e2e/tiers/tier5-adversarial.mjs` — **Tier 5 (8 tests)**: White-box adversarial hardening (`E2E-T5-01..E2E-T5-08`) permanently encoding all 19 reproduced Surface A (`A-1..A-11`) & Surface B (`B-1..B-8`) defects
 
 ## Opaque-Box & Compliance Rules
 1. Assertions inspect observable UI text, DOM state, focus/accessibility behavior, `localStorage`, and (for T8/T9) repo files/scripts.
 2. `window.__CHENYUAN_V25__` (and legacy debug globals) are used **only** for setting up preconditions (e.g., reaching a late realm or spawning a boss), never for asserting internal implementation details.
 3. All save fixtures (including `eb0ea67`-format legacy saves and corrupted saves) are generated dynamically in code; no real player saves are committed.
-4. Executed unconditionally in `.github/workflows/e2e.yml` (`npm run test:e2e -- --report test-results/e2e-report.json`) alongside the 60-suite regression runner (`npm run test:regression`, covering M1–M4, P1–P5, R2–R7, and Q0–Q2; `schemaVersion: 2` report) and art provenance check (`npm run art:manifest:check`).
+4. Executed unconditionally in `.github/workflows/e2e.yml` (`npm run test:e2e -- --report test-results/e2e-report.json`, 64 tests across Tiers 1–5) alongside the 65-suite regression runner (`npm run test:regression`, covering M1–M4, P1–P5, R2–R7, Q0–Q2, and T5; `schemaVersion: 2` report) and art provenance check (`npm run art:manifest:check`).

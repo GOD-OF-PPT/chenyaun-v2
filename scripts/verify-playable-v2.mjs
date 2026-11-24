@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P5 + R2–R7 + Q0–Q2 · 共 60 项）
+ * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P5 + R2–R7 + Q0–Q2 + T5 · 共 65 项）
  *
  * 用法：
  *   node scripts/verify-playable-v2.mjs
@@ -8601,6 +8601,1059 @@ try {
     });
     assert.equal(hitStopRes.afterHub, 0, "P6: enterSanctumHub() must reset arena.hitStop to 0");
     assert.equal(hitStopRes.afterStage, 0, "P6: initArenaStage() must reset arena.hitStop to 0");
+    await ctx.close();
+  });
+
+  // =========================================================================
+  // M7b TIER 5 WHITE-BOX ADVERSARIAL HARDENING SUITES (T5-1 .. T5-5)
+  // =========================================================================
+  await runSuite("T5-1", "M7b A-1 顿悟弹窗 pendingRewards.titleText 转义(主档+云码) + A-11 seenCutIns 危险键过滤", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "T5-1", true);
+
+    // Part A (A-1 STORAGE_KEY path + A-11 seenCutIns prototype/own-key hygiene)
+    const saveMarker = '<span data-unescaped-marker="t5_save">MARK_SAVE</span>';
+    await page.evaluate(({ sk, marker }) => {
+      const api = window.__CHENYUAN_V25__;
+      const st = api.getState();
+      st.game.pendingRewards = [{
+        eventId: "pr_t5_save_xss_1",
+        kind: "iconic_draft",
+        noticeClass: "N1",
+        payload: { titleText: marker, source: "default" }
+      }];
+      api.saveGame();
+      const raw = JSON.parse(localStorage.getItem(sk));
+      // Inject raw JSON string with __proto__ & unsafe keys into seenCutIns and recompute checksum via load->save or manual canonical checksum
+      const injected = JSON.parse(
+        JSON.stringify(raw).replace(
+          '"seenCutIns":{}',
+          '"seenCutIns":{"__proto__":{"polluted_t5":"BAD"},"constructor":true,"prototype":true,"toString":true,"valueOf":true,"hasOwnProperty":true,"valid_cutin_1":true}'
+        )
+      );
+      // Recompute canonical FNV-1a checksum matching buildCanonicalSavePayload
+      const payloadStr = JSON.stringify({
+        game: injected.game,
+        stageIdx: injected.stageIdx,
+        stanceIdx: injected.stanceIdx,
+        towerMode: !!injected.towerMode,
+        sanctumMode: !!injected.sanctumMode
+      });
+      let h = 2166136261 >>> 0;
+      for (let i = 0; i < payloadStr.length; i++) {
+        h ^= payloadStr.charCodeAt(i);
+        h = Math.imul(h, 16777619) >>> 0;
+      }
+      injected.checksum = h.toString(16).toUpperCase().padStart(8, "0");
+      localStorage.setItem(sk, JSON.stringify(injected));
+    }, { sk: STORAGE_KEY, marker: saveMarker });
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#btn-continue-save", { state: "visible" });
+    await page.click("#btn-continue-save");
+    await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await page.waitForSelector("#btn-pending-rewards", { state: "visible" });
+
+    // Verify A-11 immediately after normalizeLoadedGame
+    const cutInCheck = await page.evaluate(() => {
+      const g = window.__CHENYUAN_V25__.getState().game;
+      const sc = g.seenCutIns;
+      const own = (k) => Object.prototype.hasOwnProperty.call(sc, k);
+      let stringified = "";
+      let stringThrew = false;
+      try { stringified = String(sc); } catch { stringThrew = true; }
+      return {
+        polluted: Object.prototype.polluted_t5 !== undefined,
+        ownCtor: own("constructor"),
+        ownProto: own("prototype"),
+        ownToString: own("toString"),
+        ownValueOf: own("valueOf"),
+        ownHasOwn: own("hasOwnProperty"),
+        keptValid: sc.valid_cutin_1 === true,
+        stringThrew,
+        stringified
+      };
+    });
+    assert.equal(cutInCheck.polluted, false, "A-11: Object.prototype must remain clean");
+    assert.equal(cutInCheck.ownCtor, false, "A-11: seenCutIns must filter constructor");
+    assert.equal(cutInCheck.ownProto, false, "A-11: seenCutIns must filter prototype");
+    assert.equal(cutInCheck.ownToString, false, "A-11: seenCutIns must filter toString");
+    assert.equal(cutInCheck.ownValueOf, false, "A-11: seenCutIns must filter valueOf");
+    assert.equal(cutInCheck.ownHasOwn, false, "A-11: seenCutIns must filter hasOwnProperty");
+    assert.equal(cutInCheck.keptValid, true, "A-11: Valid seenCutIns entries must be preserved");
+    assert.equal(cutInCheck.stringThrew, false, "A-11: String(game.seenCutIns) must not throw");
+
+    // Open iconic_draft via #btn-pending-rewards and verify A-1 STORAGE_KEY escaping
+    await page.click("#btn-pending-rewards");
+    await page.waitForSelector("#modal-backdrop.open #modal-content h2");
+    const saveXssRes = await page.evaluate((marker) => ({
+      injectedEl: Boolean(document.querySelector("[data-unescaped-marker]")),
+      h2Text: document.querySelector("#modal-content h2")?.textContent || "",
+      matchesLiteral: (document.querySelector("#modal-content h2")?.textContent || "").includes(marker)
+    }), saveMarker);
+    assert.equal(saveXssRes.injectedEl, false, "A-1 (STORAGE_KEY): openIconicUpgradeDraft must NOT inject live HTML from titleText");
+    assert.equal(saveXssRes.matchesLiteral, true, `A-1 (STORAGE_KEY): escaped titleText must render literally, got: ${saveXssRes.h2Text}`);
+
+    // Pick a draft card to clear the modal, then verify A-1 CY24SAVE cloud-code import path
+    await page.click("#modal-content [data-draft-type]");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+
+    const cloudMarker = '<span data-unescaped-marker="t5_cloud">MARK_CLOUD</span>';
+    const craftedCloudCode = await page.evaluate((marker) => {
+      const code = window.__CHENYUAN_V25__.exportFullCloudSaveCode();
+      const parts = code.split("-");
+      const b64 = parts.slice(2).join("-");
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const payload = JSON.parse(new TextDecoder().decode(bytes));
+      payload.game.pendingRewards = [{
+        eventId: "pr_t5_cloud_xss_1",
+        kind: "iconic_draft",
+        noticeClass: "N1",
+        payload: { titleText: marker, source: "default" }
+      }];
+      const jsonStr = JSON.stringify(payload);
+      let sum = 0x24;
+      for (let i = 0; i < jsonStr.length; i++) sum = (sum * 31 + jsonStr.charCodeAt(i)) & 0xFFFF;
+      const chk = sum.toString(16).toUpperCase().padStart(4, "0");
+      const encBytes = new TextEncoder().encode(jsonStr);
+      let encBin = "";
+      for (let i = 0; i < encBytes.length; i++) encBin += String.fromCharCode(encBytes[i]);
+      return `CY24SAVE-${chk}-${btoa(encBin)}`;
+    }, cloudMarker);
+
+    await page.click("#btn-open-settings");
+    await page.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+    await page.click('[data-sys-tab="controls"]');
+    await page.waitForSelector("#inp-cloud-save-code");
+    await page.fill("#inp-cloud-save-code", craftedCloudCode);
+    await page.click("#btn-import-cloud-save");
+    await page.waitForSelector("#btn-confirm-cloud-import");
+    await page.click("#btn-confirm-cloud-import");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    await page.waitForSelector("#btn-pending-rewards", { state: "visible" });
+    await page.click("#btn-pending-rewards");
+    await page.waitForSelector("#modal-backdrop.open #modal-content h2");
+    const cloudXssRes = await page.evaluate((marker) => ({
+      injectedEl: Boolean(document.querySelector("[data-unescaped-marker]")),
+      h2Text: document.querySelector("#modal-content h2")?.textContent || "",
+      matchesLiteral: (document.querySelector("#modal-content h2")?.textContent || "").includes(marker)
+    }), cloudMarker);
+    assert.equal(cloudXssRes.injectedEl, false, "A-1 (CY24SAVE): openIconicUpgradeDraft must NOT inject live HTML from imported cloud titleText");
+    assert.equal(cloudXssRes.matchesLiteral, true, `A-1 (CY24SAVE): escaped cloud titleText must render literally, got: ${cloudXssRes.h2Text}`);
+    await ctx.close();
+  });
+
+  await runSuite("T5-2", "M7b A-2 双标签低版本号谱系重置冲突 + A-3 removeItem 失败诚实提示与兵解回滚 + A-4 延迟 storage 事件不掩盖磁盘损坏", async () => {
+    // Part A (A-2): Tab 1 advances to saveRev >= 5, Tab 2 resets and starts fresh life (saveRev = 1) -> Tab 1 must trigger conflict & NOT clobber Tab 2
+    const ctx = await newIsolatedContext(browser);
+    const tab1 = await ctx.newPage();
+    attachErrorListeners(tab1, "T5-2-Tab1");
+    await tab1.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tab1.evaluate(() => localStorage.clear());
+    await tab1.reload({ waitUntil: "domcontentloaded" });
+    await tab1.click("#btn-toggle-origin");
+    await tab1.waitForSelector("#player-name-input", { state: "visible" });
+    await tab1.fill("#player-name-input", "旧世残影");
+    await tab1.click("#btn-start-new");
+    await tab1.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await dismissOpeningScroll(tab1);
+    const rev1 = await tab1.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      for (let i = 0; i < 4; i++) {
+        api.getState().game.stones += 10;
+        api.saveGame();
+      }
+      return api.getPersistenceState().loadedSaveRev;
+    });
+    assert.ok(rev1 >= 5, `Expected Tab 1 loadedSaveRev >= 5, got ${rev1}`);
+
+    const tab2 = await ctx.newPage();
+    attachErrorListeners(tab2, "T5-2-Tab2");
+    await tab2.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tab2.waitForSelector("#btn-continue-save", { state: "visible" });
+    await tab2.click("#btn-continue-save");
+    await tab2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await tab2.click("#btn-open-settings");
+    await tab2.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+    await tab2.click('[data-sys-tab="controls"]');
+    await tab2.waitForSelector('[data-action="confirm-reset-save"]');
+    await tab2.click('[data-action="confirm-reset-save"]');
+    await tab2.waitForSelector('[data-action="execute-reset-save"]');
+    await tab2.click('[data-action="execute-reset-save"]');
+    await tab2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display !== "none");
+    await tab2.click("#btn-toggle-origin");
+    await tab2.waitForSelector("#player-name-input", { state: "visible" });
+    await tab2.fill("#player-name-input", "新世道友");
+    await tab2.click("#btn-start-new");
+    await tab2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await dismissOpeningScroll(tab2);
+    await tab1.waitForTimeout(250);
+
+    const tab1Conflict = await tab1.evaluate((sk) => {
+      const api = window.__CHENYUAN_V25__;
+      const conflictBefore = Boolean(api.getPersistenceState().saveConflictState);
+      const saveOk = api.saveGame();
+      const conflictAfter = Boolean(api.getPersistenceState().saveConflictState);
+      const disk = JSON.parse(localStorage.getItem(sk));
+      return {
+        conflictBefore,
+        saveOk,
+        conflictAfter,
+        diskName: disk?.game?.name,
+        diskRev: disk?.saveRev
+      };
+    }, STORAGE_KEY);
+    assert.equal(tab1Conflict.conflictBefore, true, "A-2: Tab 1 must detect cross-tab reset/new-lineage save conflict via storage event");
+    assert.equal(tab1Conflict.saveOk, false, "A-2: Tab 1 saveGame() must refuse to clobber Tab 2's fresh lower-rev save");
+    assert.equal(tab1Conflict.conflictAfter, true, "A-2: Tab 1 must retain saveConflictState");
+    assert.equal(tab1Conflict.diskName, "新世道友", `A-2: Tab 2 fresh save must remain intact on disk, got ${tab1Conflict.diskName}`);
+    assert.equal(tab1Conflict.diskRev, 1, `A-2: Tab 2 saveRev=1 must NOT be overwritten, got ${tab1Conflict.diskRev}`);
+    await ctx.close();
+
+    // Part B (A-3): localStorage.removeItem throws SecurityError in execute-reset-save & executeReincarnation
+    const { ctx: ctxB, page: pageB } = await startCleanGamePage(browser, "T5-2-A3", true);
+    await pageB.evaluate((sk) => {
+      const api = window.__CHENYUAN_V25__;
+      api.getState().game.name = "不灭旧档";
+      api.saveGame();
+      window.__t5OrigRemoveItem = Storage.prototype.removeItem;
+      Storage.prototype.removeItem = function (k) {
+        if (k === sk) throw new DOMException("Read-only storage", "SecurityError");
+        return window.__t5OrigRemoveItem.call(this, k);
+      };
+    }, STORAGE_KEY);
+
+    await pageB.click("#btn-open-settings");
+    await pageB.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+    await pageB.click('[data-sys-tab="controls"]');
+    await pageB.click('[data-action="confirm-reset-save"]');
+    await pageB.waitForSelector('[data-action="execute-reset-save"]');
+    await pageB.evaluate(() => { const tc = document.getElementById("toast-container"); if (tc) tc.innerHTML = ""; });
+    await pageB.click('[data-action="execute-reset-save"]');
+    await pageB.waitForTimeout(100);
+    const resetErrRes = await pageB.evaluate((sk) => ({
+      welcomeVisible: document.getElementById("welcome-screen")?.style.display !== "none",
+      hasGame: Boolean(window.__CHENYUAN_V25__.getState().game),
+      diskStillHasSave: Boolean(localStorage.getItem(sk)),
+      toasts: Array.from(document.querySelectorAll("#toast-container .toast-pill")).map(x => x.textContent || "").join(" | ")
+    }), STORAGE_KEY);
+    assert.equal(resetErrRes.welcomeVisible, false, "A-3 (reset): Must NOT falsely return to welcome screen when removeItem throws");
+    assert.equal(resetErrRes.hasGame, true, "A-3 (reset): Must keep in-memory game intact when removeItem throws");
+    assert.equal(resetErrRes.diskStillHasSave, true, "A-3 (reset): Save remains on disk");
+    assert.ok(!resetErrRes.toasts.includes("已清空当前本地存档"), `A-3 (reset): Must NOT falsely claim save cleared, got: ${resetErrRes.toasts}`);
+    assert.ok(/失败|阻止|SecurityError|无法清空/.test(resetErrRes.toasts), `A-3 (reset): Must show explicit error toast, got: ${resetErrRes.toasts}`);
+
+    // Now test bingjie executeReincarnation rollback under SecurityError
+    await pageB.keyboard.press("Escape");
+    await pageB.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    const ptsBeforeBingjie = await pageB.evaluate((mk) => {
+      const api = window.__CHENYUAN_V25__;
+      api.saveMeta();
+      const memPts = Number(api.getMetaState().reincarnationPoints) || 0;
+      const diskPts = Number(JSON.parse(localStorage.getItem(mk) || "{}").reincarnationPoints) || 0;
+      api.openLifespanExhaustedModal(true);
+      const tc = document.getElementById("toast-container");
+      if (tc) tc.innerHTML = "";
+      return { memPts, diskPts };
+    }, META_KEY);
+    await pageB.waitForSelector('#modal-backdrop.open [data-action="confirm-bingjie-reincarnate"]');
+    await pageB.click('#modal-backdrop.open [data-action="confirm-bingjie-reincarnate"]');
+    await pageB.waitForTimeout(100);
+    const bingjieErrRes = await pageB.evaluate(({ sk, mk }) => {
+      const api = window.__CHENYUAN_V25__;
+      return {
+        welcomeVisible: document.getElementById("welcome-screen")?.style.display !== "none",
+        hasGame: Boolean(api.getState().game),
+        diskStillHasSave: Boolean(localStorage.getItem(sk)),
+        memPts: Number(api.getMetaState().reincarnationPoints) || 0,
+        diskPts: Number(JSON.parse(localStorage.getItem(mk) || "{}").reincarnationPoints) || 0,
+        toasts: Array.from(document.querySelectorAll("#toast-container .toast-pill")).map(x => x.textContent || "").join(" | ")
+      };
+    }, { sk: STORAGE_KEY, mk: META_KEY });
+    assert.equal(bingjieErrRes.welcomeVisible, false, "A-3 (bingjie): Must NOT return to welcome screen on removeItem failure");
+    assert.equal(bingjieErrRes.hasGame, true, "A-3 (bingjie): Must keep in-memory game intact");
+    assert.equal(bingjieErrRes.memPts, ptsBeforeBingjie.memPts, "A-3 (bingjie): Must roll back +40 reincarnationPoints in memory");
+    assert.equal(bingjieErrRes.diskPts, ptsBeforeBingjie.diskPts, "A-3 (bingjie): Must roll back +40 reincarnationPoints on disk META_KEY");
+    assert.ok(!bingjieErrRes.toasts.includes("兵解转世已成"), `A-3 (bingjie): Must NOT falsely claim reincarnation succeeded, got: ${bingjieErrRes.toasts}`);
+
+    await pageB.evaluate(() => { Storage.prototype.removeItem = window.__t5OrigRemoveItem; });
+    await ctxB.close();
+
+    // Part C (A-4): Delayed valid StorageEvent on STORAGE_KEY while live disk is corrupted must surface storageReadError, NOT save_conflict modal
+    const { ctx: ctxC, page: pageC } = await startCleanGamePage(browser, "T5-2-A4", true);
+    const a4Res = await pageC.evaluate((sk) => {
+      const api = window.__CHENYUAN_V25__;
+      const env = JSON.parse(localStorage.getItem(sk));
+      env.saveRev = 9;
+      env.tabId = "tab_delayed_other_999";
+      const validDelayedRaw = JSON.stringify(env);
+      const corruptLive = "{CORRUPT_LIVE_DISK_T5";
+      localStorage.setItem(sk, corruptLive);
+      window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: validDelayedRaw }));
+      const ps = api.getPersistenceState();
+      return {
+        modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open")),
+        modalKind: api.getActiveModalKind(),
+        hasConflict: Boolean(ps.saveConflictState),
+        hasReadErr: Boolean(ps.storageReadError),
+        diskRaw: localStorage.getItem(sk),
+        alertVisible: getComputedStyle(document.getElementById("hud-save-alert")).display !== "none"
+      };
+    }, STORAGE_KEY);
+    assert.equal(a4Res.hasReadErr, true, "A-4: Live disk corruption must set storageReadError even on delayed valid StorageEvent");
+    assert.equal(a4Res.hasConflict, false, "A-4: Must NOT set bogus saveConflictState when live disk is corrupted");
+    assert.notEqual(a4Res.modalKind, "save_conflict", "A-4: Must NOT open bogus save_conflict modal over live disk corruption");
+    assert.equal(a4Res.diskRaw, "{CORRUPT_LIVE_DISK_T5", "A-4: Corrupt raw save must remain untouched on disk");
+    assert.equal(a4Res.alertVisible, true, "A-4: #hud-save-alert must surface corrupt save status");
+    await ctxC.close();
+  });
+
+  await runSuite("T5-3", "M7b A-5/A-6 存档警报条保焦与元存档重试 + A-7 6秒内重开报错 + A-8 炼丹微操关闭清理 + A-9 键位边界 + A-10 过场抽屉互斥与浮卡保焦", async () => {
+    // Part A (A-5): load-latest-save failures from alert & modal-from-alert stay-readonly-save / load-latest-save keep focus off BODY
+    const ctxA = await newIsolatedContext(browser);
+    const tabA = await ctxA.newPage();
+    attachErrorListeners(tabA, "T5-3-A5A");
+    await tabA.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tabA.evaluate(() => localStorage.clear());
+    await tabA.reload({ waitUntil: "domcontentloaded" });
+    await tabA.click("#btn-start-new");
+    await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await dismissOpeningScroll(tabA);
+
+    const tabB = await ctxA.newPage();
+    attachErrorListeners(tabB, "T5-3-A5B");
+    await tabB.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await tabB.waitForSelector("#btn-continue-save");
+    await tabB.click("#btn-continue-save");
+    await tabB.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await tabB.evaluate(() => { window.__CHENYUAN_V25__.getState().game.stones = 333; window.__CHENYUAN_V25__.saveGame(); });
+    await tabA.waitForSelector('#modal-backdrop.open [data-action="stay-readonly-save"]');
+
+    // Test modal-from-alert stay-readonly-save: first close/reopen conflict modal via #hud-save-alert trigger
+    await tabA.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.closeModal();
+    });
+    await tabA.waitForSelector('#hud-save-alert [data-action="open-save-conflict"]');
+    await tabA.focus('#hud-save-alert [data-action="open-save-conflict"]');
+    await tabA.click('#hud-save-alert [data-action="open-save-conflict"]');
+    await tabA.waitForSelector('#modal-backdrop.open [data-action="stay-readonly-save"]');
+    await tabA.click('#modal-backdrop.open [data-action="stay-readonly-save"]');
+    await tabA.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    const stayFromAlertFocus = await tabA.evaluate(() => ({ isBody: document.activeElement === document.body, tag: document.activeElement?.tagName }));
+    assert.equal(stayFromAlertFocus.isBody, false, `A-5: stay-readonly-save from alert-opened modal must NOT drop focus to BODY (got ${stayFromAlertFocus.tag})`);
+
+    // Case A: corrupt disk + click load-latest-save from #hud-save-alert
+    await tabA.evaluate((sk) => { localStorage.setItem(sk, "{CORRUPT_A5_JSON"); }, STORAGE_KEY);
+    await tabA.focus('#hud-save-alert [data-action="load-latest-save"]');
+    await tabA.click('#hud-save-alert [data-action="load-latest-save"]');
+    await tabA.waitForTimeout(80);
+    const corruptAlertFocus = await tabA.evaluate((sk) => ({
+      isBody: document.activeElement === document.body,
+      tag: document.activeElement?.tagName,
+      diskRaw: localStorage.getItem(sk)
+    }), STORAGE_KEY);
+    assert.equal(corruptAlertFocus.isBody, false, `A-5: load-latest-save failure (corrupt disk) must keep focus off BODY (got ${corruptAlertFocus.tag})`);
+    assert.equal(corruptAlertFocus.diskRaw, "{CORRUPT_A5_JSON", "A-5: corrupt disk raw string must be preserved");
+
+    // Case B: deleted disk + click load-latest-save from #hud-save-alert
+    await tabA.evaluate((sk) => { localStorage.removeItem(sk); }, STORAGE_KEY);
+    await tabA.evaluate(() => {
+      // Trigger another conflict->readonly so load-latest-save is visible with empty disk
+      const api = window.__CHENYUAN_V25__;
+      api.inspectSavedBundle(); // clears storageReadError because disk is now empty
+      api.updateHud();
+      window.dispatchEvent(new StorageEvent("storage", { key: "chenyuan_wendao_v11_save", newValue: null }));
+    });
+    await tabA.waitForSelector('#modal-backdrop.open [data-action="stay-readonly-save"]');
+    await tabA.click('#modal-backdrop.open [data-action="stay-readonly-save"]');
+    await tabA.waitForSelector('#hud-save-alert [data-action="load-latest-save"]');
+    await tabA.focus('#hud-save-alert [data-action="load-latest-save"]');
+    await tabA.click('#hud-save-alert [data-action="load-latest-save"]');
+    await tabA.waitForTimeout(80);
+    const deletedAlertFocus = await tabA.evaluate(() => ({ isBody: document.activeElement === document.body, tag: document.activeElement?.tagName }));
+    assert.equal(deletedAlertFocus.isBody, false, `A-5: load-latest-save failure (deleted disk) must keep focus off BODY (got ${deletedAlertFocus.tag})`);
+    await ctxA.close();
+
+    // Part B (A-6): retry-meta-save failure, corrupt-disk toast, and recovery focus retention
+    const { ctx: ctxM, page: pageM } = await startCleanGamePage(browser, "T5-3-A6", true);
+    await pageM.evaluate((mk) => {
+      window.__t5OrigSetItemMeta = Storage.prototype.setItem;
+      window.__t5FailMeta = true;
+      Storage.prototype.setItem = function (k, v) {
+        if (window.__t5FailMeta && k === mk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+        return window.__t5OrigSetItemMeta.call(this, k, v);
+      };
+      window.__CHENYUAN_V25__.saveMeta();
+    }, META_KEY);
+    await pageM.waitForSelector('#hud-save-alert [data-action="retry-meta-save"]');
+    await pageM.focus('#hud-save-alert [data-action="retry-meta-save"]');
+    await pageM.click('#hud-save-alert [data-action="retry-meta-save"]');
+    await pageM.waitForTimeout(60);
+    const metaFailFocus = await pageM.evaluate(() => ({ isBody: document.activeElement === document.body, tag: document.activeElement?.tagName }));
+    assert.equal(metaFailFocus.isBody, false, `A-6: retry-meta-save failure must keep focus off BODY (got ${metaFailFocus.tag})`);
+
+    // Corrupt META_KEY on disk while retry-meta-save button is visible -> must emit toast & keep focus off BODY
+    await pageM.evaluate((mk) => {
+      window.__t5OrigSetItemMeta.call(localStorage, mk, "{CORRUPT_META_T5");
+      const tc = document.getElementById("toast-container");
+      if (tc) tc.innerHTML = "";
+    }, META_KEY);
+    await pageM.focus('#hud-save-alert [data-action="retry-meta-save"]');
+    await pageM.click('#hud-save-alert [data-action="retry-meta-save"]');
+    await pageM.waitForTimeout(60);
+    const metaCorruptRes = await pageM.evaluate((mk) => ({
+      isBody: document.activeElement === document.body,
+      hasMetaReadErr: Boolean(window.__CHENYUAN_V25__.getPersistenceState().metaReadError),
+      toasts: Array.from(document.querySelectorAll("#toast-container .toast-pill")).map(x => x.textContent || "").join(" | "),
+      diskRaw: localStorage.getItem(mk)
+    }), META_KEY);
+    assert.equal(metaCorruptRes.hasMetaReadErr, true, "A-6: retry-meta-save must detect corrupt META_KEY");
+    assert.ok(metaCorruptRes.toasts.length > 0, "A-6: retry-meta-save on corrupt META_KEY must NOT be silent");
+    assert.equal(metaCorruptRes.diskRaw, "{CORRUPT_META_T5", "A-6: corrupt META_KEY raw string must be preserved");
+    assert.equal(metaCorruptRes.isBody, false, "A-6: retry-meta-save on corrupt META_KEY must keep focus off BODY");
+
+    // Restore valid META_KEY, trigger metaWriteError again, then unblock & recover -> focus must stay off BODY
+    await pageM.evaluate((mk) => {
+      window.__t5FailMeta = false;
+      window.__t5OrigSetItemMeta.call(localStorage, mk, JSON.stringify({ metaRev: 1, ascensions: 0 }));
+      window.__CHENYUAN_V25__.inspectMetaState({ applyToMemory: true });
+      window.__t5FailMeta = true;
+      window.__CHENYUAN_V25__.saveMeta();
+      window.__t5FailMeta = false;
+    }, META_KEY);
+    await pageM.waitForSelector('#hud-save-alert [data-action="retry-meta-save"]');
+    await pageM.focus('#hud-save-alert [data-action="retry-meta-save"]');
+    await pageM.click('#hud-save-alert [data-action="retry-meta-save"]');
+    await pageM.waitForTimeout(60);
+    const metaRecoverRes = await pageM.evaluate(() => ({
+      isBody: document.activeElement === document.body,
+      activeId: document.activeElement?.id || "",
+      alertDisplay: getComputedStyle(document.getElementById("hud-save-alert")).display
+    }));
+    assert.equal(metaRecoverRes.alertDisplay, "none", "A-6: alert must hide after meta write recovery");
+    assert.equal(metaRecoverRes.isBody, false, `A-6: retry-meta-save recovery must restore focus off BODY (got id=${metaRecoverRes.activeId})`);
+    await pageM.evaluate(() => { Storage.prototype.setItem = window.__t5OrigSetItemMeta; });
+    await ctxM.close();
+
+    // Part C (A-7 + A-9 F3 on welcome screen): startFreshGameSession repeat <6s write failure emits toast; F3 blocked on welcome screen
+    const ctxW = await newIsolatedContext(browser);
+    const pageW = await ctxW.newPage();
+    attachErrorListeners(pageW, "T5-3-A7A9");
+    await pageW.goto(targetUrl, { waitUntil: "domcontentloaded" });
+    await pageW.evaluate(() => localStorage.clear());
+    await pageW.reload({ waitUntil: "domcontentloaded" });
+    await pageW.waitForSelector("#welcome-screen", { state: "visible" });
+    await pageW.keyboard.press("F3");
+    await pageW.waitForTimeout(80);
+    const f3WelcomeOpen = await pageW.evaluate(() => Boolean(document.getElementById("action-telemetry-panel")?.classList.contains("open")));
+    assert.equal(f3WelcomeOpen, false, "A-9: F3 must NOT open #action-telemetry-panel over #welcome-screen");
+
+    await pageW.evaluate((sk) => {
+      window.__t5OrigSetItemW = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) {
+        if (k === sk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+        return window.__t5OrigSetItemW.call(this, k, v);
+      };
+    }, STORAGE_KEY);
+    await pageW.click("#btn-start-new");
+    await pageW.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    await dismissOpeningScroll(pageW);
+    await pageW.click("#btn-open-settings");
+    await pageW.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+    await pageW.click('[data-sys-tab="controls"]');
+    await pageW.click('[data-action="return-title-safe"]');
+    await pageW.waitForFunction(() => document.getElementById("welcome-screen")?.style.display !== "none");
+    await pageW.evaluate(() => { const tc = document.getElementById("toast-container"); if (tc) tc.innerHTML = ""; });
+    await pageW.click("#btn-start-new");
+    await pageW.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    const repeatToasts = await pageW.evaluate(() =>
+      Array.from(document.querySelectorAll("#toast-container .toast-pill")).map(x => x.textContent || "").join(" | ")
+    );
+    assert.ok(repeatToasts.includes("写入失败"), `A-7: Repeat <6s startFreshGameSession QuotaExceededError MUST emit toast, got: ${repeatToasts}`);
+    await pageW.evaluate(() => { Storage.prototype.setItem = window.__t5OrigSetItemW; });
+    await ctxW.close();
+
+    // Part D (A-8, A-9 popover/Space, A-10 cutscene+drawer & floating card focus)
+    const { ctx: ctxK, page: pageK } = await startCleanGamePage(browser, "T5-3-A8A9A10", true, { dismissOpening: false });
+
+    // A-10 Part 1: During active opening_scroll cutscene, clicking [data-tab="cultivate"] must NOT stack drawer
+    await pageK.waitForSelector("#story-dialogue-bar.open");
+    await pageK.click('.nav-tab-btn[data-tab="cultivate"]', { force: true });
+    await pageK.waitForTimeout(80);
+    const cutsceneDrawerCheck = await pageK.evaluate(() => ({
+      drawerOpen: Boolean(document.getElementById("jade-panel")?.classList.contains("drawer-open")),
+      cutsceneOpen: Boolean(document.getElementById("story-dialogue-bar")?.classList.contains("open")),
+      focusInDialogue: Boolean(document.getElementById("story-dialogue-bar")?.contains(document.activeElement))
+    }));
+    assert.equal(cutsceneDrawerCheck.drawerOpen, false, "A-10: toggleDrawer must be blocked while cutscene is active");
+    assert.equal(cutsceneDrawerCheck.cutsceneOpen, true, "A-10: cutscene must remain active");
+    assert.equal(cutsceneDrawerCheck.focusInDialogue, true, "A-10: focus must remain inside #story-dialogue-bar");
+    await dismissOpeningScroll(pageK);
+
+    // A-10 reverse: Opening drawer first then starting cutscene must close drawer cleanly with no leaked drawer pauseToken
+    await pageK.click('.nav-tab-btn[data-tab="cultivate"]');
+    await pageK.waitForSelector("#jade-panel.drawer-open");
+    await pageK.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      if (g.seenCutscenes) delete g.seenCutscenes.opening_scroll;
+      api.playCutscene("opening_scroll");
+    });
+    await pageK.waitForSelector("#story-dialogue-bar.open");
+    const reverseStack = await pageK.evaluate(() => ({
+      drawerOpen: Boolean(document.getElementById("jade-panel")?.classList.contains("drawer-open")),
+      pauseOwners: window.__CHENYUAN_V25__.getPauseTokens().map(t => t.owner)
+    }));
+    assert.equal(reverseStack.drawerOpen, false, "A-10: Starting cutscene while drawer open must cleanly close drawer");
+    assert.equal(reverseStack.pauseOwners.includes("drawer"), false, "A-10: Closing drawer on cutscene start must release drawer pauseToken");
+    await dismissOpeningScroll(pageK);
+
+    // A-8: closeModal() clears craftMinigame.open so Space in Settings does NOT strike
+    await pageK.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.getState().game.realm = "spirit";
+      api.openTaixuCraftMinigameModal("alchemy");
+    });
+    await pageK.waitForSelector('#modal-backdrop.open [data-modal-close="1"]');
+    await pageK.click('#modal-backdrop.open [data-modal-close="1"]');
+    await pageK.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    await pageK.waitForTimeout(120);
+    const craftAfterClose = await pageK.evaluate(() => window.__CHENYUAN_V23__.getState().craftMinigame.open);
+    assert.equal(craftAfterClose, false, "A-8: closeModal() via button must reset craftMinigame.open to false");
+    await pageK.click("#btn-open-settings");
+    await pageK.waitForSelector("#modal-backdrop.open");
+    await pageK.keyboard.press("Space");
+    await pageK.waitForTimeout(60);
+    const craftStrikes = await pageK.evaluate(() => window.__CHENYUAN_V23__.getState().craftMinigame.strikes);
+    assert.equal(craftStrikes, 0, "A-8: Space inside Settings must NOT fire ghost craftMinigame strikes");
+    await pageK.keyboard.press("Escape");
+    await pageK.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+
+    // A-9: #pavilion-popover closes on Escape and returns focus to #btn-pavilion-menu
+    await pageK.click("#btn-pavilion-menu");
+    await pageK.waitForSelector("#pavilion-popover.open");
+    await pageK.keyboard.press("Escape");
+    await pageK.waitForTimeout(60);
+    const pavEsc1 = await pageK.evaluate(() => ({
+      open: Boolean(document.getElementById("pavilion-popover")?.classList.contains("open")),
+      activeId: document.activeElement?.id || ""
+    }));
+    assert.equal(pavEsc1.open, false, "A-9: Escape must close #pavilion-popover");
+    assert.equal(pavEsc1.activeId, "btn-pavilion-menu", `A-9: Escape from #pavilion-popover must return focus to #btn-pavilion-menu, got ${pavEsc1.activeId}`);
+
+    // A-9: Space on focused HUD <button> (#btn-goals-modal) activates button instead of firing combat dash
+    await pageK.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.enterSanctumHub();
+      api.getState().arena.player.dashCd = 0;
+    });
+    await pageK.focus("#btn-goals-modal");
+    await pageK.keyboard.press("Space");
+    await pageK.waitForTimeout(100);
+    const hudSpaceRes = await pageK.evaluate(() => ({
+      modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open")),
+      dashCd: window.__CHENYUAN_V25__.getState().arena.player.dashCd
+    }));
+    assert.equal(hudSpaceRes.modalOpen, true, "A-9: Pressing Space on focused #btn-goals-modal must open Goals modal");
+    assert.equal(hudSpaceRes.dashCd, 0, `A-9: Pressing Space on focused HUD <button> must NOT fire dash (dashCd=${hudSpaceRes.dashCd})`);
+    await pageK.keyboard.press("Escape");
+    await pageK.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+
+    // A-10 Part 2: Floating HUD cards never drop focus to BODY
+    // 1) #btn-skip-onboarding
+    await pageK.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      g.realm = "mortal";
+      g.tutorialDismissed = false;
+      g.tutorialStep = 0;
+      api.renderOnboardingCoach();
+    });
+    await pageK.waitForSelector("#btn-skip-onboarding", { state: "visible" });
+    await pageK.focus("#btn-skip-onboarding");
+    await pageK.keyboard.press("Enter");
+    await pageK.waitForTimeout(60);
+    assert.equal(await pageK.evaluate(() => document.activeElement === document.body), false, "A-10: #btn-skip-onboarding must not drop focus to BODY");
+
+    // 2) #btn-unlock-dismiss and #btn-unlock-try
+    await pageK.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      g.realm = "qi";
+      g.seenUnlockIds = [];
+      api.queueNewUnlockCardsForState(g);
+      api.flushNewUnlockCard();
+    });
+    await pageK.waitForSelector("#new-unlock-card #btn-unlock-dismiss", { state: "visible" });
+    await pageK.focus("#btn-unlock-dismiss");
+    await pageK.keyboard.press("Enter");
+    await pageK.waitForTimeout(60);
+    assert.equal(await pageK.evaluate(() => document.activeElement === document.body), false, "A-10: #btn-unlock-dismiss must not drop focus to BODY");
+
+    await pageK.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      g.realm = "qi";
+      g.seenUnlockIds = [];
+      api.queueNewUnlockCardsForState(g);
+      api.flushNewUnlockCard();
+    });
+    await pageK.waitForSelector("#new-unlock-card #btn-unlock-try", { state: "visible" });
+    await pageK.focus("#btn-unlock-try");
+    await pageK.keyboard.press("Enter");
+    await pageK.waitForTimeout(60);
+    assert.equal(await pageK.evaluate(() => document.activeElement === document.body), false, "A-10: #btn-unlock-try must not drop focus to BODY");
+
+    // 3) #gear-compare-card Step 1 smelt-arm & compare-keep-bag
+    await pageK.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const item = api.rollGearItem(2, 2, "weapon");
+      item.name = "玄品·焦点试剑";
+      item.sell = 40;
+      api.acquireGearItem(item);
+      api.requestCalmReevaluation({ immediate: true });
+    });
+    await pageK.waitForSelector('#gear-compare-card [data-action="compare-smelt-new"]', { state: "visible" });
+    await pageK.waitForTimeout(300);
+    await pageK.focus('#gear-compare-card [data-action="compare-smelt-new"]');
+    await pageK.keyboard.press("Enter");
+    await pageK.waitForTimeout(60);
+    const smeltArmFocus = await pageK.evaluate(() => ({
+      isBody: document.activeElement === document.body,
+      activeAction: document.activeElement?.getAttribute?.("data-action") || ""
+    }));
+    assert.equal(smeltArmFocus.isBody, false, "A-10: compare-smelt-new Step 1 must NOT drop focus to BODY");
+    assert.equal(smeltArmFocus.activeAction, "compare-smelt-new", `A-10: compare-smelt-new Step 1 must refocus armed smelt button, got ${smeltArmFocus.activeAction}`);
+
+    await pageK.focus('#gear-compare-card [data-action="compare-keep-bag"]');
+    await pageK.keyboard.press("Enter");
+    await pageK.waitForTimeout(60);
+    assert.equal(await pageK.evaluate(() => document.activeElement === document.body), false, "A-10: compare-keep-bag must NOT drop focus to BODY");
+    await ctxK.close();
+  });
+
+  await runSuite("T5-4", "M7b B-1 万剑冢天雷劫 TDZ 修复与主循环存活 + B-2 造化工坊奇物/掉落硬隔离 + B-3 练习模式全链路正式养成/渡劫/存档隔离", async () => {
+    // Part A (B-1): Boss Rush rush_thunder affix must NOT throw ReferenceError or freeze mainLoop
+    const { ctx: ctx1, page: page1 } = await startCleanGamePage(browser, "T5-4-B1", true);
+    await page1.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.getState().game.realm = "nascent";
+      api.openBossRushModal();
+    });
+    await page1.waitForSelector('#modal-backdrop.open [data-rush-affix="rush_thunder"]');
+    await page1.click('#modal-backdrop.open [data-rush-affix="rush_thunder"]');
+    await page1.waitForSelector('#modal-backdrop.open [data-start-rush="1"]');
+    // Guarantee rush_thunder branch triggers promptly during the live animation loop
+    await page1.evaluate(() => {
+      window.__t5OrigRand = Math.random;
+      let calls = 0;
+      Math.random = () => (++calls <= 12 ? 0.001 : window.__t5OrigRand());
+    });
+    await page1.click('#modal-backdrop.open [data-start-rush="1"]');
+    await page1.waitForTimeout(350);
+    const t0 = await page1.evaluate(() => window.__CHENYUAN_V25__.getState().arena.bossRush?.elapsed || 0);
+    await page1.waitForTimeout(350);
+    const b1State = await page1.evaluate(() => {
+      Math.random = window.__t5OrigRand;
+      const a = window.__CHENYUAN_V25__.getState().arena;
+      return {
+        t1: a.bossRush?.elapsed || 0,
+        bolts: (a.skyBolts || []).length,
+        hasThunder: (a.rushAffixes || []).includes("rush_thunder")
+      };
+    });
+    assert.equal(b1State.hasThunder, true, "B-1: rush_thunder affix must be active");
+    assert.ok(b1State.t1 > t0 + 0.1, `B-1: mainLoop must stay alive under rush_thunder (t0=${t0}, t1=${b1State.t1})`);
+    await ctx1.close();
+
+    // Part B (B-2): Custom Workshop must NOT mutate formal game.spireCurios and must leak zero wins/starPts/loot/souls
+    const { ctx: ctx2, page: page2 } = await startCleanGamePage(browser, "T5-4-B2", true);
+    await page2.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      g.realm = "spirit";
+      g.bestSpireFloor = 0;
+      g.spireCurios = {};
+      g.wins = 0;
+      g.bonusStarPts = 0;
+      g.unlockedSouls = ["blood_warden"];
+      api.saveGame();
+      api.openCustomWorkshopModal();
+    });
+    await page2.waitForSelector("#modal-backdrop.open #sel-ws-curio");
+    await page2.selectOption("#sel-ws-curio", "16");
+    await page2.click("#btn-launch-workshop");
+    await page2.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+    const wsActiveRes = await page2.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      const inPractice = api.isPracticeModeActive();
+      const effectiveCurio = api.getCurioStacks(s.game, "curio_hongmeng_omni");
+      const formalCurioKeys = Object.keys(s.game.spireCurios || {});
+      // Kill spawned workshop boss
+      const boss = s.arena.enemies.find(e => e.isBoss) || s.arena.enemies[0];
+      if (boss) {
+        boss.hp = 1;
+        api.damageEnemy(boss, 999999, true);
+      }
+      return { inPractice, effectiveCurio, formalCurioKeys, winsAfterKill: s.game.wins, starPtsAfterKill: s.game.bonusStarPts };
+    });
+    assert.equal(wsActiveRes.inPractice, true, "B-2: Custom Workshop must activate isPracticeModeActive()");
+    assert.equal(wsActiveRes.effectiveCurio, 2, "B-2: Custom Workshop runtime overlay must grant Lv.2 test curio during the run");
+    assert.deepEqual(wsActiveRes.formalCurioKeys, [], `B-2: Formal game.spireCurios must remain empty, got: ${JSON.stringify(wsActiveRes.formalCurioKeys)}`);
+    assert.equal(wsActiveRes.winsAfterKill, 0, "B-2: Killing workshop boss must NOT increment formal wins");
+    assert.equal(wsActiveRes.starPtsAfterKill, 0, "B-2: Killing workshop boss must NOT grant formal bonusStarPts");
+
+    await page2.keyboard.press("KeyH");
+    await page2.waitForTimeout(180);
+    await page2.reload({ waitUntil: "domcontentloaded" });
+    await page2.waitForSelector("#btn-continue-save", { state: "visible" });
+    await page2.click("#btn-continue-save");
+    await page2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+    const wsReloaded = await page2.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      return {
+        spireCurios: g.spireCurios,
+        effectiveCurioAfterExit: api.getCurioStacks(g, "curio_hongmeng_omni"),
+        wins: g.wins,
+        bonusStarPts: g.bonusStarPts,
+        bestSpireFloor: g.bestSpireFloor,
+        unlockedSouls: g.unlockedSouls
+      };
+    });
+    assert.deepEqual(wsReloaded.spireCurios, {}, "B-2: Persisted formal spireCurios must remain empty across reload");
+    assert.equal(wsReloaded.effectiveCurioAfterExit, 0, "B-2: Runtime workshop curio overlay must clear after leaving workshop");
+    assert.equal(wsReloaded.wins, 0, "B-2: Persisted wins must remain 0");
+    assert.equal(wsReloaded.bonusStarPts, 0, "B-2: Persisted bonusStarPts must remain 0");
+    assert.equal(wsReloaded.unlockedSouls.length, 1, "B-2: Workshop boss must NOT leak soul unlocks");
+    await ctx2.close();
+
+    // Part C (B-3): Practice Mode blocks formal alchemy, batch craft, blood_fury_pill, meditation XP, live tribulation, saveGame & saveMeta
+    const { ctx: ctx3, page: page3 } = await startCleanGamePage(browser, "T5-4-B3", true);
+    await page3.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      g.realm = "spirit";
+      g.xp = 0;
+      g.stones = 1200;
+      g.elapsedMonths = 12;
+      g.atkFlatBonus = 0;
+      g.inventory = { herb: 15, core: 6, healing_pill: 0, blood_fury_pill: 2, ascension_seal: 0 };
+      g.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
+      api.saveGame();
+      api.saveMeta();
+      api.startBossRushGauntlet(7);
+    });
+    await page3.waitForTimeout(120);
+    const b3Probe = await page3.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      const inPractice = api.isPracticeModeActive();
+      const qCraftOk = api.executeAlchemyQuickCraft("healing");
+      const batchRes = api.executeAlchemyBatchCraft("ascension", 5);
+      api.consumeInventoryItem("blood_fury_pill");
+      const saveOk = api.saveGame();
+      const metaOk = api.saveMeta();
+      // Attempt meditation XP & live tribulation
+      s.game.xp = s.realmSpec.xpCap;
+      api.openTribulationPrepModal();
+      const tribModalOpen = Boolean(document.getElementById("modal-backdrop")?.classList.contains("open"));
+      api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+      const tribStarted = Boolean(s.arena.tribulation);
+      // Reset xp to 0 and meditate briefly
+      s.game.xp = 0;
+      s.arena.player.meditating = true;
+      s.arena.player.meditateTick = 0.65;
+      return {
+        inPractice,
+        qCraftOk,
+        batchOk: Boolean(batchRes && batchRes.ok),
+        saveOk,
+        metaOk,
+        tribModalOpen,
+        tribStarted,
+        stones: s.game.stones,
+        healingPill: s.game.inventory.healing_pill || 0,
+        ascensionSeal: s.game.inventory.ascension_seal || 0,
+        bloodFury: s.game.inventory.blood_fury_pill || 0,
+        atkFlatBonus: s.game.atkFlatBonus,
+        elapsedMonths: s.game.elapsedMonths,
+        realm: s.game.realm
+      };
+    });
+    await page3.waitForTimeout(250);
+    const xpAfterPracticeMed = await page3.evaluate(() => window.__CHENYUAN_V25__.getState().game.xp);
+    assert.equal(b3Probe.inPractice, true, "B-3: Boss Rush Wave 7 must be in Practice Mode");
+    assert.equal(b3Probe.qCraftOk, false, "B-3: Quick Craft must be blocked in Practice Mode");
+    assert.equal(b3Probe.batchOk, false, "B-3: Batch Craft must be blocked in Practice Mode");
+    assert.equal(b3Probe.saveOk, false, "B-3: saveGame() must return false in Practice Mode");
+    assert.equal(b3Probe.metaOk, false, "B-3: saveMeta() must return false in Practice Mode");
+    assert.equal(b3Probe.tribModalOpen, false, "B-3: openTribulationPrepModal must be blocked in Practice Mode");
+    assert.equal(b3Probe.tribStarted, false, "B-3: startLiveTribulation must be blocked in Practice Mode");
+    assert.equal(b3Probe.stones, 1200, "B-3: Practice Mode must not deduct formal stones");
+    assert.equal(b3Probe.healingPill, 0, "B-3: Practice Mode must not craft formal healing_pill");
+    assert.equal(b3Probe.ascensionSeal, 0, "B-3: Practice Mode must not batch-craft formal ascension_seal");
+    assert.equal(b3Probe.bloodFury, 2, "B-3: Practice Mode must not consume formal blood_fury_pill");
+    assert.equal(b3Probe.atkFlatBonus, 0, "B-3: Practice Mode must not grant 0-aging permanent atkFlatBonus");
+    assert.equal(xpAfterPracticeMed, 0, `B-3: Practice Mode meditation must NOT grant formal 0-aging XP, got ${xpAfterPracticeMed}`);
+
+    await page3.keyboard.press("KeyH");
+    await page3.waitForTimeout(180);
+    const b3Disk = await page3.evaluate(({ sk, mk }) => ({
+      save: JSON.parse(localStorage.getItem(sk)),
+      meta: JSON.parse(localStorage.getItem(mk) || "{}")
+    }), { sk: STORAGE_KEY, mk: META_KEY });
+    assert.equal(b3Disk.save.game.realm, "spirit", "B-3: Formal save realm must remain unchanged");
+    assert.equal(b3Disk.save.game.elapsedMonths, 12, "B-3: Formal save elapsedMonths must remain 12");
+    assert.equal(Number(b3Disk.meta.ascensions) || 0, 0, "B-3: META_KEY ascensions must remain 0");
+    await ctx3.close();
+  });
+
+  await runSuite("T5-5", "M7b B-4 满酿仙葫限洞府 + B-5 渡劫禁H/舆图逃逸 + B-6 星图0点不静默扣60石 + B-7 2P/天时热键门控与冷却 + B-8 洞府出征闭关老化落盘", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "T5-5", true);
+
+    // Part A (B-4): refill-gourd-now disabled & rejected outside calm Sanctum, works in calm Sanctum
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.seenCutscenes = Object.assign({}, s.game.seenCutscenes, { enter_sect: true });
+      api.initArenaStage(1, false);
+      if (!s.arena.enemies.some(e => e.hp > 0 && !e.isDummy && !e.isTreasure)) {
+        api.spawnSingleEnemy("wolf", 950, 460, 1.0, false);
+      }
+      s.game.gourd.charges = 0;
+      api.updateHud();
+    });
+    await page.click("#nav-btn-alchemy");
+    await page.waitForSelector('#jade-panel.drawer-open [data-action="refill-gourd-now"]');
+    const b4Combat = await page.evaluate(() => {
+      const btn = document.querySelector('#jade-panel [data-action="refill-gourd-now"]');
+      const disabled = Boolean(btn && btn.disabled);
+      // Even bypassing disabled via synthetic click must be rejected by handler
+      if (btn) {
+        btn.disabled = false;
+        btn.click();
+      }
+      return {
+        disabled,
+        chargesAfter: window.__CHENYUAN_V25__.getState().game.gourd.charges
+      };
+    });
+    assert.equal(b4Combat.disabled, true, "B-4: refill-gourd-now button must be disabled outside calm Sanctum");
+    assert.equal(b4Combat.chargesAfter, 0, "B-4: refill-gourd-now handler must reject mid-combat refill");
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.getElementById("jade-panel")?.classList.contains("drawer-open"));
+
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      api.enterSanctumHub();
+      api.getState().game.gourd.charges = 0;
+      api.updateHud();
+    });
+    await page.click("#nav-btn-alchemy");
+    await page.waitForSelector('#jade-panel.drawer-open [data-action="refill-gourd-now"]');
+    const b4SanctumDisabled = await page.evaluate(() => Boolean(document.querySelector('#jade-panel [data-action="refill-gourd-now"]')?.disabled));
+    assert.equal(b4SanctumDisabled, false, "B-4: refill-gourd-now must be enabled in calm Sanctum");
+    await page.click('#jade-panel [data-action="refill-gourd-now"]');
+    const b4SanctumCharges = await page.evaluate(() => {
+      const g = window.__CHENYUAN_V25__.getState().game.gourd;
+      return { charges: g.charges, maxCharges: g.maxCharges };
+    });
+    assert.equal(b4SanctumCharges.charges, b4SanctumCharges.maxCharges, "B-4: refill-gourd-now in calm Sanctum must refill gourd to maxCharges");
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.getElementById("jade-panel")?.classList.contains("drawer-open"));
+
+    // Part B (B-5): H, #btn-sanctum-hub, and World Map travel blocked during active Live Tribulation
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "qi";
+      s.game.xp = api.getState().realmSpec.xpCap;
+      s.game.defeatedStageBosses = { 0: true, 1: true };
+      api.initArenaStage(1, false);
+      api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+      s.game.hp = 15;
+      api.focusBattlefield();
+    });
+    assert.equal(await page.evaluate(() => Boolean(window.__CHENYUAN_V25__.getState().arena.tribulation)), true, "B-5 precondition: Live Tribulation must be active");
+    await page.keyboard.press("KeyH");
+    await page.click("#btn-sanctum-hub");
+    await page.keyboard.press("KeyM");
+    await page.waitForTimeout(80);
+    const b5Res = await page.evaluate(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      return {
+        tribActive: Boolean(s.arena.tribulation),
+        sanctumMode: Boolean(s.arena.sanctumMode),
+        modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open")),
+        hp: s.game.hp
+      };
+    });
+    assert.equal(b5Res.tribActive, true, "B-5: Active Live Tribulation must NOT be cancelled by H / #btn-sanctum-hub / M");
+    assert.equal(b5Res.sanctumMode, false, "B-5: Must NOT escape to Sanctum Hub during active Live Tribulation");
+    assert.equal(b5Res.modalOpen, false, "B-5: World Map modal must NOT open during active Live Tribulation");
+    assert.ok(b5Res.hp <= 20, "B-5: Player must NOT receive free hub full-heal escape during tribulation");
+    // Clear tribulation cleanly for next subtests
+    await page.evaluate(() => { window.__CHENYUAN_V25__.getState().arena.tribulation = null; });
+
+    // Part C (B-6): Star Chart at 0 available Star Points must NOT silently deduct 60 stones on unlit node click
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const g = api.getState().game;
+      g.realm = "golden";
+      g.stones = 200;
+      g.litStars = [];
+      api.openStarChartModal();
+    });
+    await page.waitForSelector("#modal-backdrop.open [data-light-star]");
+    // Exhaust all free star points cleanly
+    for (let i = 0; i < 20; i++) {
+      const left = await page.evaluate(() => {
+        const txt = document.querySelector("#modal-content")?.textContent || "";
+        const m = txt.match(/可用星魂点：\s*(\d+)/);
+        return m ? Number(m[1]) : 0;
+      });
+      if (left <= 0) break;
+      await page.click('#modal-content [data-light-star]:not(.lit)');
+      await page.waitForTimeout(30);
+    }
+    const b6Before = await page.evaluate(() => {
+      const g = window.__CHENYUAN_V25__.getState().game;
+      const tc = document.getElementById("toast-container");
+      if (tc) tc.innerHTML = "";
+      return { stones: g.stones, litCount: g.litStars.length };
+    });
+    await page.click('#modal-content [data-light-star]:not(.lit)');
+    await page.waitForTimeout(60);
+    const b6After = await page.evaluate(() => {
+      const g = window.__CHENYUAN_V25__.getState().game;
+      return {
+        stones: g.stones,
+        litCount: g.litStars.length,
+        toasts: Array.from(document.querySelectorAll("#toast-container .toast-pill")).map(x => x.textContent || "").join(" | ")
+      };
+    });
+    assert.equal(b6After.stones, b6Before.stones, "B-6: Clicking unlit star node at 0 Star Points must NOT silently deduct 60 stones");
+    assert.equal(b6After.litCount, b6Before.litCount, "B-6: Clicking unlit star node at 0 Star Points must NOT light star");
+    assert.ok(b6After.toasts.includes("凝炼星魂"), `B-6: Must show explicit guidance toast, got: ${b6After.toasts}`);
+    // Explicit buy button still works
+    await page.click('#modal-content [data-action="buy-star-point"]');
+    await page.waitForTimeout(60);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones), b6Before.stones - 60, "B-6: Explicit buy-star-point button must deduct 60 stones");
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+
+    // Part D (B-7): ]/[ /\ blocked in photoMode/paused, 2P Co-Op gated by realm & bonded companions, Righteous dawn shield cooldown
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.realm = "mortal";
+      s.game.aids = { shen: false, pei: false, lu: false, yan: false };
+      s.game.bondTiers = { shen: 0, pei: 0, lu: 0, yan: 0 };
+      s.game.karmaScore = 60;
+      s.arena.player.shieldHp = 0;
+      window.__CHENYUAN_V23__.toggleLocalCoop2P(false);
+      window.__CHENYUAN_V23__.setCelestialTimePhase(0, true);
+      api.focusBattlefield();
+    });
+    await page.keyboard.press("KeyP");
+    await page.waitForTimeout(80);
+    await page.keyboard.press("BracketRight");
+    await page.keyboard.press("BracketLeft");
+    for (let i = 0; i < 4; i++) await page.keyboard.press("Backslash");
+    await page.waitForTimeout(60);
+    const b7Photo = await page.evaluate(() => ({
+      paused: window.__CHENYUAN_V25__.getState().arena.paused,
+      coopActive: window.__CHENYUAN_V23__.getState().coop2P.active,
+      shieldHp: window.__CHENYUAN_V25__.getState().arena.player.shieldHp
+    }));
+    assert.equal(b7Photo.paused, true, "B-7: Photo Mode must pause arena");
+    assert.equal(b7Photo.coopActive, false, "B-7: ]/[ must NOT activate 2P Co-Op during Photo Mode / paused");
+    assert.equal(b7Photo.shieldHp, 0, "B-7: \\ must NOT grant dawn shield during Photo Mode / paused");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(80);
+
+    // Unpaused Mortal with 0 bonded companions -> ]/[ still blocked
+    await page.keyboard.press("BracketRight");
+    await page.keyboard.press("BracketLeft");
+    const b7MortalBlocked = await page.evaluate(() => window.__CHENYUAN_V23__.getState().coop2P.active);
+    assert.equal(b7MortalBlocked, false, "B-7: Mortal realm with 0 bonded companions must NOT activate 2P Co-Op");
+
+    // Foundation with ONLY shen bonded -> activates shen, [ does NOT summon unbonded pei/lu/yan
+    await page.evaluate(() => {
+      const g = window.__CHENYUAN_V25__.getState().game;
+      g.realm = "foundation";
+      g.aids = { shen: true, pei: false, lu: false, yan: false };
+      g.bondTiers = { shen: 1, pei: 0, lu: 0, yan: 0 };
+      window.__CHENYUAN_V25__.focusBattlefield();
+    });
+    await page.keyboard.press("BracketRight");
+    await page.keyboard.press("BracketLeft");
+    const b7Bonded = await page.evaluate(() => ({
+      active: window.__CHENYUAN_V23__.getState().coop2P.active,
+      partnerId: window.__CHENYUAN_V23__.getState().coop2P.partnerId
+    }));
+    assert.equal(b7Bonded.active, true, "B-7: Foundation realm with bonded shen must allow 2P Co-Op");
+    assert.equal(b7Bonded.partnerId, "shen", `B-7: [ must only cycle among bonded companions, got ${b7Bonded.partnerId}`);
+
+    // Righteous dawn shield spam cooldown via \
+    await page.evaluate(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      s.game.karmaScore = 60;
+      s.arena.player.shieldHp = 0;
+      window.__CHENYUAN_V23__.setCelestialTimePhase(3, true); // star_night
+      window.__CHENYUAN_V25__.focusBattlefield();
+    });
+    // 1st transition to dawn -> grants shield
+    await page.keyboard.press("Backslash");
+    const shield1 = await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.player.shieldHp);
+    assert.ok(shield1 > 0, "B-7: First Righteous dawn transition must grant shield");
+    // Zero shield and immediately spam 4x \ back to dawn -> must NOT refresh shield (cooldown active)
+    await page.evaluate(() => { window.__CHENYUAN_V25__.getState().arena.player.shieldHp = 0; });
+    for (let i = 0; i < 4; i++) await page.keyboard.press("Backslash");
+    const shield2 = await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.player.shieldHp);
+    assert.equal(shield2, 0, `B-7: Spamming \\ within cooldown must NOT refresh Righteous dawn shield (got ${shield2})`);
+
+    // Part E (B-8): initArenaStage flushes meditateAgedDirty to STORAGE_KEY on Hub -> Stage departure
+    await page.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const s = api.getState();
+      s.game.elapsedMonths = 10;
+      s.game.xp = 0;
+      api.enterSanctumHub();
+      api.saveGame();
+      api.focusBattlefield();
+    });
+    await page.keyboard.press("KeyB");
+    await page.waitForFunction(() => window.__CHENYUAN_V25__.getState().arena.player.meditating === true, null, { timeout: 2500 });
+    await page.evaluate(() => {
+      window.__CHENYUAN_V25__.getState().arena.player.meditateAgeTick = 3.01;
+    });
+    await page.waitForFunction(() => {
+      const s = window.__CHENYUAN_V25__.getState();
+      return s.game.elapsedMonths >= 11 && s.arena.player.meditateAgedDirty === true;
+    }, null, { timeout: 2500 });
+    // Depart Hub -> Stage 0 via KeyH
+    await page.keyboard.press("KeyH");
+    await page.waitForFunction(() => window.__CHENYUAN_V25__.getState().arena.sanctumMode === false, null, { timeout: 3000 });
+    const b8AfterDepart = await page.evaluate((sk) => {
+      const s = window.__CHENYUAN_V25__.getState();
+      const disk = JSON.parse(localStorage.getItem(sk));
+      return {
+        sanctumMode: s.arena.sanctumMode,
+        meditating: s.arena.player.meditating,
+        dirty: s.arena.player.meditateAgedDirty,
+        memMonths: s.game.elapsedMonths,
+        diskMonths: disk?.game?.elapsedMonths
+      };
+    }, STORAGE_KEY);
+    assert.equal(b8AfterDepart.sanctumMode, false, "B-8: KeyH from Hub must depart to Stage");
+    assert.equal(b8AfterDepart.meditating, false, "B-8: Departure must stop meditation");
+    assert.equal(b8AfterDepart.dirty, false, "B-8: Departure must clear meditateAgedDirty");
+    assert.equal(b8AfterDepart.diskMonths, b8AfterDepart.memMonths, `B-8: Departure must flush meditateAgedDirty to STORAGE_KEY (mem=${b8AfterDepart.memMonths}, disk=${b8AfterDepart.diskMonths})`);
     await ctx.close();
   });
 } finally {

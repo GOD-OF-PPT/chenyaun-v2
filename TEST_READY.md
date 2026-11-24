@@ -1,16 +1,16 @@
 # E2E Acceptance Suite Ready (`TEST_READY.md`)
 
 - **Restored In**: `codex/q0-infra-and-tests` (F04, extracted read-only from `origin/codex/e2e-suite` @ `34f6dd52` and statically audited against M2–M6 `web/public/playable-v2.html`)
-- **Latest Full-Pass Verification**: `codex/e2e-pass` (M7a, based on `origin/main` @ `6946074`, post-M2–M6 + Q0–Q2 + ported `7ca198c` runtime fixes P1–P10, PR #23 P11, Round 1 & Round 2 gate fixes: dual-error corrupt/read-only/quota HUD recovery with immediate user-initiated write-failure feedback & off-`BODY` focus preservation, atomic conflict overwrite under quota failure, cutscene popover focus retention, and 15-field `META_KEY` CRDT D1–D4 + live corrupt-meta `R2-D1` protection; plus Round 3 test-only `BLOCKER-R3-1` Chromium Mojo `StorageArea` IPC convergence hardening in `E2E-T1-05` & `R7-2` Part E)
+- **Latest Full-Pass Verification**: `codex/adversarial-hardening` (M7b, based on `origin/main` @ `2b1ca3a` / M7a PR #25, fixing all 19 empirically reproduced Surface A `A-1..A-11` & Surface B `B-1..B-8` white-box adversarial defects and encoding permanent Tier 5 regression `T5-1..T5-5` & E2E `E2E-T5-01..08` suites)
 - **Runner Command**: `npm ci && npm run test:e2e`
 - **Scoped Runs**:
-  - Single tier: `npm run test:e2e -- --tier 1` (supports `1`, `2`, `3`, `4`, comma-separated e.g. `1,2`, or `all`)
+  - Single tier: `npm run test:e2e -- --tier 1` (supports `1`, `2`, `3`, `4`, `5`, comma-separated e.g. `1,2`, or `all`)
   - Filtered run: `npm run test:e2e -- --filter <substring|/regex/i>`
   - JSON report: `npm run test:e2e -- --report <file>`
 - **Environment**: Built-in cached static HTTP server (`web/public`, `127.0.0.1` ephemeral port), `1440×900` desktop Chromium/Chrome (`CHROMIUM_PATH` fallback `/usr/bin/chromium`, `/usr/bin/chromium-browser`, `/usr/bin/google-chrome`), fresh isolated `BrowserContext` per test, strict `0` `console.error` / `pageerror` gate.
-- **Current Verification Status (M7a — 100% PASS)**: Full 1440×900 desktop Chrome/Chromium automated verification completed post-M2–M6, Q0–Q2 (PR #20–#23), M7a runtime + Round 1 & Round 2 Challenger fixes, and Round 3 test-only Mojo `StorageArea` IPC hardening (`BLOCKER-R3-1`): **15/15 `E2E-T1-05` stress PASS**, **3/3 `R7-2` stress PASS**, **56/56 E2E PASS (0 FAIL, 0 runtime errors)** across Tier 1→4, and **60/60 Regression PASS (0 FAIL, 0 runtime errors)** (`vm.Script` inline JS syntax check & `art:manifest:check` PASS). Per user directive (`ORIGINAL_REQUEST.md`), no separate manual smoke test was run; static HTTP end-user verification is fulfilled by the automated 1440×900 isolated-context suites. Historical pre-M2 baseline (`29daf69`) is preserved at the bottom.
+- **Current Verification Status (M7b — 100% PASS)**: Full 1440×900 desktop Chrome/Chromium automated verification completed post-M7a (PR #25 `2b1ca3a`) and M7b Tier 5 adversarial hardening: **64/64 E2E PASS (0 FAIL, 0 runtime errors)** across Tier 1→5, and **65/65 Regression PASS (0 FAIL, 0 runtime errors)** (`vm.Script` inline JS syntax check, single `arena.paused =` writer at L18020, `art:manifest:check`, and 7 CLI exit-code-`2` guards PASS). Per user directive (`ORIGINAL_REQUEST.md`), no separate manual smoke test was run; static HTTP end-user verification is fulfilled by the automated 1440×900 isolated-context suites. Historical pre-M2 baseline (`29daf69`) and M7a (`2b1ca3a`) records are preserved below.
 
-## Tier Breakdown (56 Tests Total)
+## Tier Breakdown (64 Tests Total)
 
 | Tier | File | Test Count | Focus |
 |---|---|---|---|
@@ -18,6 +18,7 @@
 | Tier 2 | `tests/e2e/tiers/tier2-boundaries.mjs` | 12 | Boundary & corner cases, including all 5 mandatory save scenarios (fresh start, legacy `eb0ea67` resume/migration, reload, `QuotaExceededError`, multi-tab contention) |
 | Tier 3 | `tests/e2e/tiers/tier3-combinations.mjs` | 10 | Cross-feature pairwise combinations |
 | Tier 4 | `tests/e2e/tiers/tier4-journeys.mjs` | 3 | Real-world end-user gameplay journeys |
+| Tier 5 | `tests/e2e/tiers/tier5-adversarial.mjs` | 8 | White-box adversarial hardening (`E2E-T5-01..E2E-T5-08`) covering all 19 reproduced Surface A (`A-1..A-11`) & Surface B (`B-1..B-8`) defects |
 
 ## Feature Inventory Coverage Matrix (`PROJECT.md § Feature Inventory`)
 
@@ -56,7 +57,32 @@
 | **G11b** 数据清理 | M6 | `E2E-T1-30` | — | — | `E2E-T4-03` |
 | **G12** 闭关吸附掉落 | M6 | `E2E-T1-31` | — | `E2E-T3-10` | — |
 
-## Latest Post-M2–M6 / Q0–Q2 / M7a Verification Results (100% PASS)
+## Latest Post-M7b Tier 5 Adversarial Hardening Verification Results (100% PASS)
+
+- **Branch / Base**: `codex/adversarial-hardening` (M7b, based on `origin/main` @ `2b1ca3a` / M7a PR #25; fixes all 19 reproduced white-box defects `A-1..A-11` & `B-1..B-8`, keeps all 60 pre-existing regression suites `M1-1..R7-3` and all 56 pre-existing Tier 1–4 E2E tests byte-for-byte untouched, and permanently encodes `T5-1..T5-5` & `E2E-T5-01..E2E-T5-08`)
+- **Verified At (UTC)**: `2026-11-24T05:54:11Z`–`06:11:47Z` (static/CLI gates, full 65/65 regression, ordered Tier 1→5 E2E, and combined 64/64 E2E on final post-edit code)
+- **Browser & Toolchain**: `/usr/bin/google-chrome` (`Google Chrome 158.0.8127.36`, Chromium-based; `CHROMIUM_PATH` unset → `/usr/bin/google-chrome` fallback; Chrome 158 vs upstream Chromium honestly noted per `PROJECT.md`), Node.js `v22.23.5`, `playwright-core@1.65.1`, viewport `1440×900`, fresh isolated `BrowserContext` per suite/test
+- **Runtime errors (`console.error` / `pageerror`)**: **0** across all 65 regression suites, all ordered Tier 1–5 E2E runs, and the combined 64/64 E2E run
+- **Verification Scope Note**: Per user directive (`ORIGINAL_REQUEST.md`), no separate manual smoke test was executed; all static HTTP player-interaction verification is performed via the automated 1440×900 Playwright regression & E2E suites.
+- **Pre-Fix Red-Before-Green Proof**: Prior to editing `web/public/playable-v2.html`, running `--filter T5-` failed `0/5` (`T5-1..T5-5` all failed genuinely, including `[T5-4-B1 pageerror] Cannot access 'w' before initialization`) and `--tier 5` failed `0/8` (`E2E-T5-01..08` all failed genuinely).
+- **Static & Provenance Gates (`05:54:11Z`–`05:54:14Z`)**:
+  - Inline `<script>` syntax validation (`vm.Script`) → PASS (`VM_SCRIPT_OK scripts=1`, single `arena.paused = pauseTokens.size > 0;` writer at L18020, exit `0`)
+  - `node --check` across all `scripts/*.mjs` & `tests/e2e/**/*.mjs` → PASS (`NODE_CHECK_ALL_MJS=OK`)
+  - `npm run art:manifest:check` → PASS (`115 inline assets, 11 disk files, 1 other inline asset`, exit `0`)
+  - CLI exit-code-`2` guard checks (`--tier 0`, `--tier 6`, `--tier foo`, `--tier 1,6`, `--unknown-flag`, `--filter`, `--report`) → all 7 exit `2`; `--help` documents `--tier <1|2|3|4|5|all>`
+- **Regression Suite**:
+  - **Full 65-suite run (`npm run test:regression -- --report <scratch>/reg-65.json`, `05:54:24Z`–`06:01:42Z`)**: `65/65 PASS` (`T5-1` `6358ms`, `T5-2` `12423ms`, `T5-3` `18615ms`, `T5-4` `9856ms`, `T5-5` `8140ms`), `0 FAIL`, `0 ERROR`, `0 SKIPPED`, `runtimeErrors=0`, `duration=437790ms` (`schemaVersion: 2`, Chrome `158.0.8127.36`, `1440×900`, exit code `0`)
+  - **Coverage**: `M1-1..M4-4` (19) + `P1-1..P5-1` (5) + `R2-1..R2-7` (7) + `R3-1..R6-3` (13) + `Q0-1..Q2-5` (13) + `R7-1..R7-3` (3) + `T5-1..T5-5` (5)
+- **E2E Ordered Tier-by-Tier Verification (`npm run test:e2e -- --tier <1|2|3|4|5>`)**:
+  - **Tier 1** (`--tier 1`, `06:02:01Z`–`06:04:05Z`): `31/31 PASS`, `0 FAIL`, `runtimeErrors=0` (`elapsed=122846ms`, tests `122346ms`, exit `0`)
+  - **Tier 2** (`--tier 2`, `06:04:05Z`–`06:04:52Z`): `12/12 PASS`, `0 FAIL`, `runtimeErrors=0` (`elapsed=45664ms`, tests `45202ms`, exit `0`)
+  - **Tier 3** (`--tier 3`, `06:04:52Z`–`06:05:44Z`): `10/10 PASS`, `0 FAIL`, `runtimeErrors=0` (`elapsed=51212ms`, tests `50823ms`, exit `0`)
+  - **Tier 4** (`--tier 4`, `06:05:44Z`–`06:06:02Z`): `3/3 PASS`, `0 FAIL`, `runtimeErrors=0` (`elapsed=17586ms`, tests `17057ms`, exit `0`)
+  - **Tier 5** (`--tier 5`, `06:06:02Z`–`06:06:52Z`): `8/8 PASS`, `0 FAIL`, `runtimeErrors=0` (`elapsed=48557ms`, tests `48115ms`, exit `0`)
+- **E2E Combined Run (`npm run test:e2e -- --report <scratch>/e2e-64.json`, `06:06:52Z`–`06:11:47Z`)**:
+  - **Total**: `64/64 PASS`, `0 FAIL`, `runtimeErrors=0`, `elapsed=293654ms` (`schemaVersion: 1`, Tier 1 `125171ms`, Tier 2 `45319ms`, Tier 3 `54949ms`, Tier 4 `17891ms`, Tier 5 `49481ms`, exit code `0`)
+
+## Prior M7a Verification Results (PR #25 @ `2b1ca3a`, 100% PASS)
 
 - **Branch / Base**: `codex/e2e-pass` (based on `origin/main` @ `6946074`, preserving PR #23 Q2 F14–F18 & `P11`, with ported `7ca198c` runtime fixes P1–P10, Round 1 fixes `DEFECT-1` / `FINDING-2` / `CRDT D1–D4` covering all 15 monotonic fields of `META_KEY` with live re-read zero write amplification, Round 2 Challenger fixes `R2-D1` / `DEFECT-R2-1` / `DEFECT-R2-2` for live corrupt-meta validation before clearing `metaReadError`, immediate user-initiated write-failure toast + off-`BODY` focus preservation on `retry-save-now`/`overwrite-with-current-save`/`dismiss-save-alert`, and atomic failure handling for `save_conflict` / read-only overwrites, plus Round 3 test-only `BLOCKER-R3-1` Chromium Mojo `StorageArea` IPC convergence hardening in `E2E-T1-05` — polling both renderers for converged `metaRev >= 2` & merged union + verifying cross-tab equality without weakening any assertion — and `R7-2` Part E D1–D3 replication/healing `metaRev > staleRev` verification, leaving `web/public/playable-v2.html` byte-identical to `e25a660`)
 - **Verified At (UTC)**: `2026-11-24T03:33:18Z`–`03:51:17Z` (post-Round-3-test-hardening static/CLI gates, 15x `E2E-T1-05` stress, 3x `R7-2` stress, full 60/60 regression, ordered Tier 1–4 E2E, and combined 56/56 E2E on final code)
