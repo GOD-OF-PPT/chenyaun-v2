@@ -192,14 +192,15 @@ export const VOL5_RESONANCE_PILLARS = [
   {
     id: "sect_defense",
     name: "护山大阵",
-    short: "护宗功勋",
+    short: "护阵破劫",
     sysId: "sect_defense",
     minRealm: "foundation",
     actionId: "start_sect_defense",
-    summary: "击退三波百鬼夜行取得护宗功勋",
+    summary: "击退三波百鬼夜行守卫护山大阵",
     check: (g) => {
-      const m = Math.max(0, Math.floor(num(g && g.sectMerits, 0)));
-      return { active: m >= 1, progressText: m >= 1 ? `功勋 ×${m}` : "待守阵" };
+      const grade = (g && typeof g.sectDefenseBestGrade === "string") ? g.sectDefenseBestGrade.trim() : "";
+      const active = Boolean(g && (g.sectDefenseCleared || (grade && ["C", "B", "A", "S"].includes(grade))));
+      return { active, progressText: active ? `${grade || "已破"} 级 ✓` : "待守阵" };
     }
   }
 ];
@@ -264,7 +265,7 @@ export function getExpeditionNodeStageSynergy(g, nodeId) {
     return { mult: 1.0, tier: "base", label: "基础产出", stageIdx: -1, stageName: "", stars: 0 };
   }
   const idx = mapped.stageIdx;
-  const rawStars = (g && Array.isArray(g.stageStars)) ? num(g.stageStars[idx], 0) : 0;
+  const rawStars = (g && g.stageStars && typeof g.stageStars === "object") ? num(g.stageStars[idx], 0) : 0;
   const stars = Math.max(0, Math.min(3, Math.floor(rawStars)));
   const bossDefeated = Boolean(g && g.defeatedStageBosses && g.defeatedStageBosses[idx]);
   if (stars >= 3) {

@@ -759,7 +759,7 @@
     game.mp = prevMp;
     arena.player.allyCd = 0;
     spawnSectDefenseWave(1);
-    showBossCutIn("prop_guardian_sword_pylon", "护山大阵 · 百鬼夜行守卫战", `协同 ${towers.length} 座【护山剑阵灵塔】与道侣抵御三波立体妖潮，赢取鸿蒙星魄与护宗功勋！`);
+    showBossCutIn("prop_guardian_sword_pylon", "护山大阵 · 百鬼夜行守卫战", `协同 ${towers.length} 座【护山剑阵灵塔】与道侣抵御三波立体妖潮，赢取鸿蒙星魄、灵石与核心灵材！`);
     updateBossBannerAndRecallOrb();
     updateHud();
   }
@@ -768,12 +768,17 @@
     if (!game || !summary) return;
     const isWin = !!summary.victory;
     const corePct = summary.maxCoreHp > 0 ? Math.max(0, Math.round((summary.coreHp / summary.maxCoreHp) * 100)) : 0;
+    const sdGrade = isValidUnifiedGrade(summary.grade)
+      ? summary.grade
+      : computeModeGrade("sect_defense", { victory: isWin, coreHp: summary.coreHp, maxCoreHp: summary.maxCoreHp });
+    const coreGained = Math.max(0, Math.floor(num(summary.coreGained, 0)));
+    const jadeGained = Math.max(0, Math.floor(num(summary.jadeGained, 0)));
     openModal(`
       <div class="drawer-mural-banner" style="height:88px;">
         <img src="${ART.arena_sanctum_hub}" alt="护山大阵战报" />
         <div class="drawer-mural-overlay">
           <div>
-            <span class="cinnabar-seal">${isWin ? "护宗大捷" : "结界重整"}</span>
+            <span class="cinnabar-seal">${isWin ? `护宗大捷 · ${escapeHtml(sdGrade)} 级` : `结界重整 · ${escapeHtml(sdGrade)} 级`}</span>
             <h2 style="font-family:var(--font-serif);font-size:20px;color:${isWin ? "var(--gold-bright)" : "#ffb4ae"};margin-top:3px;">${isWin ? "🛡 护山大阵守卫战 · 三波妖潮全歼！" : "⚠ 护山灵脉受创 · 洞府结界已重整"}</h2>
           </div>
           <button type="button" class="btn-ghost" data-modal-close="1">返回洞府 ✕</button>
@@ -781,13 +786,13 @@
       </div>
       <div class="jade-card" style="gap:6px;padding:10px 12px;">
         <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11.5px;">
+          <span class="tag-chip ${sdGrade === "S" ? "mythic" : isWin ? "done" : ""}">守阵评定：${escapeHtml(sdGrade)} 级${game.sectDefenseBestGrade ? `（最佳 ${escapeHtml(game.sectDefenseBestGrade)} 级）` : ""}</span>
           <span class="tag-chip ${isWin ? "mythic" : ""}">抵御波次：${summary.wavesCleared}/${summary.maxWaves}</span>
           <span class="tag-chip done">灵脉余量：${Math.max(0, Math.round(summary.coreHp))}/${Math.round(summary.maxCoreHp)} (${corePct}%)</span>
-          ${isWin ? `<span class="tag-chip mythic">护宗功勋：×${num(game.sectMerits, 1)}</span>` : ""}
         </div>
         <div style="font-size:12px;color:#dff7f2;line-height:1.55;">
           ${isWin
-            ? `已获赐 <b>鸿蒙星魄 +${summary.starPtsGained}</b>、<b>灵石 +${summary.stonesGained}</b>${summary.atkGranted > 0 ? `、<b>永久剑攻 +${summary.atkGranted}</b>` : "（本境永久剑攻已达上限）"}，并点亮【诸天道果共鸣 · 护山大阵】柱！`
+            ? `已获赐 <b>鸿蒙星魄 +${summary.starPtsGained}</b>、<b>灵石 +${summary.stonesGained}</b>、<b>妖核 ×${coreGained}</b>、<b>地脉灵玉 ×${jadeGained}</b>${summary.atkGranted > 0 ? `、<b>永久剑攻 +${summary.atkGranted}</b>` : "（本境永久剑攻已达上限）"}，并点亮【诸天道果共鸣 · 护山大阵】柱！`
             : "灵脉受损后听雨洞府已自动恢复安全休整状态，可升级【护山大阵】增筑北护山剑塔或整备丹药神兵后再战！"}
         </div>
       </div>
@@ -845,7 +850,19 @@
       }
     }
     if (sd.coreHp <= 0) {
-      const failSummary = { victory: false, wavesCleared: Math.max(0, sd.wave - 1), maxWaves: sd.maxWaves, coreHp: 0, maxCoreHp: sd.maxCoreHp, stonesGained: 0, starPtsGained: 0, atkGranted: 0 };
+      const failSummary = {
+        victory: false,
+        grade: computeModeGrade("sect_defense", { victory: false, coreHp: 0, maxCoreHp: sd.maxCoreHp }),
+        wavesCleared: Math.max(0, sd.wave - 1),
+        maxWaves: sd.maxWaves,
+        coreHp: 0,
+        maxCoreHp: sd.maxCoreHp,
+        stonesGained: 0,
+        coreGained: 0,
+        jadeGained: 0,
+        starPtsGained: 0,
+        atkGranted: 0
+      };
       sd.active = false;
       arena.sectDefense = null;
       showToast("⚠ 护山灵脉受损！已自动重整洞府结界，可随时再战！");
@@ -869,25 +886,34 @@
         const winCoreHp = sd.coreHp;
         const winMaxCoreHp = sd.maxCoreHp;
         const winMaxWaves = sd.maxWaves;
+        const sdGrade = computeModeGrade("sect_defense", { victory: true, coreHp: winCoreHp, maxCoreHp: winMaxCoreHp });
+        const jadeGained = sdGrade === "S" ? 2 : 1;
         sd.active = false;
         arena.sectDefense = null;
         game.bonusStarPts = (game.bonusStarPts || 0) + 2;
         const sdAtkRes = grantPermanentStatBonus(game, { atk: 16, source: "general" });
-        game.sectMerits = (game.sectMerits || 0) + 1;
-        game.stones += 260;
+        game.sectDefenseCleared = true;
+        game.sectDefenseBestGrade = maxUnifiedGrade(game.sectDefenseBestGrade, sdGrade);
+        game.stones += 320;
+        if (!game.inventory) game.inventory = {};
+        game.inventory.core = Math.max(0, Math.floor(num(game.inventory.core, 0))) + 2;
+        game.inventory.jade = Math.max(0, Math.floor(num(game.inventory.jade, 0))) + jadeGained;
         Sound.fanfare();
         Sound.drum(0.30);
         showToast(sdAtkRes.grantedAtk > 0
-          ? `🏆 护山大阵大捷！获赐【鸿蒙星魄×2（星魂点+2）】、剑攻永久+${sdAtkRes.grantedAtk}${sdAtkRes.atkCapped ? `（已达本境上限 ${game.atkFlatBonus}/${sdAtkRes.caps.atkFlatBonus}）` : ""} 与 260 灵石！`
-          : `🏆 护山大阵大捷！获赐【鸿蒙星魄×2（星魂点+2）】与 260 灵石（本境永久剑攻已达上限 ${game.atkFlatBonus}/${sdAtkRes.caps.atkFlatBonus}）！`);
+          ? `🏆 护山大阵大捷（${sdGrade} 级）！获赐【鸿蒙星魄×2】、320 灵石、妖核×2、地脉灵玉×${jadeGained} 与剑攻永久+${sdAtkRes.grantedAtk}${sdAtkRes.atkCapped ? `（已达本境上限 ${game.atkFlatBonus}/${sdAtkRes.caps.atkFlatBonus}）` : ""}！`
+          : `🏆 护山大阵大捷（${sdGrade} 级）！获赐【鸿蒙星魄×2】、320 灵石、妖核×2 与地脉灵玉×${jadeGained}（本境永久剑攻已达上限 ${game.atkFlatBonus}/${sdAtkRes.caps.atkFlatBonus}）！`);
         enterSanctumHub();
         openSectDefenseResultModal({
           victory: true,
+          grade: sdGrade,
           wavesCleared: winMaxWaves,
           maxWaves: winMaxWaves,
           coreHp: winCoreHp,
           maxCoreHp: winMaxCoreHp,
-          stonesGained: 260,
+          stonesGained: 320,
+          coreGained: 2,
+          jadeGained,
           starPtsGained: 2,
           atkGranted: sdAtkRes.grantedAtk
         });
@@ -1522,11 +1548,19 @@
         spawnCloudSeaAerialWave(true);
       } else {
         // Sky-Patrol Boss defeated -> Award Cloud-Sea Climax Seal & descend onto upper realm!
+        const stCloud = getCombatStats(game);
+        const cloudHpPct = stCloud.maxHp > 0 ? Math.max(0, (game.hp || 0) / stCloud.maxHp) : 0;
+        const cloudGrade = computeModeGrade("cloud_sea", {
+          victory: true,
+          deflectedCount: cf.deflectedCount || 0,
+          hpPct: cloudHpPct
+        });
         cf.active = false;
         arena.cloudFlight = null;
         p.z = 0; p.lean = 0;
         const firstClear = !game.cloudSeaCleared;
         game.cloudSeaCleared = true;
+        game.cloudSeaBestGrade = maxUnifiedGrade(game.cloudSeaBestGrade, cloudGrade);
         ensureMetaState();
         if (!sandboxMode) {
           metaState.cloudSeaClears = (metaState.cloudSeaClears || 0) + 1;
@@ -1537,7 +1571,7 @@
           const csAtkRes = grantPermanentStatBonus(game, { atk: 12, source: "general" });
           cloudAtkGranted = csAtkRes.grantedAtk;
           game.bonusStarPts = (game.bonusStarPts || 0) + 1;
-          if (Array.isArray(game.journal)) game.journal.unshift(`金丹御剑破开九霄云海防线，获【破云证道印】(+${cloudAtkGranted}攻 · 远征/登仙台收益+15%)！`);
+          if (Array.isArray(game.journal)) game.journal.unshift(`金丹御剑破开九霄云海防线（${cloudGrade} 级），获【破云证道印】(+${cloudAtkGranted}攻 · 远征/登仙台收益+15%)！`);
         }
         arena.swordIntent = 100; arena.bondSynergy = 100; arena.astralEnergy = 100;
         Sound.fanfare();
@@ -1549,8 +1583,8 @@
         acquireGearItem(cloudGear);
         saveGame();
         showToast(firstClear
-          ? `☁ 九霄云海首破功成！获【破云证道印】(常驻攻+${cloudAtkGranted} · 星魂+1 · 远征/登仙台收益+15% · 灵石+180 · 仙品【${cloudGear.name}】)！`
-          : `☁ 九霄云海破阵功成！已御剑俯冲降临【${STAGES[descendStage].name}】（剑意全满+180灵石 · 仙品【${cloudGear.name}】）！`);
+          ? `☁ 九霄云海首破功成（${cloudGrade} 级）！获【破云证道印】(常驻攻+${cloudAtkGranted} · 星魂+1 · 远征/登仙台收益+15% · 灵石+180 · 仙品【${cloudGear.name}】)！`
+          : `☁ 九霄云海破阵功成（${cloudGrade} 级）！已御剑俯冲降临【${STAGES[descendStage].name}】（剑意全满+180灵石 · 仙品【${cloudGear.name}】）！`);
       }
     }
   }
@@ -1586,8 +1620,8 @@
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
         <span style="font-size:11.5px;color:#b8dcd5;">连续闯荡随机生成的九重天宫秘境（妖王房/灵脉房/混沌赌局/天工秘宝），每重天三选一叠加 <b style="color:#ffe28a;">16 种跨系统天道法则奇物</b>！</span>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-          <span id="spire-cloud-sea-chip" class="tag-chip ${game.cloudSeaCleared ? "mythic" : ""}">${game.cloudSeaCleared ? "☁ 破云证道印 · 登仙台灵石 +15%" : "☁ 破云印未启（先破九霄云海 +15%）"}</span>
-          <span class="tag-chip mythic">登仙榜最高：第 ${bestFl}/9 重天 · 已叠奇物 ${curEntries.reduce((s, [cid]) => s + getCurioStacks(game, cid), 0)} 层</span>
+          <span id="spire-cloud-sea-chip" class="tag-chip ${game.cloudSeaCleared ? "mythic" : ""}">${game.cloudSeaCleared ? `☁ 破云证道印${game.cloudSeaBestGrade ? ` (${escapeHtml(game.cloudSeaBestGrade)}级)` : ""} · 登仙台灵石 +15%` : "☁ 破云印未启（先破九霄云海 +15%）"}</span>
+          <span class="tag-chip mythic">登仙榜最高：第 ${bestFl}/9 重天${bestFl > 0 ? `（${computeModeGrade("celestial_spire", { floor: bestFl, revivesUsed: 0, hpPct: 0.6 })} 级）` : ""} · 已叠奇物 ${curEntries.reduce((s, [cid]) => s + getCurioStacks(game, cid), 0)} 层</span>
         </div>
       </div>
 
@@ -1894,6 +1928,13 @@
     }
 
     if (sp.floor >= 9) {
+      const stSpire = getCombatStats(game);
+      const spireHpPct = stSpire.maxHp > 0 ? Math.max(0, (game.hp || 0) / stSpire.maxHp) : 0;
+      const spireGrade = computeModeGrade("celestial_spire", {
+        floor: 9,
+        revivesUsed: arena.defeatRevivesUsed || 0,
+        hpPct: spireHpPct
+      });
       sp.active = false;
       arena.celestialSpire = null;
       game.bonusStarPts = (game.bonusStarPts || 0) + 3;
@@ -1905,7 +1946,7 @@
           <img src="${ART.banner_celestial_spire}" alt="九重登仙" />
           <div class="drawer-mural-overlay">
             <div>
-              <span class="cinnabar-seal">登仙金榜 · 九重天圆满</span>
+              <span class="cinnabar-seal">登仙金榜 · ${spireGrade} 级圆满</span>
               <h2 style="font-family:var(--font-serif);font-size:22px;color:var(--gold-bright);margin-top:4px;">踏破太虚登仙台九重天 · 证道混元仙尊！</h2>
             </div>
             <button type="button" class="btn-ghost" data-modal-close="1">凯旋收卷 ✕</button>
@@ -1913,6 +1954,7 @@
         </div>
         <div style="display:flex;flex-direction:column;gap:10px;text-align:center;padding:6px 0;">
           <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
+            <span class="tag-chip mythic">登仙评定：${spireGrade} 级</span>
             <span class="tag-chip mythic">制霸层数：9 / 9 重天</span>
             <span class="tag-chip done">奇物总层数：${Object.values(game.spireCurios || {}).reduce((a, b) => a + Math.min(maxLv, num(b, 0)), 0)} 层</span>
             <span class="tag-chip">赏赐：${clearStones} 灵石${cloudMult > 1 ? "（含破云印+15%）" : ""} + 周天星魂点 +3</span>

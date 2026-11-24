@@ -515,8 +515,11 @@
       const xpOrbVal = Math.max(2, Math.round(rawXpOrb * calDrop.rewardMult));
       const daoDropB = getDaoBonuses(game);
       const wolfStarMult = (currentOmen(game).id === "wolf_star" ? COMBAT_RULE_PARAMS.omens.wolf_star.stoneMult : 1.0) * (hasRunBoon("gold_alchemist") ? COMBAT_RULE_PARAMS.runBoons.gold_alchemist.stoneDropMult : 1.0) * calDrop.rewardMult * daoDropB.stoneMult;
+      const realmStoneMult = (e && e.realmScaledDelta > 0)
+        ? Math.max(1, num(e.realmStoneMult, computeMainlineRealmScaling(arena.stageIdx, game.realm, !!e.isBoss).stoneMult))
+        : 1.0;
       spawnDrop("qi", e.x, e.y, xpOrbVal);
-      spawnDrop("stone", e.x + 12, e.y - 8, Math.round((e.isBoss ? 48 + arena.stageIdx * 24 : 10 + arena.stageIdx * 5) * wolfStarMult));
+      spawnDrop("stone", e.x + 12, e.y - 8, Math.round((e.isBoss ? 48 + arena.stageIdx * 24 : 10 + arena.stageIdx * 5) * wolfStarMult * realmStoneMult));
 
       // Real 7-material combat drops wired from ENEMIES[id].loot + CAMPAIGN_ACTS[stageIdx]
       const matMult = ((climD && climD.id === "spirit_mist") || (curNodeD && curNodeD.type === "elemental_vault")) ? 2 : 1;
@@ -593,6 +596,7 @@
         const csSeed = arena.customSeedRun.seed || "";
         const csBosses = Array.isArray(arena.customSeedRun.bosses) ? arena.customSeedRun.bosses.slice() : [];
         const csStartedAt = arena.customSeedRun.startedAt || Date.now();
+        const csHitsTaken = Math.max(0, Math.floor(num(arena.customSeedRun.hitsTaken, 0)));
         setTimeout(() => {
           if (!game || arena.stageEpoch !== csEpoch || !arena.customSeedRun || !arena.customSeedRun.active) return;
           arena.waveTransitioning = false;
@@ -601,7 +605,7 @@
           arena.customSeedRun.active = false;
           const tempCurioRestored = restoreCustomSeedTempCurio();
           updateHud();
-          openCustomSeedVictoryModal({ seed: csSeed, elapsedSec, bosses: csBosses, tempCurioRestored });
+          openCustomSeedVictoryModal({ seed: csSeed, elapsedSec, hitsTaken: csHitsTaken, bosses: csBosses, tempCurioRestored });
         }, 420);
       } else if (arena.towerMode) {
         arena.waveTransitioning = true;
@@ -613,8 +617,9 @@
         const st = getCombatStats(game);
         game.hp = Math.min(st.maxHp, game.hp + Math.round(st.maxHp * 0.25));
         game.mp = Math.min(st.maxMp, game.mp + Math.round(st.maxMp * 0.30));
+        const towerGrade = computeModeGrade("demon_tower", { floor: game.towerBest });
         Sound.fanfare();
-        showToast(`★ 锁妖塔第 ${fl} 层破关！气血恢复25%，点击/Enter 阵眼冲第 ${game.towerFloor} 层`);
+        showToast(`★ 锁妖塔第 ${fl} 层破关（当前 ${towerGrade} 级）！气血恢复25%，点击/Enter 阵眼冲第 ${game.towerFloor} 层`);
         const canvas = document.getElementById("fx-canvas");
         const pPos = clampToPlaza((canvas.width || 1440) * 0.65, (canvas.height || 900) * 0.54, canvas.width || 1440, canvas.height || 900);
         arena.props = arena.props.filter(p => p.kind !== "tower_next");
@@ -2709,6 +2714,9 @@
     if (arena.bossRush && arena.bossRush.active) {
       arena.bossRush.hitsTaken = (arena.bossRush.hitsTaken || 0) + 1;
       arena.bossRush.damageTaken = (arena.bossRush.damageTaken || 0) + dmg;
+    }
+    if (arena.customSeedRun && arena.customSeedRun.active) {
+      arena.customSeedRun.hitsTaken = (arena.customSeedRun.hitsTaken || 0) + 1;
     }
     p.invuln = 0.42;
     p.hitFlash = 0.24;

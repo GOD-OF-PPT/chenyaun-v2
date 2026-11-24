@@ -94,6 +94,8 @@
     const longPills = Math.max(0, Math.floor(num(game.inventory && game.inventory.longevity_pill, 0)));
     activeLifespanModalOpen = true;
     if (confirmStep) {
+      ensureMetaState();
+      const nextLegacyStones = Math.min(240, (metaState.ascensions || 0) * 45 + ((metaState.bingjieCount || 0) + 1) * 40);
       openModal(`
         <div class="drawer-mural-banner" style="height:86px;">
           <img src="${ART.heaven_gate}" alt="兵解转世确认" />
@@ -109,7 +111,7 @@
           <div style="font-size:12px;color:#ffd0cc;font-weight:700;">⚠ 兵解转世影响说明：</div>
           <div style="font-size:11.5px;color:#e6f4f1;line-height:1.58;">
             1. 将<b>清空当前主存档</b>（<code>${STORAGE_KEY}</code>），携【${escapeHtml(game.name)}】之执念重返标题页开启新一世；<br/>
-            2. <b>完整保留元存档</b>（累世轮回功德、图鉴、历史飞升纪录与已解锁命格），并额外铭刻 <b>+40 轮回道果点</b>（不计入白日飞升世数）；<br/>
+            2. <b>完整保留元存档</b>（累世轮回功德、图鉴、历史飞升纪录与已解锁命格），并铭刻兵解轮回印记（下世启程灵石传承增至 <b>+${nextLegacyStones} 灵石</b>，单次 +40、上限 240，不计入白日飞升世数）；<br/>
             3. 若仍想留在此世服丹续命或冲关破境，可随时点击【返回】或【暂留延寿】，进度绝不丢失。
           </div>
         </div>
@@ -200,7 +202,7 @@
     const prevLifeRecorded = !!(game && game.lifeRecorded);
     if (source === "bingjie" && (!game || game.status !== "ascended")) {
       ensureMetaState();
-      metaState.reincarnationPoints = (metaState.reincarnationPoints || 0) + 40;
+      metaState.bingjieCount = Math.max(0, Math.floor(num(metaState.bingjieCount, 0))) + 1;
     } else if (game && game.status === "ascended" && game.ending && !game.lifeRecorded) {
       recordPastLifeInHall(game, game.ending);
     }
@@ -243,7 +245,8 @@
     syncPendingRewardsBadge();
     restoreTriggerFocus(null);
     if (source === "bingjie") {
-      showToast("☯ 兵解转世已成！已保留累世功德并铭刻 +40 轮回道果点，可重开新一世！");
+      const nextLegacyStones = Math.min(240, (metaState.ascensions || 0) * 45 + (metaState.bingjieCount || 0) * 40);
+      showToast(`☯ 兵解转世已成！已保留累世功德，下世启程灵石传承：+${nextLegacyStones} 灵石（兵解第 ${metaState.bingjieCount || 0} 次），可重开新一世！`);
     }
     return true;
   }
@@ -740,7 +743,7 @@
     const asc = metaState.ascensions || 0;
     if ((perkSpec.unlock || 0) <= 0) return true;
     if (asc >= perkSpec.unlock) return true;
-    if (perkSpec.altUnlock === "rush_s" && ["S+", "SS", "S"].includes(metaState.bestRushGrade)) return true;
+    if (perkSpec.altUnlock === "rush_s" && metaState.bestRushGrade === "S") return true;
     if (perkSpec.altUnlock === "calamity_1" && (metaState.bestCalamityTier || 0) >= 1) return true;
     if (perkSpec.altUnlock === "codex_65" && getCodexCompletionPct() >= 65) return true;
     return false;
@@ -761,7 +764,7 @@
       return asc >= 2 || (game && Array.isArray(game.litStars) && game.litStars.length >= 8);
     }
     if (auraSpec.req === "asc_3") {
-      return asc >= 3 || ["S+", "SS"].includes(metaState.bestRushGrade);
+      return asc >= 3 || metaState.bestRushGrade === "S";
     }
     return false;
   }
@@ -853,7 +856,6 @@
     if ((g.towerBest || 0) > (metaState.bestTower || 0)) metaState.bestTower = g.towerBest || 0;
     if ((g.bestSpireFloor || 0) > (metaState.bestSpireFloor || 0)) metaState.bestSpireFloor = g.bestSpireFloor || 0;
     if (calTier > (metaState.bestCalamityTier || 0)) metaState.bestCalamityTier = calTier;
-    metaState.reincarnationPoints = (metaState.reincarnationPoints || 0) + 100 + calTier * 60 + Math.round(score / 40);
     saveMeta();
     return entry;
   }
@@ -954,7 +956,7 @@
       <div class="jade-card" style="flex-direction:row;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;">
         <div style="font-size:11.5px;color:#d6eee8;">
           当前境界：<strong style="color:var(--gold-bright);">${REALMS[game.realm].name}</strong> ·
-          云海空战过渡关：<strong style="color:${game.cloudSeaCleared ? "#70ffe6" : "#ffd98a"};">${game.cloudSeaCleared ? "✓ 已破阵（远征/登仙台收益 +15%）" : "待金丹期御剑破阵"}</strong>
+          云海空战过渡关：<strong style="color:${game.cloudSeaCleared ? "#70ffe6" : "#ffd98a"};">${game.cloudSeaCleared ? `✓ 已破阵${game.cloudSeaBestGrade ? ` (${escapeHtml(game.cloudSeaBestGrade)}级)` : ""}（远征/登仙台收益 +15%）` : "待金丹期御剑破阵"}</strong>
         </div>
         <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;border-color:rgba(248,220,144,0.52);color:#ffe8a3;" data-action="open-hall-of-lives">🏛 历世道果殿堂</button>
       </div>
@@ -1039,7 +1041,7 @@
       <div class="jade-card" style="gap:6px;padding:9px 11px;">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
           <strong style="font-size:12.5px;color:#80ffea;">☯ 轮回先天命格解锁进度（${PERKS.filter(p => isPerkUnlocked(p)).length}/${PERKS.length}）</strong>
-          <span style="font-size:10.5px;color:var(--text-sub);">轮回道果点：${Number(metaState.reincarnationPoints) || 0}</span>
+          <span style="font-size:10.5px;color:var(--text-sub);">下世启程灵石传承：+${Math.min(240, (Number(metaState.ascensions) || 0) * 45 + (Number(metaState.bingjieCount) || 0) * 40)} 灵石（兵解 ${Number(metaState.bingjieCount) || 0} 次 · 上限 240）</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;">
           ${PERKS.filter(p => (p.unlock || 0) > 0).map(p => {
@@ -1459,11 +1461,12 @@
           <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;">
             ${STAGES.map((stg, idx) => {
               const stCount = Math.min(3, (game.stageStars && game.stageStars[idx]) || 0);
+              const stGrade = stageStarsToGrade(stCount);
               const unlocked = rankOf(game.realm) >= rankOf(stg.min);
               return `
                 <button type="button" class="ch-node-pill ${stCount >= 3 ? "done" : stCount > 0 ? "active" : ""} ${unlocked ? "" : "is-locked"}" data-warp-stage="${idx}" ${!unlocked ? "disabled" : ""}>
                   <div>${stg.name.slice(0, 4)}</div>
-                  <div style="color:#ffd970;">${"★".repeat(stCount)}${"☆".repeat(3 - stCount)}</div>
+                  <div style="color:#ffd970;">${stGrade}级 ${"★".repeat(stCount)}${"☆".repeat(3 - stCount)}</div>
                 </button>
               `;
             }).join("")}

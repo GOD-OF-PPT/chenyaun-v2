@@ -37,12 +37,12 @@
     const seal = document.getElementById("combo-rank-seal");
     if (!seal) return;
     if ((arena.comboCount < 2 && (arena.styleScore || 0) < 40) || drawerOpen) {
-      seal.classList.remove("active", "rank-sss");
+      seal.classList.remove("active", "rank-s");
       return;
     }
     seal.classList.add("active");
     const sp = getStyleRankSpec(arena.styleScore || 0);
-    seal.classList.toggle("rank-sss", sp.rank === "SSS");
+    seal.classList.toggle("rank-s", sp.rank === "S");
     const tierEl = document.getElementById("combo-tier-txt");
     tierEl.textContent = `${sp.title} ${sp.rank}`;
     tierEl.style.color = sp.color;
@@ -1695,14 +1695,18 @@
           }).join("")}
         </div>
 
-        ${towerUnlocked ? `
+        ${towerUnlocked ? (() => {
+          const bestT = Math.max(Math.floor(num(game.towerBest, 0)), Math.floor(num(metaState.bestTower, 0)));
+          const tGrade = bestT >= 1 ? ` · ${computeModeGrade("demon_tower", { floor: bestT })} 级` : "";
+          return `
         <div class="jade-card is-side" style="align-items:center;text-align:center;">
-          <strong style="font-size:var(--fs-lg);color:var(--gold-bright);font-family:var(--font-serif);">● 太虚锁妖内坛 · 第 ${Math.max(1, Math.floor(num(game.towerFloor, 1)))} 层（最高 ${Math.max(Math.floor(num(game.towerBest, 0)), Math.floor(num(metaState.bestTower, 0)))} 层）</strong>
+          <strong style="font-size:var(--fs-lg);color:var(--gold-bright);font-family:var(--font-serif);">● 太虚锁妖内坛 · 第 ${Math.max(1, Math.floor(num(game.towerFloor, 1)))} 层（最高 ${bestT} 层${tGrade}）</strong>
           <div style="display:flex;gap:8px;">
             <button class="btn-primary btn-gold" data-action="challenge-tower">${SVG.sword} 立即入坛破阵</button>
             ${arena.towerMode ? `<button class="btn-tertiary btn-ghost" data-warp-stage="0">退出锁妖塔</button>` : ""}
           </div>
-        </div>` : ""}
+        </div>`;
+        })() : ""}
 
         ${expOk ? `
         <div class="jade-card is-side" style="flex-direction:row;align-items:center;justify-content:space-between;gap:8px;border-color:rgba(128,255,234,0.58);">

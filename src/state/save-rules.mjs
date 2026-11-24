@@ -2,10 +2,10 @@
 import { safeText, safeDiag, num, hasOwn } from "../rules/utils.mjs";
 import { REALMS } from "../config/realms-items.mjs";
 import { LEGACY_STEP_ID_MAP } from "../config/progression-data.mjs";
+import { isValidUnifiedGrade, maxUnifiedGrade } from "../rules/scoring-rules.mjs";
 
 export const STORAGE_KEY = "chenyuan_wendao_v11_save";
 export const META_KEY = "chenyuan_wendao_v11_meta";
-export const RUSH_GRADE_RANK = { "S+": 6, "SS": 5, "S": 4, "A": 3, "B": 2, "C": 1 };
 
 export function canonicalizeStepId(id) {
   if (typeof id !== "string" || !id) return "";
@@ -29,7 +29,7 @@ export function createDefaultMetaState() {
     seenLaws: [],
     unlockedEndings: [],
     karmaAscensions: { righteous: 0, neutral: 0, demonic: 0 },
-    reincarnationPoints: 0,
+    bingjieCount: 0,
     hallOfLives: []
   };
 }
@@ -47,10 +47,10 @@ export function sanitizeHallEntry(entry) {
     karmaLabel: safeText(entry.karmaLabel, "本真中正") || "本真中正",
     epithet: safeText(entry.epithet, ""),
     poem: safeText(entry.poem, ""),
-    grade: safeText(entry.grade, "B") || "B",
+    grade: isValidUnifiedGrade(entry.grade) ? entry.grade : "C",
     score: Math.max(0, num(entry.score, 0)),
     towerBest: Math.max(0, Math.floor(num(entry.towerBest, 0))),
-    rushGrade: safeText(entry.rushGrade, "未挑战") || "未挑战",
+    rushGrade: isValidUnifiedGrade(entry.rushGrade) ? entry.rushGrade : "未挑战",
     spireBest: Math.max(0, Math.floor(num(entry.spireBest, 0))),
     sanctumLv: Math.max(0, Math.floor(num(entry.sanctumLv, 5))),
     codexPct: Math.max(0, Math.min(100, Math.floor(num(entry.codexPct, 0)))),
@@ -111,9 +111,7 @@ export function mergeMetaStates(local, remote) {
   };
   const seenEnemies = strUnion(a.seenEnemies, b.seenEnemies);
   if (seenEnemies.length === 0) seenEnemies.push("wolf");
-  const rA = hasOwn(RUSH_GRADE_RANK, a.bestRushGrade) ? RUSH_GRADE_RANK[a.bestRushGrade] : 0;
-  const rB = hasOwn(RUSH_GRADE_RANK, b.bestRushGrade) ? RUSH_GRADE_RANK[b.bestRushGrade] : 0;
-  const bestRushGrade = rB > rA ? b.bestRushGrade : (rA > 0 ? a.bestRushGrade : (rB > 0 ? b.bestRushGrade : null));
+  const bestRushGrade = maxUnifiedGrade(a.bestRushGrade, b.bestRushGrade);
   const tA = Math.max(0, num(a.bestRushTime, 0));
   const tB = Math.max(0, num(b.bestRushTime, 0));
   const bestRushTime = (tA > 0 && tB > 0) ? Math.min(tA, tB) : Math.max(tA, tB);
@@ -152,7 +150,7 @@ export function mergeMetaStates(local, remote) {
     seenLaws: strUnion(a.seenLaws, b.seenLaws),
     unlockedEndings: strUnion(a.unlockedEndings, b.unlockedEndings),
     karmaAscensions,
-    reincarnationPoints: Math.floor(numMax("reincarnationPoints")),
+    bingjieCount: Math.floor(numMax("bingjieCount")),
     hallOfLives
   };
 }

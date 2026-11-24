@@ -59,7 +59,7 @@
     const aPct = document.getElementById("lbl-astral-pct");
     if (aBtn && aImg && aTit && aPct) {
       const af = arena.astralForm;
-      const rankSSS = getStyleRankSpec(arena.styleScore || 0).rank === "SSS";
+      const rankS = getStyleRankSpec(arena.styleScore || 0).rank === "S";
       const pct = Math.min(100, Math.floor(arena.astralEnergy || 0));
       aImg.src = ART[isDemonic ? "avatar_asura_demon" : "avatar_taiqing_immortal"];
       aTit.textContent = isDemonic ? "修罗真身" : "金阙真身";
@@ -69,7 +69,7 @@
         aPct.textContent = `降世 ${af.life.toFixed(1)}s`;
       } else {
         aBtn.classList.remove("active-state");
-        const canCast = pct >= 100 || rankSSS;
+        const canCast = pct >= 100 || rankS;
         aBtn.classList.toggle("ready-glow", canCast);
         aPct.textContent = canCast ? "★可降世!" : `元神 ${pct}%`;
       }
@@ -119,9 +119,9 @@
       showToast(`法天象地调息中 (${arena.astralCd.toFixed(1)}s)`);
       return false;
     }
-    const rankSSS = getStyleRankSpec(arena.styleScore || 0).rank === "SSS";
-    if ((arena.astralEnergy || 0) < 100 && !rankSSS) {
-      showToast(`元神灵力蓄积中 (${Math.floor(arena.astralEnergy || 0)}/100%) · 达成 SSS 评级或破势斩妖可立即激发【法天象地】！`);
+    const rankS = getStyleRankSpec(arena.styleScore || 0).rank === "S";
+    if ((arena.astralEnergy || 0) < 100 && !rankS) {
+      showToast(`元神灵力蓄积中 (${Math.floor(arena.astralEnergy || 0)}/100%) · 达成 S 评级或破势斩妖可立即激发【法天象地】！`);
       return false;
     }
     if (!consumePlayerMp(30, "法天象地")) return false;
@@ -788,12 +788,15 @@
     if (!game || !summary) return;
     const bossList = Array.isArray(summary.bosses) && summary.bosses.length ? summary.bosses.join(" + ") : "造化双王";
     const elapsedTxt = `${num(summary.elapsedSec, 0).toFixed(1)}s`;
+    const csGrade = isValidUnifiedGrade(summary.grade)
+      ? summary.grade
+      : computeModeGrade("custom_seed", { elapsedSec: summary.elapsedSec, hitsTaken: summary.hitsTaken || 0 });
     openModal(`
       <div class="drawer-mural-banner" style="height:88px;">
         <img src="${ART.arena_wanjian_tomb}" alt="造化试剑凯旋" />
         <div class="drawer-mural-overlay">
           <div>
-            <span class="cinnabar-seal">造化工坊 · 试剑圆满</span>
+            <span class="cinnabar-seal">造化工坊 · ${escapeHtml(csGrade)} 级试剑圆满</span>
             <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:3px;">⚔ 太虚造化试剑大捷！</h2>
           </div>
           <button type="button" class="btn-ghost" data-modal-close="1">收卷 ✕</button>
@@ -801,6 +804,7 @@
       </div>
       <div class="jade-card" style="gap:6px;padding:10px 12px;">
         <div style="display:flex;gap:7px;flex-wrap:wrap;font-size:11.5px;">
+          <span class="tag-chip mythic">试剑评定：${escapeHtml(csGrade)} 级</span>
           <span class="tag-chip mythic">论剑码：${escapeHtml(summary.seed || "")}</span>
           <span class="tag-chip done">耗时：${escapeHtml(elapsedTxt)}</span>
           <span class="tag-chip">已破首领：${escapeHtml(bossList)}</span>
@@ -903,6 +907,7 @@
       seed: activeSeed,
       startedAt: Date.now(),
       elapsedSec: 0,
+      hitsTaken: 0,
       bosses: spawnedBossNames,
       tempCurioRestore
     };

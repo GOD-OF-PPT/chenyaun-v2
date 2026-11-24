@@ -47,7 +47,8 @@ function makeCleanGame(overrides = {}) {
     expeditions: { assignments: {}, bankedStones: 0, bankedStars: 0 },
     bestSpireFloor: 0,
     rushBestGrade: "",
-    sectMerits: 0
+    sectDefenseCleared: false,
+    sectDefenseBestGrade: null
   }, overrides);
 }
 
@@ -94,6 +95,16 @@ test("getExpeditionNodeStageSynergy & getSpireCloudSeaYieldMult compute exact no
   assert.equal(fullStarSyn.mult, 1.30);
   assert.equal(fullStarSyn.tier, "full_star");
 
+  // Plain-object stageStars (live runtime save format) must work identically to array format
+  const plainObjFullSyn = getExpeditionNodeStageSynergy(makeCleanGame({ stageStars: { 2: 3 } }), "zhaoying_lake");
+  assert.equal(plainObjFullSyn.mult, 1.30);
+  assert.equal(plainObjFullSyn.tier, "full_star");
+  assert.equal(plainObjFullSyn.stars, 3);
+
+  const plainObjClearSyn = getExpeditionNodeStageSynergy(makeCleanGame({ stageStars: { 1: 1 } }), "qingyun_peak");
+  assert.equal(plainObjClearSyn.mult, 1.15);
+  assert.equal(plainObjClearSyn.tier, "cleared");
+
   const unknownSyn = getExpeditionNodeStageSynergy(fresh, "unknown_node");
   assert.equal(unknownSyn.mult, 1.0);
 });
@@ -137,13 +148,17 @@ test("computeEndgameMasteryResonance yields 0 bonus at 0 pillars and scales clea
     expeditions: { assignments: { qinglan_vein: "shen" }, bankedStones: 0, bankedStars: 0 },
     bestSpireFloor: 9,
     rushBestGrade: "S",
-    sectMerits: 2
+    sectDefenseCleared: true,
+    sectDefenseBestGrade: "S"
   });
   const r6 = computeEndgameMasteryResonance(sixPillarGame);
   assert.equal(r6.activeCount, 6);
   assert.equal(r6.passiveAtkPct, 0.15);
   assert.equal(r6.drBonus, 12);
   assert.equal(r6.critBonus, 0.03);
+  const sdPillar = r6.pillars.find(p => p.id === "sect_defense");
+  assert.equal(sdPillar.short, "护阵破劫");
+  assert.equal(sdPillar.active, true);
 });
 
 test("buildVol5ResonanceSnapshot accurately evaluates D01/D04 conservative Vol 5 progress", () => {
