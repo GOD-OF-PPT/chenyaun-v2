@@ -1140,11 +1140,9 @@
 
     const rawPts = Math.max(0, Math.round((basePts + timePts + techPts + survivePts) * mult));
     let shortGrade = "C", title = "初涉剑冢";
-    if (rawPts >= 2800)      { shortGrade = "S+"; title = "万古剑尊"; }
-    else if (rawPts >= 2100) { shortGrade = "SS"; title = "踏天剑圣"; }
-    else if (rawPts >= 1550) { shortGrade = "S";  title = "破妄真人"; }
-    else if (rawPts >= 1000) { shortGrade = "A";  title = "斩魔剑修"; }
-    else if (rawPts >= 650)  { shortGrade = "B";  title = "问道剑客"; }
+    if (rawPts >= 2000)      { shortGrade = "S"; title = "万古剑尊"; }
+    else if (rawPts >= 1000) { shortGrade = "A"; title = "斩魔剑修"; }
+    else if (rawPts >= 650)  { shortGrade = "B"; title = "问道剑客"; }
 
     return {
       rawPts, shortGrade, grade: `${shortGrade} ${title}`,
@@ -1186,7 +1184,7 @@
           <div class="jade-card" style="padding:10px 14px;text-align:left;gap:4px;">
             <strong style="color:#ffd8a8;font-size:13px;">🎯 练习模式说明：</strong>
             <div style="font-size:12px;color:#d6eee8;">本次从第 ${Math.max(2, Math.floor(num(br.startBout, 6)))} 阵跳关演武，未发放灵石、鸿蒙神兵、尊号与【太虚劫光】拖尾，亦未改写正式评级与历史最佳纪录。</div>
-            <div style="font-size:11.5px;color:#80ffea;">若要领取全额封神奖励并冲击 S/SS/S+ 正式评级，请从【第一阵】完整挑战七阵连战！</div>
+            <div style="font-size:11.5px;color:#80ffea;">若要领取全额封神奖励并冲击 S 级正式评级，请从【第一阵】完整挑战七阵连战！</div>
           </div>
           <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
             <button type="button" class="btn-gold" data-start-rush="1">🔥 从第一阵完整挑战</button>
@@ -1208,11 +1206,10 @@
     game.taixuTrailUnlocked = true;
     game.taixuTrailActive = true;
     game.titleUnlocked = "踏天破妄剑尊";
-    const newRank = RUSH_GRADE_RANK[shortGrade] || 0;
-    if (newRank > (RUSH_GRADE_RANK[game.rushBestGrade] || 0)) game.rushBestGrade = shortGrade;
+    game.rushBestGrade = maxUnifiedGrade(game.rushBestGrade, shortGrade);
     if (!sandboxMode) {
       metaState.taixuTrailUnlocked = true;
-      if (newRank > (RUSH_GRADE_RANK[metaState.bestRushGrade] || 0)) metaState.bestRushGrade = shortGrade;
+      metaState.bestRushGrade = maxUnifiedGrade(metaState.bestRushGrade, shortGrade);
       if (!metaState.bestRushTime || br.elapsed < metaState.bestRushTime) metaState.bestRushTime = br.elapsed;
       saveMeta();
     }
@@ -1918,7 +1915,9 @@
     ds.totalDmg += d;
     if (d > ds.peakHit) ds.peakHit = d;
     if (!ds.isDrill) {
-      ds.grade = ds.hits >= 12 ? "S" : ds.hits >= 6 ? "A" : "B";
+      ds.grade = computeModeGrade("dojo", { isDrill: false, hits: ds.hits });
+    } else if (!ds.completed && ds.progress === 0) {
+      ds.grade = "C";
     }
     renderDojoTrainingHud();
   }
@@ -1954,10 +1953,10 @@
       ds.progress = Math.min(ds.target, ds.progress + 1);
       if (ds.progress >= ds.target) {
         ds.completed = true;
-        ds.grade = "S";
+        ds.grade = computeModeGrade("dojo", { isDrill: true, completed: true, progress: ds.progress });
         ds.lastFeedback = `🏆 专项【${ds.modeName}】已达标（${ds.progress}/${ds.target}）！可重置继续打磨手感`;
       } else {
-        ds.grade = ds.progress >= 2 ? "A" : "B";
+        ds.grade = computeModeGrade("dojo", { isDrill: true, completed: false, progress: ds.progress });
       }
     }
     renderDojoTrainingHud();
@@ -2436,7 +2435,7 @@
     inv.dew = effectivePerk === "medicine_sage" ? 3 : 1;
     if (effectivePerk === "calamity_phoenix") inv.longevity_pill = 1;
     const laws = effectivePerk === "immortal_echo" ? ["void_haste"] : [];
-    const legacyStones = Math.min(240, (metaState.ascensions || 0) * 45);
+    const legacyStones = Math.min(240, Math.max(0, (metaState.ascensions || 0) * 45 + (metaState.bingjieCount || 0) * 40));
 
     const starterSword = effectivePerk === "primordial_sage"
       ? {
@@ -2457,7 +2456,7 @@
     };
     const defaultAura = effCalamity >= 1
       ? "crimson_calamity"
-      : ((metaState.ascensions || 0) >= 3 || ["S+", "SS"].includes(metaState.bestRushGrade))
+      : ((metaState.ascensions || 0) >= 3 || metaState.bestRushGrade === "S")
         ? "primordial_chaos"
         : (metaState.ascensions || 0) >= 1
           ? "golden_lotus"
@@ -2512,6 +2511,9 @@
       immortalPills: 0,
       trialCompleted: false,
       cloudSeaCleared: false,
+      cloudSeaBestGrade: null,
+      sectDefenseCleared: false,
+      sectDefenseBestGrade: null,
       lifeRecorded: false,
       status: "active",
       ending: null,
@@ -2581,9 +2583,12 @@
     if (typeof g.realm !== "string" || !hasOwn(REALMS, g.realm)) g.realm = "mortal";
     g.calamityTier = Math.max(0, Math.min(CALAMITY_CYCLES.length - 1, Math.floor(num(raw.calamityTier, 0))));
     g.cloudSeaCleared = !!raw.cloudSeaCleared;
+    g.cloudSeaBestGrade = isValidUnifiedGrade(raw.cloudSeaBestGrade) ? raw.cloudSeaBestGrade : null;
+    g.sectDefenseCleared = !!raw.sectDefenseCleared;
+    g.sectDefenseBestGrade = isValidUnifiedGrade(raw.sectDefenseBestGrade) ? raw.sectDefenseBestGrade : null;
     g.lifeRecorded = !!raw.lifeRecorded;
     g.seenLifespan75Tip = !!raw.seenLifespan75Tip;
-    g.rushBestGrade = hasOwn(RUSH_GRADE_RANK, raw.rushBestGrade) ? raw.rushBestGrade : null;
+    g.rushBestGrade = isValidUnifiedGrade(raw.rushBestGrade) ? raw.rushBestGrade : null;
     ["stones", "xp", "overflowXp", "wins", "towerBest", "bestSpireFloor", "tribShield", "bonusStarPts", "bonusSwords", "omenIndex", "jadeCuts", "immortalPills", "karmaEventsDone", "atkFlatBonus", "maxHpBonus", "retreats", "tribulationFails", "defiantBreakthroughs", "lifespanBonusMonths"].forEach(k => {
       g[k] = Math.max(0, Math.floor(num(g[k], base[k] != null ? base[k] : 0)));
     });

@@ -59,7 +59,7 @@
     const aPct = document.getElementById("lbl-astral-pct");
     if (aBtn && aImg && aTit && aPct) {
       const af = arena.astralForm;
-      const rankSSS = getStyleRankSpec(arena.styleScore || 0).rank === "SSS";
+      const rankS = getStyleRankSpec(arena.styleScore || 0).rank === "S";
       const pct = Math.min(100, Math.floor(arena.astralEnergy || 0));
       aImg.src = ART[isDemonic ? "avatar_asura_demon" : "avatar_taiqing_immortal"];
       aTit.textContent = isDemonic ? "修罗真身" : "金阙真身";
@@ -69,7 +69,7 @@
         aPct.textContent = `降世 ${af.life.toFixed(1)}s`;
       } else {
         aBtn.classList.remove("active-state");
-        const canCast = pct >= 100 || rankSSS;
+        const canCast = pct >= 100 || rankS;
         aBtn.classList.toggle("ready-glow", canCast);
         aPct.textContent = canCast ? "★可降世!" : `元神 ${pct}%`;
       }
@@ -119,9 +119,9 @@
       showToast(`法天象地调息中 (${arena.astralCd.toFixed(1)}s)`);
       return false;
     }
-    const rankSSS = getStyleRankSpec(arena.styleScore || 0).rank === "SSS";
-    if ((arena.astralEnergy || 0) < 100 && !rankSSS) {
-      showToast(`元神灵力蓄积中 (${Math.floor(arena.astralEnergy || 0)}/100%) · 达成 SSS 评级或破势斩妖可立即激发【法天象地】！`);
+    const rankS = getStyleRankSpec(arena.styleScore || 0).rank === "S";
+    if ((arena.astralEnergy || 0) < 100 && !rankS) {
+      showToast(`元神灵力蓄积中 (${Math.floor(arena.astralEnergy || 0)}/100%) · 达成 S 评级或破势斩妖可立即激发【法天象地】！`);
       return false;
     }
     if (!consumePlayerMp(30, "法天象地")) return false;
@@ -716,7 +716,8 @@
         partHp: eyeHp, maxPartHp: eyeHp, weakpointExposed: true, partSevered: false,
         atk: Math.max(20, Math.round(st.maxHp * 0.13)), heavy: Math.max(32, Math.round(st.maxHp * 0.21)),
         state: "chase", timer: 1.1, windupDur: 0.95, aimX: arena.player.x, aimY: arena.player.y, attackType: "slam",
-        hitFlash: 0, swordMarks: 0, chillTimer: 0, burnTimer: 0, airborneZ: 0, airborneVz: 0
+        hitFlash: 0, swordMarks: 0, chillTimer: 0, burnTimer: 0, airborneZ: 0, airborneVz: 0,
+        realmScaledDelta: 0, realmStoneMult: 1
       };
       arena.lockedTitanPart = "left_claw";
       arena.enemies.push(titan);
@@ -737,7 +738,8 @@
         weakpointExposed: true, partSevered: false,
         atk: Math.max(18, Math.round(st.maxHp * 0.12)), heavy: Math.max(28, Math.round(st.maxHp * 0.20)),
         state: "chase", timer: 0.95, windupDur: 0.88, aimX: arena.player.x, aimY: arena.player.y, attackType: "charge",
-        hitFlash: 0, swordMarks: 0, chillTimer: 0, burnTimer: 0, airborneZ: 0, airborneVz: 0
+        hitFlash: 0, swordMarks: 0, chillTimer: 0, burnTimer: 0, airborneZ: 0, airborneVz: 0,
+        realmScaledDelta: 0, realmStoneMult: 1
       };
       arena.enemies.push(demon);
       return demon;
@@ -789,12 +791,15 @@
     if (!game || !summary) return;
     const bossList = Array.isArray(summary.bosses) && summary.bosses.length ? summary.bosses.join(" + ") : "造化双王";
     const elapsedTxt = `${num(summary.elapsedSec, 0).toFixed(1)}s`;
+    const csGrade = isValidUnifiedGrade(summary.grade)
+      ? summary.grade
+      : computeModeGrade("custom_seed", { elapsedSec: summary.elapsedSec, hitsTaken: summary.hitsTaken || 0 });
     openModal(`
       <div class="drawer-mural-banner" style="height:88px;">
         <img src="${ART.arena_wanjian_tomb}" alt="造化试剑凯旋" />
         <div class="drawer-mural-overlay">
           <div>
-            <span class="cinnabar-seal">造化工坊 · 试剑圆满</span>
+            <span class="cinnabar-seal">造化工坊 · ${escapeHtml(csGrade)} 级试剑圆满</span>
             <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:3px;">⚔ 太虚造化试剑大捷！</h2>
           </div>
           <button type="button" class="btn-ghost" data-modal-close="1">收卷 ✕</button>
@@ -802,6 +807,7 @@
       </div>
       <div class="jade-card" style="gap:6px;padding:10px 12px;">
         <div style="display:flex;gap:7px;flex-wrap:wrap;font-size:11.5px;">
+          <span class="tag-chip mythic">试剑评定：${escapeHtml(csGrade)} 级</span>
           <span class="tag-chip mythic">论剑码：${escapeHtml(summary.seed || "")}</span>
           <span class="tag-chip done">耗时：${escapeHtml(elapsedTxt)}</span>
           <span class="tag-chip">已破首领：${escapeHtml(bossList)}</span>
@@ -896,6 +902,17 @@
       }
     }
 
+    arena.customSeedRun = {
+      active: true,
+      seed: activeSeed,
+      practiceMode: true,
+      startedAt: Date.now(),
+      elapsedSec: 0,
+      hitsTaken: 0,
+      bosses: [],
+      tempCurioRestore
+    };
+
     const spawnedBossNames = [];
     const b1 = spawnWorkshopBossBySpecIdx(workshopState.boss1, w * 0.68, h * 0.46, 1.5);
     if (b1 && b1.name) spawnedBossNames.push(b1.name);
@@ -903,16 +920,7 @@
       const b2 = spawnWorkshopBossBySpecIdx(workshopState.boss2, w * 0.58, h * 0.62, 1.35);
       if (b2 && b2.name) spawnedBossNames.push(b2.name);
     }
-
-    arena.customSeedRun = {
-      active: true,
-      seed: activeSeed,
-      practiceMode: true,
-      startedAt: Date.now(),
-      elapsedSec: 0,
-      bosses: spawnedBossNames,
-      tempCurioRestore
-    };
+    arena.customSeedRun.bosses = spawnedBossNames;
     hideDojoControlBar();
 
     const st = getCombatStats(game);

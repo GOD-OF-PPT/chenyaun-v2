@@ -11,6 +11,21 @@
 
 ---
 
+## Round 3 · R3-M2（D05）— 主线境界动态缩放、精简副货币与全模式统一 S / A / B / C 评级（R3-F04–R3-F06）
+
+- **R3-F04 主线关卡敌群随玩家境界动态缩放**：
+  - 在 `src/rules/combat-stats.mjs` 新增纯函数 `computeMainlineRealmScaling(stageIdx, realmId, isBoss)` 并挂入 `window.__CHENYUAN_DEBUG__.rules`：锚定 `REALM_COMBAT_BASELINE`，同境及低境（`delta <= 0`）严格返回 `1.0×`；第 5 关（兼承元婴/化神）化神期取 `hpEase = 1.0, atkEase = 1.0`（`1.407×` Boss HP / `1.414×` ATK）、飞升期取 `hpEase = 0.90, atkEase = 0.82`；回访前 4 关采用平滑阻尼与架势/灵石上限（`postureMult <= 1.65`, `stoneMult <= 2.20`）。
+  - 在 `src/runtime/stage-expedition.js` `spawnSingleEnemy()` 仅对主线上下文应用动态缩放（显式排除无尽塔、万剑冢、登仙台、护山大阵、云海空战与自定义工坊，杜绝双倍缩放），并在 `src/runtime/combat-step.js` `handleEnemyDeath()` 仅按 `realmStoneMult` 放大灵石掉落、严格保留低关修为衰减（`spiritCh1WolfXp <= 15`）；在九州舆图预览条显示动态同步提示。
+- **R3-F05 精简副货币并折合入核心资源（无旧档迁移垫片）**：
+  - 彻底移除 `metaState.reincarnationPoints`（轮回道果点），引入单调计数 `metaState.bingjieCount`（CRDT `numMax` 合并）并折合至 `createFreshGame()` 开局传承灵石 `legacyStones = Math.min(240, ascensions * 45 + bingjieCount * 40)`，同步更新兵解弹窗、提示与历世殿堂文案。
+  - 彻底移除 `game.sectMerits`（护宗功勋），新增明确初始化与清洗字段 `game.sectDefenseCleared` 与 `game.sectDefenseBestGrade`；护山大阵胜利奖励折合为 **320 灵石 + 妖核 ×2 + 地脉灵玉 ×(S?2:1)**（保留星魂点 +2 与永久剑攻 +16），`fireManualSlash()` 与第五卷【诸天道果共鸣】护山大阵柱改判 `sectDefenseCleared`/`sectDefenseBestGrade`。保留灵石、7 种核心材料与二十八星宿 `bonusStarPts`。
+- **R3-F06 全模式统一 `S / A / B / C` 评级与 `stageStars` 纯对象兼容修复**：
+  - 在 `src/rules/scoring-rules.mjs` 导出 `UNIFIED_GRADES`、`UNIFIED_GRADE_RANK`、`isValidUnifiedGrade`、`maxUnifiedGrade`、`stageStarsToGrade`（`3★↔S`、`2★↔A`、`1★↔B`、`0★↔C`）与 `computeModeGrade`，统一道果金榜、万剑冢、剑道风华评级仪与连击阶位（含 `#combo-rank-seal.rank-s` 与 `S` 级法天象地瞬发）、演武训练、主线双显评级以及护山大阵/云海空战/登仙台/锁妖塔/造化工坊 5 个侧边模式；全面清除 `D`/`SS`/`SSS`/`S+`。
+  - 修复 `src/rules/campaign-q6.mjs` `getExpeditionNodeStageSynergy()` 误用 `Array.isArray(g.stageStars)` 导致实机纯对象存档漏算远征星级共鸣的潜在缺陷。
+- **测试与审计更新**：单测 `34 → 39`（新增动态缩放、统一评级与 D05 零残留静态守卫）、`scripts/audit-economy.mjs` 更新为 `d05CurrencyAudit`、`scripts/verify-playable-v2.mjs` 新增 `R3-D05-1`（总 `78 → 79` 套件）并覆盖新口径五场景存档验证。
+
+---
+
 ## Round 3 · R3-M1（D06）— 运行时深度子系统拆分与统一调试门面（R3-F02 / R3-F03）
 
 - **R3-F02 `src/runtime/main.js` 深度拆分与确定性构建**：

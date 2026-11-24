@@ -165,7 +165,7 @@ export function buildMetaSave(overrides = {}) {
     seenLaws: [],
     unlockedEndings: [],
     karmaAscensions: { righteous: 0, neutral: 0, demonic: 0 },
-    reincarnationPoints: 0,
+    bingjieCount: 0,
     hallOfLives: [],
     ...overrides
   });

@@ -226,7 +226,7 @@ export const tests = [
   // ==================== E2E-T5-03: A-3 removeItem Failure Rollback + A-7 Repeat Write-Failure Toast ====================
   {
     id: "E2E-T5-03",
-    title: "A-3/A-7: removeItem SecurityError preserves state and rolls back bingjie +40 pts; <6s repeat startFreshGameSession emits toast",
+    title: "A-3/A-7: removeItem SecurityError preserves state and rolls back bingjie +1 bingjieCount; <6s repeat startFreshGameSession emits toast",
     features: ["A-3", "A-7", "G8"],
     async fn(env) {
       const page = await env.openPage("t5-03");
@@ -260,8 +260,8 @@ export const tests = [
       await closeModalEsc(page);
       const ptsBefore = await page.evaluate((mk) => {
         const api = window.__CHENYUAN_DEBUG__;
-        const p = Number(api.getMetaState().reincarnationPoints) || 0;
-        const d = Number(JSON.parse(localStorage.getItem(mk) || "{}").reincarnationPoints) || 0;
+        const p = Number(api.getMetaState().bingjieCount) || 0;
+        const d = Number(JSON.parse(localStorage.getItem(mk) || "{}").bingjieCount) || 0;
         api.openLifespanExhaustedModal(true);
         return { p, d };
       }, META_KEY);
@@ -270,12 +270,12 @@ export const tests = [
       await page.waitForTimeout(100);
       const afterBingjie = await page.evaluate((mk) => ({
         welcomeVisible: document.getElementById("welcome-screen")?.style.display !== "none",
-        memPts: Number(window.__CHENYUAN_DEBUG__.getMetaState().reincarnationPoints) || 0,
-        diskPts: Number(JSON.parse(localStorage.getItem(mk) || "{}").reincarnationPoints) || 0
+        memBingjie: Number(window.__CHENYUAN_DEBUG__.getMetaState().bingjieCount) || 0,
+        diskBingjie: Number(JSON.parse(localStorage.getItem(mk) || "{}").bingjieCount) || 0
       }), META_KEY);
       assert.equal(afterBingjie.welcomeVisible, false, "Bingjie removeItem failure must not return to welcome screen (A-3)");
-      assert.equal(afterBingjie.memPts, ptsBefore.p, "Bingjie failure must roll back +40 memory reincarnationPoints (A-3)");
-      assert.equal(afterBingjie.diskPts, ptsBefore.d, "Bingjie failure must roll back +40 disk reincarnationPoints (A-3)");
+      assert.equal(afterBingjie.memBingjie, ptsBefore.p, "Bingjie failure must roll back +1 memory bingjieCount (A-3)");
+      assert.equal(afterBingjie.diskBingjie, ptsBefore.d, "Bingjie failure must roll back +1 disk bingjieCount (A-3)");
 
       // Restore removeItem, then test A-7 (<6s repeat startFreshGameSession QuotaExceededError toast)
       await page.evaluate((sk) => {
@@ -835,7 +835,7 @@ export const tests = [
       await page2.evaluate(() => { window.__CHENYUAN_DEBUG__.saveMeta(); });
       await page1.waitForTimeout(100);
 
-      // R2A-2: 2-tab bingjie under removeItem SecurityError must NOT bounce-back +40 pts
+      // R2A-2: 2-tab bingjie under removeItem SecurityError must NOT bounce-back +1 bingjieCount
       await page1.evaluate((sk) => {
         window.__e2eR2OrigRm = Storage.prototype.removeItem;
         Storage.prototype.removeItem = function (k) {
@@ -853,13 +853,13 @@ export const tests = [
         Storage.prototype.removeItem = window.__e2eR2OrigRm;
         window.__CHENYUAN_DEBUG__.closeModal();
         return {
-          memPts: Number(window.__CHENYUAN_DEBUG__.getMetaState().reincarnationPoints) || 0,
-          diskPts: Number(JSON.parse(localStorage.getItem(mk) || "{}").reincarnationPoints) || 0,
+          memBingjie: Number(window.__CHENYUAN_DEBUG__.getMetaState().bingjieCount) || 0,
+          diskBingjie: Number(JSON.parse(localStorage.getItem(mk) || "{}").bingjieCount) || 0,
           saveExists: Boolean(localStorage.getItem(sk))
         };
       }, { sk: STORAGE_KEY, mk: META_KEY });
-      assert.equal(r2a2.memPts, 0, "R2A-2: 2-tab bingjie SecurityError must NOT farm +40 in memory");
-      assert.equal(r2a2.diskPts, 0, "R2A-2: 2-tab bingjie SecurityError must NOT CRDT bounce-back +40 on META_KEY");
+      assert.equal(r2a2.memBingjie, 0, "R2A-2: 2-tab bingjie SecurityError must NOT farm +1 bingjieCount in memory");
+      assert.equal(r2a2.diskBingjie, 0, "R2A-2: 2-tab bingjie SecurityError must NOT CRDT bounce-back +1 bingjieCount on META_KEY");
       assert.equal(r2a2.saveExists, true, "R2A-2: Primary save preserved");
 
       // R2A-1: Cross-tab deletion during Practice Mode + Sandbox Mode must NOT resurrect save
@@ -1401,11 +1401,11 @@ export const tests = [
         s.game.inventory.spirit_pill = 2;
         const cloudInPractice = v24.importFullCloudSaveCode(code);
         const curMeta = JSON.parse(localStorage.getItem(mk) || "{}");
-        curMeta.reincarnationPoints = Math.max(40, (curMeta.reincarnationPoints || 0) + 40);
+        curMeta.bingjieCount = Math.max(1, (curMeta.bingjieCount || 0) + 1);
         localStorage.setItem(mk, JSON.stringify(curMeta));
         api.openBossRushVictoryModal();
         const rushWinMemPill = api.getState().game.inventory.spirit_pill;
-        const rushWinMetaPts = api.getMetaState().reincarnationPoints;
+        const rushWinMetaBingjie = api.getMetaState().bingjieCount;
         api.closeModal();
         window.dispatchEvent(new Event("pagehide"));
         const diskPillAfterRush = JSON.parse(localStorage.getItem(sk))?.game?.inventory?.spirit_pill;
@@ -1430,7 +1430,7 @@ export const tests = [
         return {
           cloudInPractice,
           rushWinMemPill,
-          rushWinMetaPts,
+          rushWinMetaBingjie,
           diskPillAfterRush,
           stonesAfterHub,
           starPtsAfterHub,
@@ -1440,7 +1440,7 @@ export const tests = [
       }, { sk: STORAGE_KEY, mk: META_KEY });
       assert.equal(r22ac.cloudInPractice, false, "DEFECT-R2-2A: Cloud import blocked in Practice Mode");
       assert.equal(r22ac.rushWinMemPill, 3, "DEFECT-R2-2A: Boss Rush 7 victory restores formal pill count");
-      assert.ok(r22ac.rushWinMetaPts >= 40, "DEFECT-R2-2C: Cross-tab META_KEY points preserved on Practice exit");
+      assert.ok(r22ac.rushWinMetaBingjie >= 1, "DEFECT-R2-2C: Cross-tab META_KEY bingjieCount preserved on Practice exit");
       assert.equal(r22ac.diskPillAfterRush, 3, "DEFECT-R2-2A: pagehide after Boss Rush 7 victory does not persist practice pill loss");
       assert.equal(r22ac.stonesAfterHub, 2440, "DEFECT-R2-2A: Post-victory formal stones never rewound");
       assert.equal(r22ac.starPtsAfterHub, 1, "DEFECT-R2-2A: Post-victory formal bonusStarPts never rewound");

@@ -3,10 +3,13 @@ import assert from "node:assert/strict";
 import {
   applySingleHitCap,
   computeCombatStatLedger,
+  computeMainlineRealmScaling,
+  getStyleRankSpec,
+  getComboTier,
   getSchoolSpecBonus,
   getDaoBonuses
 } from "../../src/rules/combat-stats.mjs";
-import { COMBAT_RULE_PARAMS, SINGLE_HIT_CAP_RATIO } from "../../src/config/combat-params.mjs";
+import { COMBAT_RULE_PARAMS, SINGLE_HIT_CAP_RATIO, REALM_COMBAT_BASELINE } from "../../src/config/combat-params.mjs";
 
 test("applySingleHitCap enforces 45% maxHp cap, uncapped override, DR floor 0.35, and min-4 damage floor", () => {
   assert.equal(SINGLE_HIT_CAP_RATIO, 0.45);
@@ -120,4 +123,74 @@ test("getSchoolSpecBonus and getDaoBonuses return distinct, bounded profiles", (
   assert.equal(dao.execMult, 1.18);
   assert.equal(dao.mpRegenMult, 1.32);
   assert.equal(dao.stoneMult, 1.24);
+});
+
+test("computeMainlineRealmScaling preserves 1.0x at-realm, scales Stage 4 Spirit/Ascended, and damps Stages 0-3 revisits", () => {
+  // At-realm and under-realm (delta <= 0) => exact 1.0x inactive
+  for (const [stg, realm] of [[0, "mortal"], [1, "qi"], [2, "foundation"], [3, "golden"], [4, "nascent"], [3, "qi"]]) {
+    const r = computeMainlineRealmScaling(stg, realm, true);
+    assert.deepEqual(r, { active: false, delta: 0, hpMult: 1, atkMult: 1, postureMult: 1, stoneMult: 1 });
+  }
+
+  // Stage 4 Spirit (delta = 1): full hpEase = 1.0, atkEase = 1.0
+  const s4SpiritBoss = computeMainlineRealmScaling(4, "spirit", true);
+  assert.equal(s4SpiritBoss.active, true);
+  assert.equal(s4SpiritBoss.delta, 1);
+  assert.equal(s4SpiritBoss.hpMult, 1.407);
+  assert.equal(s4SpiritBoss.atkMult, 1.414);
+  assert.equal(s4SpiritBoss.postureMult, 1.12);
+  assert.equal(s4SpiritBoss.stoneMult, 1.22);
+
+  const s4SpiritMob = computeMainlineRealmScaling(4, "spirit", false);
+  assert.equal(s4SpiritMob.hpMult, 1.452);
+  assert.equal(s4SpiritMob.atkMult, 1.414);
+
+  // Stage 4 Ascended (delta = 2): hpEase = 0.90, atkEase = 0.82
+  const s4AscBoss = computeMainlineRealmScaling(4, "ascended", true);
+  const rawHpAsc = REALM_COMBAT_BASELINE.ascended.bossHp / REALM_COMBAT_BASELINE.nascent.bossHp;
+  const rawAtkAsc = REALM_COMBAT_BASELINE.ascended.atk / REALM_COMBAT_BASELINE.nascent.atk;
+  assert.equal(s4AscBoss.delta, 2);
+  assert.equal(s4AscBoss.hpMult, Number((1 + (rawHpAsc - 1) * 0.90).toFixed(3)));
+  assert.equal(s4AscBoss.atkMult, Number((1 + (rawAtkAsc - 1) * 0.82).toFixed(3)));
+  assert.equal(s4AscBoss.postureMult, 1.24);
+  assert.equal(s4AscBoss.stoneMult, 1.44);
+
+  // Stage 0 revisit at Spirit (delta = 5) & Ascended (delta = 6): damped easing & caps
+  const s0Spirit = computeMainlineRealmScaling(0, "spirit", true);
+  assert.equal(s0Spirit.active, true);
+  assert.equal(s0Spirit.delta, 5);
+  assert.ok(s0Spirit.hpMult > 10 && s0Spirit.hpMult < REALM_COMBAT_BASELINE.spirit.bossHp / REALM_COMBAT_BASELINE.mortal.bossHp);
+  assert.equal(s0Spirit.postureMult, 1.6);
+  assert.equal(s0Spirit.stoneMult, 2.1);
+
+  const s0Asc = computeMainlineRealmScaling(0, "ascended", true);
+  assert.equal(s0Asc.delta, 6);
+  assert.equal(s0Asc.postureMult, 1.65);
+  assert.equal(s0Asc.stoneMult, 2.2);
+
+  // Clamping & invalid input guards
+  assert.deepEqual(computeMainlineRealmScaling(-5, "mortal", true), { active: false, delta: 0, hpMult: 1, atkMult: 1, postureMult: 1, stoneMult: 1 });
+  assert.deepEqual(computeMainlineRealmScaling(99, "spirit", true), s4SpiritBoss);
+  assert.deepEqual(computeMainlineRealmScaling(Number.NaN, "mortal", false), { active: false, delta: 0, hpMult: 1, atkMult: 1, postureMult: 1, stoneMult: 1 });
+});
+
+test("getStyleRankSpec and getComboTier emit strictly unified C/B/A/S ranks (zero D or SSS)", () => {
+  const allowed = new Set(["C", "B", "A", "S"]);
+  for (const sc of [-10, 0, 85, 179, 180, 399, 400, 699, 700, 1200]) {
+    const sp = getStyleRankSpec(sc);
+    assert.ok(allowed.has(sp.rank), `Unexpected style rank ${sp.rank} at score ${sc}`);
+  }
+  assert.equal(getStyleRankSpec(0).rank, "C");
+  assert.equal(getStyleRankSpec(180).rank, "B");
+  assert.equal(getStyleRankSpec(400).rank, "A");
+  assert.equal(getStyleRankSpec(700).rank, "S");
+
+  for (const h of [0, 3, 4, 9, 10, 21, 22, 50]) {
+    const ct = getComboTier(h);
+    assert.ok(allowed.has(ct.rank), `Unexpected combo rank ${ct.rank} at hits ${h}`);
+  }
+  assert.equal(getComboTier(0).rank, "C");
+  assert.equal(getComboTier(4).rank, "B");
+  assert.equal(getComboTier(10).rank, "A");
+  assert.equal(getComboTier(22).rank, "S");
 });

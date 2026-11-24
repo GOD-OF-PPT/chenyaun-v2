@@ -217,7 +217,7 @@
     const shatterMult = ((game.loadout.finisher === "sword_shatter" || game.loadout.finisher === "talisman_rupture") ? 1.45 : 1.0) * zenMult;
 
     const curPlayable = getActivePlayableSpec();
-    const charAtkAmp = curPlayable.atkMult * ((p.ravineBuffTimer || 0) > 0 ? 1.25 : 1.0) * ((game.sectMerits || 0) > 0 ? 1.06 : 1.0);
+    const charAtkAmp = curPlayable.atkMult * ((p.ravineBuffTimer || 0) > 0 ? 1.25 : 1.0) * (game.sectDefenseCleared ? 1.06 : 1.0);
     if (!fromClone && curPlayable.id === "shen" && step % 2 === 1) {
       game.hp = Math.min(st.maxHp, game.hp + Math.round(st.maxHp * 0.035));
     }
@@ -1818,14 +1818,15 @@
             ${svgLines.join("")}
           </svg>
           ${nodes.map(nd => {
+            const towerBestMap = Math.max(Math.floor(num(game.towerBest, 0)), Math.floor(num(metaState.bestTower, 0)));
             const starStr = nd.kind === "stage"
-              ? ("★".repeat(nd.stars) + "☆".repeat(Math.max(0, 3 - nd.stars)))
+              ? `${stageStarsToGrade(nd.stars)} · ${"★".repeat(nd.stars)}${"☆".repeat(Math.max(0, 3 - nd.stars))}`
               : nd.kind === "tower"
-                ? `最高 #${Math.max(game.towerBest || 1, metaState.bestTower || 1)} 层`
+                ? `最高 #${Math.max(1, towerBestMap)} 层${towerBestMap >= 1 ? ` (${computeModeGrade("demon_tower", { floor: towerBestMap })}级)` : ""}`
                 : nd.kind === "chapter5_marker"
                   ? "第五卷叙事节点"
                   : nd.kind === "boss_rush"
-                    ? "七阵踏天连战"
+                    ? (metaState.bestRushGrade ? `七阵连战 · ${escapeHtml(metaState.bestRushGrade)} 级` : "七阵踏天连战")
                     : "安全休整";
             const isSel = nd.id === sel.id;
             return `
@@ -1850,9 +1851,16 @@
               ${renderSemanticTag(selSem, selTierLbl)}
               <strong style="font-family:var(--font-serif);font-size:var(--fs-lg);color:var(--gold-bright);">${escapeHtml(sel.name)}</strong>
               <span class="tag-chip ${sel.unlocked ? "done" : "is-locked"}">${sel.unlocked ? "已解锁" : escapeHtml(sel.lockReason)}</span>
+              ${sel.kind === "stage" ? `<span class="tag-chip ${sel.stars >= 3 ? "mythic" : sel.stars > 0 ? "done" : ""}">${stageStarsToGrade(sel.stars)} 级 (${"★".repeat(sel.stars)}${"☆".repeat(Math.max(0, 3 - sel.stars))})</span>` : ""}
             </div>
             <div style="font-size:var(--fs-sm);color:var(--text-main);">产出与机缘：${escapeHtml(sel.drop)}</div>
             <div style="font-size:var(--fs-xs);color:var(--text-sub);">解锁/路径：${escapeHtml(sel.reqText || sel.sub)}${sel.isMainTarget && navSnap.nextMainline && navSnap.nextMainline.stepText ? ` ｜ 当前主线：${escapeHtml(navSnap.nextMainline.stepText)}` : ""}</div>
+            ${(() => {
+              if (sel.kind !== "stage") return "";
+              const rsPrev = computeMainlineRealmScaling(sel.stageIdx, game.realm, true);
+              if (!rsPrev.active) return "";
+              return `<div id="world-map-scaling-badge" style="font-size:var(--fs-xs);color:#ffd98a;line-height:1.4;">⚖ 敌群随【${escapeHtml(REALMS[game.realm].name)}期】动态同步 · 灵石 ×${rsPrev.stoneMult}</div>`;
+            })()}
             ${(() => {
               const guide = sel.chapterIdx ? VOLUME_CAMPAIGN_GUIDE.find(v => v.volIndex === sel.chapterIdx) : null;
               if (!guide) return "";

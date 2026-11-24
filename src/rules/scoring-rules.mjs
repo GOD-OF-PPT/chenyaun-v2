@@ -4,6 +4,88 @@ import { CALAMITY_CYCLES } from "../config/progression-data.mjs";
 import { getGearTotals, getActivePactCount } from "./gear-rules.mjs";
 import { rankOf } from "./combat-stats.mjs";
 
+export const UNIFIED_GRADES = Object.freeze(["C", "B", "A", "S"]);
+export const UNIFIED_GRADE_RANK = Object.freeze({ C: 1, B: 2, A: 3, S: 4 });
+
+export function isValidUnifiedGrade(g) {
+  return typeof g === "string" && hasOwn(UNIFIED_GRADE_RANK, g);
+}
+
+export function maxUnifiedGrade(a, b) {
+  const ra = isValidUnifiedGrade(a) ? UNIFIED_GRADE_RANK[a] : 0;
+  const rb = isValidUnifiedGrade(b) ? UNIFIED_GRADE_RANK[b] : 0;
+  if (ra === 0 && rb === 0) return null;
+  return rb > ra ? b : a;
+}
+
+export function stageStarsToGrade(stars) {
+  const s = Math.max(0, Math.min(3, Math.floor(num(stars, 0))));
+  return s >= 3 ? "S" : s === 2 ? "A" : s === 1 ? "B" : "C";
+}
+
+export function computeModeGrade(mode, metrics = {}) {
+  const m = (metrics && typeof metrics === "object") ? metrics : {};
+  if (mode === "mainline") {
+    return stageStarsToGrade(m.stars);
+  }
+  if (mode === "sect_defense") {
+    if (!m.victory) return "C";
+    const maxHp = Math.max(1, num(m.maxCoreHp, 1));
+    const pct = Math.max(0, num(m.coreHp, 0)) / maxHp;
+    if (pct >= 0.80) return "S";
+    if (pct >= 0.55) return "A";
+    if (pct >= 0.30) return "B";
+    return "C";
+  }
+  if (mode === "cloud_sea") {
+    if (!m.victory) return "C";
+    const deflected = Math.max(0, Math.floor(num(m.deflectedCount, 0)));
+    const hpPct = Math.max(0, num(m.hpPct, 0));
+    if (deflected >= 5 && hpPct >= 0.5) return "S";
+    if (deflected >= 2 || hpPct >= 0.5) return "A";
+    return "B";
+  }
+  if (mode === "celestial_spire") {
+    const floor = Math.max(0, Math.floor(num(m.floor, 0)));
+    const revives = Math.max(0, Math.floor(num(m.revivesUsed, 0)));
+    const hpPct = Math.max(0, num(m.hpPct, 0));
+    if (floor >= 9 && revives === 0 && hpPct >= 0.5) return "S";
+    if (floor >= 6) return "A";
+    if (floor >= 3) return "B";
+    return "C";
+  }
+  if (mode === "demon_tower") {
+    const floor = Math.max(0, Math.floor(num(m.floor, m.towerBest)));
+    if (floor >= 10) return "S";
+    if (floor >= 6) return "A";
+    if (floor >= 3) return "B";
+    return "C";
+  }
+  if (mode === "custom_seed") {
+    const elapsedSec = Math.max(0, num(m.elapsedSec, 999));
+    const hitsTaken = Math.max(0, Math.floor(num(m.hitsTaken, 0)));
+    if (elapsedSec <= 45 && hitsTaken <= 2) return "S";
+    if (elapsedSec <= 90) return "A";
+    if (elapsedSec <= 150) return "B";
+    return "C";
+  }
+  if (mode === "dojo") {
+    if (m.isDrill) {
+      if (m.completed) return "S";
+      const prog = Math.max(0, Math.floor(num(m.progress, 0)));
+      if (prog >= 2) return "A";
+      if (prog >= 1) return "B";
+      return "C";
+    }
+    const hits = Math.max(0, Math.floor(num(m.hits, 0)));
+    if (hits >= 18) return "S";
+    if (hits >= 10) return "A";
+    if (hits >= 4) return "B";
+    return "C";
+  }
+  return "C";
+}
+
 export function getCalamityCycleSpec(tierOrGame) {
   const rawTier = (typeof tierOrGame === "object" && tierOrGame !== null)
     ? num(tierOrGame.calamityTier, 0)
@@ -56,7 +138,7 @@ export function computeCompetitionScore(g, env = null) {
   const towerPts = Math.min(20, Math.max(0, Math.floor(num(g.towerBest, 0)))) * 65
                  + Math.min(9, Math.max(0, Math.floor(num(g.bestSpireFloor, 0)))) * 45;
   const winPts = Math.min(400, Math.max(0, Math.floor(num(g.wins, 0))) * 8);
-  const rushMap = { "S+": 360, "SS": 300, "S": 220, "A": 140, "B": 80, "C": 40 };
+  const rushMap = { S: 360, A: 200, B: 100, C: 40 };
   const rushPts = hasOwn(rushMap, g.rushBestGrade) ? rushMap[g.rushBestGrade] : 0;
   const defiantPts = Math.min(5, Math.max(0, Math.floor(num(g.defiantBreakthroughs, 0)))) * 60;
   const pactMult = 1 + getActivePactCount(g) * 0.12;
@@ -68,11 +150,9 @@ export function computeCompetitionScore(g, env = null) {
 
 export function getScoreGrade(score, g = null, env = null) {
   const s = Math.max(0, num(score, 0));
-  let tier = 0; // 0:C, 1:B, 2:A, 3:S, 4:SS, 5:SSS
-  if (s >= 6400) tier = 5;
-  else if (s >= 4800) tier = 4;
-  else if (s >= 3400) tier = 3;
-  else if (s >= 2000) tier = 2;
+  let tier = 0; // 0:C, 1:B, 2:A, 3:S
+  if (s >= 4200) tier = 3;
+  else if (s >= 2200) tier = 2;
   else if (s >= 1000) tier = 1;
   else tier = 0;
 
@@ -88,18 +168,14 @@ export function getScoreGrade(score, g = null, env = null) {
     const clearedStages = clearedFn(g).length;
     const totalStars = getTotalStageStars(g);
     if (totalStars <= 0 || clearedStages <= 0) tier = Math.min(tier, s >= 1400 ? 1 : 0);
-    else if (clearedStages < stageCount || totalStars < 8) tier = Math.min(tier, 2);
-    else if (totalStars < 12) tier = Math.min(tier, 3);
-    else if (totalStars < 14) tier = Math.min(tier, 4);
+    else if (clearedStages < stageCount || totalStars < 10) tier = Math.min(tier, 2);
   }
 
   const GRADE_TABLE = [
     { grade: "C", title: "初窥门径" },
     { grade: "B", title: "问道修士" },
     { grade: "A", title: "青云真人" },
-    { grade: "S", title: "太虚剑尊" },
-    { grade: "SS", title: "九霄真仙" },
-    { grade: "SSS", title: "万古剑帝" }
+    { grade: "S", title: "万古剑帝" }
   ];
   return GRADE_TABLE[tier];
 }

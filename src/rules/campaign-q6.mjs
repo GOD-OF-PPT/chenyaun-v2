@@ -185,21 +185,23 @@ export const VOL5_RESONANCE_PILLARS = [
     summary: "完整通关万剑冢七阵取得正式评级",
     check: (g) => {
       const grade = (g && typeof g.rushBestGrade === "string") ? g.rushBestGrade.trim() : "";
-      const active = Boolean((grade && grade !== "未挑战") || (g && g.taixuTrailUnlocked));
-      return { active, progressText: active ? (grade || "已证剑尊") : "待通七阵" };
+      const validGrade = ["C", "B", "A", "S"].includes(grade);
+      const active = Boolean(validGrade || (g && g.taixuTrailUnlocked));
+      return { active, progressText: active ? (validGrade ? grade : "已证剑尊") : "待通七阵" };
     }
   },
   {
     id: "sect_defense",
     name: "护山大阵",
-    short: "护宗功勋",
+    short: "护阵破劫",
     sysId: "sect_defense",
     minRealm: "foundation",
     actionId: "start_sect_defense",
-    summary: "击退三波百鬼夜行取得护宗功勋",
+    summary: "击退三波百鬼夜行守卫护山大阵",
     check: (g) => {
-      const m = Math.max(0, Math.floor(num(g && g.sectMerits, 0)));
-      return { active: m >= 1, progressText: m >= 1 ? `功勋 ×${m}` : "待守阵" };
+      const grade = (g && typeof g.sectDefenseBestGrade === "string") ? g.sectDefenseBestGrade.trim() : "";
+      const active = Boolean(g && (g.sectDefenseCleared || (grade && ["C", "B", "A", "S"].includes(grade))));
+      return { active, progressText: active ? `${grade || "已破"} 级 ✓` : "待守阵" };
     }
   }
 ];

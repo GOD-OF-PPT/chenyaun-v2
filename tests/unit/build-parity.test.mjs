@@ -13,9 +13,10 @@ import {
   transformEsmForIife
 } from "../../scripts/build-playable.mjs";
 import { loadPlayableEngine } from "../../scripts/eval-combat-matrix.mjs";
-import { computeCombatStatLedger, getCombatStats, applySingleHitCap } from "../../src/rules/combat-stats.mjs";
+import { computeCombatStatLedger, getCombatStats, applySingleHitCap, computeMainlineRealmScaling } from "../../src/rules/combat-stats.mjs";
 import { effectiveGearVal, computeGearAffixBudget } from "../../src/rules/gear-rules.mjs";
 import { computeRecipeCostBreakdown, previewLifespanImpact } from "../../src/rules/economy-rules.mjs";
+import { stageStarsToGrade, maxUnifiedGrade, computeModeGrade, UNIFIED_GRADES } from "../../src/rules/scoring-rules.mjs";
 import { RECIPES } from "../../src/config/realms-items.mjs";
 
 const PLAYABLE_PATH = path.join(REPO_ROOT, "web/public/playable-v2.html");
@@ -150,6 +151,12 @@ test("pure ESM rule modules match live assembled playable-v2.html engine inside 
   assert.deepEqual(plain(esmRecipe), plain(vmRecipe));
 
   assert.equal(applySingleHitCap(500, 200, 20), dbg.rules.applySingleHitCap(500, 200, 20));
+  assert.deepEqual(plain(computeMainlineRealmScaling(4, "spirit", true)), plain(dbg.rules.computeMainlineRealmScaling(4, "spirit", true)));
+  assert.deepEqual(plain(computeMainlineRealmScaling(0, "golden", false)), plain(dbg.rules.computeMainlineRealmScaling(0, "golden", false)));
+  assert.deepEqual(plain(UNIFIED_GRADES), plain(dbg.rules.UNIFIED_GRADES));
+  assert.equal(stageStarsToGrade(3), dbg.rules.stageStarsToGrade(3));
+  assert.equal(maxUnifiedGrade("A", "S"), dbg.rules.maxUnifiedGrade("A", "S"));
+  assert.equal(computeModeGrade("sect_defense", { victory: true, coreHp: 850, maxCoreHp: 1000 }), dbg.rules.computeModeGrade("sect_defense", { victory: true, coreHp: 850, maxCoreHp: 1000 }));
 
   // Exhaustively invoke every method across __CHENYUAN_DEBUG__.{rules, q6, persistence, art, telemetry}
   assert.ok(dbg.rules.computeCombatStatLedger(g).totals.atk > 0);
@@ -227,6 +234,33 @@ test("static repo guard asserts zero legacy versioned debug hook references in s
     }
   }
   assert.deepEqual(violations, [], `Found forbidden legacy debug hook references: ${violations.join(", ")}`);
+});
+
+test("static D05 guard asserts zero removed sub-currencies in src/ and zero non-unified super-S grades in rules/state/runtime", () => {
+  const removedCurrencyRe = /reincarnationPoints|sectMerits|轮回道果点|护宗功勋/g;
+  const srcFiles = collectFilesRecursive(path.join(REPO_ROOT, "src"));
+  const currencyViolations = [];
+  for (const abs of srcFiles) {
+    if (abs.endsWith(".webp") || abs.endsWith(".png") || abs.endsWith(".jpg")) continue;
+    const text = fs.readFileSync(abs, "utf8");
+    const m = text.match(removedCurrencyRe);
+    if (m && m.length > 0) currencyViolations.push(`${path.relative(REPO_ROOT, abs)} (${m.length})`);
+  }
+  assert.deepEqual(currencyViolations, [], `Found removed sub-currency residue in src/: ${currencyViolations.join(", ")}`);
+
+  const superGradeRe = /"(?:SSS|SS|S\+)"/g;
+  const logicFiles = [
+    ...collectFilesRecursive(path.join(REPO_ROOT, "src/rules")),
+    ...collectFilesRecursive(path.join(REPO_ROOT, "src/state")),
+    ...collectFilesRecursive(path.join(REPO_ROOT, "src/runtime"))
+  ];
+  const gradeViolations = [];
+  for (const abs of logicFiles) {
+    const text = fs.readFileSync(abs, "utf8");
+    const m = text.match(superGradeRe);
+    if (m && m.length > 0) gradeViolations.push(`${path.relative(REPO_ROOT, abs)} (${m.length})`);
+  }
+  assert.deepEqual(gradeViolations, [], `Found non-unified super-S grade strings: ${gradeViolations.join(", ")}`);
 });
 
 test("build-playable negative guards reject orphan runtime assets, unquoted external HTML URLs, JS external URLs, and aliased ESM imports", () => {
