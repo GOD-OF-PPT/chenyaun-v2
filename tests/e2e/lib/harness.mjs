@@ -112,6 +112,7 @@ export function resolveExecutablePath() {
 
 export function startStaticServer(rootDir = PUBLIC_DIR) {
   const resolvedRoot = path.resolve(rootDir);
+  const fileCache = new Map();
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
       try {
@@ -125,20 +126,29 @@ export function startStaticServer(rootDir = PUBLIC_DIR) {
           res.end("Forbidden");
           return;
         }
-        if (!fs.existsSync(fullPath) || fs.statSync(fullPath).isDirectory()) {
-          res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
-          res.end("Not Found");
-          return;
+        let cached = fileCache.get(fullPath);
+        if (!cached) {
+          if (!fs.existsSync(fullPath) || fs.statSync(fullPath).isDirectory()) {
+            res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+            res.end("Not Found");
+            return;
+          }
+          const ext = path.extname(fullPath).toLowerCase();
+          const mime = MIME_TYPES[ext] || "application/octet-stream";
+          const buf = fs.readFileSync(fullPath);
+          cached = { buf, mime };
+          fileCache.set(fullPath, cached);
         }
-        const ext = path.extname(fullPath).toLowerCase();
-        const mime = MIME_TYPES[ext] || "application/octet-stream";
-        res.writeHead(200, { "Content-Type": mime, "Cache-Control": "no-store" });
-        const stream = fs.createReadStream(fullPath);
-        stream.on("error", () => {
-          if (!res.headersSent) res.writeHead(500);
-          res.end();
+        res.writeHead(200, {
+          "Content-Type": cached.mime,
+          "Content-Length": cached.buf.length,
+          "Cache-Control": "no-store"
         });
-        stream.pipe(res);
+        if (req.method === "HEAD") {
+          res.end();
+        } else {
+          res.end(cached.buf);
+        }
       } catch {
         res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
         res.end("Bad Request");
@@ -154,7 +164,11 @@ export function startStaticServer(rootDir = PUBLIC_DIR) {
         origin: `http://127.0.0.1:${port}`,
         close: () =>
           new Promise((resClose) => {
-            server.close(() => resClose());
+            server.close(() => {
+              fileCache.clear();
+              resClose();
+            });
+            server.closeAllConnections?.();
           })
       });
     });
@@ -175,10 +189,13 @@ export async function createTestEnv(browser, baseUrl, opts = {}) {
 
   const runtimeErrors = [];
 
-  async function openPage(label = "main") {
+  async function openPage(label = "main", { reducedMotion: pageReducedMotion = null } = {}) {
     const page = await context.newPage();
     page.setDefaultTimeout(actionTimeoutMs);
     page.setDefaultNavigationTimeout(navigationTimeoutMs);
+    if (pageReducedMotion) {
+      await page.emulateMedia({ reducedMotion: pageReducedMotion });
+    }
     page.on("pageerror", (err) => {
       runtimeErrors.push(`[${label} pageerror] ${err?.message || String(err)}`);
     });
@@ -192,7 +209,7 @@ export async function createTestEnv(browser, baseUrl, opts = {}) {
 
   async function gotoWelcome(page, storageMap = null) {
     if (storageMap && Object.keys(storageMap).length > 0) {
-      await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+      await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: navigationTimeoutMs });
       await page.evaluate((entries) => {
         localStorage.clear();
         for (const [k, v] of Object.entries(entries)) {
@@ -200,11 +217,11 @@ export async function createTestEnv(browser, baseUrl, opts = {}) {
           else localStorage.setItem(k, String(v));
         }
       }, storageMap);
-      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.reload({ waitUntil: "domcontentloaded", timeout: navigationTimeoutMs });
     } else {
-      await page.goto(baseUrl, { waitUntil: "domcontentloaded" });
+      await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: navigationTimeoutMs });
     }
-    await page.waitForSelector("#welcome-screen", { timeout: 10000 });
+    await page.waitForSelector("#welcome-screen", { timeout: navigationTimeoutMs });
     await page.waitForTimeout(120);
   }
 
@@ -257,12 +274,12 @@ export async function createTestEnv(browser, baseUrl, opts = {}) {
         await page.waitForTimeout(80);
       }
     }
-    await page.waitForSelector("#btn-sanctum-hub", { timeout: 10000 });
+    await page.waitForSelector("#btn-sanctum-hub", { timeout: navigationTimeoutMs });
   }
 
   async function continueSavedGame(page, storageMap, { dismissOnboarding = true } = {}) {
     await gotoWelcome(page, storageMap);
-    await page.waitForSelector("#btn-continue-save", { state: "visible", timeout: 10000 });
+    await page.waitForSelector("#btn-continue-save", { state: "visible", timeout: navigationTimeoutMs });
     await page.click("#btn-continue-save");
     await page.waitForTimeout(220);
     if (dismissOnboarding) {
@@ -272,7 +289,7 @@ export async function createTestEnv(browser, baseUrl, opts = {}) {
         await page.waitForTimeout(80);
       }
     }
-    await page.waitForSelector("#btn-sanctum-hub", { timeout: 10000 });
+    await page.waitForSelector("#btn-sanctum-hub", { timeout: navigationTimeoutMs });
   }
 
   function assertZeroRuntimeErrors() {
@@ -290,6 +307,8 @@ export async function createTestEnv(browser, baseUrl, opts = {}) {
   return {
     context,
     baseUrl,
+    actionTimeoutMs,
+    navigationTimeoutMs,
     runtimeErrors,
     openPage,
     gotoWelcome,
@@ -430,4 +449,197 @@ export async function readStorageJson(page, key) {
       return { raw, parsed: null };
     }
   }, key);
+}
+
+// ==================== Opaque-Box Meditation, Loot-Magnet & Sync Helpers ====================
+
+export async function ensureMeditating(page, timeoutMs = 5000) {
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve))
+      )
+  );
+  const alreadyActive = await page.evaluate(
+    () => !!document.querySelector("#orb-meditate.meditate-active")
+  );
+  if (!alreadyActive) {
+    await page.keyboard.press("KeyB");
+  }
+  await page.waitForSelector("#orb-meditate.meditate-active", {
+    timeout: timeoutMs
+  });
+  const lbl = await page.evaluate(
+    () => (document.querySelector("#lbl-meditate")?.textContent || "").trim()
+  );
+  assert.equal(
+    lbl,
+    "收功",
+    `Expected #lbl-meditate to display "收功" while meditating, got "${lbl}"`
+  );
+}
+
+export async function waitForLootMagnetWindow(
+  page,
+  {
+    stonesBefore,
+    minFrames = 32,
+    minSimSec = 0.7,
+    maxWallMs = 12000,
+    requireMeditation = true
+  }
+) {
+  return page.evaluate(
+    ({ before, minF, minSim, maxWall, reqMed }) =>
+      new Promise((resolve) => {
+        const startWall = performance.now();
+        let prevTs = null;
+        let frames = 0;
+        let simTime = 0;
+        let done = false;
+
+        function readStones() {
+          const raw = (document.querySelector("#hud-stones")?.textContent || "").trim();
+          const num = parseInt(raw.replace(/[^\d-]/g, ""), 10);
+          return Number.isFinite(num) ? num : NaN;
+        }
+
+        function finish(reason) {
+          if (done) return;
+          done = true;
+          clearTimeout(wallGuard);
+          resolve({
+            reason,
+            frames,
+            simTime: Number(simTime.toFixed(4)),
+            wallMs: Math.round(performance.now() - startWall),
+            stones: readStones(),
+            meditating: !!document.querySelector("#orb-meditate.meditate-active")
+          });
+        }
+
+        const wallGuard = setTimeout(() => finish("wall_timeout"), maxWall);
+
+        function step(ts) {
+          if (done) return;
+          if (prevTs !== null) {
+            simTime += Math.min(0.05, Math.max(0, (ts - prevTs) / 1000));
+            frames += 1;
+          }
+          prevTs = ts;
+
+          const curStones = readStones();
+          if (Number.isFinite(curStones) && curStones > before) {
+            finish("collected");
+            return;
+          }
+          if (reqMed && !document.querySelector("#orb-meditate.meditate-active")) {
+            finish("meditation_lost");
+            return;
+          }
+          if (frames >= minF && simTime >= minSim) {
+            finish("window_elapsed");
+            return;
+          }
+          if (performance.now() - startWall >= maxWall) {
+            finish("wall_timeout");
+            return;
+          }
+          requestAnimationFrame(step);
+        }
+
+        requestAnimationFrame(step);
+      }),
+    {
+      before: stonesBefore,
+      minF: minFrames,
+      minSim: minSimSec,
+      maxWall: maxWallMs,
+      reqMed: requireMeditation
+    }
+  );
+}
+
+export async function waitForStonesAtLeast(page, targetStones, maxWallMs = 6000) {
+  return page.evaluate(
+    ({ target, maxWall }) =>
+      new Promise((resolve) => {
+        const startWall = performance.now();
+        let frames = 0;
+        let done = false;
+
+        function readStones() {
+          const raw = (document.querySelector("#hud-stones")?.textContent || "").trim();
+          const num = parseInt(raw.replace(/[^\d-]/g, ""), 10);
+          return Number.isFinite(num) ? num : NaN;
+        }
+
+        function finish(ok) {
+          if (done) return;
+          done = true;
+          clearTimeout(wallGuard);
+          resolve({
+            ok,
+            frames,
+            wallMs: Math.round(performance.now() - startWall),
+            stones: readStones()
+          });
+        }
+
+        const wallGuard = setTimeout(() => finish(false), maxWall);
+
+        function step() {
+          if (done) return;
+          const cur = readStones();
+          if (Number.isFinite(cur) && cur >= target) {
+            finish(true);
+            return;
+          }
+          if (performance.now() - startWall >= maxWall) {
+            finish(false);
+            return;
+          }
+          frames += 1;
+          requestAnimationFrame(step);
+        }
+
+        requestAnimationFrame(step);
+      }),
+    { target: targetStones, maxWall: maxWallMs }
+  );
+}
+
+export async function waitForCrossTabConflict(page, timeoutMs = 2500) {
+  await page
+    .waitForFunction(
+      () =>
+        !!document.querySelector(
+          '[data-action="stay-readonly-save"], [data-action="open-save-conflict"]'
+        ) ||
+        /冲突|新进度|载入最新/.test(
+          `${document.querySelector("#hud-save-alert")?.innerText || ""} ${
+            document.querySelector("#modal-backdrop.open #modal-content")?.innerText || ""
+          }`
+        ),
+      null,
+      { timeout: timeoutMs }
+    )
+    .catch(() => {});
+}
+
+export async function waitForCrossTabInvalidNotice(page, timeoutMs = 2500) {
+  await page
+    .waitForFunction(
+      () =>
+        /损坏|无效|校验失败|异常/.test(
+          `${document.querySelector("#hud-save-alert")?.innerText || ""} ${
+            document.querySelector("#modal-backdrop.open #modal-content")?.innerText || ""
+          } ${Array.from(document.querySelectorAll("#toast-container .toast-pill"))
+            .map((e) => e.textContent || "")
+            .join(" ")}`
+        ),
+      null,
+      { timeout: timeoutMs }
+    )
+    .catch(() => {});
 }

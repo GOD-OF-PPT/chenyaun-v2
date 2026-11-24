@@ -14,6 +14,8 @@ import * as tier3 from "./tiers/tier3-combinations.mjs";
 import * as tier4 from "./tiers/tier4-journeys.mjs";
 
 const ALL_TIERS = [tier1, tier2, tier3, tier4];
+const DEFAULT_TIMEOUT_MS = 25000;
+const MAX_TIMEOUT_MS = 2147483647;
 
 function printHelp() {
   console.log(`Usage: node tests/e2e/run.mjs [options]
@@ -22,11 +24,25 @@ Options:
   --tier <1|2|3|4|all>   Run specific tier(s), comma-separated (default: all)
   --filter <pattern>     Filter tests by ID, title, or feature (substring or /regex/i)
   --report <file>        Write structured JSON report to <file>
-  --url <url>            Use an external HTTP URL instead of built-in static server
-  --timeout <ms>         Per-test timeout in ms (default: 25000)
+  --url <url>            Use an external HTTP/HTTPS URL instead of built-in static server
+  --timeout <ms>         Per-test timeout in ms (1..${MAX_TIMEOUT_MS}, default: ${DEFAULT_TIMEOUT_MS})
   --fail-fast            Stop immediately on first failing test
   -h, --help             Show this help message
 `);
+}
+
+function parsePositiveInt(raw, flag, maxValue = Number.MAX_SAFE_INTEGER) {
+  if (typeof raw !== "string" || !/^[1-9]\d*$/.test(raw)) {
+    throw new Error(`Invalid ${flag} value: ${raw} (expected positive integer)`);
+  }
+  const num = Number(raw);
+  if (!Number.isSafeInteger(num) || num < 1) {
+    throw new Error(`Invalid ${flag} value: ${raw} (expected positive integer)`);
+  }
+  if (num > maxValue) {
+    throw new Error(`Invalid ${flag} value: ${raw} (must be <= ${maxValue})`);
+  }
+  return num;
 }
 
 function parseArgs(argv) {
@@ -35,7 +51,7 @@ function parseArgs(argv) {
     filter: "",
     report: "",
     url: "",
-    timeoutMs: 25000,
+    timeoutMs: DEFAULT_TIMEOUT_MS,
     failFast: false,
     help: false
   };
@@ -45,10 +61,18 @@ function parseArgs(argv) {
       throw new Error(`Missing value for ${flag}`);
     }
     const next = argv[index + 1];
-    if (next.startsWith("--")) {
+    if (next === "" || next.startsWith("--") || next === "-h") {
       throw new Error(`Missing value for ${flag}`);
     }
     return next;
+  }
+
+  function consumeEqualsValue(arg, flag) {
+    const val = arg.slice(flag.length + 1);
+    if (val === "") {
+      throw new Error(`Missing value for ${flag}`);
+    }
+    return val;
   }
 
   for (let i = 0; i < argv.length; i++) {
@@ -61,64 +85,89 @@ function parseArgs(argv) {
       opts.tier = consumeFlagValue(i, arg);
       i += 1;
     } else if (arg.startsWith("--tier=")) {
-      opts.tier = arg.slice("--tier=".length);
+      opts.tier = consumeEqualsValue(arg, "--tier");
     } else if (arg === "--filter") {
       opts.filter = consumeFlagValue(i, arg);
       i += 1;
     } else if (arg.startsWith("--filter=")) {
-      opts.filter = arg.slice("--filter=".length);
+      opts.filter = consumeEqualsValue(arg, "--filter");
     } else if (arg === "--report") {
       opts.report = consumeFlagValue(i, arg);
       i += 1;
     } else if (arg.startsWith("--report=")) {
-      opts.report = arg.slice("--report=".length);
+      opts.report = consumeEqualsValue(arg, "--report");
     } else if (arg === "--url") {
       opts.url = consumeFlagValue(i, arg);
       i += 1;
     } else if (arg.startsWith("--url=")) {
-      opts.url = arg.slice("--url=".length);
+      opts.url = consumeEqualsValue(arg, "--url");
     } else if (arg === "--timeout") {
-      opts.timeoutMs = Number(consumeFlagValue(i, arg));
+      opts.timeoutMs = parsePositiveInt(consumeFlagValue(i, arg), "--timeout", MAX_TIMEOUT_MS);
       i += 1;
     } else if (arg.startsWith("--timeout=")) {
-      opts.timeoutMs = Number(arg.slice("--timeout=".length));
+      opts.timeoutMs = parsePositiveInt(consumeEqualsValue(arg, "--timeout"), "--timeout", MAX_TIMEOUT_MS);
     } else {
       throw new Error(`Unknown CLI argument: ${arg}`);
     }
   }
 
-  if (!Number.isFinite(opts.timeoutMs) || opts.timeoutMs <= 0) {
-    throw new Error(`Invalid --timeout value: ${opts.timeoutMs}`);
+  if (opts.url) {
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(opts.url);
+    } catch {
+      throw new Error(`Invalid --url value: ${opts.url}`);
+    }
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      throw new Error(`Invalid --url protocol '${parsedUrl.protocol}' (expected http: or https:)`);
+    }
   }
+
   return opts;
 }
 
 function parseTierSelection(tierArg) {
-  if (!tierArg || tierArg.toLowerCase() === "all") {
+  if (!tierArg || tierArg.trim() === "") {
+    throw new Error("Invalid --tier value: expected 1, 2, 3, 4, or all.");
+  }
+  if (tierArg.trim().toLowerCase() === "all") {
     return new Set([1, 2, 3, 4]);
   }
-  const parts = tierArg.split(",").map((s) => s.trim()).filter(Boolean);
+  const rawParts = tierArg.split(",");
   const selected = new Set();
-  for (const p of parts) {
-    const num = Number(p);
-    if (![1, 2, 3, 4].includes(num)) {
+  for (const rawPart of rawParts) {
+    const p = rawPart.trim();
+    if (!p) {
+      throw new Error(`Invalid --tier value '${tierArg}': empty tier segment.`);
+    }
+    if (!/^[1-4]$/.test(p)) {
       throw new Error(`Invalid tier '${p}'. Expected 1, 2, 3, 4, or all.`);
     }
-    selected.add(num);
+    selected.add(Number(p));
   }
   return selected;
 }
 
 function buildFilterMatcher(pattern) {
   if (!pattern) return () => true;
-  const regexMatch = pattern.match(/^\/(.+)\/([gimsuy]*)$/);
+  if (pattern === "//") {
+    throw new Error("Empty regular expression //");
+  }
+  const regexMatch = pattern.match(/^\/(.+)\/([a-zA-Z]*)$/);
   if (regexMatch) {
     const flags = (regexMatch[2] || "i").replace(/[gy]/g, "");
     const rx = new RegExp(regexMatch[1], flags);
     return (t) => rx.test(`${t.id} ${t.title} ${(t.features || []).join(" ")}`);
   }
+  if (pattern.startsWith("/") && pattern.length > 1) {
+    throw new Error(`Unterminated regular expression: ${pattern}`);
+  }
   const needle = pattern.toLowerCase();
   return (t) => `${t.id} ${t.title} ${(t.features || []).join(" ")}`.toLowerCase().includes(needle);
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function runWithTimeout(promise, timeoutMs, label) {
@@ -168,10 +217,15 @@ async function main() {
   }
 
   const plan = [];
+  const seenIds = new Set();
   for (const mod of ALL_TIERS) {
-    if (!selectedTiers.has(mod.tier)) continue;
     for (const t of mod.tests) {
-      if (matcher(t)) {
+      if (seenIds.has(t.id)) {
+        console.error(`[E2E CLI ERROR] Duplicate test ID detected in manifest: ${t.id}`);
+        process.exit(2);
+      }
+      seenIds.add(t.id);
+      if (selectedTiers.has(mod.tier) && matcher(t)) {
         plan.push({ ...t, tier: mod.tier, tierName: mod.name });
       }
     }
@@ -191,6 +245,10 @@ async function main() {
     console.error(`[E2E BOOTSTRAP ERROR]\n${err.message}`);
     process.exit(2);
   }
+
+  const navigationTimeoutMs = Math.max(5000, Math.min(20000, Math.floor(opts.timeoutMs * 0.75)));
+  const actionTimeoutMs = Math.max(3000, Math.min(8000, Math.floor(opts.timeoutMs * 0.3)));
+
   const suiteStart = Date.now();
   let staticServer = null;
   let browser = null;
@@ -198,6 +256,16 @@ async function main() {
   const results = [];
   const byTier = {};
   let totalRuntimeErrors = 0;
+  let stopRequested = false;
+  let abortedBySignal = false;
+
+  const onSignal = (sig) => {
+    abortedBySignal = true;
+    stopRequested = true;
+    console.error(`\n[E2E] Received ${sig}; draining active test cleanly...`);
+  };
+  process.on("SIGINT", onSignal);
+  process.on("SIGTERM", onSignal);
 
   try {
     let targetUrl = opts.url;
@@ -213,30 +281,35 @@ async function main() {
     });
 
     console.log(
-      `[E2E] Running ${plan.length} test(s) | viewport=1440x900 | browser=${execPath || "playwright-default"} | url=${targetUrl}`
+      `[E2E] Running ${plan.length} test(s) | timeout=${opts.timeoutMs}ms | viewport=1440x900 | browser=${execPath || "playwright-default"} | url=${targetUrl}`
     );
 
     for (const testCase of plan) {
+      if (stopRequested) break;
       const tStart = Date.now();
-      const env = await createTestEnv(browser, targetUrl, { actionTimeoutMs: 5000 });
+      const env = await createTestEnv(browser, targetUrl, { actionTimeoutMs, navigationTimeoutMs });
       let ok = false;
       let errMsg = "";
       let errKind = "";
+      let timedOut = false;
+      let testPromise = null;
 
       try {
-        await runWithTimeout(
-          Promise.resolve().then(() => testCase.fn(env)),
-          opts.timeoutMs,
-          testCase.id
-        );
+        testPromise = Promise.resolve().then(() => testCase.fn(env));
+        testPromise.catch(() => {});
+        await runWithTimeout(testPromise, opts.timeoutMs, testCase.id);
         env.assertZeroRuntimeErrors();
         ok = true;
       } catch (err) {
         ok = false;
+        timedOut = err?.code === "E2E_TIMEOUT" || err?.name === "TimeoutError";
         errMsg = (err?.message || String(err)).replace(/\s+/g, " ").trim();
         errKind = err?.code || err?.name || "Error";
       } finally {
         await env.cleanup();
+        if (timedOut && testPromise) {
+          await Promise.race([testPromise.catch(() => {}), delay(1500)]);
+        }
       }
 
       const durationMs = Date.now() - tStart;
@@ -273,6 +346,8 @@ async function main() {
       if (!ok && opts.failFast) break;
     }
   } finally {
+    process.off("SIGINT", onSignal);
+    process.off("SIGTERM", onSignal);
     if (browser) await browser.close().catch(() => {});
     if (staticServer) await staticServer.close().catch(() => {});
   }
@@ -297,7 +372,7 @@ async function main() {
     fs.mkdirSync(path.dirname(reportPath), { recursive: true });
     const payload = {
       schemaVersion: 1,
-      passed: failedCount === 0 && results.length > 0,
+      passed: failedCount === 0 && results.length > 0 && !abortedBySignal,
       timestamp: new Date().toISOString(),
       durationMs: totalDurationMs,
       viewport: "1440x900",
@@ -321,7 +396,7 @@ async function main() {
     console.log(`[E2E] JSON report written to ${reportPath}`);
   }
 
-  process.exit(failedCount === 0 && results.length > 0 ? 0 : 1);
+  process.exit(failedCount === 0 && results.length > 0 && !abortedBySignal ? 0 : 1);
 }
 
 main().catch((err) => {

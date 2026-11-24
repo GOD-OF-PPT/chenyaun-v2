@@ -6036,6 +6036,63 @@ const ART = {
       hallOfLives
     };
   }
+  function hallEntryKey(rawEntry) {
+    const entry = sanitizeHallEntry(rawEntry);
+    if (!entry) return null;
+    return `${entry.recordedAt || 0}|${entry.lifeNum || 0}|${entry.endingId || ""}|${entry.name || ""}|${entry.score || 0}`;
+  }
+  function isMetaBehind(candidate, target) {
+    const cand = (candidate && typeof candidate === "object") ? candidate : {};
+    const tgt = (target && typeof target === "object") ? target : {};
+    if (Math.max(0, Math.floor(num(tgt.ascensions, 0))) > Math.max(0, Math.floor(num(cand.ascensions, 0)))) return true;
+    if (Math.max(0, num(tgt.bestScore, 0)) > Math.max(0, num(cand.bestScore, 0))) return true;
+    if (Math.max(0, Math.floor(num(tgt.bestTower, 0))) > Math.max(0, Math.floor(num(cand.bestTower, 0)))) return true;
+    if (Math.max(0, Math.floor(num(tgt.bestSpireFloor, 0))) > Math.max(0, Math.floor(num(cand.bestSpireFloor, 0)))) return true;
+    if (Math.max(0, Math.floor(num(tgt.bestCalamityTier, 0))) > Math.max(0, Math.floor(num(cand.bestCalamityTier, 0)))) return true;
+    if (Math.max(0, Math.floor(num(tgt.cloudSeaClears, 0))) > Math.max(0, Math.floor(num(cand.cloudSeaClears, 0)))) return true;
+    if (Math.max(0, Math.floor(num(tgt.reincarnationPoints, 0))) > Math.max(0, Math.floor(num(cand.reincarnationPoints, 0)))) return true;
+    if (Boolean(tgt.taixuTrailUnlocked) && !Boolean(cand.taixuTrailUnlocked)) return true;
+    const rTgt = hasOwn(RUSH_GRADE_RANK, tgt.bestRushGrade) ? RUSH_GRADE_RANK[tgt.bestRushGrade] : 0;
+    const rCand = hasOwn(RUSH_GRADE_RANK, cand.bestRushGrade) ? RUSH_GRADE_RANK[cand.bestRushGrade] : 0;
+    if (rTgt > rCand) return true;
+    const tTgt = Math.max(0, num(tgt.bestRushTime, 0));
+    const tCand = Math.max(0, num(cand.bestRushTime, 0));
+    if (tTgt > 0 && (tCand <= 0 || tTgt < tCand)) return true;
+    const karmaTgt = (tgt.karmaAscensions && typeof tgt.karmaAscensions === "object" && !Array.isArray(tgt.karmaAscensions)) ? tgt.karmaAscensions : {};
+    const karmaCand = (cand.karmaAscensions && typeof cand.karmaAscensions === "object" && !Array.isArray(cand.karmaAscensions)) ? cand.karmaAscensions : {};
+    for (const k of new Set(["righteous", "neutral", "demonic", ...Object.keys(karmaTgt)])) {
+      if (k === "__proto__" || k === "constructor" || k === "prototype") continue;
+      if (Math.max(0, Math.floor(num(karmaTgt[k], 0))) > Math.max(0, Math.floor(num(karmaCand[k], 0)))) return true;
+    }
+    const strSetBehind = (candArr, tgtArr) => {
+      if (!Array.isArray(tgtArr) || tgtArr.length === 0) return false;
+      const candSet = new Set();
+      if (Array.isArray(candArr)) {
+        for (const v of candArr) if (typeof v === "string" && v) candSet.add(v);
+      }
+      for (const v of tgtArr) {
+        if (typeof v === "string" && v && !candSet.has(v)) return true;
+      }
+      return false;
+    };
+    if (strSetBehind(cand.seenEnemies, tgt.seenEnemies)) return true;
+    if (strSetBehind(cand.seenLaws, tgt.seenLaws)) return true;
+    if (strSetBehind(cand.unlockedEndings, tgt.unlockedEndings)) return true;
+    if (Array.isArray(tgt.hallOfLives) && tgt.hallOfLives.length > 0) {
+      const candHallKeys = new Set();
+      if (Array.isArray(cand.hallOfLives)) {
+        for (const e of cand.hallOfLives) {
+          const hk = hallEntryKey(e);
+          if (hk) candHallKeys.add(hk);
+        }
+      }
+      for (const e of tgt.hallOfLives) {
+        const hk = hallEntryKey(e);
+        if (hk && !candHallKeys.has(hk)) return true;
+      }
+    }
+    return false;
+  }
   function inspectMetaState({ applyToMemory = true } = {}) {
     let primaryRaw = null;
     try {
@@ -8517,7 +8574,7 @@ const ART = {
     }
     const p = arena.player;
     if ((p.z || 0) > 18 || (p.jumpCd || 0) > 0) return;
-    p.meditating = false;
+    if (p.meditating) toggleMeditation(false);
     p.jumpCd = 0.52;
     p.z = Math.max(p.z || 0, 8);
     p.vz = 12.6;
@@ -8588,7 +8645,7 @@ const ART = {
     if (!game || arena.paused) return;
     const p = arena.player;
     if ((p.blinkCd || 0) > 0) return;
-    p.meditating = false;
+    if (p.meditating) toggleMeditation(false);
     p.blinkCd = (p.gourdHasteTimer || 0) > 0 ? 0.9 : 2.1;
     const st = getCombatStats(game);
     const canvas = document.getElementById("fx-canvas");
@@ -9289,7 +9346,7 @@ const ART = {
     p.slashCd = 0;
     p.dashTimer = 0;
     arena.morphCd = 0;
-    p.meditating = false;
+    if (p.meditating) toggleMeditation(false);
     p.comboWindow = 1.35;
     p.hyperArmorTimer = Math.max(p.hyperArmorTimer || 0, 1.55);
     p.invuln = Math.max(p.invuln, 0.48);
@@ -10010,7 +10067,7 @@ const ART = {
     const canSwitchAttack = (p.comboWindow > 0.12 || p.dashTimer > 0 || arena.witchTime > 0 || p.invuln > 0.12) && (arena.switchMorphCd || 0) <= 0;
 
     arena.weaponPosture = nextPosture;
-    p.meditating = false;
+    if (p.meditating) toggleMeditation(false);
     Sound.switchStanceChime(isHeavy);
 
     if (canSwitchAttack) {
@@ -10710,7 +10767,7 @@ const ART = {
     arena.hitStop = 0;
     p.slashCd = 0;
     p.dashTimer = 0;
-    p.meditating = false;
+    if (p.meditating) toggleMeditation(false);
     p.invuln = Math.max(p.invuln || 0, 0.72);
     const emergency = game.hp < st.maxHp * 0.50;
     if (emergency || nextId === "lu" || nextId === "shen") {
@@ -11704,6 +11761,7 @@ const ART = {
 
   function startCelestialSpireRun(startFloor = 1) {
     if (!game) return;
+    if (!guardEcosystemAccess("celestial_spire")) return;
     resetStageTransitionState();
     closeModal();
     closeDrawer();
@@ -15022,7 +15080,8 @@ const ART = {
       const ex = ensureExpeditionState(game);
       const activeNodes = EXPEDITION_NODES.filter(nd => ex.assignments && ex.assignments[nd.id] && isGarrisonHeroUnlocked(game, ex.assignments[nd.id]));
       if (activeNodes.length > 0) {
-        ex.tickTimer = (ex.tickTimer || 8.5) - dt;
+        const curTick = (typeof ex.tickTimer === "number" && Number.isFinite(ex.tickTimer)) ? ex.tickTimer : 8.5;
+        ex.tickTimer = curTick - dt;
         if (ex.tickTimer <= 0) {
           ex.tickTimer = 8.5;
           const tickStones = activeNodes.reduce((s, n) => s + Math.round(n.stoneRate * 0.35), 0);
@@ -16893,7 +16952,7 @@ const ART = {
   let preSandboxSnapshot = null;
   let pendingSandboxEntry = null;
 
-  function openSandboxConfirmModal(source = "pavilion", preset = null) {
+  function openSandboxConfirmModal(source = "pavilion", preset = null, triggerEl = null) {
     if (!game && !preset) return;
     pendingSandboxEntry = { source, preset };
     const presetLabels = {
@@ -16925,7 +16984,7 @@ const ART = {
         <button type="button" class="btn-ghost" data-modal-close="1">取消返回</button>
         <button type="button" id="btn-confirm-enter-sandbox" class="btn-gold" data-action="confirm-enter-sandbox">确认进入演武沙盒</button>
       </div>
-    `, true);
+    `, true, triggerEl ? { triggerEl } : {});
   }
 
   function enterSandboxMode(opts = {}) {
@@ -17250,7 +17309,7 @@ const ART = {
       el.classList.remove("readonly-mode");
       return;
     }
-    if (saveAlertDismissed && !saveConflictState && !storageReadError && !metaReadError) {
+    if (saveAlertDismissed && !saveConflictState && !storageReadError && !metaReadError && !saveReadOnlyMode) {
       el.style.display = "none";
       return;
     }
@@ -17261,6 +17320,32 @@ const ART = {
         <span>⚠ <b>检测到另一标签页更新了存档</b>（${escapeHtml(saveConflictState.externalName)} · ${escapeHtml(saveConflictState.externalRealm)}，v${saveConflictState.externalRev}），已暂停自动覆盖。</span>
         <div style="display:flex;gap:6px;flex-shrink:0;">
           <button type="button" class="btn-jade" style="padding:3px 9px;font-size:11px;" data-action="open-save-conflict">处理冲突</button>
+        </div>
+      `;
+      return;
+    }
+    if (storageWriteError && storageReadError) {
+      el.classList.remove("readonly-mode");
+      el.style.display = "flex";
+      el.innerHTML = `
+        <span>⚠ <b>本地存档写入失败</b>（${escapeHtml(storageWriteError.message)}）且<b>原受损存档仍保留</b>（${escapeHtml(storageReadError.reason)}）· 自动保存已暂停，请先备份或确认覆写。</span>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          ${storageReadError.raw ? `<button type="button" class="btn-ghost" style="padding:3px 9px;font-size:11px;" data-action="copy-corrupt-save-raw">复制受损原文</button>` : ""}
+          <button type="button" class="btn-gold" style="padding:3px 9px;font-size:11px;" data-action="overwrite-with-current-save">以本页覆盖</button>
+          <button type="button" class="btn-ghost" style="padding:3px 9px;font-size:11px;" data-action="open-cloud-backup">备份云码</button>
+        </div>
+      `;
+      return;
+    }
+    if (storageWriteError && saveReadOnlyMode) {
+      el.classList.add("readonly-mode");
+      el.style.display = "flex";
+      el.innerHTML = `
+        <span>⚠ <b>本地存档写入失败</b>（${escapeHtml(storageWriteError.message)}）· 当前仍处于<b>只读观览态</b>，可载入最新档、重试覆盖或备份云码。</span>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button type="button" class="btn-jade" style="padding:3px 9px;font-size:11px;" data-action="load-latest-save">载入最新档</button>
+          <button type="button" class="btn-gold" style="padding:3px 9px;font-size:11px;" data-action="overwrite-with-current-save">以本页覆盖</button>
+          <button type="button" class="btn-ghost" style="padding:3px 9px;font-size:11px;" data-action="open-cloud-backup">备份云码</button>
         </div>
       `;
       return;
@@ -17534,7 +17619,8 @@ const ART = {
       };
       saveAlertDismissed = false;
       renderHudSaveAlert();
-      showToast(`⚠ 本地存档写入失败：${storageWriteError.message}`, { critical: true, key: "save_write_err", throttleMs: 6000 });
+      const writeToastThrottleMs = (opts && opts.userInitiated) ? 0 : 6000;
+      showToast(`⚠ 本地存档写入失败：${storageWriteError.message}`, { critical: true, key: "save_write_err", throttleMs: writeToastThrottleMs });
       return false;
     }
   }
@@ -17617,10 +17703,43 @@ const ART = {
         return;
       }
       if (res.meta.metaTabId && res.meta.metaTabId === TAB_ID) return;
-      safeAssignPlain(metaState, mergeMetaStates(metaState, res.meta));
+      let liveRaw = null;
+      let liveReadFailed = false;
+      try { liveRaw = localStorage.getItem(META_KEY); } catch (e) { liveReadFailed = true; }
+      let liveRes = null;
+      if (liveRaw !== null && liveRaw !== "") {
+        liveRes = parseAndValidateMetaRaw(liveRaw, META_KEY);
+        if (!liveRes.ok) {
+          metaReadError = {
+            key: META_KEY,
+            reason: liveRes.reason || "元存档结构异常",
+            raw: liveRaw,
+            rawLength: liveRaw.length,
+            at: Date.now()
+          };
+          saveAlertDismissed = false;
+          renderWelcomeSaveStatusBanner();
+          renderHudSaveAlert();
+          return;
+        }
+      }
+      const localWasWriter = Boolean(metaState && metaState.metaTabId === TAB_ID);
+      const merged = mergeMetaStates(metaState, res.meta);
+      safeAssignPlain(metaState, merged);
       metaState.metaRev = Math.max(Math.max(0, Math.floor(num(metaState.metaRev, 0))), Math.max(0, Math.floor(num(res.metaRev, 0))));
-      metaReadError = null;
+      if (!liveReadFailed && liveRes && liveRes.ok) {
+        metaReadError = null;
+      }
       ensureMetaState();
+      if (localWasWriter && isMetaBehind(res.meta, merged) && !saveReadOnlyMode && !sandboxMode && liveRes && liveRes.ok) {
+        const targetMerged = mergeMetaStates(liveRes.meta, merged);
+        safeAssignPlain(metaState, targetMerged);
+        metaState.metaRev = Math.max(Math.max(0, Math.floor(num(metaState.metaRev, 0))), Math.max(0, Math.floor(num(liveRes.metaRev, 0))));
+        ensureMetaState();
+        if (isMetaBehind(liveRes.meta, targetMerged)) {
+          saveMeta();
+        }
+      }
       const ws = document.getElementById("welcome-screen");
       if (!game || (ws && ws.style.display !== "none")) {
         renderWelcomeScreen();
@@ -19592,13 +19711,17 @@ const ART = {
     resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
     arena.defeatPending = null;
     releasePauseToken(defeatPauseToken); defeatPauseToken = null;
-    closeModal(); closeDrawer();
-    syncPendingRewardsBadge();
+    lastModalTriggerEl = null;
+    lastDrawerTriggerEl = null;
     if (metaState.ascensions >= 1) selectedPerkId = "immortal_echo";
+    const ws = document.getElementById("welcome-screen");
+    if (ws) ws.style.display = "flex";
     renderWelcomeScreen();
     const customDr = document.getElementById("title-custom-drawer");
     if (customDr) customDr.classList.add("open");
-    document.getElementById("welcome-screen").style.display = "flex";
+    closeModal(); closeDrawer();
+    syncPendingRewardsBadge();
+    restoreTriggerFocus(null);
     if (source === "bingjie") {
       showToast("☯ 兵解转世已成！已保留累世功德并铭刻 +40 轮回道果点，可重开新一世！");
     }
@@ -21711,6 +21834,7 @@ const ART = {
     arena.jadeDecoys = [];
     arena.frostPools = [];
     arena.witchTime = 0;
+    arena.hitStop = 0;
     arena.bossDomain = null;
     arena.camFocusT = 0;
     if (game) game.location = "cave";
@@ -21878,6 +22002,7 @@ const ART = {
     arena.midEventSpawned = false;
     arena.stageElement = null;
     arena.domain = null;
+    arena.hitStop = 0;
     arena.player.meditating = false;
     arena.player.meditateAgeTick = 0;
     arena.player.meditateAgedDirty = false;
@@ -23504,7 +23629,7 @@ const ART = {
     }
     if (arena.player.dashCd > 0) return;
     const p = arena.player;
-    p.meditating = false;
+    if (p.meditating) toggleMeditation(false);
     p.dashCd = 0.95;
     if (arena.enemies.length > 0) advanceOnboardingStep(1);
     p.dashTimer = 0.20;
@@ -24078,6 +24203,17 @@ const ART = {
           }
         }
         closeModal();
+      } else if (drawerOpen && !cutscene.active) {
+        const panel = document.getElementById("jade-panel");
+        const bd = document.getElementById("modal-backdrop");
+        if (panel && !(bd && bd.classList.contains("open"))) {
+          const refreshedPillBtn = panel.querySelector('#panel-scroll-body [data-use-item="longevity_pill"]');
+          if (refreshedPillBtn && isElementFocusable(refreshedPillBtn)) {
+            try { refreshedPillBtn.focus({ preventScroll: true }); } catch (e) {}
+          } else if (!panel.contains(document.activeElement)) {
+            focusDialogSafely(panel);
+          }
+        }
       }
       return;
     }
@@ -24142,7 +24278,7 @@ const ART = {
     if (game.realm === "ascended") { openEndingModal(); return; }
     const bossGate = getBreakthroughBossGate(game);
     if (bossGate && bossGate.locked) {
-      arena.player.meditating = false;
+      if (arena.player.meditating) toggleMeditation(false);
       const xpNote = (r.xpCap > 0 && game.xp < r.xpCap)
         ? `当前修为 ${Math.floor(num(game.xp, 0))}/${r.xpCap}（击败首领并攒满修为后方可启劫）`
         : `当前修为已圆满，击败首领后立即可引动天劫`;
@@ -24193,7 +24329,7 @@ const ART = {
       game.aids.lu ? "陆玄松·满态入场" : null
     ].filter(Boolean).join(" · ") || "暂无故人护阵";
 
-    arena.player.meditating = false;
+    if (arena.player.meditating) toggleMeditation(false);
 
     const pathBody = pillSpec ? `
       <div class="trib-prep-grid">
@@ -24311,7 +24447,7 @@ const ART = {
     closeDrawer();
     arena.defeatRevivesUsed = 0;
     resetEncounterTelemetry();
-    arena.player.meditating = false;
+    arena.player.meditating = false; arena.player.meditateAgeTick = 0; arena.player.meditateAgedDirty = false;
 
     if (game.aids.lu) {
       const st = getCombatStats(game);
@@ -31847,6 +31983,14 @@ const ART = {
     if (currentTab === "cultivate") {
       requestAnimationFrame(renderWardrobePreviewCanvas);
     }
+    const ws = document.getElementById("welcome-screen");
+    if (drawerOpen && !cutscene.active && !(ws && ws.style.display !== "none")) {
+      const bd = document.getElementById("modal-backdrop");
+      const panel = document.getElementById("jade-panel");
+      if (panel && !(bd && bd.classList.contains("open")) && !panel.contains(document.activeElement)) {
+        focusDialogSafely(panel);
+      }
+    }
   }
 
   function computeRecipeCostBreakdown(g, rec) {
@@ -33290,6 +33434,19 @@ const ART = {
     const cel = (ev.target && ev.target.nodeType === 1) ? ev.target : (ev.target && ev.target.parentElement ? ev.target.parentElement : null);
     const t = cel ? cel.closest('button, [role="button"]') : null;
     if (!t || t.disabled) return;
+    if (t.closest && t.closest("#pavilion-popover")) {
+      const pav = document.getElementById("pavilion-popover");
+      const pavBtn = document.getElementById("btn-pavilion-menu");
+      if (pav) pav.classList.remove("open");
+      if (pavBtn) {
+        pavBtn.classList.remove("open");
+        if (cutscene.active) {
+          focusDialogSafely(document.getElementById("story-dialogue-bar"));
+        } else if (isElementFocusable(pavBtn)) {
+          try { pavBtn.focus({ preventScroll: true }); } catch (e) {}
+        }
+      }
+    }
 
     if (t.id === "btn-dlg-next") { advanceCutscene(false); return; }
     if (t.id === "btn-dlg-skip") { advanceCutscene(true); return; }
@@ -33697,7 +33854,6 @@ const ART = {
       clearTransientChoiceQueues();
       sandboxMode = false;
       preSandboxSnapshot = null;
-      if (forceOverwriteCorrupt) storageReadError = null;
       saveReadOnlyMode = false;
       saveConflictState = null;
       storageWriteError = null;
@@ -33942,7 +34098,42 @@ const ART = {
       return;
     }
     if (m1Act === "retry-save-now") {
-      if (saveGame()) showToast(`本地存档已恢复写入（v${loadedSaveRev}）！`);
+      const alertEl = document.getElementById("hud-save-alert");
+      const modalBackdrop = document.getElementById("modal-backdrop");
+      if (storageReadError) {
+        renderHudSaveAlert();
+        showToast("⚠ 原受损存档仍保留，请点击【以本页覆盖】确认覆写，或先【复制受损原文】备份。", { critical: true });
+        if (alertEl && alertEl.style.display !== "none" && document.activeElement === document.body) {
+          const ovBtn = alertEl.querySelector('[data-action="overwrite-with-current-save"]');
+          if (ovBtn && typeof ovBtn.focus === "function") ovBtn.focus({ preventScroll: true });
+          else focusDialogSafely(alertEl);
+        }
+        return;
+      }
+      if (saveReadOnlyMode) {
+        renderHudSaveAlert();
+        showToast("⚠ 当前处于只读观览态，请点击【以本页覆盖】或【载入最新档】。", { critical: true });
+        if (alertEl && alertEl.style.display !== "none" && document.activeElement === document.body) {
+          const ovBtn = alertEl.querySelector('[data-action="overwrite-with-current-save"]');
+          if (ovBtn && typeof ovBtn.focus === "function") ovBtn.focus({ preventScroll: true });
+          else focusDialogSafely(alertEl);
+        }
+        return;
+      }
+      const savedOk = saveGame({ userInitiated: true });
+      const isModalOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
+      if (savedOk) {
+        showToast(`本地存档已恢复写入（v${loadedSaveRev}）！`);
+        if (!isModalOpen) {
+          if (cutscene.active) focusDialogSafely(document.getElementById("story-dialogue-bar"));
+          else if (drawerOpen) focusDialogSafely(document.getElementById("jade-panel"));
+          else restoreTriggerFocus(null);
+        }
+      } else if (!isModalOpen && alertEl && alertEl.style.display !== "none") {
+        const retryBtn = alertEl.querySelector('[data-action="retry-save-now"]');
+        if (retryBtn && typeof retryBtn.focus === "function") retryBtn.focus({ preventScroll: true });
+        else focusDialogSafely(alertEl);
+      }
       return;
     }
     if (m1Act === "retry-meta-save") {
@@ -33957,6 +34148,14 @@ const ART = {
     if (m1Act === "dismiss-save-alert") {
       saveAlertDismissed = true;
       renderHudSaveAlert();
+      const alertEl = document.getElementById("hud-save-alert");
+      const modalBackdrop = document.getElementById("modal-backdrop");
+      const isModalOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
+      if (!isModalOpen && (!alertEl || alertEl.style.display === "none")) {
+        if (cutscene.active) focusDialogSafely(document.getElementById("story-dialogue-bar"));
+        else if (drawerOpen) focusDialogSafely(document.getElementById("jade-panel"));
+        else restoreTriggerFocus(null);
+      }
       return;
     }
     if (m1Act === "load-latest-save") {
@@ -34008,16 +34207,40 @@ const ART = {
         showToast("🧪 演武沙盒模式禁止覆盖正式存档，请先点击【退出沙盒】！");
         return;
       }
-      saveReadOnlyMode = false;
-      saveConflictState = null;
-      saveAlertDismissed = false;
+      const prevReadOnly = saveReadOnlyMode;
+      const prevConflict = saveConflictState;
       const modalBackdrop = document.getElementById("modal-backdrop");
       const isModalOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
-      const shouldCloseModal = !isModalOpen || activeModalKind === "save_conflict" || activeModalKind === "save_corrupt";
-      if (saveGame({ forceOverwrite: true })) {
+      const shouldCloseModal = isModalOpen && (activeModalKind === "save_conflict" || activeModalKind === "save_corrupt");
+      const savedOk = saveGame({ forceOverwrite: true, userInitiated: true });
+      if (savedOk) {
+        saveAlertDismissed = false;
         showToast(`已以本页进度强制覆盖存档（v${loadedSaveRev}）！`);
+        if (shouldCloseModal) closeModal();
+        if (!isModalOpen && !(modalBackdrop && modalBackdrop.classList.contains("open"))) {
+          if (cutscene.active) focusDialogSafely(document.getElementById("story-dialogue-bar"));
+          else if (drawerOpen) focusDialogSafely(document.getElementById("jade-panel"));
+          else restoreTriggerFocus(null);
+        }
+      } else {
+        saveReadOnlyMode = prevReadOnly;
+        saveConflictState = prevConflict;
+        saveAlertDismissed = false;
+        renderHudSaveAlert();
+        const modalStillOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
+        if (modalStillOpen) {
+          if (document.activeElement === document.body) {
+            focusDialogSafely(document.getElementById("modal-content") || modalBackdrop);
+          }
+        } else {
+          const alertEl = document.getElementById("hud-save-alert");
+          if (alertEl && alertEl.style.display !== "none") {
+            const ovBtn = alertEl.querySelector('[data-action="overwrite-with-current-save"]');
+            if (ovBtn && typeof ovBtn.focus === "function") ovBtn.focus({ preventScroll: true });
+            else focusDialogSafely(alertEl);
+          }
+        }
       }
-      if (shouldCloseModal) closeModal();
       return;
     }
     if (m1Act === "return-title-safe") {
@@ -34911,7 +35134,7 @@ const ART = {
       if (sandboxMode) {
         exitSandboxMode();
       } else {
-        openSandboxConfirmModal("pavilion", null);
+        openSandboxConfirmModal("pavilion", null, pavBtn);
       }
       return;
     }
@@ -34942,12 +35165,6 @@ const ART = {
         openIconicUpgradeDraft(activeDraftMeta.titleText || "大道顿悟", true);
       }
       return;
-    }
-    if (t.closest && t.closest("#pavilion-popover")) {
-      const pav = document.getElementById("pavilion-popover");
-      const pavBtn = document.getElementById("btn-pavilion-menu");
-      if (pav) pav.classList.remove("open");
-      if (pavBtn) pavBtn.classList.remove("open");
     }
     if (t.id === "btn-toggle-telemetry") { toggleTelemetryPanel(); return; }
     if (t.id === "btn-toggle-hitbox") {
@@ -35082,6 +35299,16 @@ const ART = {
       Sound.fanfare();
       showToast(`★ 【${RELICS[rid].name}】淬炼晋升 ★${curStars + 1}（消耗 ${tc.finalStones} 灵石${tc.applyCore ? " + 1 妖核" : ""}）！`);
       saveGame(); updateHud(); renderDrawerContent();
+      const panel = document.getElementById("jade-panel");
+      const bd = document.getElementById("modal-backdrop");
+      if (drawerOpen && panel && !cutscene.active && !(bd && bd.classList.contains("open"))) {
+        const nextTrig = panel.querySelector(`[data-temper-relic="${rid}"]`) || panel.querySelector(`[data-relic="${rid}"]`);
+        if (nextTrig && isElementFocusable(nextTrig)) {
+          try { nextTrig.focus({ preventScroll: true }); } catch (e) {}
+        } else {
+          focusDialogSafely(panel);
+        }
+      }
       return;
     }
 

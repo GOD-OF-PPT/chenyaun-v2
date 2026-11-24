@@ -11,7 +11,9 @@ import {
   openSettingsTab,
   getHudState,
   getToastTexts,
-  readStorageJson
+  readStorageJson,
+  waitForCrossTabConflict,
+  waitForCrossTabInvalidNotice
 } from "../lib/harness.mjs";
 import {
   REALM_XP_CAPS,
@@ -81,7 +83,7 @@ export const tests = [
         xp: REALM_XP_CAPS.golden,
         stageStars: {},
         atkFlatBonus: 9999,
-        hpFlatBonus: 99999
+        maxHpBonus: 99999
       });
       const legacyEnvelope = buildEnvelopeV2({ game: legacyGame, saveRev: 2 });
       const legacyMeta = buildMetaSave({ bestScore: 1234 }); // no metaRev
@@ -110,9 +112,14 @@ export const tests = [
       // Check inflated flat bonuses were clamped on load (G5)
       const { parsed: saveAfter } = await readStorageJson(page, STORAGE_KEY);
       const clampedAtk = saveAfter?.game?.atkFlatBonus ?? 0;
+      const clampedMaxHp = saveAfter?.game?.maxHpBonus ?? 0;
       assert.ok(
         clampedAtk < 9999,
         `Inflated legacy atkFlatBonus=9999 must be clamped by G5 cap on load, got ${clampedAtk}`
+      );
+      assert.ok(
+        clampedMaxHp < 99999,
+        `Inflated legacy maxHpBonus=99999 must be clamped by G5 cap on load, got ${clampedMaxHp}`
       );
     }
   },
@@ -142,8 +149,8 @@ export const tests = [
       assert.equal(beforeReload.realm, "炼气");
       assert.equal(beforeReload.stones, 432);
 
-      await page.reload({ waitUntil: "domcontentloaded" });
-      await page.waitForSelector("#btn-continue-save", { state: "visible", timeout: 10000 });
+      await page.reload({ waitUntil: "domcontentloaded", timeout: env.navigationTimeoutMs });
+      await page.waitForSelector("#btn-continue-save", { state: "visible", timeout: env.navigationTimeoutMs });
       await page.click("#btn-continue-save");
       await page.waitForTimeout(220);
 
@@ -234,8 +241,8 @@ export const tests = [
       const pageB = await env.openPage("t2-05-B");
 
       await env.startFreshGame(pageA);
-      await pageB.goto(env.baseUrl, { waitUntil: "domcontentloaded" });
-      await pageB.waitForSelector("#btn-continue-save", { state: "visible", timeout: 10000 });
+      await pageB.goto(env.baseUrl, { waitUntil: "domcontentloaded", timeout: env.navigationTimeoutMs });
+      await pageB.waitForSelector("#btn-continue-save", { state: "visible", timeout: env.navigationTimeoutMs });
       await pageB.click("#btn-continue-save");
       await pageB.waitForTimeout(200);
 
@@ -245,7 +252,7 @@ export const tests = [
         game.stones = 654;
         window.__CHENYUAN_V25__.saveGame();
       });
-      await pageB.waitForTimeout(250);
+      await waitForCrossTabConflict(pageB, 2500);
 
       // Page B should show conflict modal or alert
       const hasConflictUi = await pageB.evaluate(() => {
@@ -264,7 +271,7 @@ export const tests = [
       await pageA.evaluate((k) => {
         localStorage.setItem(k, "{INVALID_CROSS_TAB_JSON");
       }, STORAGE_KEY);
-      await pageB.waitForTimeout(250);
+      await waitForCrossTabInvalidNotice(pageB, 2500);
 
       const pageBFeedback = await pageB.evaluate(() => {
         const alert = document.querySelector("#hud-save-alert")?.innerText || "";
@@ -405,7 +412,7 @@ export const tests = [
       await page.waitForTimeout(250);
 
       // Check modal or cultivate drawer for 兵解转世 soft-fail offer
-      let text = await getModalText(page);
+      let text = (await isModalOpen(page)) ? await getModalText(page) : "";
       if (!text) {
         await openNavTab(page, "cultivate");
         text = await getDrawerText(page);
