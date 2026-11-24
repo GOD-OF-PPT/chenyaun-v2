@@ -2809,9 +2809,18 @@ try {
       window.__CHENYUAN_V25__.saveMeta();
     });
 
-    // Tab B (stale ascensions=2) progresses bestScore=999, seenEnemies+=jade_serpent, bestRushGrade="SS"
+    // Wait for Chromium Mojo DOMStorage IPC to deliver Tab A's write to Tab B's localStorage cache
+    await tabB.waitForFunction((mk) => {
+      try {
+        const cur = JSON.parse(localStorage.getItem(mk) || "{}");
+        return cur.ascensions === 3;
+      } catch (e) { return false; }
+    }, META_KEY, { timeout: 5000 });
+
+    // Tab B (explicitly keeping stale in-memory ascensions=2) progresses bestScore=999, seenEnemies+=jade_serpent, bestRushGrade="SS"
     await tabB.evaluate(() => {
       const m = window.__CHENYUAN_V25__.getMetaState();
+      m.ascensions = 2;
       m.bestScore = 999;
       m.bestRushGrade = "SS";
       m.seenEnemies.push("jade_serpent");
@@ -5589,6 +5598,8 @@ try {
     await page.click("#btn-world-map");
     await page.waitForSelector('#modal-backdrop.open [data-map-node="stg_1"]');
     await page.click('#modal-backdrop.open [data-map-node="stg_1"]');
+    await page.waitForSelector('#modal-backdrop.open [data-map-enter="stg_1"]');
+    await page.click('#modal-backdrop.open [data-map-enter="stg_1"]');
     await page.waitForSelector("#story-dialogue-bar.open");
     await page.keyboard.press("Escape");
     await page.waitForFunction(() => !document.getElementById("story-dialogue-bar")?.classList.contains("open"));
@@ -6484,6 +6495,661 @@ try {
     assert.equal(calmSummary.unreadAfter, 0, "Calm flush must consume unread combatInbox summary");
     assert.ok(calmSummary.toasts.some(t => t.includes("本波战报")), `Expected concise calm summary toast, got: ${calmSummary.toasts.join(" | ")}`);
     await ctx.close();
+  });
+
+  // ============================================================================
+  // Q2-1 (F14): UI SEMANTIC TOKENS, Z-INDEX LADDER, DUAL-ENCODING & MODAL SHELL
+  // ============================================================================
+  await runSuite("Q2-1", "F14 UI semantic tokens, z-index ladder, dual-encoding & standardized modal shell", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q2-1", true);
+    try {
+      const tokenAudit = await page.evaluate(() => {
+        const rootStyle = getComputedStyle(document.documentElement);
+        const getVar = (k) => rootStyle.getPropertyValue(k).trim();
+        const getZ = (sel) => {
+          const el = document.querySelector(sel);
+          return el ? Number(getComputedStyle(el).zIndex) : NaN;
+        };
+        return {
+          vars: {
+            cMain: getVar("--c-main"),
+            cSide: getVar("--c-side"),
+            cCompanion: getVar("--c-companion"),
+            cEcon: getVar("--c-econ"),
+            cSystem: getVar("--c-system"),
+            cDanger: getVar("--c-danger"),
+            fsXs: getVar("--fs-xs"),
+            fs2xl: getVar("--fs-2xl"),
+            zModal: getVar("--z-modal"),
+            zToast: getVar("--z-toast"),
+            zDialogue: getVar("--z-dialogue"),
+            zAlert: getVar("--z-alert")
+          },
+          z: {
+            tooltip: getZ("#ling-tooltip"),
+            toast: getZ("#toast-container"),
+            modal: getZ("#modal-backdrop"),
+            dialogue: getZ("#story-dialogue-bar"),
+            alert: getZ("#hud-save-alert"),
+            compare: getZ("#gear-compare-card"),
+            unlock: getZ("#new-unlock-card"),
+            drawer: getZ("#jade-panel"),
+            nav: getZ("#bottom-nav"),
+            hud: getZ("#top-hud")
+          }
+        };
+      });
+
+      for (const [k, v] of Object.entries(tokenAudit.vars)) {
+        assert.ok(v && v.length > 0, `CSS custom property ${k} must be defined on :root`);
+      }
+      const z = tokenAudit.z;
+      assert.ok(
+        z.tooltip > z.toast &&
+        z.toast > z.modal &&
+        z.modal > z.dialogue &&
+        z.dialogue > z.alert &&
+        z.alert > z.compare &&
+        z.compare > z.unlock &&
+        z.unlock > z.drawer &&
+        z.drawer > z.nav &&
+        z.nav > z.hud,
+        `Canonical z-index stacking ladder violated: ${JSON.stringify(z)}`
+      );
+
+      // Open World Map (info tier) and verify standardized shell + dual-encoded badges
+      await page.click("#btn-world-map");
+      await page.waitForSelector("#modal-backdrop.open .modal-header");
+      const mapShell = await page.evaluate(() => {
+        const box = document.getElementById("modal-content");
+        const badges = Array.from(box.querySelectorAll(".sem-badge[data-sem][data-shape]")).map(el => ({
+          sem: el.getAttribute("data-sem"),
+          shape: el.getAttribute("data-shape"),
+          txt: el.textContent.trim()
+        }));
+        return {
+          tier: box.getAttribute("data-tier"),
+          hasHeader: !!box.querySelector(".modal-header"),
+          hasBody: !!box.querySelector(".modal-body"),
+          hasFooter: !!box.querySelector(".modal-footer"),
+          badgeCount: badges.length,
+          badges
+        };
+      });
+      assert.equal(mapShell.tier, "info");
+      assert.equal(mapShell.hasHeader, true);
+      assert.equal(mapShell.hasBody, true);
+      assert.equal(mapShell.hasFooter, true);
+      assert.ok(mapShell.badgeCount >= 2, "World Map modal must render dual-encoded .sem-badge tags");
+      await page.keyboard.press("Escape");
+
+      // Open Defeat modal (critical tier) + reduced-motion suppression check
+      const defeatShell = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        document.documentElement.classList.add("reduced-motion");
+        api.openDefeatDecisionModal(false);
+        const box = document.getElementById("modal-content");
+        const badge = box.querySelector('.sem-badge[data-sem="danger"][data-shape="triangle"]');
+        const animDur = badge ? getComputedStyle(badge).animationDuration : "";
+        return {
+          tier: box.getAttribute("data-tier"),
+          hasHeader: !!box.querySelector(".modal-header"),
+          hasBody: !!box.querySelector(".modal-body"),
+          hasFooter: !!box.querySelector(".modal-footer"),
+          hasDangerTriangle: !!badge,
+          animDur
+        };
+      });
+      assert.equal(defeatShell.tier, "critical");
+      assert.equal(defeatShell.hasHeader, true);
+      assert.equal(defeatShell.hasBody, true);
+      assert.equal(defeatShell.hasFooter, true);
+      assert.equal(defeatShell.hasDangerTriangle, true);
+      assert.ok(
+        defeatShell.animDur && parseFloat(defeatShell.animDur) <= 0.001,
+        `html.reduced-motion must suppress animationDuration on .sem-badge, got ${defeatShell.animDur}`
+      );
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // ============================================================================
+  // Q2-2 (F15): UNIFIED NAV_MODEL, PREVIEW-VS-ENTER, CH5 MARKER & D03 ROUTES
+  // ============================================================================
+  await runSuite("Q2-2", "F15 unified NAV_MODEL, World Map preview-vs-enter, Ch5 marker & modal refresh fix", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q2-2", true);
+    try {
+      // Unlock Qi realm so stg_1 is unlocked while stg_4 stays locked
+      await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.realm = "qi";
+        if (s.game.seenCutscenes) s.game.seenCutscenes.enter_sect = true;
+        api.updateHud();
+      });
+
+      // Open World Map via #btn-world-map (M)
+      await page.click("#btn-world-map");
+      await page.waitForSelector('#modal-backdrop.open [data-map-node="stg_1"]');
+      const beforeStage = await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.stageIdx);
+
+      // Click stg_1 node -> MUST preview ONLY without traveling or closing modal
+      await page.click('#modal-backdrop.open [data-map-node="stg_1"]');
+      const previewRes = await page.evaluate(() => {
+        const strip = document.getElementById("world-map-preview-strip");
+        const enterBtn = document.getElementById("btn-map-enter-node");
+        return {
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          stageIdx: window.__CHENYUAN_V25__.getState().arena.stageIdx,
+          previewNode: strip?.getAttribute("data-preview-node"),
+          enterTarget: enterBtn?.getAttribute("data-map-enter"),
+          enterDisabled: !!enterBtn?.disabled
+        };
+      });
+      assert.equal(previewRes.modalOpen, true, "Clicking [data-map-node] must keep World Map open for preview");
+      assert.equal(previewRes.stageIdx, beforeStage, "Clicking [data-map-node] must NOT travel automatically");
+      assert.equal(previewRes.previewNode, "stg_1");
+      assert.equal(previewRes.enterTarget, "stg_1");
+      assert.equal(previewRes.enterDisabled, false);
+
+      // Click locked stg_4 node -> previews unlock requirements with enter disabled
+      await page.click('#modal-backdrop.open [data-map-node="stg_4"]');
+      const lockedPreview = await page.evaluate(() => {
+        const strip = document.getElementById("world-map-preview-strip");
+        const enterBtn = document.getElementById("btn-map-enter-node");
+        return {
+          previewNode: strip?.getAttribute("data-preview-node"),
+          enterDisabled: !!enterBtn?.disabled,
+          text: strip?.textContent || ""
+        };
+      });
+      assert.equal(lockedPreview.previewNode, "stg_4");
+      assert.equal(lockedPreview.enterDisabled, true, "Locked node preview must disable [data-map-enter]");
+
+      // Now select stg_1 and click explicit Enter button -> travels cleanly
+      await page.click('#modal-backdrop.open [data-map-node="stg_1"]');
+      await page.click('#modal-backdrop.open [data-map-enter="stg_1"]');
+      const afterEnter = await page.evaluate(() => ({
+        modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+        stageIdx: window.__CHENYUAN_V25__.getState().arena.stageIdx
+      }));
+      assert.equal(afterEnter.modalOpen, false);
+      assert.equal(afterEnter.stageIdx, 1, "Explicit [data-map-enter='stg_1'] must travel to stage 1");
+
+      // Verify Ch5 narrative marker, priority ordering in findNextMainlineStep, and Objectives unified tabs + claim refresh bugfix
+      const navCheck = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        const ch5 = api.KYUSHU_MAP_NODES.find(n => n.id === "ch5_resonance");
+        const allHaveMeta = api.KYUSHU_MAP_NODES.every(n => n.tier && n.shape && Array.isArray(n.links));
+
+        // Mark Vol 1 done & claimed; Vol 2 pet (recommended) NOT done -> findNextMainlineStep must pick s2_warden (required) first!
+        s.game.openingChoice = "help";
+        s.game.defeatedStageBosses = { 0: true };
+        s.game.realm = "qi";
+        s.game.claimedStepIds = ["s1_open", "s1_wolf", "s1_break"];
+        s.game.pet = { id: null, level: 1, skills: {} };
+        const nextVol2 = api.findNextMainlineStep(s.game);
+
+        // Prepare s1_open claimable to test Objectives modal DOM live refresh on claim
+        s.game.claimedStepIds = ["s1_wolf", "s1_break"];
+        api.openObjectivesModal("mainline");
+        const tabs = Array.from(document.querySelectorAll("#modal-backdrop.open [data-goal-tab]")).map(el => el.getAttribute("data-goal-tab"));
+        return {
+          hasCh5: Boolean(ch5 && ch5.tier === "main" && ch5.chapterIdx === 5),
+          allHaveMeta,
+          nextVol2Id: nextVol2?.step?.id,
+          nextVol2Priority: nextVol2?.priority,
+          tabs
+        };
+      });
+      assert.equal(navCheck.hasCh5, true, "KYUSHU_MAP_NODES must include Chapter 5 narrative marker node");
+      assert.equal(navCheck.allHaveMeta, true, "All map nodes must carry tier, shape, and links");
+      assert.equal(navCheck.nextVol2Id, "s2_warden", "findNextMainlineStep must prioritize required s2_warden over recommended s2_pet");
+      assert.equal(navCheck.nextVol2Priority, "required");
+      assert.deepEqual(navCheck.tabs, ["mainline", "trials", "companions", "bounties", "endgame"]);
+
+      // Click claim inside Objectives modal -> modal DOM must refresh immediately (verifying L32668 bugfix)
+      await page.click('#modal-backdrop.open [data-claim-step="s1_open"]');
+      const claimRefreshed = await page.evaluate(() => ({
+        modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+        stillHasClaimBtn: !!document.querySelector('#modal-backdrop.open [data-claim-step="s1_open"]')
+      }));
+      assert.equal(claimRefreshed.modalOpen, true);
+      assert.equal(claimRefreshed.stillHasClaimBtn, false, "Claiming a step inside Objectives modal must refresh modal DOM immediately");
+
+      // Launching Demon Tower from Objectives -> trials tab must close modal, unpause combat & enter tower
+      await page.click('#modal-backdrop.open [data-goal-tab="trials"]');
+      await page.waitForSelector('#modal-backdrop.open [data-action="challenge-tower"]');
+      await page.click('#modal-backdrop.open [data-action="challenge-tower"]');
+      const afterTowerLaunch = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        return {
+          towerMode: !!s.arena.towerMode,
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          paused: !!s.arena.paused,
+          modalTokens: api.getPauseTokens().filter(t => t.owner === "modal").length
+        };
+      });
+      assert.equal(afterTowerLaunch.towerMode, true, "Clicking challenge-tower in Objectives trials must enter Demon Tower");
+      assert.equal(afterTowerLaunch.modalOpen, false, "Launching challenge-tower from Objectives must close #modal-backdrop");
+      assert.equal(afterTowerLaunch.paused, false, "Launching challenge-tower from Objectives must unpause combat");
+      assert.equal(afterTowerLaunch.modalTokens, 0, "Launching challenge-tower must release modalPauseToken");
+
+      // Verify allDone contract still returns { allDone: true, step: null }
+      const allDoneCheck = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.realm = "ascended";
+        s.game.status = "ascended";
+        s.game.openingChoice = "help";
+        s.game.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
+        s.game.pet = { id: "fox", level: 3, skills: {} };
+        s.game.immortalPills = 2;
+        s.game.choices = { lu_intro: "a" };
+        s.game.loadout.relic = "soul_lamp";
+        s.game.laws = ["sword_rain", "thunder_chain", "iron_will", "wealth_power"];
+        s.game.towerBest = 5;
+        s.game.claimedStepIds = api.CHAPTERS.flatMap(c => c.steps.map(st => st.id));
+        const res = api.findNextMainlineStep(s.game);
+        return { allDone: !!res.allDone, step: res.step };
+      });
+      assert.equal(allDoneCheck.allDone, true);
+      assert.equal(allDoneCheck.step, null);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // ============================================================================
+  // Q2-3 (F16): EXPLORE MAINLINE-FIRST, CULTIVATE 3-GROUP & PAVILION/DOJO HYGIENE
+  // ============================================================================
+  await runSuite("Q2-3", "F16 Explore mainline-first, Cultivate 3-group details & Pavilion/Dojo consolidation", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q2-3", true);
+    try {
+      // 1. Mortal Explore: #explore-mainline-pin is top card; locked vein_expedition is inside collapsed <details>
+      await page.click("#nav-btn-explore");
+      await page.waitForSelector("#jade-panel.drawer-open #explore-mainline-pin");
+      const mortalExplore = await page.evaluate(() => {
+        const body = document.getElementById("panel-scroll-body");
+        const firstCard = body.querySelector(".jade-card");
+        const upcoming = body.querySelector('details[data-explore-group="upcoming"]');
+        const expInUpcoming = upcoming ? !!upcoming.querySelector('[data-action="open-expedition"]') : false;
+        return {
+          firstCardId: firstCard?.id || "",
+          hasUpcoming: !!upcoming,
+          upcomingOpen: !!upcoming?.open,
+          expInUpcoming
+        };
+      });
+      assert.equal(mortalExplore.firstCardId, "explore-mainline-pin", "Explore must pin #explore-mainline-pin as top card");
+      assert.equal(mortalExplore.hasUpcoming, true);
+      assert.equal(mortalExplore.upcomingOpen, false, "Locked upcoming preview in Explore must start collapsed");
+      assert.equal(mortalExplore.expInUpcoming, true, "Locked vein_expedition must live inside upcoming <details>");
+
+      // 2. Mortal Cultivate button budget <= 14 (P3-1 guardrail)
+      await page.click("#nav-btn-cultivate");
+      await page.waitForSelector('#jade-panel.drawer-open details[data-cultivate-group="core"]');
+      const mortalCultBtns = await page.evaluate(() => {
+        const body = document.getElementById("panel-scroll-body");
+        return Array.from(body.querySelectorAll("button")).filter(b => b.offsetParent !== null && !b.closest("details:not([open])")).length;
+      });
+      assert.ok(mortalCultBtns <= 14, `Mortal cultivate visible button count must stay <= 14, got ${mortalCultBtns}`);
+
+      // 3. Golden realm Cultivate: 3 <details> groups, collection collapsed by default, toggling advanced persists across re-render
+      const goldenCult = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.realm = "golden";
+        api.renderDrawerContent();
+        const body = document.getElementById("panel-scroll-body");
+        const core = body.querySelector('details[data-cultivate-group="core"]');
+        const adv = body.querySelector('details[data-cultivate-group="advanced"]');
+        const col = body.querySelector('details[data-cultivate-group="collection"]');
+        return {
+          hasAllThree: Boolean(core && adv && col),
+          coreOpen: !!core?.open,
+          advOpen: !!adv?.open,
+          colOpen: !!col?.open
+        };
+      });
+      assert.equal(goldenCult.hasAllThree, true);
+      assert.equal(goldenCult.coreOpen, true);
+      assert.equal(goldenCult.advOpen, true);
+      assert.equal(goldenCult.colOpen, false);
+
+      // Toggle advanced closed via summary click and wait for async <details> toggle persistence before re-render
+      await page.click('details[data-cultivate-group="advanced"] > summary');
+      await page.waitForFunction(() => window.__CHENYUAN_V25__.getCultivateGroupState().advanced === false);
+      const advPersist = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        api.renderDrawerContent();
+        return {
+          stateOpen: api.getCultivateGroupState().advanced,
+          domOpen: !!document.querySelector('details[data-cultivate-group="advanced"]')?.open
+        };
+      });
+      assert.equal(advPersist.stateOpen, false);
+      assert.equal(advPersist.domOpen, false);
+
+      // Expand collection and verify wardrobe canvas renders
+      await page.click('details[data-cultivate-group="collection"] > summary');
+      await page.waitForFunction(() => !!document.querySelector('details[data-cultivate-group="collection"]')?.open);
+      const colCanvas = await page.evaluate(() => {
+        const c = document.getElementById("wardrobe-preview-canvas");
+        return Boolean(c && c.getBoundingClientRect().height > 0);
+      });
+      assert.equal(colCanvas, true, "Expanding collection group must show #wardrobe-preview-canvas");
+
+      // 4. Pavilion & Dojo preserve all legacy IDs/actions
+      const legacyIdsOk = await page.evaluate(() => {
+        const ids = [
+          "btn-ascension-roadmap", "btn-hall-of-lives", "btn-boss-rush", "btn-quick-map",
+          "btn-star-chart", "btn-photo-mode", "btn-toggle-telemetry", "btn-toggle-bgm",
+          "btn-mute-audio", "btn-toggle-arcana-all"
+        ];
+        return {
+          allPavIds: ids.every(id => !!document.getElementById(id)),
+          hasDojoDefense: !!document.querySelector('#dojo-control-bar [data-dojo-act="start-defense"]')
+        };
+      });
+      assert.equal(legacyIdsOk.allPavIds, true);
+      assert.equal(legacyIdsOk.hasDojoDefense, true);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // ============================================================================
+  // Q2-4 (F17): 3-TIER REMINDER BADGES, UPGRADE PREVIEW & MATERIAL SOURCE JUMP
+  // ============================================================================
+  await runSuite("Q2-4", "F17 3-tier reminder badges, upgrade preview & single-layer material source jump", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q2-4", true);
+    try {
+      const previewAndTier = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.realm = "qi";
+        s.game.stones = 250;
+        s.game.openingChoice = "help";
+        s.game.claimedStepIds = [];
+        if (s.game.equippedGear && s.game.equippedGear.weapon) s.game.equippedGear.weapon.atk = 20;
+        s.game.ownedRelics = ["soul_lamp"];
+        s.game.relicStars = { soul_lamp: 1 };
+        s.game.loadout.relic = "soul_lamp";
+        s.game.inventory.herb = 0;
+        api.updateHud();
+        const rem = api.getReminderTier(s.game);
+        const gearPrev = api.computeUpgradePreview(s.game, "gear_enhance", "weapon", { steps: 1 });
+        const relicPrev = api.computeUpgradePreview(s.game, "relic_temper", "soul_lamp");
+        const dotEl = document.getElementById("goal-hud-dot");
+        const cultBadge = document.getElementById("badge-cultivate");
+        return {
+          tier1HudHigh: rem.tier1HudHigh,
+          dotShown: !!dotEl?.classList.contains("show"),
+          dotTier: dotEl?.getAttribute("data-reminder-tier"),
+          cultTierLow: !!cultBadge?.classList.contains("tier-low"),
+          gearDeltaAtk: gearPrev.dAtk,
+          gearDeltaTxt: gearPrev.deltaText,
+          relicValid: relicPrev.valid,
+          relicDeltaTxt: relicPrev.deltaText
+        };
+      });
+      assert.equal(previewAndTier.tier1HudHigh, true);
+      assert.equal(previewAndTier.dotShown, true);
+      assert.equal(previewAndTier.dotTier, "1");
+      assert.equal(previewAndTier.cultTierLow, true, "Drawer nav dots must use calm .tier-low styling");
+      assert.ok(previewAndTier.gearDeltaAtk > 0, `Expected positive weapon enhance ATK delta, got ${previewAndTier.gearDeltaAtk}`);
+      assert.equal(previewAndTier.relicValid, true);
+      assert.ok(previewAndTier.relicDeltaTxt.includes("★2"));
+
+      // Open Alchemy with 0 herb -> click material source chip -> verify single-layer inline panel (NO modal stacked!)
+      await page.click("#nav-btn-alchemy");
+      await page.waitForSelector('#jade-panel.drawer-open [data-mat-source="herb"]');
+      await page.click('#jade-panel.drawer-open [data-mat-source="herb"]');
+      const jumpState = await page.evaluate(() => ({
+        panelVisible: !!document.getElementById("drawer-mat-source-panel"),
+        modalStacked: document.getElementById("modal-backdrop").classList.contains("open"),
+        activeJump: window.__CHENYUAN_V25__.getActiveMatSourceJump(),
+        focusedId: document.activeElement?.id || ""
+      }));
+      assert.equal(jumpState.panelVisible, true, "Material source jump must open inline #drawer-mat-source-panel");
+      assert.equal(jumpState.modalStacked, false, "Material source jump must remain single-layer without stacking a modal");
+      assert.equal(jumpState.activeJump?.matId, "herb");
+      assert.equal(jumpState.focusedId, "btn-mat-source-return");
+
+      // Click Return to Original Upgrade -> panel closes and focus returns inside #jade-panel
+      await page.click("#btn-mat-source-return");
+      const afterReturn = await page.evaluate(() => {
+        const panel = document.getElementById("jade-panel");
+        return {
+          panelClosed: !document.getElementById("drawer-mat-source-panel"),
+          activeJump: window.__CHENYUAN_V25__.getActiveMatSourceJump(),
+          focusInDrawer: Boolean(panel && panel.contains(document.activeElement))
+        };
+      });
+      assert.equal(afterReturn.panelClosed, true);
+      assert.equal(afterReturn.activeJump, null);
+      assert.equal(afterReturn.focusInDrawer, true, "Returning from material source must restore focus inside #jade-panel");
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // ============================================================================
+  // Q2-5 (F18): EXPLICIT-QUANTITY BATCH ACTIONS (D08) & DATA-DRIVEN DEFEAT REVIEW
+  // ============================================================================
+  await runSuite("Q2-5", "F18 explicit-quantity batch craft/enhance (D08) & data-driven defeat review", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q2-5", true);
+    try {
+      // Setup Qi realm with stones & herbs for batch tests
+      await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.realm = "qi";
+        s.game.stones = 600;
+        s.game.inventory.herb = 20;
+        s.game.inventory.dew = 20;
+        s.game.inventory.healing_pill = 1;
+        s.game.elapsedMonths = 10;
+        api.updateHud();
+      });
+
+      // 1. Explicit batch craft: ×1 -> ×3 -> ×5 preview, Cancel deducts 0, Confirm ×3 applies exact cost & 9 months
+      await page.click("#nav-btn-alchemy");
+      await page.waitForSelector('[data-open-batch-craft="healing"]');
+      await page.click('[data-open-batch-craft="healing"]');
+      await page.waitForSelector("#modal-backdrop.open #btn-confirm-batch-craft");
+      await page.click('#modal-backdrop.open [data-batch-craft-qty="5"]');
+      const q5Text = await page.textContent("#btn-confirm-batch-craft");
+      assert.ok(q5Text.includes("×5") && q5Text.includes("15月"), `Expected ×5 batch preview with 15 months, got: ${q5Text}`);
+      await page.click('#modal-backdrop.open [data-modal-close="1"]');
+
+      const afterCancelCraft = await page.evaluate(() => {
+        const s = window.__CHENYUAN_V25__.getState().game;
+        return { stones: s.stones, months: s.elapsedMonths, pills: s.inventory.healing_pill };
+      });
+      assert.equal(afterCancelCraft.stones, 600, "Canceling batch craft must deduct 0 stones");
+      assert.equal(afterCancelCraft.months, 10, "Canceling batch craft must consume 0 months");
+      assert.equal(afterCancelCraft.pills, 1);
+
+      await page.click('[data-open-batch-craft="healing"]');
+      await page.waitForSelector("#btn-confirm-batch-craft");
+      await page.click('#modal-backdrop.open [data-batch-craft-qty="3"]');
+      const expectedBatchCost = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState().game;
+        return api.computeUpgradePreview(s, "alchemy_craft", "healing", { qty: 3 }).breakdown;
+      });
+      await page.click("#btn-confirm-batch-craft");
+      const afterConfirmCraft = await page.evaluate(() => {
+        const s = window.__CHENYUAN_V25__.getState().game;
+        return { stones: s.stones, months: s.elapsedMonths, pills: s.inventory.healing_pill, herb: s.inventory.herb };
+      });
+      assert.equal(afterConfirmCraft.stones, 600 - expectedBatchCost.totalStoneCost);
+      assert.equal(afterConfirmCraft.months, 10 + 9);
+      assert.equal(afterConfirmCraft.pills, 1 + expectedBatchCost.totalOutput);
+      assert.equal(afterConfirmCraft.herb, 20 - 6);
+
+      // 2. Explicit batch enhance: +3 preview, Cancel deducts 0, Confirm applies exact +3 levels & stone cost
+      await page.click("#nav-btn-cultivate");
+      await page.waitForSelector('[data-open-batch-enhance="weapon"]');
+      const preEnh = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState().game;
+        return {
+          stones: s.stones,
+          lvl: s.equippedGear.weapon.lvl || 0,
+          preview: api.computeBatchEnhancePreview(s, "weapon", 3)
+        };
+      });
+      await page.click('[data-open-batch-enhance="weapon"]');
+      await page.waitForSelector("#btn-confirm-batch-enhance");
+      await page.click('#modal-backdrop.open [data-modal-close="1"]');
+      const afterCancelEnh = await page.evaluate(() => ({
+        stones: window.__CHENYUAN_V25__.getState().game.stones,
+        lvl: window.__CHENYUAN_V25__.getState().game.equippedGear.weapon.lvl || 0
+      }));
+      assert.equal(afterCancelEnh.stones, preEnh.stones);
+      assert.equal(afterCancelEnh.lvl, preEnh.lvl);
+
+      await page.click('[data-open-batch-enhance="weapon"]');
+      await page.waitForSelector("#btn-confirm-batch-enhance");
+      await page.click("#btn-confirm-batch-enhance");
+      const afterConfirmEnh = await page.evaluate(() => ({
+        stones: window.__CHENYUAN_V25__.getState().game.stones,
+        lvl: window.__CHENYUAN_V25__.getState().game.equippedGear.weapon.lvl || 0
+      }));
+      assert.equal(afterConfirmEnh.lvl, preEnh.lvl + 3);
+      assert.equal(afterConfirmEnh.stones, preEnh.stones - preEnh.preview.totalCost);
+
+      // 3. Invalid quantity rejection & atomic rollback on QuotaExceededError (both batch craft crossing lifespan_exhausted AND batch enhance)
+      const rollbackRes = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState().game;
+        const stonesBeforeInvalid = s.stones;
+        const lvlBeforeInvalid = s.equippedGear.weapon.lvl || 0;
+        const invalidCraft = [0, -1, NaN, 999].map(q => api.executeAlchemyBatchCraft("healing", q));
+        const invalidEnh = [0, -1, NaN, 999].map(st => api.executeGearBatchEnhance("weapon", st));
+        const invalidZeroMutation = s.stones === stonesBeforeInvalid && (s.equippedGear.weapon.lvl || 0) === lvlBeforeInvalid;
+
+        const savedOrigElapsed = s.elapsedMonths;
+        const lfInfo = api.getLifespanInfo(s);
+        s.elapsedMonths = Math.max(0, lfInfo.maxMonths - (s.startAgeMonths || 216) - 4);
+        const beforeStones = s.stones;
+        const beforeMonths = s.elapsedMonths;
+        const beforeHerb = s.inventory.herb;
+        const beforePills = s.inventory.healing_pill;
+        const beforePendingLen = (s.pendingRewards || []).length;
+        const beforeWeaponLvl = s.equippedGear.weapon.lvl || 0;
+        const beforeCraftOrLoot = s.goalStats ? (s.goalStats.craftOrLoot || 0) : 0;
+
+        const origSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function () {
+          const err = new Error("quota");
+          err.name = "QuotaExceededError";
+          throw err;
+        };
+        let craftRes;
+        let enhRes;
+        try {
+          craftRes = api.executeAlchemyBatchCraft("healing", 3);
+          enhRes = api.executeGearBatchEnhance("weapon", 2);
+        } finally {
+          Storage.prototype.setItem = origSet;
+        }
+        const craftRolledClean = (
+          s.stones === beforeStones &&
+          s.elapsedMonths === beforeMonths &&
+          s.inventory.herb === beforeHerb &&
+          s.inventory.healing_pill === beforePills &&
+          (s.pendingRewards || []).length === beforePendingLen &&
+          !(s.pendingRewards || []).some(pr => pr.kind === "lifespan_exhausted")
+        );
+        const enhRolledClean = (
+          s.stones === beforeStones &&
+          (s.equippedGear.weapon.lvl || 0) === beforeWeaponLvl &&
+          (s.goalStats ? (s.goalStats.craftOrLoot || 0) : 0) === beforeCraftOrLoot
+        );
+        s.elapsedMonths = savedOrigElapsed;
+        api.saveGame();
+        return {
+          invalidCraftAllRejected: invalidCraft.every(r => r && r.ok === false && r.reason === "invalid_qty"),
+          invalidEnhAllRejected: invalidEnh.every(r => r && r.ok === false && r.reason === "invalid_steps"),
+          invalidZeroMutation,
+          craftRes,
+          enhRes,
+          craftRolledClean,
+          enhRolledClean
+        };
+      });
+      assert.equal(rollbackRes.invalidCraftAllRejected, true, "Invalid batch craft quantities must return { ok: false, reason: 'invalid_qty' }");
+      assert.equal(rollbackRes.invalidEnhAllRejected, true, "Invalid batch enhance steps must return { ok: false, reason: 'invalid_steps' }");
+      assert.equal(rollbackRes.invalidZeroMutation, true, "Invalid batch quantities must never mutate stones or gear level");
+      assert.equal(rollbackRes.craftRes.ok, false);
+      assert.equal(rollbackRes.craftRes.rolledBack, true);
+      assert.equal(rollbackRes.craftRolledClean, true, "QuotaExceededError during batch craft crossing lifespan_exhausted must atomically roll back stones, months, inventory, and pendingRewards");
+      assert.equal(rollbackRes.enhRes.ok, false);
+      assert.equal(rollbackRes.enhRes.rolledBack, true);
+      assert.equal(rollbackRes.enhRolledClean, true, "QuotaExceededError during batch enhance must atomically roll back stones, weapon level, and goalStats");
+
+      // 4. Data-driven Defeat Review Case A (real combat hit) + navigation-only suggestion
+      const defeatCaseA = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        api.closeDrawer();
+        api.resetEncounterTelemetry();
+        s.arena.player.invuln = 0;
+        s.arena.player.shieldHp = 0;
+        s.arena.defeatPending = null;
+        api.hurtPlayer(9999, { uncapped: true, sourceName: "雾隐狼王", moveName: "血月三连爪", isHeavy: true });
+        const panel = document.getElementById("defeat-review-panel");
+        return {
+          text: panel?.textContent || "",
+          telemetry: api.getEncounterTelemetry(),
+          stonesBefore: s.game.stones,
+          pillsBefore: s.game.inventory.healing_pill
+        };
+      });
+      assert.ok(defeatCaseA.text.includes("雾隐狼王") && defeatCaseA.text.includes("血月三连爪"), `Expected lethal source in #defeat-review-panel, got: ${defeatCaseA.text}`);
+      assert.ok(defeatCaseA.telemetry.hitsTaken >= 1);
+
+      await page.click('#modal-backdrop.open [data-defeat-nav="alchemy"]');
+      const afterDefeatNav = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        return {
+          sanctumMode: !!s.arena.sanctumMode,
+          defeatPending: s.arena.defeatPending,
+          hasDefeatPause: api.getPauseTokens().some(t => t.owner === "defeat"),
+          drawerOpen: document.getElementById("jade-panel").classList.contains("drawer-open"),
+          stonesAfter: s.game.stones,
+          pillsAfter: s.game.inventory.healing_pill
+        };
+      });
+      assert.equal(afterDefeatNav.sanctumMode, true);
+      assert.equal(afterDefeatNav.defeatPending, null);
+      assert.equal(afterDefeatNav.hasDefeatPause, false, "Defeat navigation suggestion must release defeatPauseToken cleanly");
+      assert.equal(afterDefeatNav.drawerOpen, true);
+      assert.equal(afterDefeatNav.stonesAfter, defeatCaseA.stonesBefore, "Defeat navigation suggestion must NOT auto-spend stones");
+      assert.equal(afterDefeatNav.pillsAfter, defeatCaseA.pillsBefore, "Defeat navigation suggestion must NOT auto-consume pills");
+
+      // 5. Data-driven Defeat Review Case B (direct HP=0 injection / 0 hits -> neutral fallback)
+      const defeatCaseB = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        api.closeDrawer();
+        api.resetEncounterTelemetry();
+        s.game.hp = 0;
+        api.openDefeatDecisionModal(false);
+        return document.getElementById("defeat-review-panel")?.textContent || "";
+      });
+      assert.ok(defeatCaseB.includes("暂无详细致死记录"), `Direct HP=0 must render neutral fallback, got: ${defeatCaseB}`);
+    } finally {
+      await ctx.close();
+    }
   });
 } finally {
   await browser.close();
