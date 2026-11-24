@@ -1,7 +1,7 @@
 # Test Infrastructure (`TEST_INFRA.md`)
 
 ## Overview
-Opaque-box, requirement-driven E2E Acceptance Test Suite for **《尘缘问道 · 剑阵万象》** (`web/public/playable-v2.html`), derived from `ORIGINAL_REQUEST.md` and `PROJECT.md § Feature Inventory`.
+Requirement-driven E2E Acceptance & Adversarial Hardening Test Suite for **《尘缘问道 · 剑阵万象》** (`web/public/playable-v2.html`), derived from `ORIGINAL_REQUEST.md` and `PROJECT.md § Feature Inventory`. **Tiers 1–4** (`56` tests) are strictly opaque-box acceptance tests; **Tier 5** (`tests/e2e/tiers/tier5-adversarial.mjs`, `12` tests) is white-box adversarial hardening that intentionally combines observable DOM/`localStorage` assertions with internal runtime invariant checks.
 
 ## Entry Point & CLI
 - **Runner**: `tests/e2e/run.mjs`
@@ -30,10 +30,10 @@ Opaque-box, requirement-driven E2E Acceptance Test Suite for **《尘缘问道 �
 - `tests/e2e/tiers/tier2-boundaries.mjs` — **Tier 2 (12 tests)**: Boundary & corner cases, including all 5 mandatory save scenarios (fresh start, legacy `eb0ea67` resume/migration, reload, `QuotaExceededError`, multi-tab contention)
 - `tests/e2e/tiers/tier3-combinations.mjs` — **Tier 3 (10 tests)**: Cross-feature pairwise combinations
 - `tests/e2e/tiers/tier4-journeys.mjs` — **Tier 4 (3 tests)**: Real-world end-user gameplay journeys
-- `tests/e2e/tiers/tier5-adversarial.mjs` — **Tier 5 (10 tests)**: White-box adversarial hardening (`E2E-T5-01..E2E-T5-10`) permanently encoding all 19 Round 1 (`A-1..A-11`, `B-1..B-8`) & 13 Round 2 (`R2A-1..R2A-6`, `R2B-1..R2B-6`, `DEFECT-R1-2A/2B/2C`) reproduced defects
+- `tests/e2e/tiers/tier5-adversarial.mjs` — **Tier 5 (12 tests)**: White-box adversarial hardening (`E2E-T5-01..E2E-T5-12`) permanently encoding all 19 Round 1 (`A-1..A-11`, `B-1..B-8`), 13 Round 2 (`R2A-1..R2A-6`, `R2B-1..R2B-6`, `DEFECT-R1-2A/2B/2C`), and 12 Round 3 (`R3A-1..R3A-5`, `DEFECT-R2-2A/2B/2C`, `R3B-1..R3B-5` + PR #26 sandbox-exit guard) reproduced defects
 
 ## Opaque-Box & Compliance Rules
-1. Assertions inspect observable UI text, DOM state, focus/accessibility behavior, `localStorage`, and (for T8/T9) repo files/scripts.
-2. `window.__CHENYUAN_V25__` (and legacy debug globals) are used **only** for setting up preconditions (e.g., reaching a late realm or spawning a boss), never for asserting internal implementation details.
+1. **Tiers 1–4 (Opaque-Box Acceptance)**: Assertions strictly inspect observable UI text, DOM state, focus/accessibility behavior, `localStorage`, and (for T8/T9) repo files/scripts. `window.__CHENYUAN_V25__` (and legacy debug globals) are used **only** for setting up preconditions (e.g., reaching a late realm or spawning a boss), never for asserting internal implementation details.
+2. **Tier 5 (White-Box Adversarial Hardening — `tests/e2e/tiers/tier5-adversarial.mjs`)**: Intentionally combines observable DOM/`localStorage`/focus assertions with white-box internal runtime invariant checks via `window.__CHENYUAN_V25__`, `window.__CHENYUAN_V24__`, `window.__CHENYUAN_V23__`, `window.__CHENYUAN_V22__`, and `window.__CHENYUAN_V21__` (e.g., `getPersistenceState()`, `isPracticeModeActive()`, `sanqingState`, `pauseTokens`, `seenCutIns`, combat buff timers) to lock down state-machine, isolation, and security regressions.
 3. All save fixtures (including `eb0ea67`-format legacy saves and corrupted saves) are generated dynamically in code; no real player saves are committed.
-4. Executed unconditionally in `.github/workflows/e2e.yml` (`npm run test:e2e -- --report test-results/e2e-report.json`, 66 tests across Tiers 1–5) alongside the 72-suite regression runner (`npm run test:regression`, covering M1–M4, P1–P5, R2–R7, Q0–Q3, and T5; `schemaVersion: 2` report) and art provenance check (`npm run art:manifest:check`).
+4. Executed unconditionally in `.github/workflows/e2e.yml` (`npm run test:e2e -- --report test-results/e2e-report.json`, 68 tests across Tiers 1–5) alongside the 79-suite regression runner (`npm run test:regression`, covering M1–M4, P1–P5, R2–R7, Q0–Q4, and T5; `schemaVersion: 2` report) and art provenance check (`npm run art:manifest:check`).

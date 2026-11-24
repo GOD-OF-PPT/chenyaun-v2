@@ -1142,5 +1142,409 @@ export const tests = [
       assert.equal(r2b6.dirty, false, "R2B-6: meditateAgedDirty cleared on direct Boss Rush entry");
       assert.ok(r2b6.diskMonths >= 12, `R2B-6: Meditation aging flushed to disk (got ${r2b6.diskMonths})`);
     }
+  },
+
+  // ==================== E2E-T5-11: Round 3 Surface A (R3A-1..R3A-5 + PR #26 Sandbox-Exit Guard) ====================
+  {
+    id: "E2E-T5-11",
+    title: "R3A-1..R3A-5 + PR#26: Practice conflict overwrite, popover occlusion, delayed high-rev event, legacy sandbox overwrite & Dojo bar Escape/focus",
+    features: ["R3A-1", "R3A-2", "R3A-3", "R3A-4", "R3A-5", "T2", "T6"],
+    async fn(env) {
+      // 1. R3A-1 (Case A foreign rev + Case B cross-tab delete) & R3A-3 (delayed higher-rev foreign StorageEvent)
+      const p1 = await env.openPage("t5-11-p1");
+      await env.startFreshGame(p1, "三轮演武冲突");
+      await p1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.realm = "nascent";
+        s.game.stones = 2500;
+        s.game.inventory.spirit_pill = 3;
+        api.enterSanctumHub();
+        api.saveGame();
+        api.startBossRushGauntlet(6);
+        s.game.inventory.spirit_pill = 2; // mutated in Practice Mode
+      });
+
+      const p2 = await env.openPage("t5-11-p2");
+      await env.gotoWelcome(p2);
+      await p2.waitForSelector("#btn-continue-save");
+      await p2.click("#btn-continue-save");
+      await p2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+      const tab2Rev = await p2.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        api.getState().game.stones = 8888;
+        api.saveGame();
+        return api.getPersistenceState().loadedSaveRev;
+      });
+      await p1.waitForFunction(() => window.__CHENYUAN_V25__.getActiveModalKind() === "save_conflict", null, { timeout: 3000 });
+      await p1.evaluate(() => { const tc = document.getElementById("toast-container"); if (tc) tc.innerHTML = ""; });
+      await p1.click('[data-action="overwrite-with-current-save"]');
+      await p1.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"), null, { timeout: 3000 });
+      const r3a1A = await p1.evaluate((sk) => {
+        const api = window.__CHENYUAN_V25__;
+        const disk = JSON.parse(localStorage.getItem(sk) || "null");
+        return {
+          isPractice: api.isPracticeModeActive(),
+          diskRev: disk?.saveRev || 0,
+          diskStones: disk?.game?.stones,
+          diskPill: disk?.game?.inventory?.spirit_pill,
+          activeTag: document.activeElement?.tagName,
+          toasts: Array.from(document.querySelectorAll("#toast-container .toast-pill")).map(el => el.textContent.trim())
+        };
+      }, STORAGE_KEY);
+      assert.equal(r3a1A.isPractice, false, "R3A-1A: Practice mode cleanly exited before overwrite");
+      assert.ok(r3a1A.diskRev > tab2Rev, `R3A-1A: diskRev (${r3a1A.diskRev}) > tab2Rev (${tab2Rev})`);
+      assert.equal(r3a1A.diskStones, 2500, "R3A-1A: Formal stones saved");
+      assert.equal(r3a1A.diskPill, 3, "R3A-1A: Pristine formal spirit_pill (3) saved, not practice-mutated 2");
+      assert.notEqual(r3a1A.activeTag, "BODY", "R3A-1A: Focus remains off BODY");
+      assert.ok(r3a1A.toasts.some(t => t.includes("强制覆盖存档")), `R3A-1A: Toast feedback emitted (got: ${JSON.stringify(r3a1A.toasts)})`);
+
+      // Case B: Cross-tab delete during Practice Mode -> overwrite recovers cleanly
+      await p1.evaluate(() => {
+        window.__CHENYUAN_V25__.startBossRushGauntlet(6);
+        window.__CHENYUAN_V25__.getState().game.inventory.spirit_pill = 1;
+      });
+      await p2.reload({ waitUntil: "domcontentloaded" });
+      await p2.waitForSelector("#btn-continue-save");
+      await p2.click("#btn-continue-save");
+      await p2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+      await openSettingsTab(p2, "controls");
+      await p2.click('[data-action="confirm-reset-save"]');
+      await p2.click('[data-action="execute-reset-save"]');
+      await p1.waitForFunction(() => window.__CHENYUAN_V25__.getPersistenceState().saveConflictState?.deleted === true, null, { timeout: 3000 });
+      await p1.click('[data-action="overwrite-with-current-save"]');
+      await p1.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"), null, { timeout: 3000 });
+      const r3a1B = await p1.evaluate((sk) => {
+        const disk = JSON.parse(localStorage.getItem(sk) || "null");
+        return {
+          diskExists: Boolean(disk && disk.game),
+          diskPill: disk?.game?.inventory?.spirit_pill,
+          activeTag: document.activeElement?.tagName
+        };
+      }, STORAGE_KEY);
+      assert.equal(r3a1B.diskExists, true, "R3A-1B: Cross-tab deleted save cleanly recreated");
+      assert.equal(r3a1B.diskPill, 3, "R3A-1B: Recreated save holds pristine formal spirit_pill (3)");
+      assert.notEqual(r3a1B.activeTag, "BODY", "R3A-1B: Focus off BODY");
+
+      // R3A-3: Delayed foreign StorageEvent with higher saveRev over locally-owned v1 disk save
+      await p1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        for (let i = 0; i < 4; i++) { api.getState().game.stones += 10; api.saveGame(); }
+      });
+      await p2.reload({ waitUntil: "domcontentloaded" });
+      await p2.waitForSelector("#btn-continue-save");
+      await p2.click("#btn-continue-save");
+      await p2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+      const tab2HighRaw = await p2.evaluate((sk) => {
+        const api = window.__CHENYUAN_V25__;
+        api.getState().game.stones += 55;
+        api.saveGame();
+        return localStorage.getItem(sk);
+      }, STORAGE_KEY);
+      await openSettingsTab(p2, "controls");
+      await p2.click('[data-action="confirm-reset-save"]');
+      await p2.click('[data-action="execute-reset-save"]');
+      await p2.close();
+      await p1.evaluate(() => window.__CHENYUAN_V25__.closeModal());
+      await openSettingsTab(p1, "controls");
+      await p1.click('[data-action="return-title-safe"]');
+      await p1.waitForSelector("#btn-start-new");
+      if (!(await p1.isVisible("#player-name-input"))) {
+        await p1.click("#btn-toggle-origin");
+        await p1.waitForSelector("#player-name-input", { state: "visible" });
+      }
+      await p1.fill("#player-name-input", "新世初卷");
+      await p1.click("#btn-start-new");
+      await p1.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+      await p1.evaluate(() => { const b = document.getElementById("btn-dlg-skip"); if (b && b.offsetParent !== null) b.click(); });
+      const r3a3 = await p1.evaluate(({ sk, raw }) => {
+        const api = window.__CHENYUAN_V25__;
+        const liveRev = JSON.parse(localStorage.getItem(sk)).saveRev;
+        window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: raw, oldValue: null, storageArea: localStorage }));
+        return {
+          liveRev,
+          foreignRev: JSON.parse(raw).saveRev,
+          conflict: api.getPersistenceState().saveConflictState,
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open")
+        };
+      }, { sk: STORAGE_KEY, raw: tab2HighRaw });
+      assert.ok(r3a3.foreignRev > r3a3.liveRev, "R3A-3 precondition: foreign rev > local rev");
+      assert.equal(r3a3.conflict, null, "R3A-3: Delayed higher-rev foreign StorageEvent ignored over locally owned disk save");
+      assert.equal(r3a3.modalOpen, false, "R3A-3: No bogus conflict modal");
+
+      // 2. R3A-2 (#pavilion-popover dismissal & welcome occlusion), R3A-4 (legacy sandbox overwrite + PR #26), R3A-5 (Dojo bar Escape & focus)
+      await p1.click("#btn-pavilion-menu");
+      await p1.waitForFunction(() => document.getElementById("pavilion-popover").classList.contains("open"));
+      await p1.click("#btn-open-settings");
+      await p1.waitForFunction(() => document.getElementById("modal-backdrop").classList.contains("open"));
+      const popOpenAfterModal = await p1.evaluate(() => document.getElementById("pavilion-popover").classList.contains("open"));
+      assert.equal(popOpenAfterModal, false, "R3A-2: openModal() dismisses #pavilion-popover");
+      await p1.evaluate(() => document.getElementById("pavilion-popover").classList.add("open"));
+      await p1.click('[data-sys-tab="controls"]');
+      await p1.click('[data-action="return-title-safe"]');
+      await p1.waitForSelector("#welcome-screen", { state: "visible" });
+      await p1.keyboard.press("Tab");
+      await p1.keyboard.press("Tab");
+      const r3a2 = await p1.evaluate(() => ({
+        popOpen: document.getElementById("pavilion-popover").classList.contains("open"),
+        inWelcome: document.getElementById("welcome-screen").contains(document.activeElement)
+      }));
+      assert.equal(r3a2.popOpen, false, "R3A-2: return-title-safe closes #pavilion-popover");
+      assert.equal(r3a2.inWelcome, true, "R3A-2: Tab on #welcome-screen stays inside #welcome-screen");
+
+      // Continue game -> test R3A-4 (legacy no-tabId overwrite during Sandbox + PR #26 vol1PedestalMeta guard)
+      await p1.click("#btn-continue-save");
+      await p1.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+      const r3a4 = await p1.evaluate((sk) => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.name = "沙盒验真";
+        s.game.openingChoice = "help";
+        s.game.vol1PedestalMeta = { choice: "help", payoffShown: false };
+        api.saveGame();
+        api.enterSandboxMode();
+        localStorage.setItem(sk, JSON.stringify({
+          game: Object.assign(api.createFreshGame("旧版外来档", "sword_bone"), { stones: 777 }),
+          stageIdx: 0, stanceIdx: 0, towerMode: false, sanctumMode: false
+        }));
+        api.exitSandboxMode();
+        return {
+          nameAfter: api.getState().game.name,
+          payoffShownAfter: api.getState().game.vol1PedestalMeta?.payoffShown,
+          modalKind: api.getActiveModalKind(),
+          conflict: Boolean(api.getPersistenceState().saveConflictState)
+        };
+      }, STORAGE_KEY);
+      assert.equal(r3a4.nameAfter, "沙盒验真", "R3A-4: exitSandboxMode restores preSandboxSnapshot on legacy overwrite");
+      assert.equal(r3a4.payoffShownAfter, false, "PR #26: exitSandboxMode does not prematurely trigger vol1PedestalMeta payoff save");
+      assert.equal(r3a4.conflict, true, "R3A-4: Legacy/no-tabId overwrite surfaces saveConflictState");
+      assert.equal(r3a4.modalKind, "save_conflict", "R3A-4: save_conflict modal opens");
+      await p1.click('[data-action="overwrite-with-current-save"]');
+      await p1.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
+
+      // R3A-5: Dojo bar Escape & drill/action focus return
+      await p1.evaluate(() => window.__CHENYUAN_V25__.enterSanctumHub());
+      await p1.focus("#btn-toggle-dojo-bar");
+      await p1.keyboard.press("Enter");
+      await p1.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
+      await p1.keyboard.press("Escape");
+      const r3a5Esc = await p1.evaluate(() => ({
+        expanded: document.getElementById("dojo-control-bar").classList.contains("expanded"),
+        activeId: document.activeElement?.id || ""
+      }));
+      assert.equal(r3a5Esc.expanded, false, "R3A-5: Escape collapses #dojo-control-bar");
+      assert.equal(r3a5Esc.activeId, "btn-toggle-dojo-bar", "R3A-5: Escape restores focus to #btn-toggle-dojo-bar");
+
+      await p1.keyboard.press("Enter");
+      await p1.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
+      await p1.focus('[data-dojo-mode="drill_mark_detonate"]');
+      await p1.keyboard.press("Enter");
+      const r3a5Drill = await p1.evaluate(() => ({
+        expanded: document.getElementById("dojo-control-bar").classList.contains("expanded"),
+        activeId: document.activeElement?.id || ""
+      }));
+      assert.equal(r3a5Drill.expanded, false, "R3A-5: Drill selection collapses Dojo bar");
+      assert.equal(r3a5Drill.activeId, "btn-toggle-dojo-bar", "R3A-5: Drill selection restores focus to #btn-toggle-dojo-bar");
+    }
+  },
+
+  // ==================== E2E-T5-12: Round 3 Surface B (DEFECT-R2-2A/2B/2C + R3B-1..R3B-5) ====================
+  {
+    id: "E2E-T5-12",
+    title: "DEFECT-R2-2A/2B/2C + R3B-1..R3B-5: Practice victory isolation & meta sync, Sanqing/gourd cleanup, tribulation bypass guards, Dojo intent & Sect Defense props",
+    features: ["DEFECT-R2-2A", "DEFECT-R2-2B", "DEFECT-R2-2C", "R3B-1", "R3B-2", "R3B-3", "R3B-4", "R3B-5", "G4", "S1"],
+    async fn(env) {
+      const page = await env.openPage("t5-12");
+      await env.startFreshGame(page, "三轮状态机隔离");
+
+      // 1. DEFECT-R2-2A + DEFECT-R2-2C: Boss Rush 7 & Spire 9 Practice Victory isolate formal state, retain cross-tab META_KEY, block Cloud Import
+      const r22ac = await page.evaluate(({ sk, mk }) => {
+        const api = window.__CHENYUAN_V25__;
+        const v21 = window.__CHENYUAN_V21__;
+        const v24 = window.__CHENYUAN_V24__;
+        const s = api.getState();
+        s.game.realm = "nascent";
+        s.game.stones = 2500;
+        s.game.bonusStarPts = 0;
+        s.game.inventory.spirit_pill = 3;
+        api.enterSanctumHub();
+        api.saveGame();
+        const code = api.exportFullCloudSaveCode();
+
+        api.startBossRushGauntlet(7);
+        s.game.inventory.spirit_pill = 2;
+        const cloudInPractice = v24.importFullCloudSaveCode(code);
+        const curMeta = JSON.parse(localStorage.getItem(mk) || "{}");
+        curMeta.reincarnationPoints = Math.max(40, (curMeta.reincarnationPoints || 0) + 40);
+        localStorage.setItem(mk, JSON.stringify(curMeta));
+        api.openBossRushVictoryModal();
+        const rushWinMemPill = api.getState().game.inventory.spirit_pill;
+        const rushWinMetaPts = api.getMetaState().reincarnationPoints;
+        api.closeModal();
+        window.dispatchEvent(new Event("pagehide"));
+        const diskPillAfterRush = JSON.parse(localStorage.getItem(sk))?.game?.inventory?.spirit_pill;
+
+        // Post-victory formal progression must not rewind on enterSanctumHub
+        api.getState().game.stones = 2440;
+        api.getState().game.bonusStarPts = 1;
+        api.saveGame();
+        api.enterSanctumHub();
+        const stonesAfterHub = api.getState().game.stones;
+        const starPtsAfterHub = api.getState().game.bonusStarPts;
+
+        // Spire 9 Practice Victory
+        api.startCelestialSpireRun(9);
+        api.getState().game.inventory.spirit_pill = 1;
+        v21.openSpireCurioDraftModal();
+        const spireWinMemPill = api.getState().game.inventory.spirit_pill;
+        api.closeModal();
+        window.dispatchEvent(new Event("pagehide"));
+        const diskPillAfterSpire = JSON.parse(localStorage.getItem(sk))?.game?.inventory?.spirit_pill;
+
+        return {
+          cloudInPractice,
+          rushWinMemPill,
+          rushWinMetaPts,
+          diskPillAfterRush,
+          stonesAfterHub,
+          starPtsAfterHub,
+          spireWinMemPill,
+          diskPillAfterSpire
+        };
+      }, { sk: STORAGE_KEY, mk: META_KEY });
+      assert.equal(r22ac.cloudInPractice, false, "DEFECT-R2-2A: Cloud import blocked in Practice Mode");
+      assert.equal(r22ac.rushWinMemPill, 3, "DEFECT-R2-2A: Boss Rush 7 victory restores formal pill count");
+      assert.ok(r22ac.rushWinMetaPts >= 40, "DEFECT-R2-2C: Cross-tab META_KEY points preserved on Practice exit");
+      assert.equal(r22ac.diskPillAfterRush, 3, "DEFECT-R2-2A: pagehide after Boss Rush 7 victory does not persist practice pill loss");
+      assert.equal(r22ac.stonesAfterHub, 2440, "DEFECT-R2-2A: Post-victory formal stones never rewound");
+      assert.equal(r22ac.starPtsAfterHub, 1, "DEFECT-R2-2A: Post-victory formal bonusStarPts never rewound");
+      assert.equal(r22ac.spireWinMemPill, 3, "DEFECT-R2-2A: Spire 9 victory restores formal pill count");
+      assert.equal(r22ac.diskPillAfterSpire, 3, "DEFECT-R2-2A: pagehide after Spire 9 victory preserves formal pill count");
+
+      // 2. R3B-1: Sandbox exit clears arena.sanqingState & Gourd soak timers
+      const r3b1 = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const v24 = window.__CHENYUAN_V24__;
+        const s = api.getState();
+        s.game.realm = "mortal";
+        s.game.gourd.soaks = ["iron_lotus", "samadhi_fire", "wind_feather", "crimson_vine"];
+        api.initArenaStage(0, false);
+        api.saveGame();
+        api.enterSandboxMode();
+        const sIn = api.getState();
+        sIn.game.mp = 999; sIn.game.hp = 10; sIn.game.gourd.charges = 5;
+        sIn.game.gourd.soaks = ["iron_lotus", "samadhi_fire", "wind_feather", "crimson_vine"];
+        v24.triggerSanqingTriClones();
+        api.useQuickHealingPill();
+        api.exitSandboxMode();
+        const sOut = api.getState();
+        return {
+          sanqingActive: v24.getState().sanqing.active,
+          echoQueueLen: v24.getState().echoQueueLen,
+          hyperArmor: sOut.arena.player.hyperArmorTimer,
+          samadhi: sOut.arena.player.samadhiFireReady,
+          haste: sOut.arena.player.gourdHasteTimer,
+          crit: sOut.arena.player.gourdCritTimer
+        };
+      });
+      assert.equal(r3b1.sanqingActive, false, "R3B-1: sanqingState deactivated on exitSandboxMode");
+      assert.equal(r3b1.echoQueueLen, 0, "R3B-1: sanqingEchoQueue emptied on exitSandboxMode");
+      assert.equal(r3b1.hyperArmor, 0, "R3B-1: hyperArmorTimer zeroed on exitSandboxMode");
+      assert.equal(r3b1.samadhi, false, "R3B-1: samadhiFireReady cleared on exitSandboxMode");
+      assert.equal(r3b1.haste, 0, "R3B-1: gourdHasteTimer zeroed on exitSandboxMode");
+      assert.equal(r3b1.crit, 0, "R3B-1: gourdCritTimer zeroed on exitSandboxMode");
+
+      // 3. R3B-2 + DEFECT-R2-2B + R3B-4: Live Tribulation from Sanctum clears Dojo/intent and blocks sanctum_portal, spring, Digit9 map, cloud import
+      const r3b2 = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const v24 = window.__CHENYUAN_V24__;
+        const s = api.getState();
+        s.game.realm = "nascent";
+        s.game.xp = api.REALMS.nascent.xpCap;
+        s.game.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true };
+        api.enterSanctumHub();
+        api.setDojoMode("blade_clash");
+        s.arena.swordIntent = 100;
+        api.saveGame();
+        const code = api.exportFullCloudSaveCode();
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        s.game.hp = 20;
+        s.game.gourd.charges = 0;
+        const p = s.arena.player;
+        [
+          { id: "e2e_sp", kind: "sanctum_portal", name: "返洞府", x: p.x, y: p.y, r: 60 },
+          { id: "e2e_spr", kind: "immortal_spring", name: "灵泉", x: p.x, y: p.y, r: 60 },
+          { id: "e2e_mg", kind: "map_node_gate", name: "星图", x: p.x, y: p.y, r: 60 }
+        ].forEach(pr => {
+          s.arena.props.push(pr);
+          s.arena.nearbyProp = pr;
+          const btn = document.getElementById("btn-prop-interact");
+          if (btn) { btn.style.display = "inline-flex"; btn.click(); }
+        });
+        const cloudOk = v24.importFullCloudSaveCode(code);
+        return {
+          tribActive: Boolean(s.arena.tribulation),
+          sanctumMode: s.arena.sanctumMode,
+          swordIntent: s.arena.swordIntent,
+          dojoActive: document.getElementById("dojo-control-bar").classList.contains("active"),
+          dummyCount: s.arena.enemies.filter(e => e.isDummy).length,
+          hp: s.game.hp,
+          gourd: s.game.gourd.charges,
+          cloudOk
+        };
+      });
+      await page.keyboard.press("Digit9");
+      const mapOpenedDuringTrib = await isModalOpen(page);
+      assert.equal(r3b2.tribActive, true, "DEFECT-R2-2B/R3B-2: Tribulation stays active against all bypass props");
+      assert.equal(r3b2.sanctumMode, false, "R3B-2: sanctumMode cleared on startLiveTribulation");
+      assert.equal(r3b2.swordIntent, 0, "R3B-4: Dojo swordIntent reset on startLiveTribulation");
+      assert.equal(r3b2.dojoActive, false, "R3B-2: Dojo bar hidden during Live Tribulation");
+      assert.equal(r3b2.dummyCount, 0, "R3B-2: Dojo dummy removed during Live Tribulation");
+      assert.equal(r3b2.hp, 20, "R3B-2: HP unhealed during Live Tribulation");
+      assert.equal(r3b2.gourd, 0, "R3B-2: Gourd unrefilled during Live Tribulation");
+      assert.equal(r3b2.cloudOk, false, "R3B-2: Cloud import blocked during Live Tribulation");
+      assert.equal(mapOpenedDuringTrib, false, "R3B-2: Digit9 dungeon map blocked during Live Tribulation");
+
+      // 4. R3B-3 + R3B-4 + R3B-5: Workshop overdrive purge, Dojo fill-intent reset, Sect Defense mixed_ward purge
+      const r3b345 = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const v22 = window.__CHENYUAN_V22__;
+        const v24 = window.__CHENYUAN_V24__;
+        const s = api.getState();
+        s.arena.tribulation = null;
+        s.game.realm = "spirit";
+        api.enterSanctumHub();
+        v22.launchCustomSeedEncounter();
+        s.game.mp = 999;
+        v22.triggerAstralGiantForm();
+        v24.triggerSanqingTriClones();
+        v24.castShanheShejiDomain();
+        api.startBossRushGauntlet(1);
+        const rushAfterWorkshop = {
+          astral: Boolean(s.arena.astralForm),
+          astralEnergy: s.arena.astralEnergy,
+          sanqing: v24.getState().sanqing.active,
+          shanhe: Boolean(s.arena.shanheDomain)
+        };
+        api.enterSanctumHub();
+        s.arena.swordIntent = 100;
+        api.initArenaStage(0, false);
+        const intentStage0 = s.arena.swordIntent;
+        api.enterSanctumHub();
+        api.setDojoMode("mixed_ward");
+        s.arena.swordIntent = 100;
+        api.startSectDefenseSiege();
+        const leakedProps = s.arena.props.filter(pr => pr.isDojoProp || pr.kind === "ward_pylon" || pr.kind === "frost_crystal").length;
+        const intentDefense = s.arena.swordIntent;
+        return { rushAfterWorkshop, intentStage0, leakedProps, intentDefense };
+      });
+      assert.equal(r3b345.rushAfterWorkshop.astral, false, "R3B-3: Workshop astralForm purged on formal Boss Rush 1");
+      assert.equal(r3b345.rushAfterWorkshop.astralEnergy, 0, "R3B-3: Workshop astralEnergy zeroed");
+      assert.equal(r3b345.rushAfterWorkshop.sanqing, false, "R3B-3: Workshop sanqingState purged");
+      assert.equal(r3b345.rushAfterWorkshop.shanhe, false, "R3B-3: Workshop shanheDomain purged");
+      assert.equal(r3b345.intentStage0, 0, "R3B-4: Sanctum Dojo swordIntent reset on initArenaStage");
+      assert.equal(r3b345.leakedProps, 0, "R3B-5: Sect Defense purges mixed_ward Dojo props");
+      assert.equal(r3b345.intentDefense, 0, "R3B-4: Sect Defense resets Dojo swordIntent");
+    }
   }
 ];
