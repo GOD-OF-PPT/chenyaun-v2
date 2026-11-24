@@ -49,6 +49,15 @@
       return;
     }
 
+    // 2b. R4A-2: Trap Tab/Shift+Tab strictly inside #welcome-screen when visible (and no modal is open)
+    const wsFocus = document.getElementById("welcome-screen");
+    if (wsFocus && wsFocus.style.display !== "none") {
+      if (ev.code === "Tab") {
+        trapFocusInContainer(ev, wsFocus);
+        return;
+      }
+    }
+
     // 3. Cutscene overlay
     if (cutscene.active) {
       if (ev.code === "Tab") {
@@ -69,10 +78,38 @@
       }
       if (ev.code === "Escape") {
         ev.preventDefault();
+        const pavPopCut = document.getElementById("pavilion-popover");
+        if (pavPopCut && pavPopCut.classList.contains("open")) {
+          pavPopCut.classList.remove("open");
+          const pavBtnCut = document.getElementById("btn-pavilion-menu");
+          if (pavBtnCut) pavBtnCut.classList.remove("open");
+          focusDialogSafely(document.getElementById("story-dialogue-bar"));
+          return;
+        }
         advanceCutscene(true);
         return;
       }
       return;
+    }
+
+    // 3b. Pavilion Popover floats above drawer & HUD: handle Tab/Escape BEFORE drawerOpen (R2A-6, R3A-2 guarded off welcome-screen)
+    const wsTop = document.getElementById("welcome-screen");
+    const onWelcomeTop = !game || (wsTop && wsTop.style.display !== "none");
+    const pavPopTop = document.getElementById("pavilion-popover");
+    if (!onWelcomeTop && pavPopTop && pavPopTop.classList.contains("open")) {
+      if (ev.code === "Tab") {
+        trapFocusInContainer(ev, pavPopTop);
+        return;
+      }
+      if (ev.code === "Escape") {
+        ev.preventDefault();
+        closePavilionPopover();
+        const pavBtnTop = document.getElementById("btn-pavilion-menu");
+        if (pavBtnTop && isElementFocusable(pavBtnTop)) {
+          try { pavBtnTop.focus({ preventScroll: true }); } catch (e) {}
+        }
+        return;
+      }
     }
 
     // 4. Drawer open: trap Tab/Shift+Tab, allow Escape & alchemy Space; block all background global shortcuts
@@ -122,22 +159,14 @@
     }
 
     keysDown[ev.code] = true;
-    const welcomeEl = document.getElementById("welcome-screen");
-    const welcomeHidden = !welcomeEl || welcomeEl.style.display === "none";
-    if (ev.code === "BracketRight" && game && !arena.paused && welcomeHidden) { ev.preventDefault(); toggleLocalCoop2P(); return; }
-    if (ev.code === "BracketLeft" && game && !arena.paused && welcomeHidden) { ev.preventDefault(); cycleCoop2PPartner(); return; }
-    if (ev.code === "Backslash" && game && !arena.paused && welcomeHidden) { ev.preventDefault(); cycleCelestialTimePhase(); return; }
-    if (arena.coop2P && arena.coop2P.active && !arena.paused && ["Semicolon", "Quote", "Numpad0", "Numpad1", "Numpad2"].includes(ev.code)) {
+    const wsKeyEl = document.getElementById("welcome-screen");
+    const onWelcomeKey = !game || (wsKeyEl && wsKeyEl.style.display !== "none");
+    if (ev.code === keybinds.telemetry.kb) {
+      if (onWelcomeKey) return;
       ev.preventDefault();
-      arena.coop2P.manualIdleT = 0;
-      triggerCoop2PAttack(ev.code === "Quote" || ev.code === "Numpad2");
+      toggleTelemetryPanel();
       return;
     }
-    // When 2P Co-Op is active, IJKL drives 2P movement cleanly without colliding with 1P shortcuts!
-    if (arena.coop2P && arena.coop2P.active && !arena.paused && ["KeyI", "KeyJ", "KeyK", "KeyL"].includes(ev.code)) {
-      return;
-    }
-    if (ev.code === keybinds.telemetry.kb) { ev.preventDefault(); toggleTelemetryPanel(); return; }
     if (keybinds.photo && ev.code === keybinds.photo.kb) { ev.preventDefault(); togglePhotoMode(); return; }
     if (photoMode.active) {
       if (ev.code === "Escape") { ev.preventDefault(); togglePhotoMode(false); return; }
@@ -149,19 +178,62 @@
       }
       return;
     }
+    const pavPop = document.getElementById("pavilion-popover");
+    if (!onWelcomeKey && ev.code === "Escape" && pavPop && pavPop.classList.contains("open")) {
+      ev.preventDefault();
+      closePavilionPopover();
+      const pavBtn = document.getElementById("btn-pavilion-menu");
+      if (pavBtn && isElementFocusable(pavBtn)) {
+        try { pavBtn.focus({ preventScroll: true }); } catch (e) {}
+      }
+      return;
+    }
+    // R3A-5 + R4A-3: Escape dismisses expanded & active Sanctum Dojo control bar and restores focus to #btn-toggle-dojo-bar
+    const dojoBarEsc = document.getElementById("dojo-control-bar");
+    if (!onWelcomeKey && ev.code === "Escape" && dojoBarEsc && dojoBarEsc.classList.contains("active") && dojoBarEsc.classList.contains("expanded")) {
+      ev.preventDefault();
+      dojoBarEsc.classList.remove("expanded");
+      const caretEsc = document.getElementById("lbl-dojo-caret");
+      if (caretEsc) caretEsc.textContent = "▾";
+      const dojoBtnEsc = document.getElementById("btn-toggle-dojo-bar");
+      if (isElementFocusable(dojoBtnEsc)) {
+        try { dojoBtnEsc.focus({ preventScroll: true }); } catch (e) {}
+      } else {
+        focusBattlefield();
+      }
+      return;
+    }
     if (ev.code === "Escape" && activeUnlockCardId) {
       ev.preventDefault();
       dismissActiveUnlockCard();
       return;
     }
-    if (!game || arena.paused) return;
+    if (!game || arena.paused || onWelcomeKey) return;
 
     const ae = document.activeElement;
     const aeTag = ae && ae.tagName;
     const aeIsRoleButton = !!(ae && typeof ae.getAttribute === "function" && ae.getAttribute("role") === "button");
+    const aeIsNativeInteractive = Boolean(aeTag && /^(BUTTON|A|SUMMARY)$/i.test(aeTag));
     if (aeIsRoleButton && (ev.code === "Enter" || ev.code === "Space")) {
       ev.preventDefault();
       if (typeof ae.click === "function") ae.click();
+      return;
+    }
+    if (aeIsNativeInteractive && (ev.code === "Enter" || ev.code === "Space")) {
+      return;
+    }
+
+    if (ev.code === "BracketRight") { ev.preventDefault(); toggleLocalCoop2P(); return; }
+    if (ev.code === "BracketLeft") { ev.preventDefault(); cycleCoop2PPartner(); return; }
+    if (ev.code === "Backslash") { ev.preventDefault(); cycleCelestialTimePhase(); return; }
+    if (arena.coop2P && arena.coop2P.active && ["Semicolon", "Quote", "Numpad0", "Numpad1", "Numpad2"].includes(ev.code)) {
+      ev.preventDefault();
+      arena.coop2P.manualIdleT = 0;
+      triggerCoop2PAttack(ev.code === "Quote" || ev.code === "Numpad2");
+      return;
+    }
+    // When 2P Co-Op is active, IJKL drives 2P movement cleanly without colliding with 1P shortcuts!
+    if (arena.coop2P && arena.coop2P.active && ["KeyI", "KeyJ", "KeyK", "KeyL"].includes(ev.code)) {
       return;
     }
 
@@ -248,6 +320,7 @@
             try { refBtn.focus({ preventScroll: true }); } catch (e) {}
           }
         } else if (hKind === "alchemy") {
+          if (!guardNotInTribulation("丹道炼制") || !guardNotPracticeMode("丹道炼制")) return;
           const rec = RECIPES[hKey];
           if (rec) {
             if (rec.reqCauldronLv && getSanctumLevel(game, "cauldron") < rec.reqCauldronLv) {
@@ -528,6 +601,8 @@
       return;
     }
     if (m4QuickAct === "lifespan-use-pill") {
+      if (!guardNotInTribulation("渡劫中服延寿丹")) return;
+      if (!guardNotPracticeMode("正式服丹成长")) return;
       if (!game || (game.inventory.longevity_pill || 0) < 1) {
         showToast("行囊中暂无【延寿青莲丹】！");
         return;
@@ -599,11 +674,15 @@
       return;
     }
     if (t.hasAttribute("data-open-pet-skill-tier")) {
+      if (!guardNotInTribulation("择定灵宠神通")) return;
+      if (!guardNotPracticeMode("择定灵宠神通")) return;
       const tier = Number(t.getAttribute("data-open-pet-skill-tier")) === 5 ? 5 : 3;
       openPetSkillChoiceModal(tier);
       return;
     }
     if (t.hasAttribute("data-pick-pet-skill")) {
+      if (!guardNotInTribulation("择定灵宠神通")) return;
+      if (!guardNotPracticeMode("择定灵宠神通")) return;
       if (!game || !game.pet || !game.pet.id) return;
       const skId = t.getAttribute("data-pick-pet-skill");
       const tier = Number(t.getAttribute("data-pet-skill-tier")) === 5 ? 5 : 3;
@@ -771,6 +850,8 @@
       return;
     }
     if (t.hasAttribute("data-soul-refine")) {
+      if (!guardNotInTribulation("镇妖魂印炼化")) return;
+      if (!guardNotPracticeMode("镇妖魂印炼化")) return;
       const mode = t.getAttribute("data-soul-refine");
       const sid = pendingSoulRefineId || t.getAttribute("data-soul-id");
       pendingSoulRefineId = null;
@@ -838,14 +919,18 @@
       clearTransientChoiceQueues();
       sandboxMode = false;
       preSandboxSnapshot = null;
+      practiceFormalSnapshot = null;
       saveReadOnlyMode = false;
       saveConflictState = null;
       storageWriteError = null;
       saveAlertDismissed = false;
+      clearLoadedSaveMeta();
+      loadedSaveLineage = generateSaveLineageId();
       const inp = document.getElementById("player-name-input");
       game = createFreshGame(inp ? inp.value : "顾长青", selectedPerkId, selectedCalamityTier);
       arena.stanceIdx = 0;
       resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
+      resetRuntimeCombatOverrides();
       arena.defeatPending = null;
       releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       closeModal();
@@ -854,7 +939,7 @@
       initArenaStage(0, false);
       playCutscene("opening_scroll");
       focusBattlefield();
-      const saved = saveGame({ forceOverwrite: true });
+      const saved = saveGame({ forceOverwrite: true, userInitiated: true });
       renderHudSaveAlert();
       return saved;
     }
@@ -882,14 +967,16 @@
       releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       sandboxMode = false;
       preSandboxSnapshot = null;
+      practiceFormalSnapshot = null;
       const s = res.bundle;
       const hadLegacyUnlockAll = Boolean(s.game && s.game.unlockAllArcana === true);
-      loadedSaveRev = res.rev;
+      recordLoadedSaveMeta(res);
       saveReadOnlyMode = false;
       saveConflictState = null;
       storageWriteError = null;
       saveAlertDismissed = false;
       game = normalizeLoadedGame(s.game);
+      resetRuntimeCombatOverrides();
       arena.stanceIdx = ((Math.floor(num(s.stanceIdx, 0)) % SWORD_STANCES.length) + SWORD_STANCES.length) % SWORD_STANCES.length;
       arena.stageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(s.stageIdx, 0))));
       document.getElementById("welcome-screen").style.display = "none";
@@ -929,6 +1016,7 @@
       return;
     }
     if (t.hasAttribute("data-trib-goto-boss")) {
+      if (!guardNotInTribulation("前往讨伐妖王")) return;
       const targetStage = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(t.getAttribute("data-trib-goto-boss"), 0))));
       const act = CAMPAIGN_ACTS[targetStage] || CAMPAIGN_ACTS[0];
       const stg = STAGES[targetStage] || STAGES[0];
@@ -981,19 +1069,28 @@
     if (m1Act === "copy-corrupt-save-raw") {
       const rawTxt = storageReadError && storageReadError.raw ? storageReadError.raw : "";
       if (!rawTxt) { showToast("当前无可复制的受损存档原文"); return; }
+      const origFocusEl = (document.activeElement && document.activeElement !== document.body) ? document.activeElement : t;
       const fallbackCopy = () => {
+        const prevActive = (document.activeElement && document.activeElement !== document.body) ? document.activeElement : origFocusEl;
+        let ta = null;
         try {
-          const ta = document.createElement("textarea");
+          ta = document.createElement("textarea");
           ta.value = rawTxt;
           ta.style.position = "fixed";
           ta.style.opacity = "0";
           document.body.appendChild(ta);
           ta.select();
           document.execCommand("copy");
-          document.body.removeChild(ta);
           showToast("已复制受损存档原文（本地原数据未修改）");
         } catch (e) {
           showToast("请手动在浏览器开发者工具查看本地存档键值");
+        } finally {
+          if (ta && ta.parentNode) ta.parentNode.removeChild(ta);
+          if (isElementFocusable(prevActive)) {
+            try { prevActive.focus({ preventScroll: true }); } catch (e) {}
+          } else {
+            focusSaveAlertOrFallback("copy-corrupt-save-raw");
+          }
         }
       };
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1018,19 +1115,28 @@
     if (m1Act === "copy-corrupt-meta-raw") {
       const rawTxt = metaReadError && metaReadError.raw ? metaReadError.raw : "";
       if (!rawTxt) { showToast("当前无可复制的受损元存档原文"); return; }
+      const origFocusEl = (document.activeElement && document.activeElement !== document.body) ? document.activeElement : t;
       const fallbackCopy = () => {
+        const prevActive = (document.activeElement && document.activeElement !== document.body) ? document.activeElement : origFocusEl;
+        let ta = null;
         try {
-          const ta = document.createElement("textarea");
+          ta = document.createElement("textarea");
           ta.value = rawTxt;
           ta.style.position = "fixed";
           ta.style.opacity = "0";
           document.body.appendChild(ta);
           ta.select();
           document.execCommand("copy");
-          document.body.removeChild(ta);
           showToast("已复制受损元存档原文（本地原数据未修改）");
         } catch (e) {
           showToast("请手动在浏览器开发者工具查看本地元存档键值");
+        } finally {
+          if (ta && ta.parentNode) ta.parentNode.removeChild(ta);
+          if (isElementFocusable(prevActive)) {
+            try { prevActive.focus({ preventScroll: true }); } catch (e) {}
+          } else {
+            focusSaveAlertOrFallback("copy-corrupt-meta-raw");
+          }
         }
       };
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1063,16 +1169,36 @@
         const errMsg = (metaWriteError && metaWriteError.message) ? metaWriteError.message : "元存档写入失败";
         renderWelcomeSaveStatusBanner();
         renderHudSaveAlert();
+        const metaErrEl = document.getElementById("corrupt-meta-reset-error-msg");
+        if (metaErrEl) {
+          metaErrEl.textContent = `⚠ 元存档重置写入失败：${errMsg}（受损元存档已原样保留，请清理存储空间后重试）`;
+          metaErrEl.style.display = "block";
+        }
+        const modalBoxMeta = document.getElementById("modal-content");
+        if (modalBoxMeta && document.getElementById("modal-backdrop")?.classList.contains("open") && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+          focusDialogSafely(modalBoxMeta);
+        }
         showToast(`⚠ 元存档重置写入失败：${errMsg}`);
         return;
       }
-      closeModal();
+      // R2A-5: Re-render welcome banner / HUD save alert BEFORE closeModal() so detached trigger never drops focus to BODY!
       const ws = document.getElementById("welcome-screen");
-      if (!game || (ws && ws.style.display !== "none")) {
+      const onWelcomeNow = !game || (ws && ws.style.display !== "none");
+      if (onWelcomeNow) {
         renderWelcomeScreen();
       } else {
         renderHudSaveAlert();
         updateHud();
+      }
+      closeModal();
+      if (onWelcomeNow) {
+        if (document.activeElement === document.body || !isElementFocusable(document.activeElement)) {
+          restoreTriggerFocus(null);
+        }
+      } else {
+        if (document.activeElement === document.body || !isElementFocusable(document.activeElement)) {
+          focusSaveAlertOrFallback();
+        }
       }
       showToast("已确认重置元存档并恢复写入。");
       return;
@@ -1109,7 +1235,9 @@
       if (savedOk) {
         showToast(`本地存档已恢复写入（v${loadedSaveRev}）！`);
         if (!isModalOpen) {
-          if (cutscene.active) focusDialogSafely(document.getElementById("story-dialogue-bar"));
+          if (alertEl && alertEl.style.display !== "none") {
+            focusSaveAlertOrFallback();
+          } else if (cutscene.active) focusDialogSafely(document.getElementById("story-dialogue-bar"));
           else if (drawerOpen) focusDialogSafely(document.getElementById("jade-panel"));
           else restoreTriggerFocus(null);
         }
@@ -1121,7 +1249,25 @@
       return;
     }
     if (m1Act === "retry-meta-save") {
-      if (saveMeta()) showToast(`元存档已恢复写入（v${Number(metaState.metaRev) || 1}）！`);
+      if (metaReadError) {
+        renderHudSaveAlert();
+        showToast("⚠ 原受损元存档仍保留，请点击【确认重置】处理或先【复制原文】备份。", { critical: true });
+        focusSaveAlertOrFallback("prompt-reset-corrupt-meta");
+        return;
+      }
+      if (saveReadOnlyMode) {
+        renderHudSaveAlert();
+        showToast("⚠ 当前处于只读观览态，已暂停写入元存档，请先【载入最新档】或【以本页覆盖】。", { critical: true });
+        focusSaveAlertOrFallback("load-latest-save");
+        return;
+      }
+      const metaSavedOk = saveMeta({ userInitiated: true });
+      if (metaSavedOk) {
+        showToast(`元存档已恢复写入（v${Number(metaState.metaRev) || 1}）！`);
+        focusSaveAlertOrFallback();
+      } else {
+        focusSaveAlertOrFallback(metaReadError ? "prompt-reset-corrupt-meta" : "retry-meta-save");
+      }
       return;
     }
     if (m1Act === "open-cloud-backup") {
@@ -1135,37 +1281,57 @@
       const alertEl = document.getElementById("hud-save-alert");
       const modalBackdrop = document.getElementById("modal-backdrop");
       const isModalOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
-      if (!isModalOpen && (!alertEl || alertEl.style.display === "none")) {
-        if (cutscene.active) focusDialogSafely(document.getElementById("story-dialogue-bar"));
-        else if (drawerOpen) focusDialogSafely(document.getElementById("jade-panel"));
-        else restoreTriggerFocus(null);
+      if (!isModalOpen) {
+        if (alertEl && alertEl.style.display !== "none") {
+          focusSaveAlertOrFallback();
+        } else if (cutscene.active) {
+          focusDialogSafely(document.getElementById("story-dialogue-bar"));
+        } else if (drawerOpen) {
+          focusDialogSafely(document.getElementById("jade-panel"));
+        } else {
+          restoreTriggerFocus(null);
+        }
       }
       return;
     }
     if (m1Act === "load-latest-save") {
       const res = inspectSavedBundle();
       if (!res.ok || !res.bundle || !res.bundle.game) {
-        showToast("最新存档读取异常，保留本页只读态！");
+        showToast("最新存档读取异常，保留本页只读态！", { critical: true });
         saveReadOnlyMode = true;
         saveConflictState = null;
+        saveAlertDismissed = false;
         const modalBd = document.getElementById("modal-backdrop");
         if (modalBd && modalBd.classList.contains("open") && (activeModalKind === "save_conflict" || activeModalKind === "save_corrupt")) {
           closeModal();
         }
         renderHudSaveAlert();
+        const bdNow = document.getElementById("modal-backdrop");
+        if (!(bdNow && bdNow.classList.contains("open"))) {
+          focusSaveAlertOrFallback(storageReadError ? "overwrite-with-current-save" : "load-latest-save");
+        } else {
+          const conflictErrEl = document.getElementById("save-conflict-error-msg");
+          if (conflictErrEl) {
+            const readMsg = (storageReadError && storageReadError.reason) ? storageReadError.reason : "最新存档读取异常";
+            conflictErrEl.textContent = `⚠ 载入最新存档失败：${readMsg}（已保留本页只读态）`;
+            conflictErrEl.style.display = "block";
+          }
+        }
         return;
       }
       clearTransientChoiceQueues();
       activeCustomSeedTempCurio = null;
       sandboxMode = false;
       preSandboxSnapshot = null;
+      practiceFormalSnapshot = null;
       const s = res.bundle;
-      loadedSaveRev = res.rev;
+      recordLoadedSaveMeta(res);
       saveReadOnlyMode = false;
       saveConflictState = null;
       storageWriteError = null;
       saveAlertDismissed = false;
       game = normalizeLoadedGame(s.game);
+      resetRuntimeCombatOverrides();
       arena.stanceIdx = ((Math.floor(num(s.stanceIdx, 0)) % SWORD_STANCES.length) + SWORD_STANCES.length) % SWORD_STANCES.length;
       arena.stageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(s.stageIdx, 0))));
       resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
@@ -1185,8 +1351,12 @@
       saveReadOnlyMode = true;
       saveConflictState = null;
       saveAlertDismissed = false;
-      closeModal();
       renderHudSaveAlert();
+      closeModal();
+      const bdNow = document.getElementById("modal-backdrop");
+      if (!(bdNow && bdNow.classList.contains("open")) && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+        focusSaveAlertOrFallback("load-latest-save");
+      }
       showToast("已切入只读观览态：本页绝不会覆盖另一标签页的存档。");
       return;
     }
@@ -1200,24 +1370,105 @@
       const modalBackdrop = document.getElementById("modal-backdrop");
       const isModalOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
       const shouldCloseModal = isModalOpen && (activeModalKind === "save_conflict" || activeModalKind === "save_corrupt");
+      // R3A-1 + R4A-1/DEFECT-R3-2A: If invoked while in Practice Mode, atomically restore formal snapshot for overwrite,
+      // and roll back full Practice state if saveGame() fails (e.g., QuotaExceededError / SecurityError)!
+      const wasPractice = isPracticeModeActive() || !!practiceFormalSnapshot;
+      let prevPracticeRollback = null;
+      if (wasPractice) {
+        prevPracticeRollback = {
+          bossRush: arena.bossRush,
+          celestialSpire: arena.celestialSpire,
+          customSeedRun: arena.customSeedRun,
+          stageIdx: arena.stageIdx,
+          stanceIdx: arena.stanceIdx,
+          towerMode: arena.towerMode,
+          sanctumMode: arena.sanctumMode,
+          practiceSnap: practiceFormalSnapshot ? JSON.parse(JSON.stringify(practiceFormalSnapshot)) : null,
+          practiceGame: game ? JSON.parse(JSON.stringify(game)) : null,
+          practiceMeta: JSON.parse(JSON.stringify(ensureMetaState())),
+          tempCurio: activeCustomSeedTempCurio ? Object.assign({}, activeCustomSeedTempCurio) : null,
+          lastSavedPayloadChecksum
+        };
+        restoreCustomSeedTempCurio();
+        const snapRef = practiceFormalSnapshot;
+        arena.bossRush = null;
+        arena.celestialSpire = null;
+        arena.customSeedRun = null;
+        if (snapRef) {
+          arena.stageIdx = Math.max(0, Math.min(STAGES.length - 1, Math.floor(num(snapRef.stageIdx, arena.stageIdx))));
+          arena.stanceIdx = ((Math.floor(num(snapRef.stanceIdx, arena.stanceIdx)) % SWORD_STANCES.length) + SWORD_STANCES.length) % SWORD_STANCES.length;
+          arena.towerMode = !!snapRef.towerMode;
+          arena.sanctumMode = !!snapRef.sanctumMode;
+        }
+        endPracticeModeIsolation({ skipResetOverrides: true });
+      }
       const savedOk = saveGame({ forceOverwrite: true, userInitiated: true });
       if (savedOk) {
         saveAlertDismissed = false;
-        showToast(`已以本页进度强制覆盖存档（v${loadedSaveRev}）！`);
+        if (wasPractice && !sandboxMode && typeof resetRuntimeCombatOverrides === "function") {
+          resetRuntimeCombatOverrides();
+        }
         if (shouldCloseModal) closeModal();
-        if (!isModalOpen && !(modalBackdrop && modalBackdrop.classList.contains("open"))) {
+        if (wasPractice) {
+          enterSanctumHub({ skipSave: true });
+          showToast(`已退出演武练习并以正式存档进度强制覆盖存档（v${loadedSaveRev}）！`, { critical: true });
+        } else {
+          showToast(`已以本页进度强制覆盖存档（v${loadedSaveRev}）！`, { critical: true });
+        }
+        if (!(modalBackdrop && modalBackdrop.classList.contains("open"))) {
           if (cutscene.active) focusDialogSafely(document.getElementById("story-dialogue-bar"));
           else if (drawerOpen) focusDialogSafely(document.getElementById("jade-panel"));
-          else restoreTriggerFocus(null);
+          else if (!document.activeElement || document.activeElement === document.body || !isElementFocusable(document.activeElement)) {
+            restoreTriggerFocus(null);
+          }
         }
       } else {
+        if (wasPractice && prevPracticeRollback) {
+          arena.bossRush = prevPracticeRollback.bossRush;
+          arena.celestialSpire = prevPracticeRollback.celestialSpire;
+          arena.customSeedRun = prevPracticeRollback.customSeedRun;
+          arena.stageIdx = prevPracticeRollback.stageIdx;
+          arena.stanceIdx = prevPracticeRollback.stanceIdx;
+          arena.towerMode = prevPracticeRollback.towerMode;
+          arena.sanctumMode = prevPracticeRollback.sanctumMode;
+          practiceFormalSnapshot = prevPracticeRollback.practiceSnap;
+          if (prevPracticeRollback.practiceGame) {
+            const restoredPractice = normalizeLoadedGame(prevPracticeRollback.practiceGame);
+            if (game && typeof game === "object") {
+              Object.keys(game).forEach(k => { if (!(k in restoredPractice)) delete game[k]; });
+              Object.assign(game, restoredPractice);
+            } else {
+              game = restoredPractice;
+            }
+          }
+          activeCustomSeedTempCurio = prevPracticeRollback.tempCurio
+            ? Object.assign({}, prevPracticeRollback.tempCurio, { targetGame: game })
+            : null;
+          if (prevPracticeRollback.practiceMeta) {
+            Object.keys(metaState).forEach(k => { if (!(k in prevPracticeRollback.practiceMeta)) delete metaState[k]; });
+            safeAssignPlain(metaState, prevPracticeRollback.practiceMeta);
+            ensureMetaState();
+          }
+          lastSavedPayloadChecksum = prevPracticeRollback.lastSavedPayloadChecksum;
+        }
         saveReadOnlyMode = prevReadOnly;
         saveConflictState = prevConflict;
         saveAlertDismissed = false;
+        if (wasPractice && game) updateHud();
         renderHudSaveAlert();
         const modalStillOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
         if (modalStillOpen) {
-          if (document.activeElement === document.body) {
+          const conflictErrEl = document.getElementById("save-conflict-error-msg");
+          if (conflictErrEl) {
+            const errReason = (storageWriteError && storageWriteError.message)
+              ? storageWriteError.message
+              : (storageReadError && storageReadError.reason)
+                ? storageReadError.reason
+                : "本地存档写入失败";
+            conflictErrEl.textContent = `⚠ 强制覆盖存档失败：${errReason}（已保留当前状态与原存档，请清理存储空间或选择只读态）`;
+            conflictErrEl.style.display = "block";
+          }
+          if (document.activeElement === document.body || !isElementFocusable(document.activeElement)) {
             focusDialogSafely(document.getElementById("modal-content") || modalBackdrop);
           }
         } else {
@@ -1234,6 +1485,7 @@
     if (m1Act === "return-title-safe") {
       // F07: Flush formal game (including game.pendingRewards) BEFORE clearing transient UI pointers!
       const wasSandbox = sandboxMode;
+      const wasPractice = isPracticeModeActive();
       if (wasSandbox) {
         if (preSandboxSnapshot && preSandboxSnapshot.meta) {
           Object.keys(metaState).forEach(k => { if (!(k in preSandboxSnapshot.meta)) delete metaState[k]; });
@@ -1242,6 +1494,8 @@
         }
         sandboxMode = false;
         preSandboxSnapshot = null;
+      } else if (wasPractice || practiceFormalSnapshot) {
+        endPracticeModeIsolation();
       } else if (game && !saveReadOnlyMode && !saveConflictState) {
         revertActivePendingRewardToPending();
         saveGame();
@@ -1249,40 +1503,75 @@
       clearTransientChoiceQueues();
       activeCustomSeedTempCurio = null;
       game = null;
+      practiceFormalSnapshot = null;
       lastSavedPayloadChecksum = null;
       arena.stageEpoch += 1;
+      arena.sanctumMode = false;
+      arena.bossRush = null;
+      arena.celestialSpire = null;
+      arena.customSeedRun = null;
+      arena.tribulation = null;
+      arena.sectDefense = null;
+      arena.cloudFlight = null;
+      clearCinematicClashOverlays();
+      if (arena.player) arena.player.ravineBuffTimer = 0;
       resetStageTransitionState();
       resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
+      resetRuntimeCombatOverrides();
       releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       arena.nearbyProp = null;
       arena.defeatPending = null;
+      lastModalTriggerEl = null;
+      lastDrawerTriggerEl = null;
       const sbBadge = document.getElementById("hud-sandbox-badge");
       if (sbBadge) sbBadge.style.display = "none";
+      const ws = document.getElementById("welcome-screen");
+      if (ws) ws.style.display = "flex";
+      renderWelcomeScreen();
+      closePavilionPopover();
+      hideDojoControlBar();
+      syncDojoTrainingHudVisibility();
       closeModal();
       closeDrawer();
       syncPendingRewardsBadge();
-      document.getElementById("welcome-screen").style.display = "flex";
-      renderWelcomeScreen();
-      showToast(wasSandbox ? "已退出演武沙盒并返回标题主菜单（正式存档未受影响）！" : "已保全当前进度并返回标题主菜单！");
+      restoreTriggerFocus(null);
+      showToast(wasSandbox ? "已退出演武沙盒并返回标题主菜单（正式存档未受影响）！" : wasPractice ? "已结束演武练习并返回标题主菜单（正式存档未受影响）！" : "已保全当前进度并返回标题主菜单！");
       return;
     }
     if (m1Act === "confirm-reset-save") {
+      const showSettingsSaveError = (msg) => {
+        const errEl = document.getElementById("settings-save-error-msg");
+        if (errEl) {
+          errEl.textContent = msg;
+          errEl.style.display = "block";
+        }
+        const modalBox = document.getElementById("modal-content");
+        if (modalBox && document.getElementById("modal-backdrop")?.classList.contains("open") && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+          focusDialogSafely(modalBox);
+        }
+      };
       if (sandboxMode) {
-        showToast("🧪 演武沙盒模式中不可清空正式存档，请先点击【退出沙盒】！");
+        const msg = "🧪 演武沙盒模式中不可清空正式存档，请先点击【退出沙盒】！";
+        showSettingsSaveError(msg);
+        showToast(msg);
         return;
       }
       if (storageReadError) {
         saveAlertDismissed = false;
         renderWelcomeSaveStatusBanner();
         renderHudSaveAlert();
-        showToast("⚠ 检测到本地受损主存档尚未处理，已拒绝清空存档并保留原数据！请先备份原文或通过受损存档流程处理。");
+        const msg = "⚠ 检测到本地受损主存档尚未处理，已拒绝清空存档并保留原数据！请先备份原文或通过受损存档流程处理。";
+        showSettingsSaveError(msg);
+        showToast(msg);
         return;
       }
       if (saveReadOnlyMode || saveConflictState) {
         renderHudSaveAlert();
-        showToast(saveConflictState
+        const msg = saveConflictState
           ? "⚠ 存在未处理的多标签页存档冲突，已拒绝清空存档！请先处理冲突。"
-          : "⚠ 当前处于只读观览态，已拒绝清空存档以免误删另一标签页的进度！");
+          : "⚠ 当前处于只读观览态，已拒绝清空存档以免误删另一标签页的进度！";
+        showSettingsSaveError(msg);
+        showToast(msg);
         return;
       }
       try {
@@ -1300,7 +1589,14 @@
             saveAlertDismissed = false;
             renderWelcomeSaveStatusBanner();
             renderHudSaveAlert();
+            const msg = `⚠ 检测到本地主存档已损坏（${storageReadError.reason}），已中止清空操作并保留原数据！`;
+            showSettingsSaveError(msg);
             showToast("⚠ 检测到本地主存档已损坏，已中止清空操作并保留原数据！");
+            return;
+          }
+          if (isForeignSaveConflict(curRes)) {
+            triggerSaveConflict(curRes, true);
+            showToast("⚠ 检测到另一标签页更新了存档，已中止清空操作！");
             return;
           }
         }
@@ -1319,6 +1615,7 @@
         <p style="font-size:12.5px;color:var(--text-main);line-height:1.6;">
           清空后将删除当前修途进度并返回标题界面（轮回飞升累世功德与最高纪录仍保留）。若仅想返回标题，请点击“取消”并选择“保存并返回标题主菜单”。
         </p>
+        <div id="reset-save-error-msg" role="alert" aria-live="assertive" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.88);border:1px solid rgba(255,120,112,0.8);color:#ffd5d0;font-size:12px;line-height:1.5;"></div>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
           <button type="button" class="btn-ghost" data-modal-close="1">取消保留</button>
           <button type="button" class="btn-gold" style="background:linear-gradient(135deg,#8c2222,#cc483c);color:#fff;" data-action="execute-reset-save">确认清空存档</button>
@@ -1367,7 +1664,7 @@
             showToast("⚠ 检测到本地主存档已损坏，已中止清空操作并保留原数据！");
             return;
           }
-          if (curRes.tabId && curRes.tabId !== TAB_ID && curRes.rev > loadedSaveRev) {
+          if (isForeignSaveConflict(curRes)) {
             closeModal();
             triggerSaveConflict(curRes, true);
             showToast("⚠ 检测到另一标签页更新了存档，已中止清空操作！");
@@ -1375,29 +1672,63 @@
           }
         }
       } catch (e) {}
-      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      const rmRes = removePrimarySaveVerified();
+      if (!rmRes.ok) {
+        storageWriteError = { message: `清空存档失败：${rmRes.message}`, at: Date.now() };
+        saveAlertDismissed = false;
+        renderHudSaveAlert();
+        const resetErrEl = document.getElementById("reset-save-error-msg");
+        if (resetErrEl) {
+          resetErrEl.textContent = `⚠ 无法清空本地存档：${rmRes.message}（原存档仍保留，未返回标题页）`;
+          resetErrEl.style.display = "block";
+        }
+        showToast(`⚠ 无法清空本地存档：${rmRes.message}（原存档仍保留，未返回标题页）！`, { critical: true, key: "save_remove_err", throttleMs: 0 });
+        const modalBox = document.getElementById("modal-content");
+        if (modalBox && document.getElementById("modal-backdrop")?.classList.contains("open")) {
+          focusDialogSafely(modalBox);
+        }
+        return;
+      }
       clearTransientChoiceQueues();
       activeCustomSeedTempCurio = null;
       game = null;
-      loadedSaveRev = 0;
+      practiceFormalSnapshot = null;
+      clearLoadedSaveMeta();
       lastSavedPayloadChecksum = null;
       saveReadOnlyMode = false;
       saveConflictState = null;
       storageWriteError = null;
       storageReadError = null;
       arena.stageEpoch += 1;
+      arena.sanctumMode = false;
+      arena.bossRush = null;
+      arena.celestialSpire = null;
+      arena.customSeedRun = null;
+      arena.tribulation = null;
+      arena.sectDefense = null;
+      arena.cloudFlight = null;
+      clearCinematicClashOverlays();
+      if (arena.player) arena.player.ravineBuffTimer = 0;
       resetStageTransitionState();
       resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
+      resetRuntimeCombatOverrides();
       releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       arena.nearbyProp = null;
       arena.defeatPending = null;
+      lastModalTriggerEl = null;
+      lastDrawerTriggerEl = null;
+      const wsReset = document.getElementById("welcome-screen");
+      if (wsReset) wsReset.style.display = "flex";
+      renderWelcomeScreen();
+      closePavilionPopover();
+      hideDojoControlBar();
+      syncDojoTrainingHudVisibility();
       closeModal();
       closeDrawer();
       syncPendingRewardsBadge();
-      document.getElementById("welcome-screen").style.display = "flex";
-      renderWelcomeScreen();
       pendingCompareGear = null;
       renderGearCompareCard();
+      restoreTriggerFocus(null);
       showToast("已清空当前本地存档。");
       return;
     }
@@ -1432,6 +1763,10 @@
       showToast(res && res.transferredLvl > 0
         ? `★ 已换装【${targetItem.name} +${res.transferredLvl}】并无损继承淬火等级！`
         : `★ 已换装【${targetItem.name}】！`);
+      const bdCmp = document.getElementById("modal-backdrop");
+      if (!(bdCmp && bdCmp.classList.contains("open")) && !drawerOpen && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+        restoreTriggerFocus(null);
+      }
       return;
     }
     if (m1Act === "compare-equip-direct" && pendingCompareGear && game) {
@@ -1439,9 +1774,15 @@
       equipGearWithOptionalTransfer(targetItem, false);
       Sound.clang(1.2, 0.10);
       showToast(`★ 已直接换装【${targetItem.name}】，旧装备已移入行囊！`);
+      const bdCmp = document.getElementById("modal-backdrop");
+      if (!(bdCmp && bdCmp.classList.contains("open")) && !drawerOpen && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+        restoreTriggerFocus(null);
+      }
       return;
     }
     if (m1Act === "compare-smelt-new" && pendingCompareGear && game) {
+      if (!guardNotInTribulation("熔炼仙装")) return;
+      if (!guardNotPracticeMode("熔炼仙装")) return;
       const targetItem = pendingCompareGear;
       const itemKey = targetItem.uid || targetItem.name;
       const gain = Math.max(1, Math.floor(num(targetItem.sell, 15)));
@@ -1450,11 +1791,25 @@
         // F13 Step 1: Arm 2-step confirmation (4s auto-reset) showing exact item name, stats & stone yield.
         clearCompareSmeltConfirm();
         const timer = setTimeout(() => {
+          const cardEl = document.getElementById("gear-compare-card");
+          const hadFocusInCard = Boolean(cardEl && cardEl.contains(document.activeElement));
           compareSmeltConfirm = null;
           renderGearCompareCard();
+          if (hadFocusInCard && (!cardEl || !cardEl.contains(document.activeElement))) {
+            const resetBtn = document.querySelector('#gear-compare-card [data-action="compare-smelt-new"]');
+            if (resetBtn && isElementFocusable(resetBtn)) {
+              try { resetBtn.focus({ preventScroll: true }); } catch (e) {}
+            } else {
+              restoreTriggerFocus(null);
+            }
+          }
         }, 4000);
         compareSmeltConfirm = { key: itemKey, expiresAt: now + 4000, timer };
         renderGearCompareCard();
+        const armedBtn = document.querySelector('#gear-compare-card [data-action="compare-smelt-new"]');
+        if (armedBtn && isElementFocusable(armedBtn)) {
+          try { armedBtn.focus({ preventScroll: true }); } catch (e) {}
+        }
         showToast(`⚠ 请再次点击确认熔炼【${targetItem.name}】(+${gain} 灵石)`, { tier: 1, key: "smelt_confirm_arm", throttleMs: 800 });
         return;
       }
@@ -1468,11 +1823,19 @@
       saveGame();
       updateHud();
       showToast(`已确认熔炼【${targetItem.name}】· 获灵石 +${gain}！`);
+      const bdCmp = document.getElementById("modal-backdrop");
+      if (!(bdCmp && bdCmp.classList.contains("open")) && !drawerOpen && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+        restoreTriggerFocus(null);
+      }
       return;
     }
     if (m1Act === "compare-keep-bag") {
       dismissGearCompareCard();
       showToast("新仙装已妥善留存行囊，随时可在【行囊】中换装或熔炼。");
+      const bdCmp = document.getElementById("modal-backdrop");
+      if (!(bdCmp && bdCmp.classList.contains("open")) && !drawerOpen && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+        restoreTriggerFocus(null);
+      }
       return;
     }
     if (t.hasAttribute("data-equip-bag-transfer") && game) {
@@ -1520,6 +1883,8 @@
     }
 
     if (t.id === "btn-sanctum-hub" || t.getAttribute("data-action") === "enter-sanctum") {
+      if (!game || isWelcomeScreenVisible()) return;
+      if (!guardNotInTribulation("往返洞府与秘境")) return;
       closeModal();
       closeDrawer();
       if (arena.sanctumMode) initArenaStage(arena.stageIdx, false);
@@ -1533,6 +1898,8 @@
       return;
     }
     if (t.hasAttribute("data-claim-ach")) {
+      if (!guardNotInTribulation("领取成就赏赐")) return;
+      if (!guardNotPracticeMode("领取成就赏赐")) return;
       const aid = t.getAttribute("data-claim-ach");
       const spec = ACHIEVEMENTS.find(a => a.id === aid);
       if (spec && game && game.achievements.includes(aid) && !game.claimedAchievements.includes(aid)) {
@@ -1547,6 +1914,8 @@
     }
 
     if (t.hasAttribute("data-buy-gear")) {
+      if (!guardNotInTribulation("百宝坊购装")) return;
+      if (!guardNotPracticeMode("百宝坊购装")) return;
       const idx = Number(t.getAttribute("data-buy-gear"));
       const it = game.marketStock[idx];
       if (!it) return;
@@ -1575,6 +1944,8 @@
       return;
     }
     if (t.getAttribute("data-action") === "smelt-all-gear") {
+      if (!guardNotInTribulation("一键熔炼行囊")) return;
+      if (!guardNotPracticeMode("一键熔炼行囊")) return;
       if (!game.gearBag.length) return;
       const gained = game.gearBag.reduce((s, x) => s + (x.sell || 15), 0);
       const count = game.gearBag.length;
@@ -1590,6 +1961,8 @@
       return;
     }
     if (t.getAttribute("data-action") === "refresh-market") {
+      if (!guardNotInTribulation("刷新百宝阁")) return;
+      if (!guardNotPracticeMode("刷新百宝阁")) return;
       if (game.stones < 15) { showToast("刷新百宝阁需 15 灵石"); return; }
       game.stones -= 15;
       refreshMarketStock();
@@ -1676,8 +2049,23 @@
       return;
     }
     if (t.id === "btn-import-cloud-save" || t.getAttribute("data-action") === "import-cloud-save") {
+      const showImportRefusal = (msg) => {
+        const stEl = document.getElementById("lbl-cloud-save-status");
+        if (stEl) { stEl.textContent = `${msg} ✕`; stEl.style.color = "#ff6b6b"; }
+        const errEl = document.getElementById("settings-save-error-msg");
+        if (errEl) {
+          errEl.textContent = msg;
+          errEl.style.display = "block";
+        }
+        const modalBox = document.getElementById("modal-content");
+        if (modalBox && document.getElementById("modal-backdrop")?.classList.contains("open") && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+          focusDialogSafely(modalBox);
+        }
+      };
       if (sandboxMode) {
-        showToast("🧪 演武沙盒模式已禁用云码导出与导入（请先退出沙盒）");
+        const msg = "🧪 演武沙盒模式已禁用云码导出与导入（请先退出沙盒）";
+        showImportRefusal(msg);
+        showToast(msg);
         return;
       }
       const inp = document.getElementById("inp-cloud-save-code");
@@ -1685,9 +2073,22 @@
       const stEl = document.getElementById("lbl-cloud-save-status");
       if (!parsedRes.ok) {
         if (stEl) { stEl.textContent = `${parsedRes.reason} ✕`; stEl.style.color = "#ff6b6b"; }
+        const errEl = document.getElementById("settings-save-error-msg");
+        if (errEl) {
+          errEl.textContent = `⚠ ${parsedRes.reason}`;
+          errEl.style.display = "block";
+        }
         showToast(`⚠ ${parsedRes.reason}`);
       } else {
-        openCloudImportConfirmModal(parsedRes);
+        const opened = openCloudImportConfirmModal(parsedRes);
+        if (opened === false) {
+          const reason = arena && arena.tribulation
+            ? "⚡ 正在九霄紫霄雷劫渡劫中，无法导入云码存档！"
+            : isPracticeModeActive()
+              ? "⚔ 演武练习模式中禁止导入云码存档，请先按 H 返回听雨洞府！"
+              : "⚠ 当前状态暂不可导入云码存档";
+          showImportRefusal(reason);
+        }
       }
       return;
     }
@@ -1713,15 +2114,17 @@
       return;
     }
     if (t.id === "btn-coop-2p" || t.getAttribute("data-action") === "toggle-coop-2p") {
+      if (photoMode.active || arena.paused) return;
       toggleLocalCoop2P();
       return;
     }
     if (t.id === "btn-celestial-time" || t.getAttribute("data-action") === "cycle-celestial-time") {
+      if (photoMode.active || arena.paused) return;
       cycleCelestialTimePhase();
       return;
     }
     if (t.getAttribute("data-action") === "cycle-celestial-time-in-modal") {
-      if (cycleCelestialTimePhase()) openStarChartModal();
+      if (cycleCelestialTimePhase({ allowInModal: true })) openStarChartModal();
       return;
     }
     if (t.getAttribute("data-action") === "open-vol5-resonance") {
@@ -1747,6 +2150,12 @@
       return;
     }
     if (t.hasAttribute("data-craft-open")) {
+      if (!canRefillGourdInAlchemyDrawer()) {
+        showToast(arena.tribulation
+          ? "⚡ 正在渡劫中，无法开启【太虚百工炉鼎】！"
+          : "🔥 请先按 H 返回【听雨洞府】静息状态，再开启八卦炼丹 / 星火锻剑！", { critical: true });
+        return;
+      }
       openTaixuCraftMinigameModal(t.getAttribute("data-craft-open"));
       return;
     }
@@ -1924,6 +2333,8 @@
     }
     if (t.id === "btn-star-chart" || t.getAttribute("data-action") === "open-star-chart") { openStarChartModal(); return; }
     if (t.getAttribute("data-action") === "buy-star-point") {
+      if (!guardNotInTribulation("凝炼星魂点")) return;
+      if (!guardNotPracticeMode("凝炼星魂点")) return;
       if (game.stones < 60) { showToast("凝炼星魂需 60 灵石"); return; }
       game.stones -= 60;
       game.bonusStarPts = (game.bonusStarPts || 0) + 1;
@@ -1932,19 +2343,15 @@
       return;
     }
     if (t.hasAttribute("data-light-star")) {
+      if (!guardNotInTribulation("二十八星宿点星")) return;
+      if (!guardNotPracticeMode("二十八星宿点星")) return;
       const mid = t.getAttribute("data-light-star");
       if (!Array.isArray(game.litStars)) game.litStars = [];
       if (game.litStars.includes(mid)) return;
-      let pts = getAvailableStarPoints(game);
+      const pts = getAvailableStarPoints(game);
       if (pts <= 0) {
-        if (game.stones >= 60) {
-          game.stones -= 60;
-          game.bonusStarPts = (game.bonusStarPts || 0) + 1;
-          pts = 1;
-        } else {
-          showToast("星魂点不足（突破境界、拿秘境星辉或耗60灵石可凝星魂）！");
-          return;
-        }
+        showToast("星魂点不足！请点击上方【✨ 凝炼星魂 +1 (60灵石)】显式购买，或突破境界/斩获秘境星辉获取。");
+        return;
       }
       const prevTortoise = hasStarCore(game, "black_tortoise");
       game.litStars.push(mid);
@@ -1964,6 +2371,8 @@
       if (!sp) return;
       if (!Array.isArray(game.unlockedSouls)) game.unlockedSouls = ["blood_warden"];
       if (!game.unlockedSouls.includes(sid)) {
+        if (!guardNotInTribulation("镇妖魂印炼化")) return;
+        if (!guardNotPracticeMode("镇妖魂印炼化")) return;
         if (game.stones < 80) { showToast(`需击败对应妖王或消耗 80 灵石炼化【${sp.shortLbl}】`); return; }
         openSoulSealRefineConfirmModal(sid);
         return;
@@ -1975,6 +2384,8 @@
       return;
     }
     if (t.hasAttribute("data-awaken-primordial")) {
+      if (!guardNotInTribulation("鸿蒙紫气突破")) return;
+      if (!guardNotPracticeMode("鸿蒙紫气突破")) return;
       const sl = t.getAttribute("data-awaken-primordial");
       const eq = game && game.equippedGear ? game.equippedGear[sl] : null;
       if (!eq || eq.rarity >= 5) return;
@@ -2024,6 +2435,7 @@
       return;
     }
     if (t.getAttribute("data-action") === "open-karma-dilemma") {
+      if (!guardNotInTribulation("红尘问心抉择")) return;
       openKarmaDilemmaModal();
       return;
     }
@@ -2032,6 +2444,8 @@
       return;
     }
     if (t.hasAttribute("data-gift-npc")) {
+      if (!guardNotInTribulation("故人赠礼晋阶")) return;
+      if (!guardNotPracticeMode("故人赠礼晋阶")) return;
       const nid = t.getAttribute("data-gift-npc");
       const curT = getCompanionBondTier(game, nid);
       if (curT >= 3) return;
@@ -2064,6 +2478,10 @@
       return;
     }
     if (t.getAttribute("data-action") === "refill-gourd-now") {
+      if (!canRefillGourdInAlchemyDrawer()) {
+        showToast("⚠ 仅可在【听雨洞府】静息时免费满酿仙葫（战中请以识破剑反回酿，或按 H 返洞府）！");
+        return;
+      }
       refillImmortalGourd();
       Sound.gourdSipChime();
       showToast("🍶 本命九转仙葫已重新满酿！");
@@ -2112,12 +2530,17 @@
       return;
     }
     if (t.getAttribute("data-action") === "return-hub-after-rush") {
+      if (!guardNotInTribulation("返回洞府")) return;
       closeModal();
       enterSanctumHub();
       return;
     }
     const dActVal = t.getAttribute("data-action");
     if (dActVal === "toggle-pavilion") {
+      if (!game || isWelcomeScreenVisible()) {
+        closePavilionPopover();
+        return;
+      }
       const tipEl = document.getElementById("ling-tooltip");
       if (tipEl) tipEl.style.display = "none";
       const pav = document.getElementById("pavilion-popover");
@@ -2200,6 +2623,12 @@
       if (db) db.classList.remove("expanded");
       const caret = document.getElementById("lbl-dojo-caret");
       if (caret) caret.textContent = "▾";
+      const dojoBtn = document.getElementById("btn-toggle-dojo-bar");
+      if (isElementFocusable(dojoBtn)) {
+        try { dojoBtn.focus({ preventScroll: true }); } catch (e) {}
+      } else {
+        focusBattlefield();
+      }
       Sound.clang(1.2, 0.09);
       return;
     }
@@ -2209,10 +2638,28 @@
       if (db) db.classList.remove("expanded");
       const caret = document.getElementById("lbl-dojo-caret");
       if (caret) caret.textContent = "▾";
+      const dojoBtn = document.getElementById("btn-toggle-dojo-bar");
+      if (isElementFocusable(dojoBtn)) {
+        try { dojoBtn.focus({ preventScroll: true }); } catch (e) {}
+      }
+      const ensureDojoFocusRestored = () => {
+        const bdNow = document.getElementById("modal-backdrop");
+        if ((bdNow && bdNow.classList.contains("open")) || drawerOpen || cutscene.active) return;
+        if (isElementFocusable(dojoBtn)) {
+          try { dojoBtn.focus({ preventScroll: true }); } catch (e) {}
+        } else {
+          focusBattlefield();
+        }
+      };
       if (dAct === "reset-training") {
         resetDojoTrainingStats();
         showToast("已重置演武训练计数！");
       } else if (dAct === "refill-training") {
+        if (!isSanctumDojoActive() || arena.tribulation) {
+          showToast("演武赐福仅可在听雨洞府试剑演武时使用！", { critical: true });
+          ensureDojoFocusRestored();
+          return;
+        }
         if (game) {
           const st = getCombatStats(game);
           game.hp = st.maxHp;
@@ -2226,6 +2673,11 @@
       } else if (dAct === "toggle-sandbox-slots") {
         setSandboxSlotPrototype(!sandboxSlotPrototype);
       } else if (dAct === "fill-intent") {
+        if (!isSanctumDojoActive() || arena.tribulation) {
+          showToast("演武剑意赐福仅可在听雨洞府试剑演武时使用！", { critical: true });
+          ensureDojoFocusRestored();
+          return;
+        }
         arena.swordIntent = 100;
         arena.player.ultCd = 0; arena.player.allyCd = 0; arena.player.dashCd = 0; arena.player.recallCd = 0;
         Sound.fanfare();
@@ -2258,6 +2710,7 @@
       } else if (dAct === "open-rush") {
         openBossRushModal();
       }
+      ensureDojoFocusRestored();
       return;
     }
     if (t.hasAttribute("data-rebind-act")) {
@@ -2301,6 +2754,8 @@
       return;
     }
     if (t.hasAttribute("data-temper-relic")) {
+      if (!guardNotInTribulation("法宝淬炼升星")) return;
+      if (!guardNotPracticeMode("法宝淬炼升星")) return;
       const rid = t.getAttribute("data-temper-relic");
       const curStars = (game.relicStars && game.relicStars[rid]) || 1;
       if (curStars >= 5) return;
@@ -2420,17 +2875,22 @@
     }
 
     if (t.hasAttribute("data-enhance-slot")) {
+      if (!guardNotPracticeMode("神兵淬火强化")) return;
       const sl = t.getAttribute("data-enhance-slot");
       if (consumeSuppressedClick("enhance", sl)) return;
       executeSingleGearEnhance(sl, { silentToast: false, fromHold: false });
       return;
     }
     if (t.hasAttribute("data-reforge-slot")) {
+      if (!guardNotInTribulation("定向词条刻录")) return;
+      if (!guardNotPracticeMode("定向词条刻录")) return;
       const sl = t.getAttribute("data-reforge-slot");
       openAffixEngraveModal(sl);
       return;
     }
     if (t.hasAttribute("data-engrave-slot")) {
+      if (!guardNotInTribulation("定向词条刻录")) return;
+      if (!guardNotPracticeMode("定向词条刻录")) return;
       const sl = t.getAttribute("data-engrave-slot");
       const afId = t.getAttribute("data-engrave-affix");
       const eq = game && game.equippedGear ? game.equippedGear[sl] : null;
@@ -2456,6 +2916,8 @@
       return;
     }
     if (t.hasAttribute("data-toggle-pact")) {
+      if (!guardNotInTribulation("缔结天道劫印")) return;
+      if (!guardNotPracticeMode("缔结天道劫印")) return;
       if (!guardEcosystemAccess("heavenly_pacts")) return;
       const pid = t.getAttribute("data-toggle-pact");
       if (!game.pactSeals) game.pactSeals = [];
@@ -2470,12 +2932,14 @@
       return;
     }
     if (t.id === "btn-toggle-qt") {
+      if (!game || isWelcomeScreenVisible()) return;
       questHudCollapsed = !questHudCollapsed;
       t.textContent = questHudCollapsed ? "▸" : "▾";
       renderQuestTrackerHud();
       return;
     }
     if (t.id === "btn-goals-modal" || t.id === "btn-open-goals-hdr") {
+      if (!game || isWelcomeScreenVisible()) return;
       openObjectivesModal();
       return;
     }
@@ -2508,6 +2972,8 @@
       return;
     }
     if (t.hasAttribute("data-claim-bounty")) {
+      if (!guardNotInTribulation("交割宗门悬赏")) return;
+      if (!guardNotPracticeMode("交割宗门悬赏")) return;
       const bSlot = t.getAttribute("data-claim-bounty");
       const chain = SECT_BOUNTY_CHAINS.find(c => c.slot === bSlot);
       if (chain) {
@@ -2527,6 +2993,8 @@
       return;
     }
     if (t.hasAttribute("data-claim-star-chest")) {
+      if (!guardNotInTribulation("开启星辉宝箱")) return;
+      if (!guardNotPracticeMode("开启星辉宝箱")) return;
       const cid = t.getAttribute("data-claim-star-chest");
       const chest = STAR_MILESTONE_CHESTS.find(c => c.id === cid);
       if (chest && !game.claimedStarChests.includes(cid) && getTotalStageStars(game) >= chest.need) {
@@ -2542,7 +3010,11 @@
       }
       return;
     }
-    if (t.id === "btn-world-map" || t.getAttribute("data-action") === "open-world-map") { openWorldMapModal(); return; }
+    if (t.id === "btn-world-map" || t.getAttribute("data-action") === "open-world-map") {
+      if (!game || isWelcomeScreenVisible()) return;
+      openWorldMapModal();
+      return;
+    }
     if (t.getAttribute("data-action") === "open-bounties") { openObjectivesModal("bounties"); return; }
     if (t.getAttribute("data-action") === "open-expedition-sandbox") { openExpeditionSandboxModal(); return; }
     if (t.getAttribute("data-action") === "open-boss-rush") { openBossRushModal(); return; }
@@ -2553,6 +3025,10 @@
         renderOnboardingCoach();
         saveGame();
         showToast("已跳过入道指引（可随时在右上【卷轴 → 键位】查阅分层按键指南）");
+        const bdOb = document.getElementById("modal-backdrop");
+        if (!(bdOb && bdOb.classList.contains("open")) && !drawerOpen && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+          restoreTriggerFocus(null);
+        }
       }
       return;
     }
@@ -2567,6 +3043,7 @@
     }
     // F15: Explicit Enter CTA executes travel after preview
     if (t.hasAttribute("data-map-enter")) {
+      if (!guardNotInTribulation("九州舆图传送")) return;
       const nid = t.getAttribute("data-map-enter");
       const nd = KYUSHU_MAP_NODES.find(x => x.id === nid);
       if (!nd) return;
@@ -2697,6 +3174,37 @@
           if (refreshed && isElementFocusable(refreshed)) lastModalTriggerEl = refreshed;
         }
         closeModal();
+      } else {
+        const errEl = document.getElementById("batch-craft-error-msg");
+        if (errEl) {
+          let errMsg = "⚠ 批量炼丹未能完成，未扣除任何资源";
+          if (res && res.reason === "save_failed") {
+            const detail = (storageWriteError && storageWriteError.message)
+              ? storageWriteError.message
+              : (storageReadError && storageReadError.reason)
+                ? storageReadError.reason
+                : saveReadOnlyMode
+                  ? "当前处于只读观览态"
+                  : saveConflictState
+                    ? "存在未处理的多标签页存档冲突"
+                    : "本地存档写入失败";
+            errMsg = `⚠ 存档写入失败：${detail}（已原子回滚本次批量炼丹，未扣除灵石/灵材/寿元）`;
+          } else if (res && res.reason === "tribulation") {
+            errMsg = "⚡ 正在九霄紫霄雷劫渡劫中，无法进行批量炼丹！";
+          } else if (res && res.reason === "practice_mode") {
+            errMsg = "⚔ 演武练习模式禁止批量炼丹，请先按 H 返回听雨洞府！";
+          } else if (res && res.reason === "insufficient_stones") {
+            errMsg = "⚠ 灵石不足，无法完成本次批量炼丹！";
+          } else if (res && res.reason === "cauldron_locked") {
+            errMsg = "⚠ 紫微丹鼎等级不足，尚未解封该丹方！";
+          }
+          errEl.textContent = errMsg;
+          errEl.style.display = "block";
+        }
+        const modalBox = document.getElementById("modal-content");
+        if (modalBox && document.getElementById("modal-backdrop")?.classList.contains("open") && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+          focusDialogSafely(modalBox);
+        }
       }
       return;
     }
@@ -2723,6 +3231,37 @@
           if (refreshed && isElementFocusable(refreshed)) lastModalTriggerEl = refreshed;
         }
         closeModal();
+      } else {
+        const errEl = document.getElementById("batch-enhance-error-msg");
+        if (errEl) {
+          let errMsg = "⚠ 批量淬火未能完成，未扣除任何灵石";
+          if (res && res.reason === "save_failed") {
+            const detail = (storageWriteError && storageWriteError.message)
+              ? storageWriteError.message
+              : (storageReadError && storageReadError.reason)
+                ? storageReadError.reason
+                : saveReadOnlyMode
+                  ? "当前处于只读观览态"
+                  : saveConflictState
+                    ? "存在未处理的多标签页存档冲突"
+                    : "本地存档写入失败";
+            errMsg = `⚠ 存档写入失败：${detail}（已原子回滚本次批量淬火，未扣除任何灵石）`;
+          } else if (res && res.reason === "tribulation") {
+            errMsg = "⚡ 正在九霄紫霄雷劫渡劫中，无法进行批量淬火强化！";
+          } else if (res && res.reason === "practice_mode") {
+            errMsg = "⚔ 演武练习模式禁止批量淬火强化，请先按 H 返回听雨洞府！";
+          } else if (res && res.reason === "insufficient_stones") {
+            errMsg = "⚠ 灵石不足，无法完成本次批量淬火！";
+          } else if (res && res.reason === "max_level") {
+            errMsg = "⚠ 该仙装已淬火至圆满 +10！";
+          }
+          errEl.textContent = errMsg;
+          errEl.style.display = "block";
+        }
+        const modalBox = document.getElementById("modal-content");
+        if (modalBox && document.getElementById("modal-backdrop")?.classList.contains("open") && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+          focusDialogSafely(modalBox);
+        }
       }
       return;
     }
@@ -2766,6 +3305,33 @@
             if (refreshed && isElementFocusable(refreshed)) lastModalTriggerEl = refreshed;
           }
           closeModal();
+        }
+      } else {
+        const errEl = document.getElementById("stage-sweep-error-msg");
+        if (errEl) {
+          let errMsg = (res && res.reasonText) ? `⚠ ${res.reasonText}` : "⚠ 秘境扫荡未能完成，未扣除扫荡次数";
+          if (res && res.reason === "save_failed") {
+            const detail = (storageWriteError && storageWriteError.message)
+              ? storageWriteError.message
+              : (storageReadError && storageReadError.reason)
+                ? storageReadError.reason
+                : saveReadOnlyMode
+                  ? "当前处于只读观览态"
+                  : saveConflictState
+                    ? "存在未处理的多标签页存档冲突"
+                    : "本地存档写入失败";
+            errMsg = `⚠ 存档写入失败：${detail}（已原子回滚本次扫荡，未扣除扫荡次数）`;
+          } else if (res && res.reason === "tribulation") {
+            errMsg = "⚡ 正在九霄紫霄雷劫渡劫中，无法进行秘境扫荡！";
+          } else if (res && res.reason === "practice_mode") {
+            errMsg = "⚔ 演武练习模式不产出正式奖励，禁止进行秘境扫荡！";
+          }
+          errEl.textContent = errMsg;
+          errEl.style.display = "block";
+        }
+        const modalBox = document.getElementById("modal-content");
+        if (modalBox && document.getElementById("modal-backdrop")?.classList.contains("open") && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+          focusDialogSafely(modalBox);
         }
       }
       return;
@@ -2815,6 +3381,8 @@
       return;
     }
     if (t.hasAttribute("data-enc-id")) {
+      if (!guardNotInTribulation("上古奇遇抉择")) return;
+      if (!guardNotPracticeMode("上古奇遇抉择")) return;
       const eid = t.getAttribute("data-enc-id");
       const oid = t.getAttribute("data-enc-opt");
       const karmaMode = t.getAttribute("data-enc-karma");
@@ -2909,10 +3477,11 @@
       updateHud();
       return;
     }
-    if (t.id === "btn-open-settings") { openSettingsModal(); return; }
-    if (t.id === "btn-open-profile") { toggleDrawer("cultivate"); return; }
+    if (t.id === "btn-open-settings") { if (!game || isWelcomeScreenVisible()) return; openSettingsModal(); return; }
+    if (t.id === "btn-open-profile") { if (!game || isWelcomeScreenVisible()) return; toggleDrawer("cultivate"); return; }
     if (t.id === "btn-quick-map") {
       if (!game) return;
+      if (!guardNotInTribulation("太虚锁妖古塔")) return;
       if (game.status === "ascended") {
         openEndingModal();
         return;
@@ -2933,6 +3502,8 @@
       return;
     }
     if (t.id === "btn-omen-banner" && game) {
+      if (!guardNotInTribulation("重卜天机")) return;
+      if (!guardNotPracticeMode("重卜天机")) return;
       if (game.stones < 20) { showToast("改换星象需 20 灵石"); return; }
       game.stones -= 20;
       game.omenIndex = ((game.omenIndex || 0) + 1) % CELESTIAL_OMENS.length;
@@ -2953,6 +3524,7 @@
     }
 
     if (t.hasAttribute("data-warp-stage")) {
+      if (!guardNotInTribulation("秘境传送")) return;
       const targetIdx = Number(t.getAttribute("data-warp-stage"));
       const stg = STAGES[targetIdx];
       if (stg && rankOf(game.realm) < rankOf(stg.min)) {
@@ -2988,6 +3560,10 @@
         showToast(`需达【${REALMS[sk.min].name}】方可领悟`);
         return;
       }
+      if (!game.learned.includes(sk.id)) {
+        if (!guardNotInTribulation("研习新神通")) return;
+        if (!guardNotPracticeMode("研习新神通")) return;
+      }
       if (game.learned.includes(sk.id) || game.stones >= sk.price) {
         if (!game.learned.includes(sk.id)) { game.stones -= sk.price; game.learned.push(sk.id); }
         game.loadout[sk.slot] = sk.id;
@@ -3001,6 +3577,10 @@
       if (!guardEcosystemAccess("spirit_pet")) return;
       const pid = t.getAttribute("data-pet");
       if (!hasOwn(SPIRIT_PETS, pid)) return;
+      if (!game.pet.id) {
+        if (!guardNotInTribulation("契约本命灵宠")) return;
+        if (!guardNotPracticeMode("契约本命灵宠")) return;
+      }
       game.pet.id = pid;
       if (!game.pet.level) game.pet.level = 1;
       if (!game.pet.skills || typeof game.pet.skills !== "object") game.pet.skills = { tier3: null, tier5: null };
@@ -3013,6 +3593,8 @@
       return;
     }
     if (t.hasAttribute("data-quick-craft")) {
+      if (!guardNotInTribulation("丹道炼制")) return;
+      if (!guardNotPracticeMode("丹道炼制")) return;
       const recId = t.getAttribute("data-quick-craft");
       if (consumeSuppressedClick("alchemy", recId)) return;
       const rec = RECIPES[recId];
@@ -3034,6 +3616,8 @@
       return;
     }
     if (t.hasAttribute("data-relic")) {
+      if (!guardNotInTribulation("本命法宝铸造与佩带")) return;
+      if (!guardNotPracticeMode("本命法宝铸造与佩带")) return;
       const rel = RELICS[t.getAttribute("data-relic")];
       if (!rel) return;
       const fairDisc = currentOmen(game).id === "fair" ? 0.8 : 1.0;
@@ -3054,6 +3638,7 @@
 
     const act = t.getAttribute("data-action");
     if (act === "challenge-tower") {
+      if (!guardNotInTribulation("太虚锁妖古塔")) return;
       if (!guardEcosystemAccess("demon_tower")) return;
       const bd = document.getElementById("modal-backdrop");
       if (bd && bd.classList.contains("open")) closeModal();
@@ -3062,6 +3647,8 @@
       initArenaStage(3, true);
       saveGame();
     } else if (act === "feed-pet" && game.pet.id) {
+      if (!guardNotInTribulation("灵宠喂养进阶")) return;
+      if (!guardNotPracticeMode("灵宠喂养进阶")) return;
       const curLv = Math.max(1, Math.min(5, Math.floor(num(game.pet.level, 1))));
       if (curLv >= 5) { showToast("灵兽已臻化境 Lv.5"); return; }
       const cost = getPetNextFeedCost(curLv);
@@ -3092,6 +3679,8 @@
         if (trig && isElementFocusable(trig)) lastModalTriggerEl = trig;
       }
     } else if (act === "gamble-jade") {
+      if (!guardNotInTribulation("原石切玉")) return;
+      if (!guardNotPracticeMode("原石切玉")) return;
       if (isAllDaoLawsCollected(game)) {
         showToast("诸天大道法则已尽数参悟，无需再行切玉赌注！");
         if (drawerOpen) renderDrawerContent();

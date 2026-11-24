@@ -466,6 +466,7 @@
   // Interactive Karma Duality Dilemma Modal (`红尘因果奇遇抉择`) — Non-Repeating & Chapter-Gated (S10)
   function openKarmaDilemmaModal(forcedIdx = null) {
     if (!game) return false;
+    if (!guardNotInTribulation("红尘问心抉择")) return false;
     const done = ensureCompletedKarmaIds(game);
     const prog = getKarmaDilemmaProgress(game);
     let kd = null;
@@ -537,6 +538,8 @@
 
   function resolveKarmaDilemmaChoice(kdId, side) {
     if (!game || typeof kdId !== "string") return false;
+    if (!guardNotInTribulation("红尘问心抉择")) return false;
+    if (!guardNotPracticeMode("红尘问心抉择")) return false;
     const kd = KARMA_DILEMMAS.find(x => x.id === kdId);
     if (!kd) return false;
     const done = ensureCompletedKarmaIds(game);
@@ -1790,11 +1793,222 @@
       : `★ 妖脉寸断！已永久废除${e.name}危招，爆出【天工神髓】！`);
   }
 
+  let practiceFormalSnapshot = null;
+
   function isPracticeModeActive() {
+    if (!game) return false;
+    const ws = document.getElementById("welcome-screen");
+    if (ws && ws.style.display !== "none") return false;
     return Boolean(
       (arena.bossRush && arena.bossRush.active && (arena.bossRush.practiceMode || (arena.bossRush.startBout && arena.bossRush.startBout > 1))) ||
-      (arena.celestialSpire && arena.celestialSpire.active && (arena.celestialSpire.practiceMode || (arena.celestialSpire.startFloor && arena.celestialSpire.startFloor > 1)))
+      (arena.celestialSpire && arena.celestialSpire.active && (arena.celestialSpire.practiceMode || (arena.celestialSpire.startFloor && arena.celestialSpire.startFloor > 1))) ||
+      (arena.customSeedRun && arena.customSeedRun.active)
     );
+  }
+
+  function beginPracticeModeIsolation() {
+    if (sandboxMode || !game) return false;
+    if (!practiceFormalSnapshot) {
+      practiceFormalSnapshot = {
+        game: JSON.parse(JSON.stringify(game)),
+        meta: JSON.parse(JSON.stringify(ensureMetaState())),
+        stageIdx: arena.stageIdx,
+        stanceIdx: arena.stanceIdx,
+        towerMode: !!arena.towerMode,
+        sanctumMode: !!arena.sanctumMode
+      };
+    }
+    return true;
+  }
+
+  function endPracticeModeIsolation(opts = {}) {
+    if (!practiceFormalSnapshot) return false;
+    const snap = practiceFormalSnapshot;
+    practiceFormalSnapshot = null;
+    if (!sandboxMode && !(opts && opts.discardRestore)) {
+      if (snap.game) {
+        const restored = normalizeLoadedGame(JSON.parse(JSON.stringify(snap.game)));
+        if (game && typeof game === "object") {
+          Object.keys(game).forEach(k => { if (!(k in restored)) delete game[k]; });
+          Object.assign(game, restored);
+        } else {
+          game = restored;
+        }
+      }
+      if (snap.meta) {
+        Object.keys(metaState).forEach(k => { if (!(k in snap.meta)) delete metaState[k]; });
+        safeAssignPlain(metaState, JSON.parse(JSON.stringify(snap.meta)));
+        ensureMetaState();
+      }
+      // DEFECT-R2-2C: Re-merge live disk META_KEY so cross-tab meta progress written during Practice Mode is never regressed!
+      inspectMetaState({ applyToMemory: true });
+      if (typeof computeCurrentPayloadChecksum === "function") {
+        lastSavedPayloadChecksum = computeCurrentPayloadChecksum();
+      }
+    }
+    // R3B-3: Purge any runtime combat overdrive (astralEnergy, astralForm, sanqingState, shanheDomain, soak timers) gained in Practice Mode!
+    if (!sandboxMode && !(opts && opts.skipResetOverrides) && typeof resetRuntimeCombatOverrides === "function") {
+      resetRuntimeCombatOverrides();
+    }
+    return true;
+  }
+
+  function clearCinematicClashOverlays() {
+    arena.bladeClash = null;
+    arena.titanDualClash = null;
+    arena.titanClimbCine = null;
+    arena.ravineGlide = null;
+    if (arena.player) {
+      arena.player.z = 0;
+      arena.player.vz = 0;
+      arena.player.plunging = false;
+    }
+    if (typeof document !== "undefined") {
+      if (document.body) document.body.classList.remove("letterbox-active");
+      const clashHud = document.getElementById("blade-clash-hud");
+      if (clashHud) clashHud.classList.remove("active");
+      const lbTop = document.getElementById("cinema-letterbox-top");
+      if (lbTop) lbTop.classList.remove("open");
+      const lbBot = document.getElementById("cinema-letterbox-bot");
+      if (lbBot) lbBot.classList.remove("open");
+    }
+  }
+
+  function purgeTransientCombatEntities(opts = {}) {
+    const clearPlayerBuffs = Boolean(opts && opts.clearPlayerBuffs);
+    const clearOverdriveCds = Boolean(opts && opts.clearOverdriveCds);
+    // R6B-3: Purge ALL 7 active overdrive/genesis/tactical entities
+    arena.astralForm = null;
+    const sq = ensureSanqingState();
+    sq.active = false;
+    sq.life = 0;
+    sq.swapUsed = false;
+    if (Array.isArray(sq.clones)) {
+      sq.clones.forEach(cl => { if (cl) cl.lungeT = 0; });
+    }
+    arena.sanqingEchoQueue = [];
+    arena.shanheDomain = null;
+    arena.warshipStrike = null;
+    arena.mountState = null;
+    arena.pillAcolyte = null;
+    arena.spatialRifts = [];
+    if (clearOverdriveCds) {
+      arena.sanqingCd = 0;
+      arena.shanheCd = 0;
+      arena.warshipCd = 0;
+    }
+    // R5B-1 / R6B-3: Purge ALL 16 temporary active fields, domains, summoned allies, zones & projectiles
+    arena.qimenArray = null;
+    arena.qimenCd = 0;
+    arena.domain = null;
+    arena.activeAllies = [];
+    arena.zones = [];
+    arena.witchTime = 0;
+    arena.lotusVortexes = [];
+    arena.thunderOrbs = [];
+    arena.jadeDecoys = [];
+    arena.fireZones = [];
+    arena.waterPools = [];
+    arena.frostPools = [];
+    arena.projectiles = [];
+    arena.hoverChakrams = [];
+    arena.groundSweeps = [];
+    arena.meteorBursts = [];
+    arena.bossDomain = null;
+    arena.reversedDomainTimer = 0;
+    // R8B-1 / R8B-2 / R8B-3: Purge enraged boss beams, shock rings, and active blade/titan clash & climb cinematic overlays
+    arena.bossBeams = [];
+    arena.shockRings = [];
+    clearCinematicClashOverlays();
+    if (typeof stopHoldProgression === "function") stopHoldProgression("scene_transition");
+    if (clearPlayerBuffs && arena.player) {
+      arena.player.invuln = 0;
+      arena.player.shieldHp = 0;
+      arena.player.hyperArmorTimer = 0;
+      arena.player.samadhiFireReady = false;
+      arena.player.gourdHasteTimer = 0;
+      arena.player.gourdCritTimer = 0;
+      arena.player.petBuffTimer = 0;
+      arena.player.boonOverloadTimer = 0;
+      arena.player.guardShieldCd = 0;
+      arena.player.zenStacks = 0;
+      arena.player.ravineBuffTimer = 0;
+    }
+    if (typeof syncV23EpochDock === "function") syncV23EpochDock();
+    if (typeof syncV24GenesisDock === "function") syncV24GenesisDock();
+    if (typeof syncV22TacticalDock === "function") syncV22TacticalDock();
+    if (typeof updateCooldownMasks === "function") updateCooldownMasks();
+  }
+
+  function resetSanctumDojoCombatGauges() {
+    // R4B-2 / R6B-3: Purge ALL temporary Sanctum Dojo gauges, overdrive & Gourd soak/shield/invuln buffs when leaving Sanctum Hub,
+    // without altering legitimate persistent formal preferences (coop2P, playableCharId, weaponForm, weaponPosture).
+    arena.swordIntent = 0;
+    arena.bondSynergy = 0;
+    arena.styleScore = 0;
+    arena.comboCount = 0;
+    arena.astralEnergy = 0;
+    purgeTransientCombatEntities({ clearPlayerBuffs: true, clearOverdriveCds: true });
+  }
+
+  function flushAndEndMeditation() {
+    if (!game || !arena || !arena.player) return;
+    if (arena.player.meditating) {
+      toggleMeditation(false);
+    } else if (arena.player.meditateAgedDirty) {
+      arena.player.meditateAgedDirty = false;
+      if (!sandboxMode && !isPracticeModeActive()) {
+        saveGame();
+      }
+    }
+    arena.player.meditating = false;
+    arena.player.meditateAgeTick = 0;
+    arena.player.meditateAgedDirty = false;
+  }
+
+  function guardNotInTribulation(actionLabel = "切换场景或挑战模式") {
+    if (!(arena && arena.tribulation)) return true;
+    showToast(`⚡ 正在【九霄紫霄雷劫】渡劫中，无法进行【${actionLabel}】！请迎雷破境或于力竭后主动抉择中止渡劫。`, {
+      critical: true,
+      key: "tribulation_guard",
+      throttleMs: 1200
+    });
+    return false;
+  }
+
+  function guardNotInActiveTrialForTribulation() {
+    // R4B-1: Prevent concurrent Live Tribulation inside active trial modes (Sect Defense / Cloud Sea / Boss Rush / Spire / Workshop)
+    if (arena.sectDefense && arena.sectDefense.active) {
+      showToast("⚠ 正在进行【护山大阵守卫战】，无法中途引动天劫！请先完成或撤离守卫战。");
+      return false;
+    }
+    if (arena.cloudFlight && arena.cloudFlight.active) {
+      showToast("⚠ 正在进行【九霄云海空战】，无法中途引动天劫！请先完成或撤离空战。");
+      return false;
+    }
+    if (arena.bossRush && arena.bossRush.active) {
+      showToast("⚠ 正在进行【万剑冢连战】，无法中途引动天劫！请先完成或退出试炼。");
+      return false;
+    }
+    if (arena.celestialSpire && arena.celestialSpire.active) {
+      showToast("⚠ 正在进行【太虚登仙台】试炼，无法中途引动天劫！请先完成或退出试炼。");
+      return false;
+    }
+    if (arena.customSeedRun && arena.customSeedRun.active) {
+      showToast("⚠ 正在进行【造化种子工坊】演武，无法引动天劫！请先按 H 返回听雨洞府。");
+      return false;
+    }
+    if (arena.towerMode) {
+      showToast("⚠ 正在挑战【镇魔塔】，无法中途引动天劫！请先按 H 返回听雨洞府。");
+      return false;
+    }
+    return true;
+  }
+
+  function guardNotPracticeMode(actionLabel = "此项正式养成") {
+    if (!isPracticeModeActive()) return true;
+    showToast(`⚔ 演武练习模式中禁止进行【${actionLabel}】（不计寿元与正式存档），请先按 H 返回听雨洞府！`);
+    return false;
   }
 
   function isNormalCampaignStage() {

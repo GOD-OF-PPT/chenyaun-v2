@@ -677,12 +677,31 @@
   function getFocusableElements(container) {
     if (!container) return [];
     return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR)).filter(el => {
-      if (el.disabled || el.getAttribute("aria-hidden") === "true") return false;
-      if (isHiddenInsideClosedDetails(el)) return false;
-      const style = window.getComputedStyle(el);
-      if (style.display === "none" || style.visibility === "hidden") return false;
-      return el.offsetParent !== null || style.position === "fixed";
+      if (el.getAttribute("aria-hidden") === "true") return false;
+      return isElementFocusable(el);
     });
+  }
+
+  function closePavilionPopover() {
+    const pav = document.getElementById("pavilion-popover");
+    if (pav) pav.classList.remove("open");
+    const pavBtn = document.getElementById("btn-pavilion-menu");
+    if (pavBtn) pavBtn.classList.remove("open");
+  }
+
+  function hideDojoControlBar() {
+    const db = document.getElementById("dojo-control-bar");
+    if (db) {
+      db.classList.remove("active");
+      db.classList.remove("expanded");
+    }
+    const caret = document.getElementById("lbl-dojo-caret");
+    if (caret) caret.textContent = "▾";
+  }
+
+  function isWelcomeScreenVisible() {
+    const ws = document.getElementById("welcome-screen");
+    return Boolean(ws && ws.style.display !== "none");
   }
 
   function trapFocusInContainer(ev, container) {
@@ -723,6 +742,12 @@
   function isElementFocusable(cand) {
     if (!cand || !cand.isConnected || cand.disabled || typeof cand.focus !== "function") return false;
     try {
+      const ws = document.getElementById("welcome-screen");
+      if (ws && ws.style.display !== "none") {
+        const bd = document.getElementById("modal-backdrop");
+        const modalOpen = Boolean(bd && bd.classList.contains("open"));
+        if (!ws.contains(cand) && !(modalOpen && bd.contains(cand))) return false;
+      }
       const dlgBar = document.getElementById("story-dialogue-bar");
       if (dlgBar && dlgBar.contains(cand) && !dlgBar.classList.contains("open")) return false;
       if (isHiddenInsideClosedDetails(cand)) return false;
@@ -824,6 +849,7 @@
     clearTransientInputs();
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
+    const pavPopModal = document.getElementById("pavilion-popover");
     if (!curOpen) {
       const dlgBar = document.getElementById("story-dialogue-bar");
       const explicitTrig = opts && opts.triggerEl;
@@ -835,7 +861,13 @@
       } else {
         lastModalTriggerEl = null;
       }
+      if (lastModalTriggerEl && pavPopModal && pavPopModal.contains(lastModalTriggerEl)) {
+        const pavBtnModal = document.getElementById("btn-pavilion-menu");
+        lastModalTriggerEl = (pavBtnModal && isElementFocusable(pavBtnModal)) ? pavBtnModal : null;
+      }
     }
+    // R3A-2: Always dismiss #pavilion-popover when any modal opens so it can never linger behind modals or #welcome-screen!
+    closePavilionPopover();
     // Acquire new modal pause token BEFORE releasing previous token so pauseTokens.size NEVER dips to 0 mid-swap!
     const nextTok = acquirePauseToken("modal", modalKind || "modal");
     const prevTok = modalPauseToken;
@@ -843,6 +875,7 @@
     if (prevTok) releasePauseToken(prevTok);
 
     modalCloseable = closeable;
+    if (modalKind !== "taixu_craft") craftMinigame.open = false;
     if (activeMatSourceJump && activeMatSourceJump.inModal === "sanctum" && modalKind !== "sanctum_upgrade") {
       activeMatSourceJump = null;
     }
@@ -858,6 +891,7 @@
   }
   function closeModal() {
     clearTransientInputs();
+    craftMinigame.open = false;
     rebindListeningAction = null;
     pendingCloudImport = null;
     pendingSandboxEntry = null;
@@ -944,6 +978,17 @@
   }
 
   function toggleDrawer(tab) {
+    if (!game || isWelcomeScreenVisible()) return;
+    if (cutscene.active) {
+      focusDialogSafely(document.getElementById("story-dialogue-bar"));
+      return;
+    }
+    const pavPop = document.getElementById("pavilion-popover");
+    if (pavPop && pavPop.classList.contains("open")) {
+      pavPop.classList.remove("open");
+      const pavBtn = document.getElementById("btn-pavilion-menu");
+      if (pavBtn) pavBtn.classList.remove("open");
+    }
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
     if (drawerOpen && currentTab === tab) { closeDrawer(); return; }
@@ -1800,8 +1845,8 @@
               </div>
             </div>
             <div style="display:flex;gap:6px;">
-              <button type="button" class="btn-primary btn-gold" style="padding:5px 10px;font-size:var(--fs-xs);" data-craft-open="alchemy">🔥 八卦炼丹</button>
-              <button type="button" class="btn-secondary btn-jade" style="padding:5px 10px;font-size:var(--fs-xs);" data-craft-open="forge">🔨 星火锻剑</button>
+              <button type="button" class="btn-primary btn-gold ${canRefillGourdInAlchemyDrawer() ? "" : "is-locked"}" style="padding:5px 10px;font-size:var(--fs-xs);" data-craft-open="alchemy" ${canRefillGourdInAlchemyDrawer() ? "" : "disabled"} data-tip="${escTip("八卦控火炼丹", canRefillGourdInAlchemyDrawer() ? "于听雨洞府静息时开启八卦丹炉控火炼丹并满酿仙葫" : "请先按 H 返回听雨洞府静息状态再开启八卦炼丹")}">${canRefillGourdInAlchemyDrawer() ? "🔥 八卦炼丹" : "🔥 炼丹(限洞府)"}</button>
+              <button type="button" class="btn-secondary btn-jade ${canRefillGourdInAlchemyDrawer() ? "" : "is-locked"}" style="padding:5px 10px;font-size:var(--fs-xs);" data-craft-open="forge" ${canRefillGourdInAlchemyDrawer() ? "" : "disabled"} data-tip="${escTip("天工星火锻剑", canRefillGourdInAlchemyDrawer() ? "于听雨洞府静息时开启天工剑炉落锤锻剑" : "请先按 H 返回听雨洞府静息状态再开启星火锻剑")}">${canRefillGourdInAlchemyDrawer() ? "🔨 星火锻剑" : "🔨 锻剑(限洞府)"}</button>
             </div>
           </div>
           <div id="alchemy-perm-cap-row" style="display:flex;gap:6px;flex-wrap:wrap;padding-top:5px;border-top:1px solid rgba(132,208,194,0.18);font-size:var(--fs-xs);">
@@ -1822,7 +1867,7 @@
             </div>
             <div style="display:flex;gap:5px;flex-shrink:0;">
               <button type="button" class="btn-primary btn-gold" style="padding:4px 9px;font-size:var(--fs-xs);white-space:nowrap;" data-action="open-sanctum-upgrade">🏛 建丹鼎</button>
-              <button type="button" class="btn-secondary btn-jade" style="padding:4px 9px;font-size:var(--fs-xs);white-space:nowrap;" data-action="refill-gourd-now">满酿仙葫</button>
+              <button type="button" class="btn-secondary btn-jade ${canRefillGourdInAlchemyDrawer() ? "" : "is-locked"}" style="padding:4px 9px;font-size:var(--fs-xs);white-space:nowrap;" data-action="refill-gourd-now" ${canRefillGourdInAlchemyDrawer() ? "" : "disabled"} data-tip="${escTip("满酿仙葫", canRefillGourdInAlchemyDrawer() ? "在听雨洞府静息时免费满酿九转仙葫" : "仅可在听雨洞府（按 H 返城）静息时免费满酿，战中请以识破剑反回酿")}">${canRefillGourdInAlchemyDrawer() ? "满酿仙葫" : "满酿(限洞府)"}</button>
             </div>
           </div>
           <div class="soak-grid">
@@ -2085,6 +2130,10 @@
 
 
 
+  function canRefillGourdInAlchemyDrawer() {
+    return Boolean(game && arena.sanctumMode && isCombatCalm() && !arena.tribulation);
+  }
+
   function executeAlchemyQuickCraft(recId) {
     const res = executeSingleAlchemyCraft(recId, { silentToast: false, fromHold: false });
     return Boolean(res && res.ok);
@@ -2092,6 +2141,8 @@
 
   function openAlchemyBuyConfirmModal(recId, mode = "quick") {
     if (!game || !RECIPES[recId]) return;
+    if (!guardNotInTribulation("丹道炼制")) return;
+    if (!guardNotPracticeMode("丹道炼制")) return;
     const rec = RECIPES[recId];
     const out = ITEMS[rec.output];
     const bd = computeRecipeCostBreakdown(game, rec);
@@ -2138,6 +2189,8 @@
   // ==================== F18 (D08): EXPLICIT-QUANTITY BATCH CRAFT & BATCH ENHANCE (ATOMIC ROLLBACK, ZERO HOLD-REPEAT) ====================
   function openBatchCraftModal(recId, qty = 3) {
     if (!game || !hasOwn(RECIPES, recId)) return false;
+    if (!guardNotInTribulation("批量炼丹")) return false;
+    if (!guardNotPracticeMode("批量炼丹")) return false;
     const rec = RECIPES[recId];
     const caulLv = getSanctumLevel(game, "cauldron");
     if (rec.reqCauldronLv && caulLv < rec.reqCauldronLv) {
@@ -2183,6 +2236,7 @@
             <div style="display:flex;justify-content:space-between;color:var(--jade);"><span>预计产出：</span><b>${escapeHtml(out.name)} ×${bd.totalOutput}${bd.bonusHealing > 0 ? ` + 丹鼎赠回春丹 ×${bd.bonusHealing}` : ""}</b></div>
           </div>
         </div>
+        <div id="batch-craft-error-msg" role="alert" aria-live="assertive" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.88);border:1px solid rgba(255,120,112,0.8);color:#ffd5d0;font-size:12px;line-height:1.5;"></div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn-tertiary btn-ghost" data-modal-close="1">取消</button>
@@ -2194,6 +2248,8 @@
 
   function executeAlchemyBatchCraft(recId, qty) {
     if (!game || !hasOwn(RECIPES, recId)) return { ok: false, reason: "invalid_recipe" };
+    if (!guardNotInTribulation("批量炼丹")) return { ok: false, reason: "tribulation" };
+    if (!guardNotPracticeMode("批量炼丹")) return { ok: false, reason: "practice_mode" };
     if (typeof qty !== "number" || !Number.isFinite(qty) || !Number.isInteger(qty) || qty < 1 || qty > 5) {
       return { ok: false, reason: "invalid_qty" };
     }
@@ -2251,7 +2307,7 @@
     }
 
     if (!sandboxMode && !isPracticeModeActive()) {
-      const savedOk = saveGame();
+      const savedOk = saveGame({ userInitiated: true });
       if (!savedOk) {
         game.stones = snap.stones;
         game.inventory = snap.inventory;
@@ -2295,7 +2351,10 @@
   }
 
   function openBatchEnhanceModal(slot, steps = 3) {
-    if (!game || !game.equippedGear || !game.equippedGear[slot]) return false;
+    if (!game || isWelcomeScreenVisible() || cutscene.active) return false;
+    if (!guardNotInTribulation("渡劫中批量淬火强化")) return false;
+    if (!guardNotPracticeMode("批量淬火强化")) return false;
+    if (!game.equippedGear || !game.equippedGear[slot]) return false;
     const eq = game.equippedGear[slot];
     const eqLvl = Math.max(0, Math.floor(num(eq.lvl, 0)));
     const maxSteps = Math.max(0, 10 - eqLvl);
@@ -2341,6 +2400,7 @@
             <span>总计灵石消耗：</span><b>${preview.totalCost} 灵石（当前持有 ${Math.floor(num(game.stones, 0))}）</b>
           </div>
         </div>
+        <div id="batch-enhance-error-msg" role="alert" aria-live="assertive" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.88);border:1px solid rgba(255,120,112,0.8);color:#ffd5d0;font-size:12px;line-height:1.5;"></div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn-tertiary btn-ghost" data-modal-close="1">取消</button>
@@ -2352,6 +2412,8 @@
 
   function executeGearBatchEnhance(slot, steps) {
     if (!game || !game.equippedGear || !game.equippedGear[slot]) return { ok: false, reason: "missing_slot" };
+    if (!guardNotInTribulation("渡劫中批量淬火强化")) return { ok: false, reason: "tribulation" };
+    if (!guardNotPracticeMode("批量淬火强化")) return { ok: false, reason: "practice_mode" };
     if (typeof steps !== "number" || !Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1 || steps > 5) {
       return { ok: false, reason: "invalid_steps" };
     }
@@ -2386,7 +2448,7 @@
     if (game.goalStats) game.goalStats.craftOrLoot = (game.goalStats.craftOrLoot || 0) + preview.steps;
 
     if (!sandboxMode && !isPracticeModeActive()) {
-      const savedOk = saveGame();
+      const savedOk = saveGame({ userInitiated: true });
       if (!savedOk) {
         game.stones = snap.stones;
         eq.lvl = snap.lvl;
@@ -2409,7 +2471,9 @@
 
   // ==================== D08 (R3-F07): 3-STAR / S-RANK STAGE SWEEP (EXPLICIT CONFIRM, 0 LIFESPAN, ATOMIC ROLLBACK) ====================
   function openStageSweepConfirmModal(stageIdx, opts = {}) {
-    if (!game) return false;
+    if (!game || isWelcomeScreenVisible() || cutscene.active) return false;
+    if (!guardNotInTribulation("秘境扫荡")) return false;
+    if (!guardNotPracticeMode("秘境扫荡")) return false;
     const nowMs = (opts && Number.isFinite(Number(opts.nowMs))) ? Number(opts.nowMs) : Date.now();
     const st = getStageSweepStatus(game, stageIdx, nowMs);
     if (!st.canSweep) {
@@ -2459,6 +2523,7 @@
           <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);"><span>寿元消耗：</span><b style="color:#9effec;">0 月（免耗寿）</b></div>
           ${preview.bagFull ? `<div id="sweep-bag-full-warn" class="lifespan-preview-strip warn">⚠ 行囊已满 (${preview.gearBagCount}/${preview.gearBagLimit})，本次扫荡掉落仙装将安全记入【待处置】，绝不自动熔炼。</div>` : ""}
         </div>
+        <div id="stage-sweep-error-msg" role="alert" aria-live="assertive" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.88);border:1px solid rgba(255,120,112,0.8);color:#ffd5d0;font-size:12px;line-height:1.5;"></div>
       </div>
       <div class="modal-footer">
         <button type="button" id="btn-cancel-stage-sweep" class="btn-tertiary btn-ghost" ${cancelAttrs}>取消</button>
@@ -2470,6 +2535,11 @@
 
   function executeStageSweep(stageIdx, opts = {}) {
     if (!game) return { ok: false, reason: "no_game" };
+    if (!guardNotInTribulation("秘境扫荡")) return { ok: false, reason: "tribulation" };
+    if (isPracticeModeActive()) {
+      if (!(opts && opts.silentToast)) guardNotPracticeMode("秘境扫荡");
+      return { ok: false, reason: "practice_mode", reasonText: "练习模式不产出正式奖励，无法扫荡" };
+    }
     const nowMs = (opts && Number.isFinite(Number(opts.nowMs))) ? Number(opts.nowMs) : Date.now();
     const st = getStageSweepStatus(game, stageIdx, nowMs);
     if (!st.canSweep) {
@@ -2528,8 +2598,8 @@
       game.journal.unshift(`【秘境扫荡】免耗寿扫荡【${rolled.preview.stageName}】（+${rolled.stones} 灵石）`);
     }
 
-    if (!sandboxMode) {
-      const savedOk = saveGame();
+    if (!sandboxMode && !isPracticeModeActive()) {
+      const savedOk = saveGame({ userInitiated: true });
       if (!savedOk) {
         game.stones = snap.stones;
         game.xp = snap.xp;
@@ -2601,6 +2671,8 @@
     const fromHold = Boolean(opts && opts.fromHold);
     const eq = game && game.equippedGear ? game.equippedGear[slot] : null;
     if (!eq) return { ok: false, stopReason: "missing_slot" };
+    if (!guardNotPracticeMode("神兵淬火强化")) return { ok: false, stopReason: "practice_mode", itemName: eq.name };
+    if (!guardNotInTribulation("渡劫中淬火强化")) return { ok: false, stopReason: "tribulation", itemName: eq.name };
     const curLvl = Math.max(0, Math.floor(num(eq.lvl, 0)));
     if (curLvl >= 10) {
       if (!silentToast) showToast("该仙装已淬火至圆满 +10！");
@@ -2659,6 +2731,8 @@
     const silentToast = Boolean(opts && opts.silentToast);
     const fromHold = Boolean(opts && opts.fromHold);
     if (!game || !hasOwn(RECIPES, recId)) return { ok: false, stopReason: "invalid_recipe" };
+    if (!guardNotInTribulation("丹道炼制")) return { ok: false, stopReason: "tribulation" };
+    if (!guardNotPracticeMode("丹道炼制")) return { ok: false, stopReason: "practice_mode" };
     const rec = RECIPES[recId];
     const outSpec = ITEMS[rec.output];
     const caulLv = getSanctumLevel(game, "cauldron");
@@ -2789,7 +2863,10 @@
     missing_materials: "灵材不足，已停止（缺料补购请单点确认）",
     max_level: "已达圆满 +10，自动停止",
     lifespan_guard: "再炼将触及大限，已自动停止",
-    save_failed: "存档写入失败，已回滚"
+    save_failed: "存档写入失败，已回滚",
+    tribulation: "渡劫中已停止",
+    practice_mode: "练习模式已停止",
+    scene_transition: "场景切换已停"
   };
 
   const holdProgression = {
@@ -3018,7 +3095,7 @@
   }
 
   function startHoldProgression(cfg) {
-    if (!cfg || !game || !drawerOpen || cutscene.active) return false;
+    if (!cfg || !game || !drawerOpen || cutscene.active || isWelcomeScreenVisible()) return false;
     const bdEl = document.getElementById("modal-backdrop");
     if (bdEl && bdEl.classList.contains("open")) return false;
     if (holdProgression.active) stopHoldProgression("ui_closed");
@@ -3029,11 +3106,15 @@
     let itemName = "";
     let startLvl = 0;
     if (kind === "enhance") {
+      if (!guardNotPracticeMode("神兵淬火强化")) return false;
+      if (!guardNotInTribulation("渡劫中淬火强化")) return false;
       const eq = game.equippedGear && game.equippedGear[key];
       if (!eq) return false;
       itemName = eq.name;
       startLvl = Math.max(0, Math.floor(num(eq.lvl, 0)));
     } else if (kind === "alchemy") {
+      if (!guardNotInTribulation("丹道炼制")) return false;
+      if (!guardNotPracticeMode("丹道炼制")) return false;
       const rec = RECIPES[key];
       if (!rec || !ITEMS[rec.output]) return false;
       itemName = ITEMS[rec.output].name;
@@ -3130,7 +3211,7 @@
 
     syncHoldProgressionVisuals();
 
-    if (snap.inputType === "keyboard" && drawerOpen && reason !== "ui_closed") {
+    if (snap.inputType === "keyboard" && drawerOpen && reason !== "ui_closed" && reason !== "scene_transition") {
       const btn = getHoldTargetButton(snap.kind, snap.key);
       if (btn && isElementFocusable(btn)) {
         try { btn.focus({ preventScroll: true }); } catch (e) {}
@@ -3144,7 +3225,7 @@
       } else {
         showToast(`长按炼丹完成：【${snap.itemName}】×${snap.totalOutput}（共 ${snap.steps} 炉，耗 ${snap.totalStones} 灵石 · ⏳${snap.totalMonths} 月 · ${reasonLabel}）`);
       }
-    } else if (snap.didRepeat && reason !== "released" && reason !== "save_failed" && reason !== "ui_closed") {
+    } else if (snap.didRepeat && reason !== "released" && reason !== "save_failed" && reason !== "ui_closed" && reason !== "scene_transition" && reason !== "tribulation" && reason !== "practice_mode") {
       showToast(reasonLabel);
     }
   }
@@ -3203,7 +3284,9 @@
   }
 
   function openSoulSealRefineConfirmModal(sid) {
-    if (!game || !hasOwn(SOUL_SPIRITS, sid)) return;
+    if (!game || isWelcomeScreenVisible() || cutscene.active || !hasOwn(SOUL_SPIRITS, sid)) return false;
+    if (!guardNotInTribulation("镇妖魂印炼化")) return false;
+    if (!guardNotPracticeMode("镇妖魂印炼化")) return false;
     const nw = SOUL_SPIRITS[sid];
     const curId = hasOwn(SOUL_SPIRITS, game.equippedSoul) ? game.equippedSoul : "blood_warden";
     const cur = SOUL_SPIRITS[curId];
@@ -3241,6 +3324,8 @@
 
   function startFurnaceMinigame(recId, opts = {}) {
     if (!game) return;
+    if (!guardNotInTribulation("控火炼丹")) return;
+    if (!guardNotPracticeMode("控火炼丹")) return;
     const rec = RECIPES[recId];
     if (!rec) return;
     if (rec.reqCauldronLv && getSanctumLevel(game, "cauldron") < rec.reqCauldronLv) {
@@ -3283,6 +3368,14 @@
 
   function strikeFurnaceNeedle() {
     if (!game || !furnaceGame.active) return;
+    if (!guardNotInTribulation("控火炼丹")) {
+      furnaceGame.active = false;
+      return;
+    }
+    if (!guardNotPracticeMode("控火炼丹")) {
+      furnaceGame.active = false;
+      return;
+    }
     furnaceGame.active = false;
     const rec = RECIPES[furnaceGame.recipeId] || RECIPES.healing;
     const outSpec = ITEMS[rec.output];
@@ -3409,6 +3502,7 @@
             </div>
           </div>
         ` : ""}
+        <div id="reincarnation-error-msg" role="alert" aria-live="assertive" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.88);border:1px solid rgba(255,120,112,0.8);color:#ffd5d0;font-size:12px;line-height:1.5;text-align:left;"></div>
         <div style="display:flex;justify-content:center;gap:10px;margin-top:4px;flex-wrap:wrap;">
           <button type="button" class="btn-gold" data-action="reincarnate-now">再入轮回（第 ${(Number(metaState.ascensions) || 0) + 1} 世${selectedCalamityTier > 0 ? ` · 劫火×${selectedCalamityTier}` : ""}）</button>
           <button type="button" class="btn-jade" data-action="open-hall-of-lives">🏛 历世道果殿堂（${(metaState.hallOfLives || []).length} 卷）</button>
@@ -3420,6 +3514,7 @@
 
   // Complete Game System Center: Compendium + Claimable Achievements + Controls/Save + Presets!
   function openSettingsModal() {
+    if (!game || isWelcomeScreenVisible()) return;
     const seenE = metaState.seenEnemies || [];
     const seenL = metaState.seenLaws || [];
     const totalColl = Object.keys(ENEMIES).length + Object.keys(DAO_LAWS).length;
@@ -3636,7 +3731,8 @@
             <button type="button" class="btn-ghost" data-action="return-title-safe">保存并返回标题主菜单</button>
             <button type="button" class="btn-ghost" style="border-color:rgba(255,118,110,0.55);color:#ffb4ae;" data-action="confirm-reset-save">清空当前存档</button>
           </div>
-        </div>`;
+        </div>
+        <div id="settings-save-error-msg" role="alert" aria-live="assertive" style="display:none;margin-top:6px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.88);border:1px solid rgba(255,120,112,0.8);color:#ffd5d0;font-size:12px;line-height:1.5;"></div>`;
     }
 
     openModal(`
@@ -3776,9 +3872,24 @@
   }
 
   function renderWelcomeScreen() {
+    const wsEl = document.getElementById("welcome-screen");
+    const wsVisible = Boolean(wsEl && wsEl.style.display !== "none");
+    const bannerEl = document.getElementById("save-status-banner");
+    const prevAe = document.activeElement;
+    const hadWelcomeFocus = Boolean(
+      wsVisible &&
+      prevAe &&
+      prevAe !== document.body &&
+      wsEl.contains(prevAe) &&
+      !(bannerEl && bannerEl.contains(prevAe))
+    );
+    const prevPerk = hadWelcomeFocus ? prevAe.getAttribute("data-perk") : null;
+    const prevCal = hadWelcomeFocus ? prevAe.getAttribute("data-calamity-tier") : null;
+    const prevId = hadWelcomeFocus ? (prevAe.id || "") : "";
+
     const saveRes = inspectSavedBundle();
     inspectMetaState({ applyToMemory: true });
-    loadedSaveRev = saveRes.ok ? saveRes.rev : 0;
+    recordLoadedSaveMeta(saveRes);
     document.getElementById("btn-continue-save").style.display = saveRes.ok ? "inline-flex" : "none";
     renderWelcomeSaveStatusBanner();
     renderHudSaveAlert();
@@ -3855,6 +3966,36 @@
           }).join("")}
         </div>
       `;
+    }
+
+    if (hadWelcomeFocus) {
+      const bd = document.getElementById("modal-backdrop");
+      const modalOpen = Boolean(bd && bd.classList.contains("open"));
+      const nowAe = document.activeElement;
+      const focusLost = !nowAe || nowAe === document.body || !document.contains(nowAe) || !isElementFocusable(nowAe);
+      if (!modalOpen && focusLost) {
+        let target = null;
+        if (prevPerk) {
+          const cand = Array.from(wsEl.querySelectorAll("[data-perk]")).find(b => b.getAttribute("data-perk") === prevPerk) || null;
+          if (cand && isElementFocusable(cand)) target = cand;
+        } else if (prevCal !== null && prevCal !== "") {
+          const cand = Array.from(wsEl.querySelectorAll("[data-calamity-tier]")).find(b => b.getAttribute("data-calamity-tier") === prevCal) || null;
+          if (cand && isElementFocusable(cand)) target = cand;
+        } else if (prevId) {
+          const cand = document.getElementById(prevId);
+          if (cand && wsEl.contains(cand) && isElementFocusable(cand)) target = cand;
+        }
+        if (target) {
+          try { target.focus({ preventScroll: true }); } catch (e) {}
+        } else {
+          const startBtn = document.getElementById("btn-start-new");
+          if (startBtn && isElementFocusable(startBtn)) {
+            try { startBtn.focus({ preventScroll: true }); } catch (e) {}
+          } else {
+            restoreTriggerFocus(null);
+          }
+        }
+      }
     }
   }
 

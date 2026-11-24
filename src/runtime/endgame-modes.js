@@ -1,6 +1,7 @@
   // ==================== V17 MYRIAD SWORD GRAVEYARD BOSS RUSH & INNER DEMON MIRROR DUEL ====================
   function openBossRushModal() {
     if (!game) return;
+    if (!guardNotInTribulation("万剑冢连战")) return;
     if (!guardEcosystemAccess("sword_tomb_rush")) return;
     closeDrawer();
     const affMult = 1 + arena.rushAffixes.reduce((s, id) => {
@@ -73,16 +74,25 @@
 
   function startBossRushGauntlet(startBout = 1) {
     if (!game) return;
+    if (!guardNotInTribulation("万剑冢连战")) return;
     if (!guardEcosystemAccess("sword_tomb_rush")) return;
     restoreCustomSeedTempCurio();
+    flushAndEndMeditation();
+    const clampedStart = Math.max(1, Math.min(7, Math.floor(num(startBout, 1))));
+    const isPractice = clampedStart > 1;
+    if (isPractice) beginPracticeModeIsolation();
+    else if (practiceFormalSnapshot) endPracticeModeIsolation();
     resetStageTransitionState();
     closeModal();
     closeDrawer();
     const canvas = document.getElementById("fx-canvas");
     const w = canvas.width || 1440, h = canvas.height || 900;
 
+    const wasSanctum = !!arena.sanctumMode;
     arena.stageEpoch += 1;
     arena.sanctumMode = false;
+    if (wasSanctum) resetSanctumDojoCombatGauges();
+    else purgeTransientCombatEntities({ clearPlayerBuffs: true });
     arena.towerMode = false;
     arena.dungeonMap = null;
     arena.celestialSpire = null;
@@ -95,8 +105,6 @@
     arena.defeatPending = null;
     arena.nearbyProp = null;
     renderPropInteractHud();
-    const clampedStart = Math.max(1, Math.min(7, Math.floor(num(startBout, 1))));
-    const isPractice = clampedStart > 1;
     arena.bossRush = {
       active: true,
       bout: clampedStart,
@@ -112,8 +120,7 @@
     if (isPractice) {
       showToast(`🎯 万剑冢练习模式（自第 ${clampedStart} 阵跳关）：本局不发奖励、不计评级与纪录！`);
     }
-    const dojoBar = document.getElementById("dojo-control-bar");
-    if (dojoBar) dojoBar.classList.remove("active");
+    hideDojoControlBar();
     const recapCard = document.getElementById("stage-recap-card");
     if (recapCard) recapCard.classList.remove("open");
 
@@ -122,6 +129,11 @@
     arena.drops = [];
     arena.props = [];
     arena.zones = [];
+    arena.qimenArray = null;
+    arena.qimenCd = 0;
+    arena.domain = null;
+    arena.activeAllies = [];
+    arena.witchTime = 0;
     arena.slashes = [];
     arena.lightnings = [];
     arena.decals = [];
@@ -648,6 +660,7 @@
   // ==================== PILLAR 3: SWORD-GLIDE RAVINE ZIPLINE & SANCTUM SECT DEFENSE SIEGE (`护山大阵·百鬼夜行`) ====================
   function triggerSwordGlideRavineDash(anchorProp = null) {
     if (!game || arena.ravineGlide) return false;
+    if (!guardNotInTribulation("御剑渡渊")) return false;
     const cv = document.getElementById("fx-canvas");
     const w = (cv && cv.width) || 1440, h = (cv && cv.height) || 900;
     const p = arena.player;
@@ -706,8 +719,11 @@
 
   function startSectDefenseSiege() {
     if (!game) return;
+    if (!guardNotInTribulation("护山大阵守卫战")) return;
     if (!guardEcosystemAccess("sect_defense")) return;
     restoreCustomSeedTempCurio();
+    flushAndEndMeditation();
+    if (practiceFormalSnapshot) endPracticeModeIsolation();
     resetStageTransitionState();
     closeModal();
     closeDrawer();
@@ -717,11 +733,11 @@
     resetEncounterTelemetry();
     // Convert Sanctum into High-Stakes 3-Wave Night-Parade Defense Siege!
     arena.enemies = [];
-    arena.props = arena.props.filter(pr => !pr.isDummy && !pr.isDojoProp);
+    arena.props = arena.props.filter(pr => !pr.isDojoProp && !pr.isDummy && pr.kind !== "ward_pylon" && pr.kind !== "frost_crystal");
     arena.waterPools = [];
     arena.fireZones = [];
-    const dojoBar = document.getElementById("dojo-control-bar");
-    if (dojoBar) dojoBar.classList.remove("active");
+    resetSanctumDojoCombatGauges();
+    hideDojoControlBar();
 
     const sb = getSanctumBonuses(game);
     const corePos = clampToPlaza(w * 0.50, h * 0.52, w, h);
@@ -958,8 +974,13 @@
   ];
 
   function getCurioStacks(g, cid) {
-    if (!g || !g.spireCurios) return 0;
-    return Math.max(0, Math.min(PERM_GROWTH_CAPS.spireCurioMaxStack, Math.floor(num(g.spireCurios[cid], 0))));
+    const base = (g && g.spireCurios)
+      ? Math.max(0, Math.min(PERM_GROWTH_CAPS.spireCurioMaxStack, Math.floor(num(g.spireCurios[cid], 0))))
+      : 0;
+    const wsOverlay = (arena && arena.customSeedRun && arena.customSeedRun.active && arena.customSeedRun.bonusCurios && hasOwn(arena.customSeedRun.bonusCurios, cid))
+      ? Math.max(0, Math.min(PERM_GROWTH_CAPS.spireCurioMaxStack, Math.floor(num(arena.customSeedRun.bonusCurios[cid], 0))))
+      : 0;
+    return Math.max(base, wsOverlay);
   }
 
   // Zero-Overhead Radial Speed-Lines & Chromatic Glint (`径向速度线冲击环与高光琉璃色散`)
@@ -1216,16 +1237,22 @@
   // ==================== PILLAR 1: CLOUD-SEA HIGH-SPEED SWORD-SURFING AERIAL STAGE (`九霄云海 · 破阵凌霄`) ====================
   function startCloudSeaAerialStage() {
     if (!game) return;
+    if (!guardNotInTribulation("九霄云海空战")) return;
     if (!guardEcosystemAccess("cloud_sea_trial")) return;
     restoreCustomSeedTempCurio();
+    flushAndEndMeditation();
+    if (practiceFormalSnapshot) endPracticeModeIsolation();
     resetStageTransitionState();
     closeModal();
     closeDrawer();
     const cv = document.getElementById("fx-canvas");
     const w = (cv && cv.width) || 1440, h = (cv && cv.height) || 900;
 
+    const wasSanctum = !!arena.sanctumMode;
     arena.stageEpoch += 1;
     arena.sanctumMode = false;
+    if (wasSanctum) resetSanctumDojoCombatGauges();
+    else purgeTransientCombatEntities({ clearPlayerBuffs: true });
     arena.towerMode = false;
     arena.dungeonMap = null;
     arena.bossRush = null;
@@ -1238,13 +1265,21 @@
     resetEncounterTelemetry();
     arena.nearbyProp = null;
     renderPropInteractHud();
-    const dojoBar = document.getElementById("dojo-control-bar");
-    if (dojoBar) dojoBar.classList.remove("active");
+    hideDojoControlBar();
 
     arena.enemies = [];
     arena.projectiles = [];
     arena.props = [];
     arena.drops = [];
+    arena.zones = [];
+    arena.qimenArray = null;
+    arena.qimenCd = 0;
+    arena.domain = null;
+    arena.activeAllies = [];
+    arena.witchTime = 0;
+    arena.lotusVortexes = [];
+    arena.thunderOrbs = [];
+    arena.jadeDecoys = [];
     arena.waterPools = [];
     arena.fireZones = [];
     arena.frostPools = [];
@@ -1599,6 +1634,7 @@
 
   function openCelestialSpireModal() {
     if (!game) return;
+    if (!guardNotInTribulation("太虚登仙台")) return;
     if (!guardEcosystemAccess("celestial_spire")) return;
     notifyUnlockCardTried("spire");
     closeDrawer();
@@ -1663,14 +1699,23 @@
 
   function startCelestialSpireRun(startFloor = 1) {
     if (!game) return;
+    if (!guardNotInTribulation("太虚登仙台")) return;
     if (!guardEcosystemAccess("celestial_spire")) return;
     restoreCustomSeedTempCurio();
+    flushAndEndMeditation();
+    const clampedStart = Math.max(1, Math.min(9, Math.floor(num(startFloor, 1))));
+    const isPractice = clampedStart > 1;
+    if (isPractice) beginPracticeModeIsolation();
+    else if (practiceFormalSnapshot) endPracticeModeIsolation();
     resetStageTransitionState();
     closeModal();
     closeDrawer();
     if (!game.spireCurios) game.spireCurios = {};
+    const wasSanctum = !!arena.sanctumMode;
     arena.stageEpoch += 1;
     arena.sanctumMode = false;
+    if (wasSanctum) resetSanctumDojoCombatGauges();
+    else purgeTransientCombatEntities({ clearPlayerBuffs: true });
     arena.towerMode = false;
     arena.dungeonMap = null;
     arena.bossRush = null;
@@ -1683,11 +1728,8 @@
     resetEncounterTelemetry();
     arena.nearbyProp = null;
     renderPropInteractHud();
-    const dojoBar = document.getElementById("dojo-control-bar");
-    if (dojoBar) dojoBar.classList.remove("active");
+    hideDojoControlBar();
 
-    const clampedStart = Math.max(1, Math.min(9, Math.floor(num(startFloor, 1))));
-    const isPractice = clampedStart > 1;
     arena.celestialSpire = {
       active: true,
       floor: clampedStart,
@@ -1710,11 +1752,9 @@
     const w = (cv && cv.width) || 1440, h = (cv && cv.height) || 900;
 
     arena.enemies = [];
-    arena.projectiles = [];
     arena.props = [];
     arena.drops = [];
-    arena.hoverChakrams = [];
-    arena.groundSweeps = [];
+    purgeTransientCombatEntities({ clearPlayerBuffs: false });
     const pPos = clampToPlaza(w * 0.34, h * 0.56, w, h);
     arena.player.x = pPos.x; arena.player.y = pPos.y; arena.player.z = 0;
 
@@ -1803,6 +1843,7 @@
     if (sp.floor >= 9) {
       sp.active = false;
       arena.celestialSpire = null;
+      if (practiceFormalSnapshot) endPracticeModeIsolation();
       updateHud();
       openModal(`
         <div class="drawer-mural-banner" style="height:94px;">

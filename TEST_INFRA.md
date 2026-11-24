@@ -1,13 +1,13 @@
 # Test Infrastructure (`TEST_INFRA.md`)
 
 ## Overview
-Opaque-box, requirement-driven E2E Acceptance Test Suite for **《尘缘问道 · 剑阵万象》** (`web/public/playable-v2.html`), derived from `ORIGINAL_REQUEST.md` and `PROJECT.md § Feature Inventory`.
+Requirement-driven E2E Acceptance & Adversarial Hardening Test Suite for **《尘缘问道 · 剑阵万象》** (`web/public/playable-v2.html`), derived from `ORIGINAL_REQUEST.md` and `PROJECT.md § Feature Inventory`. **Tiers 1–4** (`56` tests) are strictly opaque-box acceptance tests; **Tier 5** (`tests/e2e/tiers/tier5-adversarial.mjs`, `14` tests) is white-box adversarial hardening that intentionally combines observable DOM/`localStorage` assertions with internal runtime invariant checks.
 
 ## Entry Point & CLI
 - **Runner**: `tests/e2e/run.mjs`
 - **Invocation**:
   - `npm ci && npm run test:e2e` (runs `node tests/e2e/run.mjs`)
-  - `npm run test:e2e -- --tier <1|2|3|4|all>` — run a specific tier or comma-separated tiers (default: `all`)
+  - `npm run test:e2e -- --tier <1|2|3|4|5|all>` — run a specific tier or comma-separated tiers (default: `all`)
   - `npm run test:e2e -- --filter <substring|/regex/i>` — filter test cases by ID, title, or feature
   - `npm run test:e2e -- --report <file>` — write structured JSON report to `<file>`
   - `npm run test:e2e -- --url <url>` — target an external `http:`/`https:` static HTTP URL instead of the built-in server
@@ -22,7 +22,7 @@ Opaque-box, requirement-driven E2E Acceptance Test Suite for **《尘缘问道 �
 - **Isolation**: Every test case runs in a fresh `browser.newContext({ viewport: { width: 1440, height: 900 } })` with clean `localStorage` and attached `console` (`error`) + `pageerror` listeners (0 errors required).
 - **Dependency Resolution**: `loadChromium()` resolves `playwright-core` from `node_modules` (installed via `npm ci`), `web/node_modules`, or `NODE_PATH`.
 
-## Directory Structure & Canonical Tier 1–4 Definitions
+## Directory Structure & Canonical Tier 1–5 Definitions
 - `tests/e2e/run.mjs` — CLI runner, static server, browser lifecycle, reporting (`schemaVersion: 1`)
 - `tests/e2e/lib/harness.mjs` — shared page helpers, error listeners, UI/DOM/focus helpers, static server & Playwright loader
 - `tests/e2e/lib/fixtures.mjs` — dynamic save fixture builders (`eb0ea67` envelope v2 with FNV-1a checksum, corrupt saves, cloud codes, canonical M5 step IDs & 15 Dao Law IDs)
@@ -30,9 +30,10 @@ Opaque-box, requirement-driven E2E Acceptance Test Suite for **《尘缘问道 �
 - `tests/e2e/tiers/tier2-boundaries.mjs` — **Tier 2 (12 tests)**: Boundary & corner cases, including all 5 mandatory save scenarios (fresh start, legacy `eb0ea67` resume/migration, reload, `QuotaExceededError`, multi-tab contention)
 - `tests/e2e/tiers/tier3-combinations.mjs` — **Tier 3 (10 tests)**: Cross-feature pairwise combinations
 - `tests/e2e/tiers/tier4-journeys.mjs` — **Tier 4 (3 tests)**: Real-world end-user gameplay journeys
+- `tests/e2e/tiers/tier5-adversarial.mjs` — **Tier 5 (14 tests, 422 assertions)**: White-box adversarial hardening (`E2E-T5-01..E2E-T5-14`) permanently encoding all 19 Round 1 (`A-1..A-11`, `B-1..B-8`), 13 Round 2 (`R2A-1..R2A-6`, `R2B-1..R2B-6`, `DEFECT-R1-2A/2B/2C`), 12 Round 3 (`R3A-1..R3A-5`, `DEFECT-R2-2A/2B/2C`, `R3B-1..R3B-5` + PR #26 sandbox-exit guard), 6 Round 4 (`R4A-1`/`DEFECT-R3-2A`, `R4A-2`, `R4A-3`, `R4B-1`, `R4B-2`, `R4B-3`), 5 Round 5 (`R5A-1`, `R5A-2`, `R5B-1`, `R5B-2`, `R5B-3`), 9 Round 6 (`R6A-1..R6A-4`, `R6B-1..R6B-4`, `R6T-1`, plus `Minor-3` & proactive CI flake hardening), 5 Round 8 (`DEFECT-R8-A1`, `DEFECT-R8-A2`, `R8B-1`, `R8B-2`, `R8B-3`), 2 Round 9 (`R9B-1`, `R9B-2` + proactive mid-tribulation sibling guards), and 3 Round 10 (`R10B-1`, `R10B-2`, `R10B-3` + Reviewer 1/2 findings + exhaustive `saveGame(` / `21/21 game.stones -=` mid-tribulation & practice guards, closed in Round 11; paired with `T5-1..T5-10` 666 regression assertions) reproduced defects plus PR #33 D08 practice/tribulation/inline-sweep-error guards, running on PR #31 D06 unified `window.__CHENYUAN_DEBUG__` (`d06-unified-1`, null-safe non-mutating `getState()`), PR #32 D05 schema (`bingjieCount`, `sectDefenseCleared`/`sectDefenseBestGrade`, unified `S/A/B/C`), and PR #33 D08 (`stageSweepState`, hold progression)
 
 ## Opaque-Box & Compliance Rules
-1. Assertions inspect observable UI text, DOM state, focus/accessibility behavior, `localStorage`, and (for T8/T9) repo files/scripts.
-2. `window.__CHENYUAN_V25__` (and legacy debug globals) are used **only** for setting up preconditions (e.g., reaching a late realm or spawning a boss), never for asserting internal implementation details.
+1. **Tiers 1–4 (Opaque-Box Acceptance)**: Assertions strictly inspect observable UI text, DOM state, focus/accessibility behavior, `localStorage`, and (for T8/T9) repo files/scripts. Unified `window.__CHENYUAN_DEBUG__` (`d06-unified-1`, 370 top-level keys; legacy `V18–V25` globals removed in PR #31 D06) is used **only** for setting up preconditions (e.g., reaching a late realm or spawning a boss), never for asserting internal implementation details.
+2. **Tier 5 (White-Box Adversarial Hardening — `tests/e2e/tiers/tier5-adversarial.mjs`)**: Intentionally combines observable DOM/`localStorage`/focus assertions with white-box internal runtime invariant checks exclusively via unified `window.__CHENYUAN_DEBUG__` (`d06-unified-1`, zero legacy `V18–V25` globals; e.g., `getPersistenceState()`, `isPracticeModeActive()`, `sanqingState`, `pauseTokens`, `seenCutIns`, combat buff timers incl. `ravineBuffTimer`, active `qimenArray`/`domain`/`activeAllies`/`zones`/`bossBeams`/`shockRings`/`bladeClash`/`titanDualClash`/`titanClimbCine`/`ravineGlide`, and `stageEpoch`/`waveTransitioning`) to lock down state-machine, isolation, and security regressions.
 3. All save fixtures (including `eb0ea67`-format legacy saves and corrupted saves) are generated dynamically in code; no real player saves are committed.
-4. Executed unconditionally in `.github/workflows/e2e.yml` (`npm run test:e2e -- --report test-results/e2e-report.json`) alongside the deterministic standalone build check (`npm run build:check`), pure Node unit test suite (`npm run test:unit`), 73-suite regression runner (`npm run test:regression`, covering M1–M4, P1–P5, R2–R7, and Q0–Q5; `schemaVersion: 2` report), and art provenance check (`npm run art:manifest:check`).
+4. Executed unconditionally in `.github/workflows/e2e.yml` (`npm run test:e2e -- --report test-results/e2e-report.json`, 70 tests across Tiers 1–5) alongside the deterministic standalone build check (`npm run build:check`, 11 ESM + 16 runtime modules), pure Node unit test suite (`npm run test:unit`, 43 tests across 9 files including 370-key lock, static zero-legacy repo scan, D05 scaling/rating/sub-currency guards, and D08 sweep-rules tests), 91-suite regression runner (`npm run test:regression`, covering M1–M4, P1–P5, R2–R7, Q0–Q6, R3-D06, R3-D05, R3-D08, and T5; `schemaVersion: 2` report), and art provenance check (`npm run art:manifest:check`).

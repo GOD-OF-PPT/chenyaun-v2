@@ -49,7 +49,7 @@
     if (Array.isArray(arena.shockRings) && arena.shockRings.some(sr => sr && !sr.hitPlayer && (sr.r || 0) < (sr.maxR || 0))) return true;
     if (Array.isArray(arena.groundSweeps) && arena.groundSweeps.some(gs => gs && !gs.hitPlayer && !gs.vaulted && (gs.r || 0) < (gs.maxR || 0) && num(gs.dmg, 0) > 0)) return true;
     if (Array.isArray(arena.bossBeams) && arena.bossBeams.some(bm => bm && num(bm.t, 0) < num(bm.dur, 0))) return true;
-    if (arena.bladeClash) return true;
+    if (arena.bladeClash || arena.titanDualClash || arena.titanClimbCine) return true;
     return false;
   }
 
@@ -214,10 +214,11 @@
   }
 
   function toggleMeditation(forceState = null) {
-    if (!game) return;
+    if (!game) return false;
     const p = arena.player;
     const next = forceState !== null ? forceState : !p.meditating;
-    if (p.meditating === next) return;
+    if (next && !guardNotInTribulation("周天吐纳")) return false;
+    if (p.meditating === next) return false;
     p.meditating = next;
     p.meditateAgeTick = 0;
     if (next) {
@@ -235,6 +236,7 @@
       if (!sandboxMode && !isPracticeModeActive()) saveGame();
     }
     updateHud();
+    return true;
   }
 
   function consumeZenEmpowerment() {
@@ -301,11 +303,16 @@
   // Enter Peaceful Immortal Sanctuary Hub (`[H] 听雨洞府主城`)!
   function enterSanctumHub(opts = {}) {
     if (!game) return;
-    const skipSave = !!(opts && opts.skipSave);
-    if (!skipSave && game.openingChoice && (game.tutorialStep || 0) === 2) {
-      advanceOnboardingStep(2);
-      showToast("🏠 听雨洞府三大核心地标：紫微丹鼎（炼丹）、天工剑炉（锻剑）与九州出征阵门！");
+    const wasPractice = isPracticeModeActive();
+    if (!wasPractice) {
+      flushAndEndMeditation();
+    } else if (arena.player) {
+      arena.player.meditating = false;
+      arena.player.meditateAgeTick = 0;
+      arena.player.meditateAgedDirty = false;
     }
+    celestialState.lastDawnShieldAt = 0;
+    const skipSave = !!(opts && opts.skipSave) || wasPractice;
     const canvas = document.getElementById("fx-canvas");
     const w = canvas.width || window.innerWidth;
     const h = canvas.height || window.innerHeight;
@@ -324,6 +331,14 @@
     restoreCustomSeedTempCurio();
     arena.customSeedRun = null;
     arena.bladeClash = null;
+    if (wasPractice || practiceFormalSnapshot) {
+      endPracticeModeIsolation();
+    }
+    purgeTransientCombatEntities({ clearPlayerBuffs: true, clearOverdriveCds: true });
+    if (!skipSave && game.openingChoice && (game.tutorialStep || 0) === 2) {
+      advanceOnboardingStep(2);
+      showToast("🏠 听雨洞府三大核心地标：紫微丹鼎（炼丹）、天工剑炉（锻剑）与九州出征阵门！");
+    }
     arena.calmT = COMBAT_CALM_GRACE_SEC;
     arena.calmFlushed = false;
     arena.runBoons = [];
@@ -352,6 +367,9 @@
     arena.tribulation = null;
     pointer.moveTarget = null;
 
+    arena.qimenArray = null;
+    arena.qimenCd = 0;
+    arena.domain = null;
     arena.activeAllies = [];
     arena.skyBolts = [];
     arena.shockRings = [];
@@ -482,6 +500,8 @@
       dojoBar.classList.add("active");
       dojoBar.classList.remove("expanded");
     }
+    const dojoCaret = document.getElementById("lbl-dojo-caret");
+    if (dojoCaret) dojoCaret.textContent = "▾";
     const recapCard = document.getElementById("stage-recap-card");
     if (recapCard) recapCard.classList.remove("open");
     Sound.qiOrb(3);
@@ -492,7 +512,17 @@
     requestCalmReevaluation({ immediate: true });
   }
 
-  function initArenaStage(stageIdx, towerMode = false) {
+  function initArenaStage(stageIdx, towerMode = false, opts = {}) {
+    const wasPractice = isPracticeModeActive();
+    const wasSanctum = !!arena.sanctumMode;
+    if (!wasPractice) {
+      flushAndEndMeditation();
+    } else if (arena.player) {
+      arena.player.meditating = false;
+      arena.player.meditateAgeTick = 0;
+      arena.player.meditateAgedDirty = false;
+    }
+    celestialState.lastDawnShieldAt = 0;
     const canvas = document.getElementById("fx-canvas");
     const w = canvas.width || window.innerWidth;
     const h = canvas.height || window.innerHeight;
@@ -502,6 +532,8 @@
     arena.stageEpoch += 1;
     arena.waveTransitioning = false;
     arena.sanctumMode = false;
+    if (wasSanctum) resetSanctumDojoCombatGauges();
+    else purgeTransientCombatEntities({ clearPlayerBuffs: true });
     arena.bossRush = null;
     arena.sectDefense = null;
     arena.cloudFlight = null;
@@ -509,6 +541,9 @@
     restoreCustomSeedTempCurio();
     arena.customSeedRun = null;
     arena.bladeClash = null;
+    if (wasPractice || practiceFormalSnapshot) {
+      endPracticeModeIsolation();
+    }
     arena.calmT = 0;
     arena.calmFlushed = false;
     arena.defeatRevivesUsed = 0;
@@ -531,6 +566,8 @@
     renderGearCompareCard();
     arena.midEventSpawned = false;
     arena.stageElement = null;
+    arena.qimenArray = null;
+    arena.qimenCd = 0;
     arena.domain = null;
     arena.hitStop = 0;
     arena.player.meditating = false;
@@ -572,8 +609,7 @@
     if (game) refillImmortalGourd();
     arena.camFocusT = 0;
     arena.tribulation = null;
-    const dojoBar = document.getElementById("dojo-control-bar");
-    if (dojoBar) dojoBar.classList.remove("active");
+    hideDojoControlBar();
     syncDojoTrainingHudVisibility();
     const recapCard = document.getElementById("stage-recap-card");
     if (recapCard) recapCard.classList.remove("open");
@@ -613,7 +649,7 @@
       const startWaveOnce = () => {
         if (waveStarted || !game || arena.stageEpoch !== spawnEpoch || arena.sanctumMode) return;
         waveStarted = true;
-        spawnCurrentWave();
+        spawnCurrentWave(opts);
         focusBattlefield();
         requestCalmReevaluation();
       };
@@ -696,6 +732,7 @@
 
   function openRunBoonDraftModal(sourceNodeId = null, isReroll = false) {
     if (!game) return;
+    if (!guardNotInTribulation("秘境道韵")) return;
     const pool = RUN_BOONS.filter(b => !arena.runBoons.includes(b.id));
     if (!pool.length) {
       showToast("本趟秘境已悟全阶道韵！");
@@ -795,6 +832,7 @@
   }
 
   function openDungeonMapModal() {
+    if (!guardNotInTribulation("秘境星图")) return;
     if (!game || !arena.dungeonMap || arena.sanctumMode || arena.towerMode) {
       showToast("进入任意一卷秘境后可按 9 查看 5 层秘境分支星图！");
       return;
@@ -899,6 +937,7 @@
   }
 
   function enterDungeonNode(nodeId) {
+    if (!guardNotInTribulation("切换秘境节点")) return false;
     const dm = arena.dungeonMap;
     if (!dm || !dm.nodes[nodeId]) return false;
     const selectable = getSelectableNextNodeIds();
@@ -939,6 +978,7 @@
   }
 
   function enterChosenBranchRoom(branchKind) {
+    if (!guardNotInTribulation("切换秘境分支")) return;
     const dm = arena.dungeonMap;
     if (dm) {
       const selectable = getSelectableNextNodeIds();
@@ -1128,7 +1168,7 @@
     }
   }
 
-  function spawnCurrentWave() {
+  function spawnCurrentWave(opts = {}) {
     if (!game || arena.sanctumMode) return;
     arena.waveTransitioning = false;
     const canvas = document.getElementById("fx-canvas");
@@ -1385,7 +1425,7 @@
       spawnEnemyPack(stg.waves[0], w * 0.62, h * 0.54, 120, stageScale, false);
     }
     // F28: One-shot non-blocking pedestal choice payoff cue on entering next fight!
-    if (game && game.vol1PedestalMeta && !game.vol1PedestalMeta.payoffShown && arena.enemies.length > 0) {
+    if (!(opts && opts.skipSave) && game && game.vol1PedestalMeta && !game.vol1PedestalMeta.payoffShown && arena.enemies.length > 0) {
       game.vol1PedestalMeta.payoffShown = true;
       const cueTxt = game.vol1PedestalMeta.choice === "help"
         ? "✨ 青莲灵契生效：青莲药师袍护脉，危急时按【R】唤沈清禾回春助阵！"

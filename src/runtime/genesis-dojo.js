@@ -512,6 +512,8 @@
 
   function assignExpeditionNode(g, nodeId, heroId) {
     if (!g) return { ok: false, reason: "no_game" };
+    if (!guardNotInTribulation("调遣远征驻防")) return { ok: false, reason: "tribulation" };
+    if (!guardNotPracticeMode("调遣远征驻防")) return { ok: false, reason: "practice_mode" };
     const node = EXPEDITION_NODES.find(n => n.id === nodeId);
     if (!node) return { ok: false, reason: "invalid_node" };
     const ex = ensureExpeditionState(g);
@@ -664,6 +666,8 @@
 
   function claimExpeditionRewards() {
     if (!game) return null;
+    if (!guardNotInTribulation("征收远征军资")) return null;
+    if (!guardNotPracticeMode("征收远征军资")) return null;
     const ex = ensureExpeditionState(game);
     const activeNodes = EXPEDITION_NODES.filter(nd => ex.assignments && ex.assignments[nd.id]);
     const bankedSt = Math.min(EXPEDITION_BANKED_STONES_CAP, Math.max(0, Math.floor(num(ex.bankedStones, 0))));
@@ -708,10 +712,15 @@
 
   function exportFullCloudSaveCode() {
     if (!game || sandboxMode) return "";
+    const useFormalSnap = isPracticeModeActive() && practiceFormalSnapshot && practiceFormalSnapshot.game;
+    const exportGame = useFormalSnap
+      ? getSanitizedGameForPersistence(practiceFormalSnapshot.game)
+      : getSanitizedGameForPersistence(game);
+    const exportMeta = (useFormalSnap && practiceFormalSnapshot.meta) ? practiceFormalSnapshot.meta : metaState;
     const payload = {
       v: 24,
-      game: getSanitizedGameForPersistence(game),
-      metaState,
+      game: exportGame,
+      metaState: exportMeta,
       a11ySettings,
       stems: Sound.stems
     };
@@ -779,9 +788,11 @@
   function openCloudImportConfirmModal(parsedRes) {
     if (sandboxMode) {
       showToast("🧪 演武沙盒模式已禁用云码导出与导入（请先退出沙盒）");
-      return;
+      return false;
     }
-    if (!parsedRes || !parsedRes.ok || !parsedRes.preview) return;
+    if (!guardNotInTribulation("云码导入")) return false;
+    if (!guardNotPracticeMode("云码导入")) return false;
+    if (!parsedRes || !parsedRes.ok || !parsedRes.preview) return false;
     pendingCloudImport = parsedRes;
     const imp = parsedRes.preview.imported;
     const cur = parsedRes.preview.current;
@@ -820,18 +831,25 @@
         </div>
       </div>
       ${blockedReason ? `<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.75);border:1px solid rgba(255,120,112,0.65);color:#ffd5d0;font-size:11.5px;">⚠ ${escapeHtml(blockedReason)}</div>` : ""}
-      <div id="cloud-import-error-msg" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.85);border:1px solid rgba(255,120,112,0.75);color:#ffd5d0;font-size:11.5px;"></div>
+      <div id="cloud-import-error-msg" role="alert" aria-live="assertive" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.85);border:1px solid rgba(255,120,112,0.75);color:#ffd5d0;font-size:11.5px;"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;">
         <button type="button" class="btn-ghost" data-action="cancel-cloud-import">取消返回</button>
         <button type="button" id="btn-confirm-cloud-import" class="btn-gold" data-action="confirm-cloud-import">确认覆盖并导入</button>
       </div>
     `, true);
+    return true;
   }
 
   function commitCloudSaveImport(parsedRes) {
     if (sandboxMode) {
       showToast("🧪 演武沙盒模式中不可导入正式存档，请先点击【退出沙盒】！");
       return { ok: false, reason: "演武沙盒模式中不可导入正式存档，请先退出沙盒" };
+    }
+    if (!guardNotInTribulation("云码导入")) {
+      return { ok: false, reason: "正在九霄雷劫渡劫中，无法导入云码存档" };
+    }
+    if (!guardNotPracticeMode("云码导入")) {
+      return { ok: false, reason: "演武练习模式中不可导入正式存档，请先返回听雨洞府" };
     }
     if (!parsedRes || !parsedRes.ok || !parsedRes.parsed || !parsedRes.parsed.game) {
       return { ok: false, reason: "待导入的云码数据无效" };
@@ -886,6 +904,7 @@
         return { ok: false, reason };
       }
       activeCustomSeedTempCurio = null;
+      practiceFormalSnapshot = null;
       clearTransientChoiceQueues();
       saveA11ySettings();
       try { localStorage.setItem(STEMS_STORAGE_KEY, JSON.stringify(Sound.stems)); } catch (e) {}
@@ -1144,6 +1163,7 @@
     arena.bossRush = null;
 
     if (isPractice) {
+      if (practiceFormalSnapshot) endPracticeModeIsolation();
       updateHud();
       openModal(`
         <div class="drawer-mural-banner" style="height:92px;">
@@ -1406,6 +1426,10 @@
     else if (act === "jump") triggerSkyJump();
     else if (act === "swordBlink") triggerSwordBlink();
     else if (act === "meditate") {
+      if (arena.tribulation) {
+        guardNotInTribulation("周天吐纳");
+        return;
+      }
       const rNow = game && REALMS[game.realm];
       const xpFull = rNow && rNow.xpCap > 0 && game.xp >= rNow.xpCap && !arena.tribulation && game.status === "active";
       if (xpFull) startLiveTribulation();
@@ -1416,6 +1440,7 @@
 
   function triggerMappedAction(act) {
     if (act === "hub") {
+      if (!guardNotInTribulation("往返洞府与秘境")) return;
       closeDrawer();
       if (arena.sanctumMode) initArenaStage(arena.stageIdx, false);
       else enterSanctumHub();
@@ -1430,6 +1455,10 @@
       return;
     }
     if (!game || arena.paused) return;
+    if (act === "meditate" && arena.tribulation) {
+      guardNotInTribulation("周天吐纳");
+      return;
+    }
     if (!guardActionRealm(act)) return;
     if (act === "tagSwitch" && (arena.tagSwitchCd || 0) <= 0) {
       executeActionImmediate("tagSwitch", false);
@@ -1834,7 +1863,7 @@
   }
 
   function isSanctumDojoActive() {
-    return Boolean(arena.sanctumMode && !(arena.sectDefense && arena.sectDefense.active));
+    return Boolean(arena.sanctumMode && !arena.tribulation && !(arena.sectDefense && arena.sectDefense.active));
   }
 
   function syncDojoTrainingHudVisibility() {
@@ -2285,7 +2314,10 @@
   }
 
   function toggleTelemetryPanel(force = null) {
-    arena.showTelemetry = force !== null ? force : !arena.showTelemetry;
+    const nextOpen = force !== null ? !!force : !arena.showTelemetry;
+    const ws = document.getElementById("welcome-screen");
+    if (nextOpen && (!game || (ws && ws.style.display !== "none"))) return;
+    arena.showTelemetry = nextOpen;
     const panel = document.getElementById("action-telemetry-panel");
     const btn = document.getElementById("btn-toggle-telemetry");
     if (panel) panel.classList.toggle("open", arena.showTelemetry);
@@ -2662,6 +2694,12 @@
       ? Array.from(new Set(g.destinyFruits.filter(fid => hasOwn(DESTINY_FRUITS, fid))))
       : [];
     g.stageStars = safeAssignPlain({}, raw.stageStars);
+    if (Array.isArray(raw.stageStars)) {
+      [0, 1, 2, 3, 4].forEach(idx => {
+        const v = Math.max(0, Math.min(3, Math.floor(num(raw.stageStars[idx], 0))));
+        if (v > 0) g.stageStars[idx] = v;
+      });
+    }
     Object.keys(g.stageStars).forEach(k => { g.stageStars[k] = Math.max(0, Math.min(3, Math.floor(num(g.stageStars[k], 0)))); });
     g.defeatedStageBosses = {};
     if (raw.defeatedStageBosses && typeof raw.defeatedStageBosses === "object" && !Array.isArray(raw.defeatedStageBosses)) {
@@ -2825,10 +2863,16 @@
       });
     }
     g.pendingRewards = cleanPending;
+    const UNSAFE_CUTIN_KEYS = new Set([
+      "__proto__", "constructor", "prototype", "toString", "valueOf",
+      "hasOwnProperty", "__defineGetter__", "__defineSetter__", "__lookupGetter__", "__lookupSetter__"
+    ]);
     g.seenCutIns = {};
     if (raw.seenCutIns && typeof raw.seenCutIns === "object" && !Array.isArray(raw.seenCutIns)) {
       Object.keys(raw.seenCutIns).forEach(ck => {
-        if (typeof ck === "string" && ck.length <= 48 && raw.seenCutIns[ck]) g.seenCutIns[ck] = true;
+        if (typeof ck === "string" && ck.length > 0 && ck.length <= 48 && !UNSAFE_CUTIN_KEYS.has(ck) && raw.seenCutIns[ck]) {
+          g.seenCutIns[ck] = true;
+        }
       });
     }
     const st = getCombatStats(g);

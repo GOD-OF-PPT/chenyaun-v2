@@ -604,6 +604,7 @@
           arena.customSeedRun.elapsedSec = elapsedSec;
           arena.customSeedRun.active = false;
           const tempCurioRestored = restoreCustomSeedTempCurio();
+          if (practiceFormalSnapshot) endPracticeModeIsolation();
           updateHud();
           openCustomSeedVictoryModal({ seed: csSeed, elapsedSec, hitsTaken: csHitsTaken, bosses: csBosses, tempCurioRestored });
         }, 420);
@@ -708,6 +709,9 @@
     if (arena.sourceCd > 0) arena.sourceCd = Math.max(0, arena.sourceCd - dt);
     if (arena.ultCineTimer > 0) arena.ultCineTimer = Math.max(0, arena.ultCineTimer - dt);
     if (!game || arena.paused || cutscene.active || document.getElementById("welcome-screen").style.display !== "none") return;
+    const canvas = document.getElementById("fx-canvas");
+    const w = (canvas && canvas.width) || window.innerWidth;
+    const h = (canvas && canvas.height) || window.innerHeight;
     if (!arena.sanctumMode && arena.encounterTelemetry) arena.encounterTelemetry.elapsedSec += dt;
     if (arena.camFocusT > 0) {
       arena.camFocusT = Math.max(0, arena.camFocusT - dt);
@@ -742,9 +746,6 @@
       else { arena.hitStop -= dt / a11ySettings.hitStopScale; if (arena.hitStop > 0) return; }
     }
 
-    const canvas = document.getElementById("fx-canvas");
-    const w = canvas.width || window.innerWidth;
-    const h = canvas.height || window.innerHeight;
     const p = arena.player;
     const st = getCombatStats(game);
 
@@ -903,7 +904,9 @@
     const center = getPlazaCenter(w, h);
     const inSpiritEye = Math.hypot(p.x - center.x, (p.y - center.y) / 0.58) < 76;
 
-    if (p.meditating) {
+    if (p.meditating && arena.tribulation) {
+      flushAndEndMeditation();
+    } else if (p.meditating) {
       p.meditateTick += dt;
       p.meditateAgeTick = (p.meditateAgeTick || 0) + dt;
       const sanctumMed = getSanctumBonuses(game).medMult;
@@ -922,9 +925,11 @@
       }
       if (p.meditateTick >= 0.60) {
         p.meditateTick = 0;
-        const r = REALMS[game.realm];
-        const xpStep = Math.max(1, Math.round((r.xpCap || 60) * 0.0042 * xpEyeMult));
-        gainRealmXp(xpStep);
+        if (!isPracticeModeActive()) {
+          const r = REALMS[game.realm];
+          const xpStep = Math.max(1, Math.round((r.xpCap || 60) * 0.0042 * xpEyeMult));
+          gainRealmXp(xpStep);
+        }
         if ((p.zenStacks || 0) < 3) {
           p.zenStacks = (p.zenStacks || 0) + 1;
           Sound.qiOrb(p.zenStacks + 2);
@@ -1559,7 +1564,8 @@
           addDecal(s.x, s.y, 0, 52, "scorch");
           arena.slashes.push({ x: s.x, y: s.y, r: s.r, ang: 0, t: 0, color: "#d6b4ff", rain: true });
           if (!s.parried && p.invuln <= 0 && Math.hypot(p.x - s.x, p.y - s.y) < s.r - 8) {
-            if ((game.tribShield || 0) > 0) {
+            flushAndEndMeditation();
+            if (!tb.hardcore && (game.tribShield || 0) > 0) {
               game.tribShield -= 1;
               addFloat(`护脉丹障抵御天雷！（余 ${game.tribShield} 层）`, p.x, p.y - 40, "#ffe28a", 18, true);
               updateHud();
@@ -2221,11 +2227,18 @@
     const pr = arena.nearbyProp;
     const onWelcome = document.getElementById("welcome-screen") && document.getElementById("welcome-screen").style.display !== "none";
     if (!game || !pr || onWelcome || arena.paused || cutscene.active || !arena.props.includes(pr)) {
+      const hadFocus = Boolean(document.activeElement && el.contains(document.activeElement));
       if (el.style.display !== "none" || el.dataset.propSig) {
         el.style.display = "none";
         el.innerHTML = "";
         el.dataset.propSig = "";
         el.classList.remove("danger-prop");
+      }
+      if (hadFocus && !onWelcome && !cutscene.active && !drawerOpen) {
+        const bd = document.getElementById("modal-backdrop");
+        if (!(bd && bd.classList.contains("open"))) {
+          restoreTriggerFocus(null);
+        }
       }
       return;
     }
@@ -2239,6 +2252,7 @@
           : (pr.badge || "点击或按 Enter 确认交互");
     const sig = `${pr.id || pr.kind}|${pr.name}|${subTxt}|${isDanger ? 1 : 0}`;
     if (el.dataset.propSig === sig && el.style.display === "flex") return;
+    const hadFocus = Boolean(document.activeElement && el.contains(document.activeElement));
     el.dataset.propSig = sig;
     el.classList.toggle("danger-prop", isDanger);
     el.style.display = "flex";
@@ -2250,6 +2264,12 @@
       </div>
       <button type="button" id="btn-prop-interact" class="${isDanger ? "btn-gold" : "btn-jade"}" style="padding:4px 11px;font-size:11px;white-space:nowrap;" data-action="interact-nearby-prop">确认</button>
     `;
+    if (hadFocus) {
+      const btn = document.getElementById("btn-prop-interact");
+      if (btn && isElementFocusable(btn)) {
+        try { btn.focus({ preventScroll: true }); } catch (e) {}
+      }
+    }
   }
 
   function interactWithProp(pr) {
@@ -2260,17 +2280,22 @@
     const p = arena.player;
 
     if (pr.kind === "pedestal") {
+      if (!guardNotInTribulation("古莲抉择")) return false;
       activatePedestalChoice(pr);
     } else if (pr.kind === "branch_portal") {
+      if (!guardNotInTribulation("秘境分支传送")) return false;
       Sound.fanfare();
       enterChosenBranchRoom(pr.branch);
     } else if (pr.kind === "sanctum_portal") {
+      if (!guardNotInTribulation("返回听雨洞府")) return false;
       enterSanctumHub();
     } else if (pr.kind === "merchant_npc") {
       toggleDrawer("bag");
     } else if (pr.kind === "sanctum_upgrade") {
+      if (!guardNotInTribulation("洞府建筑升阶")) return false;
       openSanctumUpgradeModal();
     } else if (pr.kind === "companion_npc") {
+      if (!guardNotInTribulation("故人交互")) return false;
       if (pr.npcId && NPC_META[pr.npcId]) openCompanionInteractModal(pr.npcId);
       else toggleDrawer("story");
     } else if (pr.kind === "bounty_board") {
@@ -2280,8 +2305,10 @@
     } else if (pr.kind === "taixu_craft_forge") {
       openTaixuCraftMinigameModal("forge");
     } else if (pr.kind === "sect_defense_trigger") {
+      if (!guardNotInTribulation("护山大阵守卫战")) return false;
       startSectDefenseSiege();
     } else if (pr.kind === "encounter_stele") {
+      if (!guardNotInTribulation("上古奇遇碑")) return false;
       Sound.fanfare();
       arena.props.splice(idx, 1);
       openEncounterModal();
@@ -2329,6 +2356,7 @@
       if (!inPractice) saveGame();
       updateHud();
     } else if (pr.kind === "immortal_spring") {
+      if (!guardNotInTribulation("太初满灵泉")) return false;
       game.hp = st.maxHp; game.mp = st.maxMp;
       refillImmortalGourd();
       arena.swordIntent = 100;
@@ -2347,10 +2375,15 @@
       if (!inPractice) saveGame();
       updateHud();
     } else if (pr.kind === "ravine_zipline") {
+      if (!guardNotInTribulation("御剑渡渊")) return false;
       triggerSwordGlideRavineDash(pr);
     } else if (pr.kind === "cauldron") {
       if (arena.sanctumMode) {
         toggleDrawer("alchemy");
+      } else if (!guardNotInTribulation("灵脉丹鼎炼丹")) {
+        return false;
+      } else if (!guardNotPracticeMode("丹道炼制")) {
+        return false;
       } else if ((game.inventory.herb || 0) >= 2) {
         game.inventory.herb -= 2;
         const count = (hasLaw(game, "nine_pill") || currentOmen(game).id === "alchemy_star") ? 2 : 1;
@@ -2369,6 +2402,7 @@
         return false;
       }
     } else if (pr.kind === "portal") {
+      if (!guardNotInTribulation("阵门传送")) return false;
       if (!pr.toTower && STAGES[pr.nextIdx]) {
         const reqRealm = STAGES[pr.nextIdx].min || "mortal";
         if (rankOf(game.realm) < rankOf(reqRealm)) {
@@ -2383,14 +2417,18 @@
       Sound.fanfare();
       initArenaStage(pr.nextIdx, !!pr.toTower);
     } else if (pr.kind === "tower_next") {
+      if (!guardNotInTribulation("锁妖塔冲关")) return false;
       Sound.fanfare();
       arena.props.splice(idx, 1);
       spawnCurrentWave();
     } else if (pr.kind === "ascend_gate") {
+      if (!guardNotInTribulation("九霄仙门")) return false;
       triggerAscendGateAction();
     } else if (pr.kind === "boon_stele") {
+      if (!guardNotInTribulation("秘境道韵碑")) return false;
       openRunBoonDraftModal(pr.nodeId || null, false);
     } else if (pr.kind === "map_node_gate") {
+      if (!guardNotInTribulation("秘境星图")) return false;
       openDungeonMapModal();
     } else {
       return false;
@@ -2647,6 +2685,7 @@
     }
 
     if (act === "retreat-sanctum") {
+      const wasPractice = isPracticeModeActive();
       arena.defeatPending = null;
       arena.tribulation = null;
       arena.bossRush = null;
@@ -2654,13 +2693,19 @@
       arena.sectDefense = null;
       arena.cloudFlight = null;
       arena.customSeedRun = null;
-      arena.bladeClash = null;
-      game.retreats = (game.retreats || 0) + 1;
-      if (Array.isArray(game.journal)) game.journal.unshift(`秘境历练力竭御剑遁走（第 ${game.retreats} 次），携战利品安返听雨洞府。`);
+      clearCinematicClashOverlays();
+      if (wasPractice || practiceFormalSnapshot) {
+        endPracticeModeIsolation();
+      } else {
+        game.retreats = (game.retreats || 0) + 1;
+        if (Array.isArray(game.journal)) game.journal.unshift(`秘境历练力竭御剑遁走（第 ${game.retreats} 次），携战利品安返听雨洞府。`);
+      }
       releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       closeModal();
-      enterSanctumHub();
-      showToast("🕊 已御剑遁回【听雨洞府】· 战利品尽数保全，整备炼丹后再行出征！");
+      enterSanctumHub({ skipSave: wasPractice });
+      showToast(wasPractice
+        ? "🎯 已结束演武练习并返回【听雨洞府】（正式存档与状态未受影响）！"
+        : "🕊 已御剑遁回【听雨洞府】· 战利品尽数保全，整备炼丹后再行出征！");
     }
   }
 

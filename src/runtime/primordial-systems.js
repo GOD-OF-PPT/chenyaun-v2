@@ -615,6 +615,7 @@
 
   function openCustomWorkshopModal() {
     if (!game) return;
+    if (!guardNotInTribulation("太虚造化工坊")) return;
     if (!guardEcosystemAccess("seed_workshop")) return;
     notifyUnlockCardTried("workshop");
     closeDrawer();
@@ -825,7 +826,10 @@
 
   function launchCustomSeedEncounter(seedOverride = null) {
     if (!game) return false;
+    if (!guardNotInTribulation("太虚造化工坊")) return false;
     restoreCustomSeedTempCurio();
+    flushAndEndMeditation();
+    beginPracticeModeIsolation();
     if (seedOverride) {
       const parsed = decodeWorkshopSeed(seedOverride);
       if (parsed) safeAssignPlain(workshopState, parsed);
@@ -837,8 +841,11 @@
 
     const cv = document.getElementById("fx-canvas");
     const w = (cv && cv.width) || 1440, h = (cv && cv.height) || 900;
+    const wasSanctum = !!arena.sanctumMode;
     arena.stageEpoch += 1;
     arena.sanctumMode = false;
+    if (wasSanctum) resetSanctumDojoCombatGauges();
+    else purgeTransientCombatEntities({ clearPlayerBuffs: true });
     arena.towerMode = false;
     arena.bossRush = null;
     arena.sectDefense = null;
@@ -851,7 +858,6 @@
     resetEncounterTelemetry();
     arena.nearbyProp = null;
     renderPropInteractHud();
-
     // Apply selected affixes
     arena.rushAffixes = [];
     RUSH_AFFIX_SPECS.forEach((af, idx) => {
@@ -899,6 +905,7 @@
     arena.customSeedRun = {
       active: true,
       seed: activeSeed,
+      practiceMode: true,
       startedAt: Date.now(),
       elapsedSec: 0,
       hitsTaken: 0,
@@ -914,8 +921,7 @@
       if (b2 && b2.name) spawnedBossNames.push(b2.name);
     }
     arena.customSeedRun.bosses = spawnedBossNames;
-    const dojoBar = document.getElementById("dojo-control-bar");
-    if (dojoBar) dojoBar.classList.remove("active");
+    hideDojoControlBar();
 
     const st = getCombatStats(game);
     game.hp = st.maxHp; game.mp = st.maxMp;
@@ -977,6 +983,7 @@
     idx: 0,
     timer: 42.0,
     autoFlow: true,
+    lastDawnShieldAt: 0,
     fireflies: Array.from({ length: 22 }, (_, i) => ({
       seed: i * 1.73,
       rx: ((i * 73) % 92) / 100 + 0.04,
@@ -998,8 +1005,12 @@
       addFloat(`${ph.short} · ${ph.sub}`, arena.player.x, arena.player.y - 68, ph.color, 18, true);
       showToast(`☯ 天时流转至【${ph.name}】：${ph.desc}`);
       if (ph.id === "dawn" && getKarmaState(game).mode === "righteous") {
-        const st = getCombatStats(game);
-        arena.player.shieldHp = Math.max(arena.player.shieldHp || 0, Math.round(st.maxHp * COMBAT_RULE_PARAMS.celestialPhases.dawn.righteousShieldPct));
+        const nowMs = Date.now();
+        if (!celestialState.lastDawnShieldAt || (nowMs - celestialState.lastDawnShieldAt) >= 30000) {
+          const st = getCombatStats(game);
+          arena.player.shieldHp = Math.max(arena.player.shieldHp || 0, Math.round(st.maxHp * COMBAT_RULE_PARAMS.celestialPhases.dawn.righteousShieldPct));
+          celestialState.lastDawnShieldAt = nowMs;
+        }
       }
     }
     syncV23EpochDock();
@@ -1007,8 +1018,9 @@
     return ph;
   }
 
-  function cycleCelestialTimePhase() {
-    if (!game) return null;
+  function cycleCelestialTimePhase(opts = {}) {
+    if (!game || photoMode.active) return null;
+    if (arena.paused && !(opts && opts.allowInModal)) return null;
     if (!guardActionRealm("celestial_time")) return null;
     return setCelestialTimePhase(celestialState.idx + 1, false);
   }
@@ -1054,6 +1066,7 @@
     if (!game) return false;
     const c2 = ensureCoop2PState();
     const nextOn = forceState !== null ? !!forceState : !c2.active;
+    if (nextOn && (photoMode.active || arena.paused)) return false;
     if (nextOn && !guardActionRealm("coop_2p")) return false;
     const roster = getUnlockedCoop2PRoster(game);
     const st = getCombatStats(game);
@@ -1086,7 +1099,7 @@
   }
 
   function cycleCoop2PPartner() {
-    if (!game) return false;
+    if (!game || photoMode.active || arena.paused) return false;
     if (!guardActionRealm("coop_2p")) return false;
     const c2 = ensureCoop2PState();
     const roster = getUnlockedCoop2PRoster(game);
@@ -1407,6 +1420,8 @@
 
   function openTaixuCraftMinigameModal(mode = "alchemy") {
     if (!game) return;
+    if (!guardNotPracticeMode("太虚百工")) return;
+    if (!guardNotInTribulation("太虚百工")) return;
     if (!guardEcosystemAccess("bagua_alchemy")) return;
     closeDrawer();
     craftMinigame.open = true;
@@ -1475,12 +1490,14 @@
           </div>
         </div>
       </div>
-    `, true);
+    `, true, { kind: "taixu_craft" });
     renderCraftMinigameCanvas(0.016);
   }
 
   function strikeTaixuCraftMinigame(forcePerfect = false) {
     if (!game || !craftMinigame.open) return null;
+    if (!guardNotPracticeMode("太虚百工")) return null;
+    if (!guardNotInTribulation("太虚百工")) return null;
     if (craftMinigame.strikes >= craftMinigame.maxStrikes) {
       craftMinigame.strikes = 0;
       craftMinigame.perfectCount = 0;
@@ -1520,7 +1537,10 @@
         const capNote = hpRes.hpCapped
           ? `（本境丹道永久属性已达上限 ${hpRes.pg.alchemyHp}/${hpRes.caps.alchemyHp}，破境后提升上限）`
           : "";
-        refillImmortalGourd();
+        const gourdRefilledNow = canRefillGourdInAlchemyDrawer();
+        if (gourdRefilledNow) {
+          refillImmortalGourd();
+        }
         if (climaxTriggered) {
           pc.goldenAcolyte = true;
           Sound.fanfare();
@@ -1529,7 +1549,9 @@
           showToast(`⚡ 极品丹雷异象！气血上限 +${hpRes.grantedHp}${capNote}，已永久觉醒【金甲丹童护法】！`);
           captureBattleHighlightFrame("九色丹雷", "八卦控火·极品金甲丹童", 45, 3);
         } else {
-          craftMinigame.lastJudge = `丹成出炉：气血上限 +${hpRes.grantedHp}${capNote}，仙葫已满酿（达成 ≥2 次鼎盛判定可引动极品丹雷）！`;
+          craftMinigame.lastJudge = gourdRefilledNow
+            ? `丹成出炉：气血上限 +${hpRes.grantedHp}${capNote}，仙葫已满酿（达成 ≥2 次鼎盛判定可引动极品丹雷）！`
+            : `丹成出炉：气血上限 +${hpRes.grantedHp}${capNote}（秘境/战中不补充仙葫饮次，回听雨洞府静息时满酿）！`;
         }
       } else {
         pc.forgedBlades += 1;
@@ -1600,7 +1622,8 @@
 
   function renderCraftMinigameCanvas(dt) {
     const cv = document.getElementById("craft-minigame-canvas");
-    if (!cv) { craftMinigame.open = false; return; }
+    const bd = document.getElementById("modal-backdrop");
+    if (!cv || !bd || !bd.classList.contains("open")) { craftMinigame.open = false; return; }
     const c = cv.getContext("2d");
     const W = cv.width, H = cv.height;
     craftMinigame.cursor += craftMinigame.dir * craftMinigame.speed * dt;

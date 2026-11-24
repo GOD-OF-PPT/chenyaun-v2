@@ -1197,6 +1197,8 @@
       return;
     }
     if (itemId === "longevity_pill") {
+      if (!guardNotInTribulation("渡劫中服延寿丹")) return;
+      if (!guardNotPracticeMode("正式服丹成长")) return;
       const prevLf = getLifespanInfo(game);
       game.inventory.longevity_pill -= 1;
       game.lifespanBonusMonths = (game.lifespanBonusMonths || 0) + 360;
@@ -1255,6 +1257,8 @@
       return;
     }
     if (itemId === "blood_fury_pill") {
+      if (!guardNotInTribulation("渡劫中服嗜血煞丹")) return;
+      if (!guardNotPracticeMode("正式服丹成长")) return;
       const caps = getPermGrowthCaps(game);
       if ((game.atkFlatBonus || 0) >= caps.atkFlatBonus) {
         showToast(`本境永久剑攻已达上限（${game.atkFlatBonus}/${caps.atkFlatBonus}），破境后再服【嗜血煞丹】以免白损寿元！`);
@@ -1275,6 +1279,8 @@
       return;
     }
     if (it.kind === "breakthrough") {
+      if (!guardNotInTribulation("渡劫中服破境丹")) return;
+      if (!guardNotPracticeMode("正式服丹成长")) return;
       game.inventory[itemId] -= 1;
       const r = REALMS[game.realm];
       game.tribShield = (game.tribShield || 0) + 2;
@@ -1311,6 +1317,8 @@
 
   function openTribulationPrepModal() {
     if (!game || arena.tribulation) return;
+    if (!guardNotPracticeMode("渡劫破境")) return;
+    if (!guardNotInActiveTrialForTribulation()) return;
     const r = REALMS[game.realm];
     if (game.realm === "ascended") { openEndingModal(); return; }
     const bossGate = getBreakthroughBossGate(game);
@@ -1459,6 +1467,8 @@
 
   function startLiveTribulation(opts = {}) {
     if (!game || arena.tribulation) return;
+    if (!guardNotPracticeMode("渡劫破境")) return;
+    if (!guardNotInActiveTrialForTribulation()) return;
     const r = REALMS[game.realm];
     if (game.realm === "ascended") { openEndingModal(); return; }
     const bossGate = getBreakthroughBossGate(game);
@@ -1491,12 +1501,26 @@
       hardcore = true;
     }
 
+    const wasSanctum = !!arena.sanctumMode;
     resetPhotoModeOverlay({ skipCalmReeval: true });
     closeModal();
     closeDrawer();
+    arena.stageEpoch += 1;
+    arena.waveTransitioning = false;
+    arena.sanctumMode = false;
+    arena.bladeClash = null;
+    if (wasSanctum) resetSanctumDojoCombatGauges();
+    else purgeTransientCombatEntities({ clearPlayerBuffs: true });
+    hideDojoControlBar();
+    arena.enemies = arena.enemies.filter(e => !e.isDummy);
+    arena.props = arena.props.filter(pr => !pr.isDojoProp && !pr.isDummy && !(wasSanctum || (pr.id && (pr.id.startsWith("hub_") || pr.id.startsWith("sanctum_") || pr.id === "cauldron_main"))));
+    if (arena.nearbyProp && !arena.props.includes(arena.nearbyProp)) {
+      arena.nearbyProp = null;
+    }
+    renderPropInteractHud();
     arena.defeatRevivesUsed = 0;
     resetEncounterTelemetry();
-    arena.player.meditating = false; arena.player.meditateAgeTick = 0; arena.player.meditateAgedDirty = false;
+    flushAndEndMeditation();
 
     if (game.aids.lu) {
       const st = getCombatStats(game);
@@ -1600,7 +1624,7 @@
 
     if (game.realm === "ascended") {
       game.status = "ascended";
-      if (!sandboxMode) {
+      if (!sandboxMode && !isPracticeModeActive()) {
         metaState.ascensions = (metaState.ascensions || 0) + 1;
         unlockAchievement("ach_ascend");
         saveMeta();
@@ -1717,6 +1741,7 @@
 
   function openWorldMapModal(focusNodeId = null) {
     if (!game) return;
+    if (!guardNotInTribulation("九州舆图传送")) return;
     closeDrawer();
     const navSnap = buildNavigationSnapshot(game);
     const nodes = navSnap.mapNodes;
@@ -1881,6 +1906,7 @@
 
   function openEncounterModal(forcedSecretIdx = null) {
     if (!game) return;
+    if (!guardNotInTribulation("上古奇遇")) return;
     if (forcedSecretIdx === null && getNextAvailableKarmaDilemma(game) && ((game.karmaEventsDone || 0) < 2 || Math.random() < 0.65)) {
       openKarmaDilemmaModal();
       return;
@@ -1998,7 +2024,7 @@
         <div class="drawer-mural-overlay">
           <div>
             <span class="cinnabar-seal">大道顿悟</span>
-            <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">${titleText}</h2>
+            <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">${escapeHtml(titleText)}</h2>
           </div>
           <span class="tag-chip mythic">${synLaws.length > 0 ? "已定格双法则羁绊保底" : "集齐双法则激活共鸣羁绊"}</span>
         </div>

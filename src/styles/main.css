@@ -1310,7 +1310,9 @@
   body.photo-mode-active #dojo-control-bar,
   body.photo-mode-active #combo-rank-seal,
   body.photo-mode-active #region-cinema-card,
-  body.photo-mode-active #stage-recap-card {
+  body.photo-mode-active #stage-recap-card,
+  body.photo-mode-active #arcana-vault-wrap,
+  body.photo-mode-active #tag-team-hud-pill {
     opacity: 0 !important; pointer-events: none !important;
   }
   body.photo-mode-active #toast-container {

@@ -115,6 +115,7 @@
             3. 若仍想留在此世服丹续命或冲关破境，可随时点击【返回】或【暂留延寿】，进度绝不丢失。
           </div>
         </div>
+        <div id="reincarnation-error-msg" role="alert" aria-live="assertive" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.88);border:1px solid rgba(255,120,112,0.8);color:#ffd5d0;font-size:12px;line-height:1.5;text-align:left;"></div>
         <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
           <button type="button" id="btn-bingjie-back" class="btn-ghost" data-action="open-lifespan-exhausted">返回上一步</button>
           <button type="button" id="btn-confirm-bingjie-reincarnate" class="btn-gold" style="background:linear-gradient(135deg,#9e2632,#d45542);color:#fff6e8;" data-action="confirm-bingjie-reincarnate">确认兵解转世</button>
@@ -149,88 +150,213 @@
 
   function executeReincarnation(opts = {}) {
     const source = (opts && opts.source) || "ascension";
+    const showReincarnationInlineError = (msg) => {
+      const errEl = document.getElementById("reincarnation-error-msg");
+      if (errEl) {
+        errEl.textContent = msg;
+        errEl.style.display = "block";
+      }
+      const modalBox = document.getElementById("modal-content");
+      if (modalBox && document.getElementById("modal-backdrop")?.classList.contains("open")
+          && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+        focusDialogSafely(modalBox);
+      }
+    };
     if (sandboxMode) {
-      showToast("🧪 演武沙盒模式不记录轮回飞升，请先点击【退出沙盒】！");
+      const msg = "🧪 演武沙盒模式不记录轮回飞升，请先点击【退出沙盒】！";
+      showReincarnationInlineError(msg);
+      showToast(msg);
+      return false;
+    }
+    if (!guardNotPracticeMode("轮回转世")) {
+      showReincarnationInlineError("⚔ 演武练习模式禁止【轮回转世】（不计寿元与正式存档），请先按 H 返回听雨洞府！");
+      return false;
+    }
+    if (!guardNotInTribulation("轮回转世")) {
+      showReincarnationInlineError("⚡ 正在九霄紫霄雷劫渡劫中，无法进行【轮回转世】！请迎雷破境或于力竭后主动抉择中止渡劫。");
       return false;
     }
     if (storageReadError) {
       saveAlertDismissed = false;
       renderWelcomeSaveStatusBanner();
       renderHudSaveAlert();
-      showToast("⚠ 检测到本地受损主存档尚未处理，已中止轮回清档并保留原数据！");
+      const msg = "⚠ 检测到本地受损主存档尚未处理，已中止轮回清档并保留原数据！";
+      showReincarnationInlineError(msg);
+      showToast(msg);
       return false;
     }
     if (saveReadOnlyMode || saveConflictState) {
       renderHudSaveAlert();
-      showToast(saveConflictState
+      const msg = saveConflictState
         ? "⚠ 存在多标签页存档冲突，已拒绝轮回清档！请先处理冲突。"
-        : "⚠ 当前处于只读观览态，已拒绝轮回清档以免误删另一标签页的进度！");
+        : "⚠ 当前处于只读观览态，已拒绝轮回清档以免误删另一标签页的进度！";
+      showReincarnationInlineError(msg);
+      showToast(msg);
       return false;
     }
     if (metaReadError) {
       saveAlertDismissed = false;
       renderHudSaveAlert();
-      showToast("⚠ 元存档损坏尚未处理，已中止轮回清档以免丢失累世功德！请先备份或重置元存档。");
+      const msg = "⚠ 元存档损坏尚未处理，已中止轮回清档以免丢失累世功德！请先备份或重置元存档。";
+      showReincarnationInlineError(msg);
+      showToast(msg);
       return false;
     }
+    let prevSaveRaw = null;
     try {
-      const curRaw = localStorage.getItem(STORAGE_KEY);
-      if (curRaw !== null && curRaw !== "") {
-        const curRes = parseAndValidateSaveRaw(curRaw, STORAGE_KEY);
+      prevSaveRaw = localStorage.getItem(STORAGE_KEY);
+      if (prevSaveRaw !== null && prevSaveRaw !== "") {
+        const curRes = parseAndValidateSaveRaw(prevSaveRaw, STORAGE_KEY);
         if (!curRes.ok) {
           storageReadError = {
             key: STORAGE_KEY,
             reason: curRes.reason || "本地存档结构异常",
-            raw: curRaw,
-            rawLength: curRaw.length,
+            raw: prevSaveRaw,
+            rawLength: prevSaveRaw.length,
             at: Date.now()
           };
           saveAlertDismissed = false;
           renderWelcomeSaveStatusBanner();
           renderHudSaveAlert();
+          const msg = `⚠ 检测到本地主存档已损坏（${storageReadError.reason}），已中止轮回清档并保留原数据！`;
+          showReincarnationInlineError(msg);
           showToast("⚠ 检测到本地主存档已损坏，已中止轮回清档并保留原数据！");
           return false;
         }
-        if (curRes.tabId && curRes.tabId !== TAB_ID && curRes.rev > loadedSaveRev) {
+        if (isForeignSaveConflict(curRes)) {
           triggerSaveConflict(curRes, true);
           showToast("⚠ 检测到另一标签页更新了存档，已中止轮回清档！");
           return false;
         }
+      } else if (loadedSaveRev > 0) {
+        triggerSaveConflict({ ok: true, rev: 0, tabId: "另一标签页", updatedAt: Date.now(), deleted: true, bundle: { game: null } }, true);
+        showToast("⚠ 检测到另一标签页已清空存档，已中止轮回清档！");
+        return false;
       }
     } catch (e) {}
+
+    // R2A-2 Step 1: Pre-flight META_KEY integrity & writability check WITHOUT mutating or broadcasting monotonic fields!
+    ensureMetaState();
     const prevMetaSnap = JSON.parse(JSON.stringify(metaState));
     const prevLifeRecorded = !!(game && game.lifeRecorded);
+    let curMetaRaw = null;
+    try {
+      curMetaRaw = localStorage.getItem(META_KEY);
+    } catch (e) {
+      metaWriteError = { message: safeText(e && e.message, safeDiag(e)) || safeDiag(e), at: Date.now() };
+      saveAlertDismissed = false;
+      renderHudSaveAlert();
+      const msg = `⚠ 元存档读取失败（${metaWriteError.message}），已中止轮回并保留当前主存档！`;
+      showReincarnationInlineError(msg);
+      showToast(msg, { critical: true });
+      return false;
+    }
+    if (curMetaRaw !== null && curMetaRaw !== "") {
+      const curMetaRes = parseAndValidateMetaRaw(curMetaRaw, META_KEY);
+      if (!curMetaRes.ok) {
+        metaReadError = {
+          key: META_KEY,
+          reason: curMetaRes.reason || "元存档结构异常",
+          raw: curMetaRaw,
+          rawLength: curMetaRaw.length,
+          at: Date.now()
+        };
+        saveAlertDismissed = false;
+        renderWelcomeSaveStatusBanner();
+        renderHudSaveAlert();
+        const msg = `⚠ 元存档保存失败（${metaReadError.reason}），已中止轮回并保留当前主存档！`;
+        showReincarnationInlineError(msg);
+        showToast(msg, { critical: true });
+        return false;
+      }
+    }
+    try {
+      // Write existing value (or un-incremented metaState) to verify quota/writability before removing STORAGE_KEY
+      localStorage.setItem(META_KEY, (curMetaRaw !== null && curMetaRaw !== "") ? curMetaRaw : JSON.stringify(metaState));
+    } catch (e) {
+      metaWriteError = {
+        message: (e && e.name === "QuotaExceededError") ? "存储空间已满 (QuotaExceededError)" : (safeText(e && e.message, safeDiag(e)) || safeDiag(e)),
+        at: Date.now()
+      };
+      saveAlertDismissed = false;
+      renderHudSaveAlert();
+      const msg = `⚠ 元存档保存失败（${metaWriteError.message}），已中止轮回并保留当前主存档！`;
+      showReincarnationInlineError(msg);
+      showToast(msg, { critical: true });
+      return false;
+    }
+
+    // R2A-2 Step 2: Verify primary save removal BEFORE incrementing monotonic META_KEY fields (prevents 2-tab CRDT bounce-back!)
+    const rmRes = removePrimarySaveVerified();
+    if (!rmRes.ok) {
+      storageWriteError = { message: `清空主存档失败：${rmRes.message}`, at: Date.now() };
+      saveAlertDismissed = false;
+      renderHudSaveAlert();
+      const msg = `⚠ 轮回清档失败：${rmRes.message}（未变动元存档并保留当前主存档）！`;
+      showReincarnationInlineError(msg);
+      showToast(msg, { critical: true, key: "reincarnate_remove_err", throttleMs: 0 });
+      return false;
+    }
+
+    // R2A-2 Step 3: Primary save is verified gone -> commit monotonic +1 bingjieCount / Hall of Lives & saveMeta!
     if (source === "bingjie" && (!game || game.status !== "ascended")) {
       ensureMetaState();
       metaState.bingjieCount = Math.max(0, Math.floor(num(metaState.bingjieCount, 0))) + 1;
     } else if (game && game.status === "ascended" && game.ending && !game.lifeRecorded) {
-      recordPastLifeInHall(game, game.ending);
+      recordPastLifeInHall(game, game.ending, { skipSave: true });
     }
-    const metaSaved = saveMeta();
+    const metaSaved = saveMeta({ userInitiated: true });
     if (!metaSaved) {
       Object.keys(metaState).forEach(k => { if (!(k in prevMetaSnap)) delete metaState[k]; });
       Object.assign(metaState, prevMetaSnap);
       if (game) game.lifeRecorded = prevLifeRecorded;
+      let saveRestored = (prevSaveRaw === null || prevSaveRaw === "");
+      if (!saveRestored) {
+        try {
+          localStorage.setItem(STORAGE_KEY, prevSaveRaw);
+          saveRestored = (localStorage.getItem(STORAGE_KEY) === prevSaveRaw);
+        } catch (restoreErr) {
+          saveRestored = false;
+        }
+      }
+      if (!saveRestored) {
+        storageWriteError = { message: "元存档写入失败且恢复主存档失败，请立即导出云码备份", at: Date.now() };
+      }
       saveAlertDismissed = false;
       renderHudSaveAlert();
       const errMsg = metaReadError
         ? metaReadError.reason
         : ((metaWriteError && metaWriteError.message) ? metaWriteError.message : "元存档写入失败");
-      showToast(`⚠ 元存档保存失败（${errMsg}），已中止轮回并保留当前主存档！`);
+      const msg = saveRestored
+        ? `⚠ 元存档保存失败（${errMsg}），已中止轮回并恢复当前主存档！`
+        : `⚠ 严重异常：元存档保存失败（${errMsg}）且恢复主存档失败，请立即导出云码备份！`;
+      showReincarnationInlineError(msg);
+      showToast(msg, { critical: true, key: "reincarnate_meta_err", throttleMs: 0 });
       return false;
     }
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+
     clearTransientChoiceQueues();
     activeCustomSeedTempCurio = null;
     game = null;
-    loadedSaveRev = 0;
+    practiceFormalSnapshot = null;
+    clearLoadedSaveMeta();
     lastSavedPayloadChecksum = null;
     saveReadOnlyMode = false;
     saveConflictState = null;
     storageWriteError = null;
     arena.stageEpoch += 1;
+    arena.sanctumMode = false;
+    arena.bossRush = null;
+    arena.celestialSpire = null;
+    arena.customSeedRun = null;
+    arena.tribulation = null;
+    arena.sectDefense = null;
+    arena.cloudFlight = null;
+    clearCinematicClashOverlays();
+    if (arena.player) arena.player.ravineBuffTimer = 0;
     resetStageTransitionState();
     resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
+    resetRuntimeCombatOverrides();
     arena.defeatPending = null;
     releasePauseToken(defeatPauseToken); defeatPauseToken = null;
     lastModalTriggerEl = null;
@@ -241,6 +367,9 @@
     renderWelcomeScreen();
     const customDr = document.getElementById("title-custom-drawer");
     if (customDr) customDr.classList.add("open");
+    closePavilionPopover();
+    hideDojoControlBar();
+    syncDojoTrainingHudVisibility();
     closeModal(); closeDrawer();
     syncPendingRewardsBadge();
     restoreTriggerFocus(null);
@@ -252,7 +381,9 @@
   }
 
   function openPetSkillChoiceModal(tier) {
-    if (!game || !game.pet || !game.pet.id || !hasOwn(SPIRIT_PETS, game.pet.id)) return false;
+    if (!game || isWelcomeScreenVisible() || cutscene.active || !game.pet || !game.pet.id || !hasOwn(SPIRIT_PETS, game.pet.id)) return false;
+    if (!guardNotInTribulation("择定灵宠神通")) return false;
+    if (!guardNotPracticeMode("择定灵宠神通")) return false;
     const safeTier = tier === 5 ? 5 : 3;
     if ((game.pet.level || 1) < safeTier) {
       showToast(`灵宠达到 Lv.${safeTier} 后方可择定此阶灵技！`);
@@ -309,6 +440,8 @@
 
   function upgradeSanctumBuilding(bId) {
     if (!game) return false;
+    if (!guardNotInTribulation("洞府灵脉升阶")) return false;
+    if (!guardNotPracticeMode("洞府灵脉升阶")) return false;
     const spec = SANCTUM_BUILDINGS.find(b => b.id === bId);
     const lvMap = ensureSanctumLevels(game);
     const curLv = lvMap[bId] || 1;
@@ -535,13 +668,13 @@
       `}
 
       <div class="companion-action-grid">
-        <button type="button" class="companion-action-btn" data-comp-act="tea" data-comp-npc="${npcId}">
-          <strong style="font-size:13px;color:#9effec;">🍵 洞府茶叙</strong>
-          <span style="font-size:10.5px;color:var(--text-sub);line-height:1.4;">${teaClaimed ? "重温立绘对谈（本境茶礼已领）" : "半身立绘茶叙 · 仁心/本真 +5 · 灵气全满"}</span>
+        <button type="button" class="companion-action-btn" data-comp-act="tea" data-comp-npc="${npcId}" ${canRefillGourdInAlchemyDrawer() ? "" : "disabled"}>
+          <strong style="font-size:13px;color:#9effec;">🍵 洞府茶叙${canRefillGourdInAlchemyDrawer() ? "" : " (限洞府静息)"}</strong>
+          <span style="font-size:10.5px;color:var(--text-sub);line-height:1.4;">${!canRefillGourdInAlchemyDrawer() ? "请先按 H 返回听雨洞府静息状态再品茗休整" : teaClaimed ? "重温立绘对谈（本境茶礼已领）" : "半身立绘茶叙 · 仁心/本真 +5 · 灵气全满"}</span>
         </button>
-        <button type="button" class="companion-action-btn" data-comp-act="spar" data-comp-npc="${npcId}">
-          <strong style="font-size:13px;color:#ffe28a;">⚔ 同门切磋</strong>
-          <span style="font-size:10.5px;color:var(--text-sub);line-height:1.4;">${sparClaimed ? "演武切磋感悟（本境修为已领）" : dlg.sparReward}</span>
+        <button type="button" class="companion-action-btn" data-comp-act="spar" data-comp-npc="${npcId}" ${canRefillGourdInAlchemyDrawer() ? "" : "disabled"}>
+          <strong style="font-size:13px;color:#ffe28a;">⚔ 同门切磋${canRefillGourdInAlchemyDrawer() ? "" : " (限洞府静息)"}</strong>
+          <span style="font-size:10.5px;color:var(--text-sub);line-height:1.4;">${!canRefillGourdInAlchemyDrawer() ? "请先按 H 返回听雨洞府静息状态再演武切磋" : sparClaimed ? "演武切磋感悟（本境修为已领）" : dlg.sparReward}</span>
         </button>
         <button type="button" class="companion-action-btn" data-comp-act="gift" data-comp-npc="${npcId}" ${tier >= 3 || (!hasFavMat && !canGiftStone) ? "disabled" : ""}>
           <strong style="font-size:13px;color:#f3c6ff;">🎁 赠礼晋阶信物</strong>
@@ -553,6 +686,7 @@
 
   function triggerCompanionHubAction(npcId, act) {
     if (!game || !NPC_META[npcId]) return false;
+    if (!guardNotPracticeMode("故人雅集")) return false;
     const npc = NPC_META[npcId];
     const kp = COMPANION_KEEPSAKES[npcId];
     const dlg = COMPANION_HUB_DIALOGUES[npcId];
@@ -561,6 +695,11 @@
     const chatKey = `${npcId}_${game.realm}`;
 
     if (act === "tea") {
+      if (!guardNotInTribulation("洞府茶叙")) return false;
+      if (!canRefillGourdInAlchemyDrawer()) {
+        showToast("🍵 请先按 H 返回【听雨洞府】静息状态，再与故人茶叙休整！", { critical: true });
+        return false;
+      }
       closeModal();
       const firstTime = !game.sanctumChatStage["tea_" + chatKey];
       if (firstTime) {
@@ -588,6 +727,11 @@
     }
 
     if (act === "spar") {
+      if (!guardNotInTribulation("同门切磋")) return false;
+      if (!canRefillGourdInAlchemyDrawer()) {
+        showToast("⚔ 请先按 H 返回【听雨洞府】静息状态，再与故人同门切磋！", { critical: true });
+        return false;
+      }
       closeModal();
       const firstTime = !game.sanctumChatStage["spar_" + chatKey];
       const st = getCombatStats(game);
@@ -617,6 +761,7 @@
     }
 
     if (act === "gift") {
+      if (!guardNotInTribulation("故人赠礼晋阶")) return false;
       const curT = getCompanionBondTier(game, npcId);
       if (curT >= 3) return false;
       const useMat = (game.inventory[dlg.favMat] || 0) >= dlg.favCount;
@@ -815,7 +960,7 @@
     return false;
   }
 
-  function recordPastLifeInHall(g, endId) {
+  function recordPastLifeInHall(g, endId, opts = {}) {
     if (!g || g.lifeRecorded || sandboxMode) return null;
     ensureMetaState();
     const score = computeCompetitionScore(g);
@@ -856,12 +1001,15 @@
     if ((g.towerBest || 0) > (metaState.bestTower || 0)) metaState.bestTower = g.towerBest || 0;
     if ((g.bestSpireFloor || 0) > (metaState.bestSpireFloor || 0)) metaState.bestSpireFloor = g.bestSpireFloor || 0;
     if (calTier > (metaState.bestCalamityTier || 0)) metaState.bestCalamityTier = calTier;
-    saveMeta();
+    if (!(opts && opts.skipSave)) saveMeta();
     return entry;
   }
 
   function launchEcosystemAction(actionId) {
     if (!game) return;
+    if (["start_tower", "start_sect_defense", "start_cloud_sea", "open_spire", "open_boss_rush", "open_workshop", "open_taixu_craft"].includes(actionId)) {
+      if (!guardNotInTribulation("切换挑战模式")) return;
+    }
     if (actionId === "open_drawer_cultivate") { closeModal(); toggleDrawer("cultivate"); }
     else if (actionId === "open_taixu_craft") openTaixuCraftMinigameModal("alchemy");
     else if (actionId === "start_tower") {
@@ -1188,7 +1336,9 @@
   }
 
   function claimMainlineStepReward(stepId) {
-    if (!game) return;
+    if (!game) return false;
+    if (!guardNotInTribulation("领取主线赏赐")) return false;
+    if (!guardNotPracticeMode("领取主线赏赐")) return false;
     const resolvedId = canonicalizeStepId(stepId);
     if (!resolvedId) return;
     let found = null;
@@ -1215,6 +1365,10 @@
 
   function routeToGoalTarget(routeKey) {
     if (!game) return;
+    if (arena.tribulation && (routeKey === "hub" || routeKey === "tower" || routeKey === "calamity_ng" || routeKey === "meditate" || routeKey === "tribulate" || (routeKey && routeKey.startsWith("stage_")))) {
+      guardNotInTribulation(routeKey === "meditate" ? "周天吐纳" : "道标传送");
+      return;
+    }
     activeMatSourceJump = null;
     closeModal();
     const r = REALMS[game.realm];
@@ -1784,7 +1938,28 @@
       `);
     }
 
-    bodyEl.innerHTML = rows.join("");
+    const nextHtml = rows.join("");
+    if (bodyEl.dataset.qtSig === nextHtml) return;
+    const hadFocus = Boolean(document.activeElement && bodyEl.contains(document.activeElement));
+    const prevSel = hadFocus ? (() => {
+      const ae = document.activeElement;
+      for (const attr of ["data-claim-step", "data-route-goal", "data-claim-bounty", "data-open-goals", "data-open-companion-story"]) {
+        const val = ae.getAttribute(attr);
+        if (val !== null) return `[${attr}="${val.replace(/"/g, '\\"')}"]`;
+      }
+      return "";
+    })() : "";
+    bodyEl.innerHTML = nextHtml;
+    bodyEl.dataset.qtSig = nextHtml;
+    if (hadFocus) {
+      const refocus = (prevSel && bodyEl.querySelector(prevSel)) || bodyEl.querySelector("button:not([disabled])");
+      if (refocus && isElementFocusable(refocus)) {
+        try { refocus.focus({ preventScroll: true }); } catch (e) {}
+      } else {
+        const bd = document.getElementById("modal-backdrop");
+        if (!(bd && bd.classList.contains("open")) && !drawerOpen) restoreTriggerFocus(null);
+      }
+    }
   }
 
   const ONBOARDING_STEPS = [
@@ -1815,10 +1990,20 @@
   function renderOnboardingCoach() {
     const bar = document.getElementById("onboarding-coach-bar");
     if (!bar) return;
-    const onWelcome = document.getElementById("welcome-screen") && document.getElementById("welcome-screen").style.display !== "none";
-    if (!game || onWelcome || cutscene.active || game.tutorialDismissed || rankOf(game.realm) >= 1) {
+    const hideOnboardingBar = () => {
+      const hadFocus = Boolean(document.activeElement && bar.contains(document.activeElement));
       bar.classList.remove("show");
       syncUnlockCardStacking();
+      if (hadFocus && !cutscene.active && !drawerOpen) {
+        const bd = document.getElementById("modal-backdrop");
+        if (!(bd && bd.classList.contains("open"))) {
+          restoreTriggerFocus(null);
+        }
+      }
+    };
+    const onWelcome = document.getElementById("welcome-screen") && document.getElementById("welcome-screen").style.display !== "none";
+    if (!game || onWelcome || cutscene.active || game.tutorialDismissed || rankOf(game.realm) >= 1) {
+      hideOnboardingBar();
       return;
     }
     // F28 D01 Sanctum Shortest Prep Path: reuse #onboarding-coach-bar (0 extra HUD buttons!)
@@ -1827,24 +2012,30 @@
       const sanctumHint = `✓ 仙葫已满酿 → ${prepDone ? "✓ 已完成1项整备强化" : "○ 选1项直觉强化（淬火+1或升阶洞府，绝不强制炼丹/灵宠）"} → ○ 踏阵门出征青岚荒野`;
       const sig = `sanctum_prep|${prepDone ? 1 : 0}`;
       if (bar.dataset.obSig !== sig) {
+        const hadFocus = Boolean(document.activeElement && bar.contains(document.activeElement));
         bar.dataset.obSig = sig;
         bar.innerHTML = `
           <span class="ob-step-pill">洞府最短整备</span>
           <span style="line-height:1.35;">${sanctumHint}</span>
           <span id="btn-skip-onboarding" class="ob-skip-link" role="button" tabindex="0" data-action="skip-onboarding">跳过</span>
         `;
+        if (hadFocus) {
+          const skipEl = document.getElementById("btn-skip-onboarding");
+          if (skipEl && isElementFocusable(skipEl)) {
+            try { skipEl.focus({ preventScroll: true }); } catch (e) {}
+          }
+        }
       }
       bar.classList.add("show");
       syncUnlockCardStacking();
       return;
     }
     if ((game.tutorialStep || 0) >= 4) {
-      bar.classList.remove("show");
-      syncUnlockCardStacking();
+      hideOnboardingBar();
       return;
     }
     const step = ONBOARDING_STEPS[game.tutorialStep || 0];
-    if (!step) { bar.classList.remove("show"); syncUnlockCardStacking(); return; }
+    if (!step) { hideOnboardingBar(); return; }
     const pips = ONBOARDING_STEPS.map(s => `<span class="ob-pip ${s.idx < step.idx ? "done" : s.idx === step.idx ? "cur" : ""}"></span>`).join("");
     let dynamicHint = step.hint;
     if (step.idx === 3 && REALMS[game.realm] && game.xp >= REALMS[game.realm].xpCap) {
@@ -1855,6 +2046,7 @@
     }
     const sig = `${step.idx}|${dynamicHint}`;
     if (bar.dataset.obSig !== sig) {
+      const hadFocus = Boolean(document.activeElement && bar.contains(document.activeElement));
       bar.dataset.obSig = sig;
       bar.innerHTML = `
         <span class="ob-step-pill">入道 ${step.idx + 1}/4 · ${step.title}</span>
@@ -1862,6 +2054,12 @@
         <span style="line-height:1.35;">${dynamicHint}</span>
         <span id="btn-skip-onboarding" class="ob-skip-link" role="button" tabindex="0" data-action="skip-onboarding">跳过</span>
       `;
+      if (hadFocus) {
+        const skipEl = document.getElementById("btn-skip-onboarding");
+        if (skipEl && isElementFocusable(skipEl)) {
+          try { skipEl.focus({ preventScroll: true }); } catch (e) {}
+        }
+      }
     }
     bar.classList.add("show");
     syncUnlockCardStacking();

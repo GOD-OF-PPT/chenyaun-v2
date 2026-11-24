@@ -221,6 +221,7 @@ export function parseAndValidateSaveRaw(raw, sourceKey) {
     bundle: parsed,
     rev: Math.max(0, Math.floor(num(parsed.saveRev, 0))),
     tabId: typeof parsed.tabId === "string" ? parsed.tabId : null,
+    lineageId: typeof parsed.lineageId === "string" && parsed.lineageId ? parsed.lineageId : null,
     updatedAt: Math.max(0, Math.floor(num(parsed.updatedAt, 0))),
     legacy: sourceKey !== STORAGE_KEY || !envVer
   };

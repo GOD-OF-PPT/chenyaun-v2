@@ -978,11 +978,32 @@
     const onWelcome = Boolean(ws && ws.style.display !== "none");
     const card = activeUnlockCardId ? UNLOCK_TUTORIAL_CATALOG.find(c => c.id === activeUnlockCardId) : null;
     if (!game || sandboxMode || onWelcome || !card || !isCombatCalm()) {
+      const hadFocus = Boolean(document.activeElement && el.contains(document.activeElement));
       el.style.display = "none";
       el.innerHTML = "";
+      el.dataset.renderedCardId = "";
+      el.dataset.renderedRem = "";
+      if (hadFocus) {
+        const bd = document.getElementById("modal-backdrop");
+        if (!(bd && bd.classList.contains("open")) && !drawerOpen) {
+          restoreTriggerFocus(null);
+        }
+      }
       return;
     }
     const rem = pendingUnlockCardQueue.length;
+    const remStr = String(rem);
+    if (
+      el.style.display === "flex" &&
+      el.dataset.renderedCardId === card.id &&
+      el.dataset.renderedRem === remStr &&
+      el.querySelector("#btn-unlock-dismiss")
+    ) {
+      syncUnlockCardStacking();
+      return;
+    }
+    const hadFocus = Boolean(document.activeElement && el.contains(document.activeElement));
+    const prevFocusId = hadFocus ? (document.activeElement.id || "") : "";
     el.style.display = "flex";
     syncUnlockCardStacking();
     el.innerHTML = `
@@ -1002,6 +1023,19 @@
         <div style="color:var(--text-sub);">${escapeHtml(card.line2)}</div>
       </div>
     `;
+    el.dataset.renderedCardId = card.id;
+    el.dataset.renderedRem = remStr;
+    if (hadFocus) {
+      const target = (prevFocusId && document.getElementById(prevFocusId)) || document.getElementById("btn-unlock-dismiss");
+      if (target && isElementFocusable(target)) {
+        try { target.focus({ preventScroll: true }); } catch (e) {}
+      } else {
+        const bd = document.getElementById("modal-backdrop");
+        if (!(bd && bd.classList.contains("open")) && !drawerOpen) {
+          restoreTriggerFocus(null);
+        }
+      }
+    }
   }
 
   function queueNewUnlockCardsForState(g) {
@@ -1054,6 +1088,10 @@
     activeUnlockCardId = null;
     markUnlockCardSeen(doneId);
     renderActiveUnlockCard();
+    const bd = document.getElementById("modal-backdrop");
+    if (!(bd && bd.classList.contains("open")) && !drawerOpen && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+      restoreTriggerFocus(null);
+    }
     setTimeout(flushNewUnlockCard, 0);
     return true;
   }
@@ -1083,6 +1121,10 @@
       openExpeditionSandboxModal();
     } else if (actStr === "modal:workshop") {
       openCustomWorkshopModal();
+    }
+    const bd = document.getElementById("modal-backdrop");
+    if (!(bd && bd.classList.contains("open")) && !drawerOpen && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+      restoreTriggerFocus(null);
     }
     showToast(`✦ 已试用【${card.title}】！`);
     setTimeout(flushNewUnlockCard, 0);
@@ -1276,26 +1318,34 @@
   function renderGearCompareCard() {
     const el = document.getElementById("gear-compare-card");
     if (!el) return;
+    const hideCompareCard = (clearHtml) => {
+      const hadFocus = Boolean(document.activeElement && el.contains(document.activeElement));
+      el.style.display = "none";
+      if (clearHtml) el.innerHTML = "";
+      el.dataset.renderedSig = "";
+      clearCompareSmeltConfirm();
+      if (hadFocus) {
+        const bd = document.getElementById("modal-backdrop");
+        if (!(bd && bd.classList.contains("open")) && !drawerOpen) {
+          restoreTriggerFocus(null);
+        }
+      }
+    };
     const onWelcome = document.getElementById("welcome-screen") && document.getElementById("welcome-screen").style.display !== "none";
     if (!game || !pendingCompareGear || onWelcome || !game.gearBag.includes(pendingCompareGear)) {
-      el.style.display = "none";
-      el.innerHTML = "";
-      clearCompareSmeltConfirm();
+      hideCompareCard(true);
       return;
     }
     const calmNow = isCombatCalm();
     if (!calmNow || (document.body && document.body.classList.contains("combat-hot"))) {
       compareCardWasHiddenByCombat = true;
-      el.style.display = "none";
-      clearCompareSmeltConfirm();
+      hideCompareCard(false);
       return;
     }
     const nw = pendingCompareGear;
     const cur = game.equippedGear[nw.slot];
     if (!cur) {
-      el.style.display = "none";
-      el.innerHTML = "";
-      clearCompareSmeltConfirm();
+      hideCompareCard(true);
       return;
     }
     const wasHidden = el.style.display === "none" || !el.innerHTML;
@@ -1309,6 +1359,8 @@
     const dHp  = effectiveGearVal(nw, "hp", previewLvl) - effectiveGearVal(cur, "hp");
     const dDr  = effectiveGearVal(nw, "dr", previewLvl) - effectiveGearVal(cur, "dr");
     const dCrit = Math.round(((nw.crit || 0) - (cur.crit || 0)) * 100);
+    const nwStatsStr = formatGearStats(nw);
+    const curStatsStr = formatGearStats(cur);
     const deltas = [
       dAtk !== 0 ? `<span class="${dAtk > 0 ? "gear-delta-pos" : "gear-delta-neg"}">攻${dAtk > 0 ? "+" : ""}${dAtk}</span>` : "",
       dHp !== 0  ? `<span class="${dHp > 0 ? "gear-delta-pos" : "gear-delta-neg"}">血${dHp > 0 ? "+" : ""}${dHp}</span>` : "",
@@ -1319,12 +1371,23 @@
     const smeltVal = Math.max(1, Math.floor(num(nw.sell, 15)));
     const itemConfirmKey = nw.uid || nw.name;
     const isConfirmingSmelt = Boolean(compareSmeltConfirm && compareSmeltConfirm.key === itemConfirmKey && performance.now() < compareSmeltConfirm.expiresAt);
+    const renderSig = [
+      nw.uid || "", nw.name, nw.slot, nwRar, nwLvl, nwStatsStr, smeltVal,
+      cur.uid || "", cur.name, curRar, curLvl, curStatsStr,
+      dAtk, dHp, dDr, dCrit,
+      isConfirmingSmelt ? 1 : 0
+    ].join("|");
+    if (!wasHidden && el.style.display === "flex" && el.dataset.renderedSig === renderSig && el.querySelector('[data-action="compare-keep-bag"]')) {
+      return;
+    }
     if (wasHidden) {
       compareCardShownAt = performance.now();
       compareCardClickGuardUntil = (!arena.sanctumMode || compareCardWasHiddenByCombat) ? (compareCardShownAt + 250) : 0;
       compareCardWasHiddenByCombat = false;
     }
 
+    const hadFocus = Boolean(document.activeElement && el.contains(document.activeElement));
+    const prevFocusAct = hadFocus ? (document.activeElement.getAttribute("data-action") || "") : "";
     el.style.display = "flex";
     el.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
@@ -1335,24 +1398,38 @@
         <div class="gear-cmp-col new-item">
           <span style="font-size:9.5px;color:var(--jade);">新掉落 · ${RARITIES[nwRar].name}</span>
           <strong style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${nwRar}">${escapeHtml(nw.name)}${nwLvl ? ` +${nwLvl}` : ""}</strong>
-          <span style="font-size:10px;color:var(--text-sub);">${escapeHtml(formatGearStats(nw))}</span>
+          <span style="font-size:10px;color:var(--text-sub);">${escapeHtml(nwStatsStr)}</span>
         </div>
         <div class="gear-cmp-col">
           <span style="font-size:9.5px;color:var(--text-sub);">当前穿戴${curLvl > 0 ? ` · 淬火+${curLvl}` : ""}</span>
           <strong style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="txt-r${curRar}">${escapeHtml(cur.name)}${curLvl ? ` +${curLvl}` : ""}</strong>
-          <span style="font-size:10px;color:var(--text-sub);">${escapeHtml(formatGearStats(cur))}</span>
+          <span style="font-size:10px;color:var(--text-sub);">${escapeHtml(curStatsStr)}</span>
         </div>
       </div>
       <div class="gear-delta-row">
         <span style="color:var(--text-sub);">${curLvl > 0 ? `继承+${previewLvl}差值：` : "换装差值："}</span>${deltas}
       </div>
-      ${isConfirmingSmelt ? `<div class="gear-smelt-confirm-note">⚠ 即将永久熔炼【${escapeHtml(nw.name)}】（${escapeHtml(formatGearStats(nw))}）→ 获 <b>+${smeltVal} 灵石</b>，再次点击按钮确认</div>` : ""}
+      ${isConfirmingSmelt ? `<div class="gear-smelt-confirm-note">⚠ 即将永久熔炼【${escapeHtml(nw.name)}】（${escapeHtml(nwStatsStr)}）→ 获 <b>+${smeltVal} 灵石</b>，再次点击按钮确认</div>` : ""}
       <div class="gear-cmp-actions">
         ${curLvl > 0 ? `<button type="button" class="btn-jade" style="padding:4px 9px;font-size:11px;" data-action="compare-equip-transfer">换装并继承+${curLvl}</button>` : ""}
         <button type="button" class="${curLvl > 0 ? "btn-ghost" : "btn-jade"}" style="padding:4px 9px;font-size:11px;" data-action="compare-equip-direct">${curLvl > 0 ? "直接换装" : "一键换装"}</button>
         <button type="button" class="btn-ghost btn-smelt-danger ${isConfirmingSmelt ? "confirming" : ""}" style="padding:4px 9px;font-size:11px;" data-action="compare-smelt-new">${isConfirmingSmelt ? `确认熔炼【${escapeHtml(nw.name)}】(+${smeltVal}石)?` : `熔炼+${smeltVal}石`}</button>
       </div>
     `;
+    el.dataset.renderedSig = renderSig;
+    if (hadFocus) {
+      const refocusBtn = (prevFocusAct && el.querySelector(`[data-action="${prevFocusAct}"]`))
+        || el.querySelector('[data-action="compare-equip-direct"]')
+        || el.querySelector('[data-action="compare-keep-bag"]');
+      if (refocusBtn && isElementFocusable(refocusBtn)) {
+        try { refocusBtn.focus({ preventScroll: true }); } catch (e) {}
+      } else {
+        const bd = document.getElementById("modal-backdrop");
+        if (!(bd && bd.classList.contains("open")) && !drawerOpen) {
+          restoreTriggerFocus(null);
+        }
+      }
+    }
   }
 
   function acquireGearItem(item, opts = {}) {
