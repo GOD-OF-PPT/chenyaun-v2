@@ -10,13 +10,13 @@ Opaque-box, requirement-driven E2E Acceptance Test Suite for **《尘缘问道 �
   - `npm run test:e2e -- --tier <1|2|3|4|all>` — run a specific tier or comma-separated tiers (default: `all`)
   - `npm run test:e2e -- --filter <substring|/regex/i>` — filter test cases by ID, title, or feature
   - `npm run test:e2e -- --report <file>` — write structured JSON report to `<file>`
-  - `npm run test:e2e -- --url <url>` — target an external static HTTP URL instead of the built-in server
-  - `npm run test:e2e -- --timeout <ms>` — per-test timeout in milliseconds (default: `25000`)
+  - `npm run test:e2e -- --url <url>` — target an external `http:`/`https:` static HTTP URL instead of the built-in server
+  - `npm run test:e2e -- --timeout <ms>` — per-test timeout in milliseconds (`1..2147483647`, default: `25000`; dynamically scales per-test navigation/action timeouts)
   - `npm run test:e2e -- --fail-fast` — stop on first failure
-- **Exit Code**: `0` when all selected tests pass with 0 console/page errors and 0 harness errors; `1` on any test failure; `2` on CLI/bootstrap errors (including invalid or missing-value flags, invalid `--filter` regex, nonexistent `CHROMIUM_PATH`, missing `playwright-core`, or 0 tests matched by `--filter`).
+- **Exit Code**: `0` when all selected tests pass with 0 console/page errors, 0 harness errors, and no signal abort (`SIGINT`/`SIGTERM`); `1` on any test failure or signal abort; `2` on CLI/bootstrap errors (including invalid or empty-value `--flag=` / missing-value flags, non-integer or out-of-range `--timeout`, empty `--tier` segments like `1,,2`, invalid `--url` protocol, empty `//` or unterminated `/regex` `--filter`, duplicate test IDs, nonexistent `CHROMIUM_PATH`, missing `playwright-core`, or 0 tests matched by `--filter`).
 
 ## Runtime Environment
-- **Static HTTP Server**: Built-in Node `http` server bound to `127.0.0.1` on an ephemeral port (`0`), serving `web/public/` with entry `/playable-v2.html`.
+- **Static HTTP Server**: Built-in Node `http` server bound to `127.0.0.1` on an ephemeral port (`0`), serving `web/public/` with entry `/playable-v2.html`, per-server in-memory `fileCache`, `Content-Length`, `HEAD` support, `Cache-Control: no-store`, and `server.closeAllConnections?.()` teardown.
 - **Browser**: Desktop Chromium/Chrome via `playwright-core@1.65.1` (uses `process.env.CHROMIUM_PATH` when set—failing fast with exit code `2` if nonexistent—otherwise falls back to `/usr/bin/chromium`, `/usr/bin/chromium-browser`, `/usr/bin/google-chrome`, e.g., `/usr/bin/google-chrome` on Linux hosts).
 - **Viewport**: `1440×900` desktop viewport.
 - **Isolation**: Every test case runs in a fresh `browser.newContext({ viewport: { width: 1440, height: 900 } })` with clean `localStorage` and attached `console` (`error`) + `pageerror` listeners (0 errors required).
@@ -35,4 +35,4 @@ Opaque-box, requirement-driven E2E Acceptance Test Suite for **《尘缘问道 �
 1. Assertions inspect observable UI text, DOM state, focus/accessibility behavior, `localStorage`, and (for T8/T9) repo files/scripts.
 2. `window.__CHENYUAN_V25__` (and legacy debug globals) are used **only** for setting up preconditions (e.g., reaching a late realm or spawning a boss), never for asserting internal implementation details.
 3. All save fixtures (including `eb0ea67`-format legacy saves and corrupted saves) are generated dynamically in code; no real player saves are committed.
-4. Executed unconditionally in `.github/workflows/e2e.yml` (`npm run test:e2e -- --report test-results/e2e-report.json`) alongside the 44-suite regression runner (`npm run test:regression`).
+4. Executed unconditionally in `.github/workflows/e2e.yml` (`npm run test:e2e -- --report test-results/e2e-report.json`) alongside the 60-suite regression runner (`npm run test:regression`, covering M1–M4, P1–P5, R2–R7, and Q0–Q2; `schemaVersion: 2` report) and art provenance check (`npm run art:manifest:check`).
