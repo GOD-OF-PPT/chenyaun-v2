@@ -150,10 +150,31 @@
   }
   #visual-stage:focus { outline: none; }
   #stage-bg-img {
-    position: absolute; inset: -2.5%; width: 105%; height: 105%;
+    position: absolute; inset: -4%; width: 108%; height: 108%;
     object-fit: cover; object-position: center;
     filter: brightness(0.88) contrast(1.05);
-    transition: transform 0.14s ease-out; pointer-events: none; z-index: var(--z-bg);
+    will-change: transform; pointer-events: none; z-index: var(--z-bg);
+  }
+  #scene-transition-veil {
+    position: absolute; inset: 0; pointer-events: none; z-index: 8; opacity: 0;
+    background: radial-gradient(circle at 50% 48%, rgba(14, 32, 38, 0.72) 0%, rgba(3, 9, 13, 0.96) 100%);
+    transition: opacity 0.20s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  #scene-transition-veil.active { opacity: 0.94; }
+  html.reduced-motion #scene-transition-veil {
+    opacity: 0 !important;
+    transition: none !important;
+  }
+  .trib-rule-box {
+    margin: 6px 0 8px; padding: 8px 11px; border-radius: 10px;
+    background: rgba(8, 22, 28, 0.88); border: 1px solid rgba(112, 255, 230, 0.32);
+    font-size: 11.5px; color: #d8f2ee; line-height: 1.5;
+  }
+  .trib-verdict-box {
+    margin: 6px 0 8px; padding: 8px 12px; border-radius: 10px;
+    background: linear-gradient(90deg, rgba(24, 48, 52, 0.92), rgba(44, 34, 16, 0.88));
+    border: 1px solid rgba(248, 227, 172, 0.55);
+    font-size: 12px; color: #fff4d2; line-height: 1.48;
   }
   #fx-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: var(--z-canvas); }
   #qi-orb-layer, #stage-center-layer { position: absolute; inset: 0; pointer-events: none; z-index: var(--z-stage-overlay); }
@@ -4058,6 +4079,7 @@
       <img id="stage-bg-img" alt="道场" />
       <canvas id="fx-canvas"></canvas>
       <div id="stage-vignette-css"></div>
+      <div id="scene-transition-veil" aria-hidden="true"></div>
       <div id="qi-orb-layer"></div>
       <div id="stage-center-layer"></div>
 
@@ -4680,9 +4702,35 @@ const ART = {
     ctx: null, muted: false, bgmEnabled: true, bgmStep: 0, noiseBuf: null,
     bgmFilter: null, bgmDuckGain: null, reverbNode: null, reverbWet: null,
     duckState: { active: false, hz: 18500, gain: 1.0, restoreTimer: null },
+    cueLog: [],
+    lastCue: null,
+    recordCue(cue, tier = "ui", meta = {}) {
+      const stemKey = meta && meta.stem ? meta.stem : null;
+      const stemVal = stemKey && this.stems && typeof this.stems[stemKey] === "number" ? this.stems[stemKey] : 1.0;
+      const stemMuted = stemVal <= 0.0005;
+      const rec = Object.assign({}, meta, {
+        cue,
+        tier,
+        ts: Date.now(),
+        audible: Boolean(this.ctx && !this.muted && !stemMuted),
+        stemMuted,
+        stemVal: Number(stemVal.toFixed(2))
+      });
+      this.lastCue = rec;
+      this.cueLog.push(rec);
+      if (this.cueLog.length > 40) this.cueLog.shift();
+      return rec;
+    },
+    getCueLog() {
+      return this.cueLog.slice();
+    },
+    clearCueLog() {
+      this.cueLog.length = 0;
+      this.lastCue = null;
+    },
     ensure() {
       if (this.muted) return null;
-      if (typeof navigator !== "undefined" && navigator.userActivation && !navigator.userActivation.hasBeenActivated) return null;
+      if (typeof navigator !== "undefined" && navigator.userActivation && !navigator.userActivation.hasBeenActive) return null;
       if (!this.ctx) {
         const AC = window.AudioContext || window.webkitAudioContext;
         if (AC) this.ctx = new AC();
@@ -4950,9 +4998,9 @@ const ART = {
     },
     slash(heavy, step = 0) {
       const bScale = this.stems ? this.stems.blade : 1.0;
-      if (bScale <= 0.01) return;
-      const ctx = this.ensure();
-      if (!ctx) return;
+      const ctx = (bScale > 0.0005) ? this.ensure() : null;
+      this.recordCue(heavy ? "slash_heavy" : "slash_light", heavy ? "heavy" : "light", { stem: "blade", step });
+      if (bScale <= 0.0005 || !ctx || this.muted) return;
       const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
@@ -4962,7 +5010,7 @@ const ART = {
       osc.frequency.exponentialRampToValueAtTime(heavy ? 110 : 175, now + (heavy ? 0.28 : 0.15));
       g.gain.setValueAtTime((heavy ? 0.13 : 0.085) * bScale, now);
       g.gain.exponentialRampToValueAtTime(0.001, now + (heavy ? 0.3 : 0.17));
-      osc.connect(g).connect(ctx.destination);
+      osc.connect(g); this.connectSfxOut(g, 0.18);
       osc.start(now);
       osc.stop(now + (heavy ? 0.32 : 0.19));
       if (this.noiseBuf) {
@@ -4972,28 +5020,116 @@ const ART = {
         hp.type = "highpass";
         hp.frequency.setValueAtTime(1800, now);
         const ng = ctx.createGain();
-        ng.gain.setValueAtTime(heavy ? 0.09 : 0.05, now);
+        ng.gain.setValueAtTime((heavy ? 0.09 : 0.05) * bScale, now);
         ng.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-        src.connect(hp).connect(ng).connect(ctx.destination);
+        src.connect(hp).connect(ng); this.connectSfxOut(ng, 0.14);
         src.start(now);
       }
     },
     fanfare() {
+      const qScale = this.stems ? this.stems.guqin : 1.0;
+      if (qScale > 0.0005) this.ensure();
+      this.recordCue("fanfare", "ui", { stem: "guqin" });
       [261.63, 329.63, 392.0, 523.25, 659.25].forEach((n, i) => {
         setTimeout(() => this.pluck(n, 0.52, 0.105, "triangle"), i * 72);
       });
     },
     deflectClang() {
       // Sekiro / Black Myth style resonant bronze-steel parry ring!
+      const bScale = this.stems ? this.stems.blade : 1.0;
+      if (bScale > 0.0005) this.ensure();
+      this.recordCue("deflect_clang", "deflect", { stem: "blade" });
       this.clang(1.42, 0.20);
       this.bianzhong(783.99, 0.11);
       this.drum(0.24);
     },
+    shieldAbsorb(kind = "player") {
+      const cScale = this.stems ? this.stems.chime : 1.0;
+      const ctx = (cScale > 0.0005) ? this.ensure() : null;
+      this.recordCue("shield_absorb", "block", { kind, stem: "chime" });
+      if (cScale <= 0.0005 || !ctx || this.muted) return;
+      const now = ctx.currentTime;
+      const baseF = kind === "enemy" ? 460 : 620;
+      [1.0, 1.498].forEach((ratio, idx) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = idx === 0 ? "triangle" : "sine";
+        osc.frequency.setValueAtTime(baseF * ratio, now);
+        osc.frequency.exponentialRampToValueAtTime(baseF * ratio * 0.78, now + 0.18);
+        g.gain.setValueAtTime((idx === 0 ? 0.085 : 0.048) * cScale, now);
+        g.gain.exponentialRampToValueAtTime(0.0008, now + 0.20);
+        osc.connect(g); this.connectSfxOut(g, 0.30);
+        osc.start(now); osc.stop(now + 0.22);
+      });
+    },
+    postureBreak() {
+      const dScale = this.stems ? this.stems.drum : 1.0;
+      const ctx = (dScale > 0.0005) ? this.ensure() : null;
+      this.recordCue("posture_break", "break", { stem: "drum" });
+      this.drum(0.30);
+      this.clang(0.84, 0.18);
+      this.bianzhong(440.0, 0.10);
+      if (dScale <= 0.0005 || !ctx || this.muted) return;
+      const now = ctx.currentTime;
+      const sub = ctx.createOscillator();
+      const g = ctx.createGain();
+      sub.type = "sine";
+      sub.frequency.setValueAtTime(124, now);
+      sub.frequency.exponentialRampToValueAtTime(34, now + 0.36);
+      g.gain.setValueAtTime(0.22 * dScale, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.39);
+      sub.connect(g); this.connectSfxOut(g, 0.28);
+      sub.start(now); sub.stop(now + 0.42);
+    },
+    playerHurt(isHeavy = false) {
+      const dScale = this.stems ? this.stems.drum : 1.0;
+      const ctx = (dScale > 0.0005) ? this.ensure() : null;
+      this.recordCue("player_hurt", "hurt", { isHeavy: !!isHeavy, stem: "drum" });
+      if (dScale <= 0.0005 || !ctx || this.muted) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(isHeavy ? 156 : 188, now);
+      osc.frequency.exponentialRampToValueAtTime(44, now + (isHeavy ? 0.24 : 0.16));
+      g.gain.setValueAtTime((isHeavy ? 0.20 : 0.14) * dScale, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + (isHeavy ? 0.26 : 0.18));
+      osc.connect(g); this.connectSfxOut(g, 0.18);
+      osc.start(now); osc.stop(now + 0.28);
+      if (this.noiseBuf) {
+        const src = ctx.createBufferSource();
+        src.buffer = this.noiseBuf;
+        const lp = ctx.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.setValueAtTime(640, now);
+        const ng = ctx.createGain();
+        ng.gain.setValueAtTime((isHeavy ? 0.09 : 0.055) * dScale, now);
+        ng.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+        src.connect(lp).connect(ng); this.connectSfxOut(ng, 0.12);
+        src.start(now);
+      }
+    },
+    dialogueCue() {
+      const qScale = this.stems ? this.stems.guqin : 1.0;
+      if (qScale > 0.0005) this.ensure();
+      this.recordCue("dialogue_cue", "ui", { stem: "guqin" });
+      if (qScale <= 0.0005) return;
+      this.pluck(523.25, 0.18, 0.045, "sine");
+    },
+    noticeCue(tier = 2) {
+      const cScale = this.stems ? this.stems.chime : 1.0;
+      if (cScale > 0.0005) this.ensure();
+      this.recordCue("notice_cue", "ui", { noticeTier: tier, stem: "chime" });
+      if (cScale <= 0.0005) return;
+      this.bianzhong(tier <= 1 ? 659.25 : 587.33, tier <= 1 ? 0.065 : 0.042);
+    },
     perilousGong() {
+      const cScale = this.stems ? this.stems.chime : 1.0;
+      const ctx = (cScale > 0.0005) ? this.ensure() : null;
+      this.recordCue("perilous_gong", "ui", { perilous: true, stem: "chime" });
       this.triggerDucking(460, 0.34, 900);
+      if (cScale <= 0.0005 || !ctx || this.muted) return;
       // Unmistakable ominous 【危】 warning chime!
-      const ctx = this.ensure();
-      if (!ctx || this.muted) return;
       const now = ctx.currentTime;
       [196.0, 207.65, 392.0].forEach((f, idx) => {
         const osc = ctx.createOscillator();
@@ -5001,16 +5137,18 @@ const ART = {
         osc.type = idx === 1 ? "sawtooth" : "triangle";
         osc.frequency.setValueAtTime(f * 1.08, now);
         osc.frequency.exponentialRampToValueAtTime(f * 0.92, now + 0.48);
-        g.gain.setValueAtTime(idx === 1 ? 0.045 : 0.085, now);
+        g.gain.setValueAtTime((idx === 1 ? 0.045 : 0.085) * cScale, now);
         g.gain.exponentialRampToValueAtTime(0.0008, now + 0.52);
-        osc.connect(g).connect(ctx.destination);
+        osc.connect(g); this.connectSfxOut(g, 0.32);
         osc.start(now);
         osc.stop(now + 0.55);
       });
     },
     thunderCrack() {
-      const ctx = this.ensure();
-      if (!ctx || this.muted) return;
+      const dScale = this.stems ? this.stems.drum : 1.0;
+      const ctx = (dScale > 0.0005) ? this.ensure() : null;
+      this.recordCue("thunder_crack", "heavy", { stem: "drum" });
+      if (dScale <= 0.0005 || !ctx || this.muted) return;
       const now = ctx.currentTime;
       this.drum(0.20);
       if (this.noiseBuf) {
@@ -5021,24 +5159,26 @@ const ART = {
         bp.frequency.setValueAtTime(1450, now);
         bp.Q.setValueAtTime(1.4, now);
         const ng = ctx.createGain();
-        ng.gain.setValueAtTime(0.14, now);
+        ng.gain.setValueAtTime(0.14 * dScale, now);
         ng.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
-        src.connect(bp).connect(ng).connect(ctx.destination);
+        src.connect(bp).connect(ng); this.connectSfxOut(ng, 0.26);
         src.start(now);
       }
     },
     fleshHit(tier = 1) {
-      const ctx = this.ensure();
-      if (!ctx || this.muted) return;
+      const bScale = this.stems ? this.stems.blade : 1.0;
+      const ctx = (bScale > 0.0005) ? this.ensure() : null;
+      this.recordCue(tier >= 2 ? "flesh_heavy" : "flesh_light", tier >= 2 ? "heavy" : "light", { hitTier: tier, stem: "blade" });
+      if (bScale <= 0.0005 || !ctx || this.muted) return;
       const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
       osc.type = "triangle";
       osc.frequency.setValueAtTime(tier >= 2 ? 168 : 230, now);
       osc.frequency.exponentialRampToValueAtTime(48, now + (tier >= 2 ? 0.16 : 0.09));
-      g.gain.setValueAtTime(tier >= 2 ? 0.12 : 0.065, now);
+      g.gain.setValueAtTime((tier >= 2 ? 0.12 : 0.065) * bScale, now);
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
-      osc.connect(g).connect(ctx.destination);
+      osc.connect(g); this.connectSfxOut(g, tier >= 2 ? 0.24 : 0.16);
       osc.start(now);
       osc.stop(now + 0.18);
     },
@@ -5061,8 +5201,11 @@ const ART = {
       });
     },
     switchStanceChime(toHeavy = false) {
-      const ctx = this.ensure();
-      if (!ctx || this.muted) return;
+      const stemKey = toHeavy ? "chime" : "guqin";
+      const stScale = this.stems ? this.stems[stemKey] : 1.0;
+      const ctx = (stScale > 0.0005) ? this.ensure() : null;
+      this.recordCue(toHeavy ? "stance_heavy" : "stance_light", "ui", { stem: stemKey });
+      if (stScale <= 0.0005 || !ctx || this.muted) return;
       if (toHeavy) {
         this.bianzhong(293.66, 0.11);
         this.drum(0.22);
@@ -5072,15 +5215,17 @@ const ART = {
       }
     },
     shieldBreakSub() {
-      const ctx = this.ensure();
-      if (!ctx || this.muted) return;
+      const dScale = this.stems ? this.stems.drum : 1.0;
+      const ctx = (dScale > 0.0005) ? this.ensure() : null;
+      this.recordCue("shield_break", "break", { stem: "drum" });
+      if (dScale <= 0.0005 || !ctx || this.muted) return;
       const now = ctx.currentTime;
       const sub = ctx.createOscillator();
       const g = ctx.createGain();
       sub.type = "sine";
       sub.frequency.setValueAtTime(145, now);
       sub.frequency.exponentialRampToValueAtTime(30, now + 0.42);
-      g.gain.setValueAtTime(0.26, now);
+      g.gain.setValueAtTime(0.26 * dScale, now);
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
       sub.connect(g); this.connectSfxOut(g, 0.35);
       sub.start(now); sub.stop(now + 0.46);
@@ -6895,9 +7040,12 @@ const ART = {
   ];
 
   const REGION_POEMS = Object.assign({
-    hub:   { seal: "青云仙苑", name: "听雨洞府", poem: "松风煮茗养剑魄 · 坐看云起炼金丹" },
-    tower: { seal: "无尽试炼", name: "太虚锁妖塔", poem: "九重妖氛封古塔 · 唯凭本心破万魔" },
-    rush:  { seal: "踏天绝巅", name: "万剑冢论剑台", poem: "万古残剑埋忠骨 · 唯斩心魔见真吾" }
+    hub:       { seal: "青云仙苑", name: "听雨洞府", poem: "松风煮茗养剑魄 · 坐看云起炼金丹" },
+    tower:     { seal: "无尽试炼", name: "太虚锁妖塔", poem: "九重妖氛封古塔 · 唯凭本心破万魔" },
+    rush:      { seal: "踏天绝巅", name: "万剑冢论剑台", poem: "万古残剑埋忠骨 · 唯斩心魔见真吾" },
+    cloud_sea: { seal: "九霄御剑", name: "九霄云海航道", poem: "御剑穿云万里风 · 紫电惊鹏破天关" },
+    spire:     { seal: "九重天阶", name: "太虚登仙台", poem: "九重仙阶试道心 · 奇物加持斩天罡" },
+    workshop:  { seal: "演武秘境", name: "天机论剑工坊", poem: "自定妖王炼剑锋 · 演武问道证真功" }
   }, Object.fromEntries(CAMPAIGN_ACTS.map(act => [
     `stg_${act.stageIdx}`,
     { seal: act.seal, name: act.mapName.replace(/^⚡\s*/, ""), poem: act.poem }
@@ -6905,6 +7053,16 @@ const ART = {
 
   let regionCardTimer = null;
   let execStampTimer = null;
+  let sceneTransitionTimer = null;
+  const sceneTransitionState = {
+    active: false,
+    artKey: "",
+    regionCardKey: null,
+    startedAt: 0,
+    durMs: 400,
+    count: 0,
+    lastWasInstant: false
+  };
 
   function showRegionCinemaCard(key) {
     const spec = REGION_POEMS[key] || REGION_POEMS.stg_0;
@@ -6915,7 +7073,43 @@ const ART = {
     document.getElementById("rc-poem").textContent = spec.poem;
     card.classList.add("show");
     if (regionCardTimer) clearTimeout(regionCardTimer);
-    regionCardTimer = setTimeout(() => card.classList.remove("show"), 2300);
+    regionCardTimer = setTimeout(() => {
+      card.classList.remove("show");
+      regionCardTimer = null;
+    }, 2300);
+  }
+
+  function transitionStageScene(artKey, regionCardKey = null, opts = {}) {
+    const bgEl = document.getElementById("stage-bg-img");
+    const veil = document.getElementById("scene-transition-veil");
+    const nextSrc = (artKey && hasOwn(ART, artKey)) ? ART[artKey] : ART.arena_wilderness;
+    const instant = !!(opts && opts.instant) || (typeof isReducedMotionActive === "function" && isReducedMotionActive());
+    if (sceneTransitionTimer) {
+      clearTimeout(sceneTransitionTimer);
+      sceneTransitionTimer = null;
+    }
+    sceneTransitionState.artKey = artKey || "";
+    sceneTransitionState.regionCardKey = regionCardKey || null;
+    sceneTransitionState.startedAt = performance.now();
+    sceneTransitionState.count += 1;
+    sceneTransitionState.lastWasInstant = instant;
+
+    if (instant || !veil) {
+      if (bgEl) bgEl.src = nextSrc;
+      if (veil) veil.classList.remove("active");
+      sceneTransitionState.active = false;
+      if (regionCardKey) showRegionCinemaCard(regionCardKey);
+      return;
+    }
+    sceneTransitionState.active = true;
+    veil.classList.add("active");
+    if (bgEl) bgEl.src = nextSrc;
+    sceneTransitionTimer = setTimeout(() => {
+      veil.classList.remove("active");
+      sceneTransitionState.active = false;
+      sceneTransitionTimer = null;
+      if (regionCardKey) showRegionCinemaCard(regionCardKey);
+    }, 200);
   }
 
   let lastKillCamStampAt = 0;
@@ -7406,10 +7600,9 @@ const ART = {
   function formatGearStats(it) {
     if (!it) return "未佩带";
     const parts = [];
-    const enh = 1 + (it.lvl || 0) * GEAR_ENHANCE_STEP_PCT;
-    if (it.atk) parts.push(`攻+${Math.round(it.atk * enh)}`);
-    if (it.hp) parts.push(`血+${Math.round(it.hp * enh)}`);
-    if (it.dr) parts.push(`减伤+${Math.round(it.dr * enh)}`);
+    if (it.atk) parts.push(`攻+${effectiveGearVal(it, "atk")}`);
+    if (it.hp) parts.push(`血+${effectiveGearVal(it, "hp")}`);
+    if (it.dr) parts.push(`减伤+${effectiveGearVal(it, "dr")}`);
     if (it.crit) parts.push(`暴+${Math.round(it.crit * 100)}%`);
     if (it.spd) parts.push(`速+${Math.round(it.spd * 100)}%`);
     if (it.bonusSword) parts.push(`飞剑+${it.bonusSword}`);
@@ -7846,6 +8039,7 @@ const ART = {
       return;
     }
     const line = cutscene.lines[cutscene.idx];
+    Sound.dialogueCue();
     document.getElementById("dlg-portrait-img").src = ART[line.art] || ART.char_player;
     document.getElementById("dlg-role-seal").textContent = line.role;
     document.getElementById("dlg-speaker-name").textContent = line.speaker === "顾长青" ? (game ? game.name : "顾长青") : line.speaker;
@@ -8024,6 +8218,7 @@ const ART = {
     giantSword: { x: 520, y: 420, z: 45, state: "hover", timer: 0.9, targetX: 520, targetY: 480, ang: -Math.PI / 2, slamAlpha: 0 },
     player: {
       x: 520, y: 480, z: 0, vz: 0, vx: 0, vy: 0, facing: 1, bob: 0, lean: 0,
+      animState: "idle", animT: 0, animDur: 0.25, hitFlash: 0, recoilDir: 0,
       airComboStep: 0, plunging: false, vaultPrimed: false, jumpCd: 0, blinkCd: 0,
       samadhiFireReady: false, gourdHasteTimer: 0, gourdCritTimer: 0, boonOverloadTimer: 0, righteousPulseCd: 4.0,
       meditating: false, meditateTick: 0, meditateAgeTick: 0, meditateAgedDirty: false, zenStacks: 0, petBuffTimer: 0,
@@ -8155,11 +8350,34 @@ const ART = {
     colorblindGlyphs: true,
     autoComboAssist: false,
     reducedMotion: false,
+    enhancedVisualLayers: true,
     combatNoticeLevel: "lite" // "full" | "lite" | "minimal"
   };
+  function isReducedMotionActive() {
+    return Boolean(a11ySettings && a11ySettings.reducedMotion);
+  }
+  function clearTransientMotionEffects() {
+    arena.shake = 0;
+    arena.flash = 0;
+    arena.impactFrames = 0;
+    arena.radialBurst = null;
+    arena.camZoom = 1.0;
+    arena.camKickX = 0;
+    arena.camKickY = 0;
+    const veil = document.getElementById("scene-transition-veil");
+    if (veil) veil.classList.remove("active");
+    if (sceneTransitionTimer) {
+      clearTimeout(sceneTransitionTimer);
+      sceneTransitionTimer = null;
+    }
+    sceneTransitionState.active = false;
+  }
   function applyReducedMotionClass() {
     if (document && document.documentElement) {
       document.documentElement.classList.toggle("reduced-motion", !!a11ySettings.reducedMotion);
+    }
+    if (a11ySettings.reducedMotion) {
+      clearTransientMotionEffects();
     }
   }
   function applySanitizedA11ySettings(p, { fallbackToMedia = false } = {}) {
@@ -8176,6 +8394,9 @@ const ART = {
       }
       if (hasOwn(p, "autoComboAssist") && typeof p.autoComboAssist === "boolean") {
         a11ySettings.autoComboAssist = p.autoComboAssist;
+      }
+      if (hasOwn(p, "enhancedVisualLayers") && typeof p.enhancedVisualLayers === "boolean") {
+        a11ySettings.enhancedVisualLayers = p.enhancedVisualLayers;
       }
       if (hasOwn(p, "combatNoticeLevel") && ["full", "lite", "minimal"].includes(p.combatNoticeLevel)) {
         a11ySettings.combatNoticeLevel = p.combatNoticeLevel;
@@ -8233,6 +8454,201 @@ const ART = {
       }
       applyReducedMotionClass();
     });
+  }
+
+  // ==================== Q4 (F27/F29) IN-MEMORY PERF TELEMETRY & PLAYTEST TELEMETRY (NEVER PERSISTED TO SAVES!) ====================
+  const PERF_RING_CAP = 600;
+  const perfTelemetry = {
+    bootTs: performance.now(),
+    firstInteractiveMs: null,
+    firstPlayableMs: null,
+    ring: new Float64Array(PERF_RING_CAP),
+    head: 0,
+    count: 0,
+    totalFrames: 0,
+    longFrames33: 0,
+    longFrames50: 0,
+    maxFrameMs: 0,
+    rollingAvgMs: 16.67,
+    slowStreak1: 0,
+    slowStreak2: 0,
+    degradeLevel: 0,
+    degradeOverride: null
+  };
+  function recordPerfFrameSample(rawFrameMs) {
+    if (!Number.isFinite(rawFrameMs) || rawFrameMs < 0) return;
+    if (perfTelemetry.firstInteractiveMs === null) {
+      perfTelemetry.firstInteractiveMs = Number((performance.now() - perfTelemetry.bootTs).toFixed(1));
+    }
+    const ws = document.getElementById("welcome-screen");
+    if (perfTelemetry.firstPlayableMs === null && game && (!ws || ws.style.display === "none")) {
+      perfTelemetry.firstPlayableMs = Number((performance.now() - perfTelemetry.bootTs).toFixed(1));
+    }
+    perfTelemetry.ring[perfTelemetry.head] = rawFrameMs;
+    perfTelemetry.head = (perfTelemetry.head + 1) % PERF_RING_CAP;
+    if (perfTelemetry.count < PERF_RING_CAP) perfTelemetry.count += 1;
+    perfTelemetry.totalFrames += 1;
+    if (rawFrameMs > 33.33) perfTelemetry.longFrames33 += 1;
+    if (rawFrameMs > 50.0) perfTelemetry.longFrames50 += 1;
+    if (rawFrameMs > perfTelemetry.maxFrameMs) perfTelemetry.maxFrameMs = rawFrameMs;
+    // Ignore initial boot/warm-up frames or tab-switch spikes for automatic degradation hysteresis
+    if (perfTelemetry.totalFrames > 20 && rawFrameMs < 250) {
+      perfTelemetry.rollingAvgMs = perfTelemetry.rollingAvgMs * 0.92 + Math.min(80, rawFrameMs) * 0.08;
+      if (perfTelemetry.rollingAvgMs > 28) perfTelemetry.slowStreak1 += 1;
+      else perfTelemetry.slowStreak1 = Math.max(0, perfTelemetry.slowStreak1 - 1);
+      if (perfTelemetry.rollingAvgMs > 42) perfTelemetry.slowStreak2 += 1;
+      else perfTelemetry.slowStreak2 = Math.max(0, perfTelemetry.slowStreak2 - 1);
+    }
+    if (perfTelemetry.degradeOverride === null) {
+      if (perfTelemetry.slowStreak2 >= 18) perfTelemetry.degradeLevel = 2;
+      else if (perfTelemetry.slowStreak1 >= 12) perfTelemetry.degradeLevel = 1;
+      else if (perfTelemetry.rollingAvgMs < 22 && perfTelemetry.slowStreak1 === 0) perfTelemetry.degradeLevel = 0;
+    } else {
+      perfTelemetry.degradeLevel = perfTelemetry.degradeOverride;
+    }
+  }
+  function getEffectivePerfDegradeLevel() {
+    return perfTelemetry.degradeOverride !== null ? perfTelemetry.degradeOverride : perfTelemetry.degradeLevel;
+  }
+  function setPerfDegradeOverride(level) {
+    if (level === null || level === undefined) {
+      perfTelemetry.degradeOverride = null;
+      perfTelemetry.degradeLevel = 0;
+      perfTelemetry.slowStreak1 = 0;
+      perfTelemetry.slowStreak2 = 0;
+      return getEffectivePerfDegradeLevel();
+    }
+    const n = Math.max(0, Math.min(2, Math.floor(Number(level) || 0)));
+    perfTelemetry.degradeOverride = n;
+    perfTelemetry.degradeLevel = n;
+    return n;
+  }
+  function resetPerfStats() {
+    perfTelemetry.ring.fill(0);
+    perfTelemetry.head = 0;
+    perfTelemetry.count = 0;
+    perfTelemetry.totalFrames = 0;
+    perfTelemetry.longFrames33 = 0;
+    perfTelemetry.longFrames50 = 0;
+    perfTelemetry.maxFrameMs = 0;
+    perfTelemetry.rollingAvgMs = 16.67;
+    perfTelemetry.slowStreak1 = 0;
+    perfTelemetry.slowStreak2 = 0;
+    if (perfTelemetry.degradeOverride === null) perfTelemetry.degradeLevel = 0;
+  }
+  function getPerfStats() {
+    const n = perfTelemetry.count;
+    let p50Ms = 0, p95Ms = 0, p99Ms = 0;
+    if (n > 0) {
+      const sorted = Array.from(perfTelemetry.ring.subarray(0, n)).sort((a, b) => a - b);
+      p50Ms = Number(sorted[Math.min(n - 1, Math.floor(n * 0.50))].toFixed(2));
+      p95Ms = Number(sorted[Math.min(n - 1, Math.floor(n * 0.95))].toFixed(2));
+      p99Ms = Number(sorted[Math.min(n - 1, Math.floor(n * 0.99))].toFixed(2));
+    }
+    return {
+      sampleCount: n,
+      totalFrames: perfTelemetry.totalFrames,
+      firstInteractiveMs: perfTelemetry.firstInteractiveMs,
+      firstPlayableMs: perfTelemetry.firstPlayableMs,
+      p50Ms,
+      p95Ms,
+      p99Ms,
+      maxFrameMs: Number(perfTelemetry.maxFrameMs.toFixed(2)),
+      longFrames33: perfTelemetry.longFrames33,
+      over33msCount: perfTelemetry.longFrames33,
+      longFrames50: perfTelemetry.longFrames50,
+      degradeLevel: getEffectivePerfDegradeLevel(),
+      degradeOverride: perfTelemetry.degradeOverride,
+      entityCounts: {
+        enemies: arena.enemies.length,
+        projectiles: arena.projectiles.length,
+        sparks: arena.sparks.length,
+        props: arena.props.length,
+        floats: arena.floats.length
+      }
+    };
+  }
+
+  function createFreshPlaytestTelemetry() {
+    return {
+      protocolStatus: "NOT_RUN",
+      sessionStartedAt: Date.now(),
+      firstAttackMs: null,
+      firstAttackSec: null,
+      pedestalChoice: null,
+      pedestalChoiceSec: null,
+      sanctumEnterCount: 0,
+      sanctumFirstUpgradeSec: null,
+      sanctumUpgrades: [],
+      returnToWildernessSec: null,
+      menuOpenCount: 0,
+      menuDwellMs: 0,
+      menuDwellSec: 0,
+      _menuOpenAt: null,
+      defeatCount: 0,
+      defeatAttribution: [],
+      parrySuccessCount: 0,
+      perfectDodgeCount: 0,
+      schoolPreference: "unclassified",
+      tribulationAttempts: 0,
+      tribulationResult: null
+    };
+  }
+  const playtestTelemetry = createFreshPlaytestTelemetry();
+  function resetPlaytestTelemetry() {
+    const fresh = createFreshPlaytestTelemetry();
+    Object.keys(playtestTelemetry).forEach(k => delete playtestTelemetry[k]);
+    Object.assign(playtestTelemetry, fresh);
+  }
+  function notePlaytestMenuOpen() {
+    playtestTelemetry.menuOpenCount += 1;
+    if (playtestTelemetry._menuOpenAt === null) playtestTelemetry._menuOpenAt = performance.now();
+  }
+  function notePlaytestMenuClose() {
+    if (playtestTelemetry._menuOpenAt !== null) {
+      const modalOpen = !!(document.getElementById("modal-backdrop") && document.getElementById("modal-backdrop").classList.contains("open"));
+      if (!modalOpen && !drawerOpen) {
+        playtestTelemetry.menuDwellMs += Math.max(0, performance.now() - playtestTelemetry._menuOpenAt);
+        playtestTelemetry.menuDwellSec = Number((playtestTelemetry.menuDwellMs / 1000).toFixed(2));
+        playtestTelemetry._menuOpenAt = null;
+      }
+    }
+  }
+  function getPlaytestTelemetry() {
+    const school = game && game.loadout
+      ? (isThunderBuild(game) ? "thunder_talisman" : "flying_sword")
+      : "unclassified";
+    return {
+      protocolStatus: playtestTelemetry.protocolStatus,
+      sessionStartedAt: playtestTelemetry.sessionStartedAt,
+      elapsedSec: Number(((Date.now() - playtestTelemetry.sessionStartedAt) / 1000).toFixed(2)),
+      firstAttackMs: playtestTelemetry.firstAttackMs,
+      firstAttackSec: playtestTelemetry.firstAttackSec,
+      pedestalChoice: playtestTelemetry.pedestalChoice,
+      pedestalChoiceSec: playtestTelemetry.pedestalChoiceSec,
+      sanctumEnterCount: playtestTelemetry.sanctumEnterCount,
+      sanctumFirstUpgradeSec: playtestTelemetry.sanctumFirstUpgradeSec,
+      sanctumUpgrades: playtestTelemetry.sanctumUpgrades.slice(),
+      returnToWildernessSec: playtestTelemetry.returnToWildernessSec,
+      menuOpenCount: playtestTelemetry.menuOpenCount,
+      menuDwellSec: playtestTelemetry.menuDwellSec,
+      defeatCount: playtestTelemetry.defeatCount,
+      defeatAttribution: playtestTelemetry.defeatAttribution.slice(),
+      parrySuccessCount: playtestTelemetry.parrySuccessCount,
+      perfectDodgeCount: playtestTelemetry.perfectDodgeCount,
+      schoolPreference: school,
+      tribulationAttempts: playtestTelemetry.tribulationAttempts,
+      tribulationResult: playtestTelemetry.tribulationResult
+    };
+  }
+  function exportPlaytestSessionJson() {
+    return JSON.stringify({
+      schema: "chenyuan_playtest_telemetry_v1",
+      exportedAt: new Date().toISOString(),
+      viewport: { width: window.innerWidth || 1440, height: window.innerHeight || 900 },
+      telemetry: getPlaytestTelemetry(),
+      perf: getPerfStats()
+    }, null, 2);
   }
 
   const WEAPON_ARSENAL_SPECS = {
@@ -8540,6 +8956,7 @@ const ART = {
   }
 
   function triggerImpactFrame(frames = 3, accent = "#e62e2d", fx = null, fy = null) {
+    if (isReducedMotionActive()) return;
     arena.impactFrames = Math.max(arena.impactFrames || 0, frames);
     arena.impactAccent = accent;
     arena.impactX = fx !== null ? fx : (arena.player ? arena.player.x : 720);
@@ -8768,6 +9185,7 @@ const ART = {
 
   function onParryOrVaultSuccess() {
     if (!game) return;
+    playtestTelemetry.parrySuccessCount += 1;
     if (arena.bossRush && arena.bossRush.active) {
       arena.bossRush.parries = (arena.bossRush.parries || 0) + 1;
     }
@@ -10337,7 +10755,7 @@ const ART = {
     arena.bossDomain = null;
     arena.reversedDomainTimer = 0;
 
-    document.getElementById("stage-bg-img").src = ART.arena_wanjian_tomb;
+    transitionStageScene("arena_wanjian_tomb", "rush");
     const pPos = clampToPlaza(w * 0.34, h * 0.56, w, h);
     arena.player.x = pPos.x; arena.player.y = pPos.y;
     const st = getCombatStats(game);
@@ -10388,7 +10806,7 @@ const ART = {
           right_halberd: { id: "right_halberd", name: "右裂天雷戟",   ox: 128,  oy: 34,  r: 56, hp: armHp, maxHp: armHp, broken: false }
         },
         mech: "colossal_titan", wardHp: 0, maxWardHp: 0, mirrorTimer: 0, blinkCd: 99, beamCd: 4.2,
-        x: tx, y: ty, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
+        x: tx, y: ty, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1, facing: -1,
         r: 108, hp: titanHp, maxHp: titanHp,
         posture: titanPos, maxPosture: titanPos,
         partHp: eyeHp, maxPartHp: eyeHp,
@@ -10417,7 +10835,7 @@ const ART = {
         isBoss: true, isInnerDemon: true, isTreasure: false, enraged: false,
         demonPosture: "qinglian", postureSwapCd: 4.2, demonParryTimer: 0, swordOrbitAng: 0,
         mech: "mirror_demon", wardHp: 0, maxWardHp: 0, mirrorTimer: 0, blinkCd: 3.4, beamCd: 4.0,
-        x: pos.x, y: pos.y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
+        x: pos.x, y: pos.y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1, facing: -1,
         r: 46, hp: demonHp, maxHp: demonHp,
         posture: demonPos, maxPosture: demonPos,
         partHp: Math.round(demonHp * 0.28), maxPartHp: Math.round(demonHp * 0.28),
@@ -11077,6 +11495,7 @@ const ART = {
 
   // Zero-Overhead Radial Speed-Lines & Chromatic Glint (`径向速度线冲击环与高光琉璃色散`)
   function triggerRadialChromaticBurst(intensity = 1.0, accent = "#70ffe6", cx = null, cy = null) {
+    if (isReducedMotionActive()) return;
     arena.radialBurst = {
       t: 0,
       dur: 0.48,
@@ -11097,6 +11516,7 @@ const ART = {
     const lockTgt = acquireSoftLockTarget(p.x, p.y, ang);
     if (lockTgt) ang = Math.atan2(lockTgt.y - p.y, lockTgt.x - p.x);
     p.facing = Math.cos(ang) >= 0 ? 1 : -1;
+    if (typeof setPlayerAnimState === "function") setPlayerAnimState("heavy", 0.36);
 
     registerStyleAction("six_aspect", 115);
     enqueueSanqingEchoAction("six_aspect", { ang: arena.player.facing >= 0 ? 0 : Math.PI });
@@ -11361,7 +11781,7 @@ const ART = {
     arena.groundSweeps = [];
     arena.hoverChakrams = [];
 
-    document.getElementById("stage-bg-img").src = ART.arena_cloud_sea_sky;
+    transitionStageScene("arena_cloud_sea_sky", "cloud_sea");
     const p = arena.player;
     p.x = w * 0.24;
     p.y = h * 0.52;
@@ -11418,7 +11838,7 @@ const ART = {
         id: "sky_roc", art: "enemy_roc_sky_general",
         name: "巡天金甲神将 · 紫电雷鹏王",
         isBoss: true, isSkyUnit: true, isTreasure: false, enraged: false,
-        x: w * 0.76, y: h * 0.48, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
+        x: w * 0.76, y: h * 0.48, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1, facing: -1,
         r: 58, hp: bossHp, maxHp: bossHp, posture: 165, maxPosture: 165,
         partHp: Math.round(bossHp * 0.3), maxPartHp: Math.round(bossHp * 0.3),
         weakpointExposed: true, partSevered: false,
@@ -11820,7 +12240,7 @@ const ART = {
     sp.roomType = sp.floor === 9 ? "elite_trial" : roomOrder[(sp.floor - 1) % roomOrder.length];
     sp.wagerDouble = false;
 
-    document.getElementById("stage-bg-img").src = sp.floor >= 7 ? ART.arena_terrace : sp.floor >= 4 ? ART.arena_wanjian_tomb : ART.arena_secret;
+    transitionStageScene(sp.floor >= 7 ? "arena_terrace" : sp.floor >= 4 ? "arena_wanjian_tomb" : "arena_secret", "spire");
     spawnStageInteractiveHazards();
 
     const rb = getRealmCombatBaseline(game.realm);
@@ -12858,7 +13278,7 @@ const ART = {
           right_halberd: { id: "right_halberd", name: "右裂天雷戟",   ox: 128,  oy: 34,  r: 56, hp: armHp, maxHp: armHp, broken: false }
         },
         mech: "colossal_titan", wardHp: 0, maxWardHp: 0, mirrorTimer: 0, blinkCd: 99, beamCd: 3.8,
-        x, y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
+        x, y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1, facing: -1,
         r: 108, hp: titanHp, maxHp: titanHp, posture: 170, maxPosture: 170,
         partHp: eyeHp, maxPartHp: eyeHp, weakpointExposed: true, partSevered: false,
         atk: Math.max(20, Math.round(st.maxHp * 0.13)), heavy: Math.max(32, Math.round(st.maxHp * 0.21)),
@@ -12878,7 +13298,7 @@ const ART = {
         isBoss: true, isInnerDemon: true, isTreasure: false, enraged: false,
         demonPosture: "qinglian", postureSwapCd: 4.0, demonParryTimer: 0, swordOrbitAng: 0,
         mech: "mirror_demon", wardHp: 0, maxWardHp: 0, mirrorTimer: 0, blinkCd: 3.4, beamCd: 4.0,
-        x: pos.x, y: pos.y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
+        x: pos.x, y: pos.y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1, facing: -1,
         r: 46, hp: demonHp, maxHp: demonHp, posture: 130, maxPosture: 130,
         partHp: Math.round(demonHp * 0.28), maxPartHp: Math.round(demonHp * 0.28),
         weakpointExposed: true, partSevered: false,
@@ -12943,7 +13363,7 @@ const ART = {
     arena.fireZones = [];
     arena.frostPools = [];
     arena.hoverChakrams = [];
-    document.getElementById("stage-bg-img").src = ART.arena_wanjian_tomb;
+    transitionStageScene("arena_wanjian_tomb", "workshop");
 
     const pPos = clampToPlaza(w * 0.30, h * 0.56, w, h);
     arena.player.x = pPos.x; arena.player.y = pPos.y; arena.player.z = 0;
@@ -16049,6 +16469,7 @@ const ART = {
       isBoss: false, isDummy: true, isTreasure: false, enraged: false,
       mech: null, wardHp: isMarkDrill ? 120 : 0, maxWardHp: isMarkDrill ? 120 : 0, mirrorTimer: 0, blinkCd: 999,
       x: dPos.x, y: dPos.y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
+      facing: dPos.x > arena.player.x ? -1 : 1,
       r: 40, hp: 99999, maxHp: 99999, posture: 120, maxPosture: 120,
       atk: 8, heavy: 12, state: "chase", timer: (arena.dojoMode === "static" || arena.dojoMode === "drill_mark_detonate" || arena.dojoMode === "drill_morph_combo") ? 1.25 : 0.03, windupDur: 0.98,
       aimX: arena.player.x, aimY: arena.player.y, attackType: "slam",
@@ -16454,11 +16875,9 @@ const ART = {
     ["weapon", "armor", "ring"].forEach(sl => {
       const it = g.equippedGear[sl];
       if (it && typeof it === "object") {
-        const lvl = Math.max(0, num(it.lvl, 0));
-        const enh = 1 + lvl * GEAR_ENHANCE_STEP_PCT;
-        tot.atk += Math.round(Math.max(0, num(it.atk, 0)) * enh);
-        tot.hp += Math.round(Math.max(0, num(it.hp, 0)) * enh);
-        tot.dr += Math.round(Math.max(0, num(it.dr, 0)) * enh);
+        tot.atk += effectiveGearVal(it, "atk");
+        tot.hp += effectiveGearVal(it, "hp");
+        tot.dr += effectiveGearVal(it, "dr");
         tot.crit += Math.max(0, num(it.crit, 0));
         tot.spd += Math.max(0, num(it.spd, 0)) + (it.affix === "wind_rider" ? 0.10 : 0);
         tot.bonusSword += Math.max(0, num(it.bonusSword, 0));
@@ -16622,6 +17041,8 @@ const ART = {
       resolvedRewardIds: [],
       seenCutIns: {},
       seenLifespan75Tip: false,
+      vol1PedestalMeta: null,
+      vol1Prep: null,
       journal: [effCalamity > 0 ? `第 ${(metaState.ascensions || 0) + 1} 世重入红尘，主动点燃【${calSpec.name}】劫火试炼！` : "十八岁山雨倾盆，仗剑踏入青岚破庙。"]
     };
     const st = getCombatStats(g);
@@ -16849,6 +17270,20 @@ const ART = {
       g.tutorialStep = (rankOf(g.realm) >= 1 || !!g.openingChoice) ? 4 : 0;
     }
     const validUnlockIds = new Set(UNLOCK_TUTORIAL_CATALOG.map(c => c.id));
+    if (raw.vol1PedestalMeta && typeof raw.vol1PedestalMeta === "object" && !Array.isArray(raw.vol1PedestalMeta)) {
+      const ch = raw.vol1PedestalMeta.choice === "help" || raw.vol1PedestalMeta.choice === "trade" ? raw.vol1PedestalMeta.choice : null;
+      g.vol1PedestalMeta = ch ? { choice: ch, payoffShown: raw.vol1PedestalMeta.payoffShown === true } : null;
+    } else {
+      g.vol1PedestalMeta = null;
+    }
+    if (raw.vol1Prep && typeof raw.vol1Prep === "object" && !Array.isArray(raw.vol1Prep)) {
+      g.vol1Prep = {
+        upgradeDone: raw.vol1Prep.upgradeDone === true,
+        lastLabel: safeText(raw.vol1Prep.lastLabel, "").slice(0, 48)
+      };
+    } else {
+      g.vol1Prep = null;
+    }
     if (Array.isArray(raw.seenUnlockIds)) {
       const seenSet = new Set();
       g.seenUnlockIds = [];
@@ -18512,7 +18947,10 @@ const ART = {
   }
 
   function spawnSparks(x, y, count = 8, baseAng = 0, spread = 1.6, color = "#ffe699") {
-    for (let i = 0; i < count; i++) {
+    const deg = getEffectivePerfDegradeLevel();
+    const maxCap = deg >= 2 ? 48 : deg >= 1 ? 72 : 120;
+    const effCount = deg >= 2 ? Math.max(2, Math.ceil(count * 0.45)) : deg >= 1 ? Math.max(3, Math.ceil(count * 0.7)) : count;
+    for (let i = 0; i < effCount; i++) {
       const a = baseAng + (Math.random() - 0.5) * spread;
       const spd = 3.2 + Math.random() * 8.5;
       arena.sparks.push({
@@ -18526,8 +18964,7 @@ const ART = {
         color: i % 3 === 0 ? "#ffffff" : color
       });
     }
-    if (arena.sparks.length > 110) arena.sparks.splice(0, arena.sparks.length - 110);
-    if (arena.sparks.length > 85) arena.sparks.splice(0, arena.sparks.length - 85);
+    if (arena.sparks.length > maxCap) arena.sparks.splice(0, arena.sparks.length - maxCap);
   }
 
   function addRipple(x, y, maxR = 28, color = "rgba(130, 240, 225, 0.42)") {
@@ -18587,9 +19024,15 @@ const ART = {
 
   function effectiveGearVal(it, key, overrideLvl = null) {
     if (!it) return 0;
-    const lvl = overrideLvl !== null ? overrideLvl : (it.lvl || 0);
-    const enh = 1 + lvl * GEAR_ENHANCE_STEP_PCT;
-    if (key === "atk" || key === "hp" || key === "dr") return Math.round((it[key] || 0) * enh);
+    const lvl = Math.max(0, Math.floor(num(overrideLvl !== null ? overrideLvl : (it.lvl || 0), 0)));
+    if (key === "atk" || key === "hp" || key === "dr") {
+      const base = Math.max(0, num(it[key], 0));
+      if (base <= 0) return 0;
+      const baseInt = Math.round(base);
+      if (lvl <= 0) return baseInt;
+      const scaled = Math.round(base * (1 + lvl * GEAR_ENHANCE_STEP_PCT));
+      return base >= 1 ? Math.max(baseInt + lvl, scaled) : scaled;
+    }
     return it[key] || 0;
   }
 
@@ -18837,6 +19280,19 @@ const ART = {
       releasePauseToken(prevCutTok);
       if (typeof renderOnboardingCoach === "function") renderOnboardingCoach();
     }
+    if (sceneTransitionTimer) {
+      clearTimeout(sceneTransitionTimer);
+      sceneTransitionTimer = null;
+    }
+    sceneTransitionState.active = false;
+    const veil = document.getElementById("scene-transition-veil");
+    if (veil) veil.classList.remove("active");
+    if (regionCardTimer) {
+      clearTimeout(regionCardTimer);
+      regionCardTimer = null;
+    }
+    const rcc = document.getElementById("region-cinema-card");
+    if (rcc) rcc.classList.remove("show");
     arena.stageClearHandledEpoch = -1;
     arena.stageClearPending = false;
     pendingVolumeRecapOnDismiss = null;
@@ -19158,8 +19614,35 @@ const ART = {
     return flushCombatCalmQueue({ forceManual: true });
   }
 
+  function recordVol1PrepUpgradeDelta(beforeStats, label) {
+    if (!game || !beforeStats) return;
+    const afterStats = getCombatStats(game);
+    const dAtk = Math.round((afterStats.atk || 0) - (beforeStats.atk || 0));
+    const dHp = Math.round((afterStats.maxHp || 0) - (beforeStats.maxHp || 0));
+    const dDr = Math.round((afterStats.dmgReduce || 0) - (beforeStats.dmgReduce || 0));
+    const dCrit = Math.round(((afterStats.crit || 0) - (beforeStats.crit || 0)) * 100);
+    const parts = [];
+    if (dAtk !== 0) parts.push(`攻击 ${dAtk > 0 ? "+" : ""}${dAtk}`);
+    if (dHp !== 0) parts.push(`气血 ${dHp > 0 ? "+" : ""}${dHp}`);
+    if (dDr !== 0) parts.push(`减伤 ${dDr > 0 ? "+" : ""}${dDr}`);
+    if (dCrit !== 0) parts.push(`暴击 ${dCrit > 0 ? "+" : ""}${dCrit}%`);
+    if (arena.sanctumMode) {
+      if (playtestTelemetry.sanctumFirstUpgradeSec === null) {
+        playtestTelemetry.sanctumFirstUpgradeSec = Number(((Date.now() - playtestTelemetry.sessionStartedAt) / 1000).toFixed(2));
+      }
+      playtestTelemetry.sanctumUpgrades.push({ label, delta: parts.join(" · ") || "属性已更新", ts: Date.now() });
+      const wasFirst = !(game.vol1Prep && game.vol1Prep.upgradeDone);
+      game.vol1Prep = { upgradeDone: true, lastLabel: label };
+      if (parts.length > 0 && (wasFirst || rankOf(game.realm) === 0)) {
+        showToast(`✦ 洞府整备生效（${label}）：${parts.join(" · ")}！`, { tier: 2, key: "vol1_prep_delta", throttleMs: 1200 });
+      }
+      if (typeof renderOnboardingCoach === "function") renderOnboardingCoach();
+    }
+  }
+
   function equipGearWithOptionalTransfer(item, transferQuench = false) {
     if (!game || !item) return null;
+    const beforeStats = getCombatStats(game);
     const bagIdx = game.gearBag.indexOf(item);
     if (bagIdx >= 0) game.gearBag.splice(bagIdx, 1);
     const prev = game.equippedGear[item.slot];
@@ -19184,6 +19667,7 @@ const ART = {
       clearCompareSmeltConfirm();
     }
     syncFlyingSwords();
+    recordVol1PrepUpgradeDelta(beforeStats, `换装 ${item.name}`);
     renderGearCompareCard();
     saveGame();
     updateHud();
@@ -19806,6 +20290,7 @@ const ART = {
         return false;
       }
     }
+    const beforeStats = getCombatStats(game);
     game.stones -= cost.stones;
     Object.entries(cost.mats || {}).forEach(([mk, req]) => {
       game.inventory[mk] = Math.max(0, (game.inventory[mk] || 0) - req);
@@ -19834,6 +20319,7 @@ const ART = {
       addFloat(`🏛 ${spec.name} 升阶 Lv.${nextLv}！`, arena.player.x, arena.player.y - 62, spec.color, 21, true);
     }
     showToast(`🏛 【${spec.name}】升至 Lv.${nextLv}！${cost.eff}`);
+    recordVol1PrepUpgradeDelta(beforeStats, `${spec.name} Lv.${nextLv}`);
     saveGame();
     updateHud();
     if (drawerOpen) renderDrawerContent();
@@ -21413,11 +21899,51 @@ const ART = {
     { idx: 3, title: "满修渡劫", hint: "斩妖攒满凡人修为后，按 <b>B 键</b> 开启首次紫霄雷劫晋升炼气期" }
   ];
 
+  function getVol1JourneyPhase(g = game, ar = arena) {
+    if (!g) return "welcome";
+    if (rankOf(g.realm) >= 1) return "qi_ascended";
+    if (ar && ar.tribulation) return "tribulation_live";
+    if (ar && ar.sanctumMode) return "sanctum_prep";
+    if (isStageBossDefeated(g, 0)) {
+      const r = REALMS[g.realm];
+      return (r && r.xpCap > 0 && (g.xp || 0) >= r.xpCap) ? "ready_tribulation" : "wilderness_explore";
+    }
+    if (!g.openingChoice) {
+      const hasPedestal = ar && Array.isArray(ar.props) && ar.props.some(pr => pr.kind === "pedestal");
+      return hasPedestal ? "pedestal_choice" : "prologue_rescue";
+    }
+    const wolfKingActive = ar && Array.isArray(ar.enemies) && ar.enemies.some(e => e.isBoss && e.id === "wolf" && e.hp > 0);
+    if (wolfKingActive || (ar && ar.roomBranch === "boss" && ar.stageIdx === 0)) return "wolf_king_boss";
+    return "wilderness_explore";
+  }
+
   function renderOnboardingCoach() {
     const bar = document.getElementById("onboarding-coach-bar");
     if (!bar) return;
     const onWelcome = document.getElementById("welcome-screen") && document.getElementById("welcome-screen").style.display !== "none";
-    if (!game || onWelcome || cutscene.active || game.tutorialDismissed || (game.tutorialStep || 0) >= 4 || rankOf(game.realm) >= 1) {
+    if (!game || onWelcome || cutscene.active || game.tutorialDismissed || rankOf(game.realm) >= 1) {
+      bar.classList.remove("show");
+      syncUnlockCardStacking();
+      return;
+    }
+    // F28 D01 Sanctum Shortest Prep Path: reuse #onboarding-coach-bar (0 extra HUD buttons!)
+    if (arena.sanctumMode) {
+      const prepDone = Boolean(game.vol1Prep && game.vol1Prep.upgradeDone);
+      const sanctumHint = `✓ 仙葫已满酿 → ${prepDone ? "✓ 已完成1项整备强化" : "○ 选1项直觉强化（淬火+1或升阶洞府，绝不强制炼丹/灵宠）"} → ○ 踏阵门出征青岚荒野`;
+      const sig = `sanctum_prep|${prepDone ? 1 : 0}`;
+      if (bar.dataset.obSig !== sig) {
+        bar.dataset.obSig = sig;
+        bar.innerHTML = `
+          <span class="ob-step-pill">洞府最短整备</span>
+          <span style="line-height:1.35;">${sanctumHint}</span>
+          <span id="btn-skip-onboarding" class="ob-skip-link" role="button" tabindex="0" data-action="skip-onboarding">跳过</span>
+        `;
+      }
+      bar.classList.add("show");
+      syncUnlockCardStacking();
+      return;
+    }
+    if ((game.tutorialStep || 0) >= 4) {
       bar.classList.remove("show");
       syncUnlockCardStacking();
       return;
@@ -21839,8 +22365,8 @@ const ART = {
     arena.bossDomain = null;
     arena.camFocusT = 0;
     if (game) game.location = "cave";
-    document.getElementById("stage-bg-img").src = ART.arena_sanctum_hub;
-    showRegionCinemaCard("hub");
+    playtestTelemetry.sanctumEnterCount += 1;
+    transitionStageScene("arena_sanctum_hub", "hub");
     initAmbientEcosystem();
     if (!game.marketStock || !game.marketStock.length) refreshMarketStock();
 
@@ -21852,6 +22378,7 @@ const ART = {
     arena.meteorBursts = [];
     arena.blinkStreaks = [];
     arena.player.z = 0; arena.player.vz = 0; arena.player.plunging = false;
+    arena.player.animState = "idle"; arena.player.animT = 0; arena.player.hitFlash = 0;
     if (hasDestinyFruit(game, "lotus_body")) {
       arena.player.shieldHp = Math.max(arena.player.shieldHp || 0, Math.round(st.maxHp * 0.35));
     }
@@ -21911,25 +22438,25 @@ const ART = {
       x: jadePos.x, y: jadePos.y, r: 30, hp: 3, maxHp: 3
     });
     arena.props.push({
-      id: "hub_shen", kind: "companion_npc", npcId: "shen", art: "actor_shen", onLotus: true,
+      id: "hub_shen", kind: "companion_npc", npcId: "shen", art: "actor_shen",
       name: `沈清禾 · ${COMPANION_KEEPSAKES.shen.tierTitles[getCompanionBondTier(game, "shen")]}`,
       badge: hubKs.mode === "demonic" ? "纵染劫煞亦留暖汤 · 点击/Enter 雅集叙话" : "清虚守正药香护脉 · 点击/Enter 雅集叙话",
       x: shenPos.x, y: shenPos.y, r: 38, progress: 0
     });
     arena.props.push({
-      id: "hub_lu", kind: "companion_npc", npcId: "lu", art: "actor_lu", onLotus: true,
+      id: "hub_lu", kind: "companion_npc", npcId: "lu", art: "actor_lu",
       name: `陆玄松 · ${COMPANION_KEEPSAKES.lu.tierTitles[getCompanionBondTier(game, "lu")]}`,
       badge: hubKs.mode === "righteous" ? "太清真传欣慰备至 · 点击/Enter 传功叙话" : hubKs.mode === "demonic" ? "镇山古钟为你稳心 · 点击/Enter 叙话" : "青云传功执事 · 点击/Enter 叙话切磋",
       x: luPos.x, y: luPos.y, r: 38, progress: 0
     });
     arena.props.push({
-      id: "hub_pei", kind: "companion_npc", npcId: "pei", art: "actor_pei", onLotus: true,
+      id: "hub_pei", kind: "companion_npc", npcId: "pei", art: "actor_pei",
       name: `裴照 · ${COMPANION_KEEPSAKES.pei.tierTitles[getCompanionBondTier(game, "pei")]}`,
       badge: hubKs.mode === "demonic" ? "好烈血煞试剑十招 · 点击/Enter 切磋" : "青云剑首邀君论剑 · 点击/Enter 切磋叙话",
       x: peiPos.x, y: peiPos.y, r: 38, progress: 0
     });
     arena.props.push({
-      id: "hub_yan", kind: "companion_npc", npcId: "yan", art: "actor_yan", onLotus: true,
+      id: "hub_yan", kind: "companion_npc", npcId: "yan", art: "actor_yan",
       name: `砚尘 · ${COMPANION_KEEPSAKES.yan.tierTitles[getCompanionBondTier(game, "yan")]}`,
       badge: hubKs.mode === "demonic" ? "执劫火而不迷本真 · 点击/Enter 照心叙话" : "古境守碑观世人 · 点击/Enter 茶叙照心",
       x: yanPos.x, y: yanPos.y, r: 38, progress: 0
@@ -22039,6 +22566,7 @@ const ART = {
     arena.meteorBursts = [];
     arena.blinkStreaks = [];
     arena.player.z = 0; arena.player.vz = 0; arena.player.plunging = false;
+    arena.player.animState = "idle"; arena.player.animT = 0; arena.player.hitFlash = 0;
     if (game) refillImmortalGourd();
     arena.camFocusT = 0;
     arena.tribulation = null;
@@ -22047,13 +22575,15 @@ const ART = {
     syncDojoTrainingHudVisibility();
     const recapCard = document.getElementById("stage-recap-card");
     if (recapCard) recapCard.classList.remove("open");
-    if (!towerMode) showRegionCinemaCard("stg_" + arena.stageIdx);
     pointer.moveTarget = null;
     if (game && (!game.marketStock || !game.marketStock.length)) refreshMarketStock();
 
     const stg = towerMode ? STAGES[3] : STAGES[arena.stageIdx];
     game.location = stg.loc;
-    document.getElementById("stage-bg-img").src = ART[stg.arenaArt];
+    if (arena.stageIdx === 0 && !towerMode && playtestTelemetry.sanctumEnterCount > 0 && playtestTelemetry.returnToWildernessSec === null) {
+      playtestTelemetry.returnToWildernessSec = Number(((Date.now() - playtestTelemetry.sessionStartedAt) / 1000).toFixed(2));
+    }
+    transitionStageScene(stg.arenaArt, towerMode ? "tower" : ("stg_" + arena.stageIdx));
     initAmbientEcosystem();
 
     const startPos = clampToPlaza(w * 0.34, h * 0.54, w, h);
@@ -22068,7 +22598,7 @@ const ART = {
       // Prologue Rescue Scene: Clean rainy temple courtyard with Shen Qinghe & 3 wolves!
       const shenPos = clampToPlaza(w * 0.67, h * 0.54, w, h);
       arena.props.push({
-        id: "shen_rescue", kind: "npc_ward", art: "actor_shen", onLotus: true, name: "沈清禾",
+        id: "shen_rescue", kind: "npc_ward", art: "actor_shen", name: "沈清禾",
         x: shenPos.x, y: shenPos.y, r: 48, rescued: false, bubble: "妖狼围困 · 道友拔剑助我！"
       });
       spawnEnemyPack(["wolf", "wolf", "wolf"], w * 0.52, h * 0.55, 85, 1.0);
@@ -22708,7 +23238,7 @@ const ART = {
       const steleElem = (arena.stageIdx % 2 === 0) ? "frost" : "thunder";
       const sPos = clampToPlaza(w * 0.48, h * 0.69, w, h);
       arena.props.push({
-        id: "field_merchant", kind: "merchant_npc", art: "actor_lu", onLotus: true,
+        id: "field_merchant", kind: "merchant_npc", art: "actor_lu",
         name: "云游仙商 · 百宝囊", badge: "点击/Enter 选购神装灵丹", x: mPos.x, y: mPos.y, r: 40, progress: 0
       });
       arena.props.push({
@@ -22829,6 +23359,16 @@ const ART = {
     } else {
       spawnEnemyPack(stg.waves[0], w * 0.62, h * 0.54, 120, stageScale, false);
     }
+    // F28: One-shot non-blocking pedestal choice payoff cue on entering next fight!
+    if (game && game.vol1PedestalMeta && !game.vol1PedestalMeta.payoffShown && arena.enemies.length > 0) {
+      game.vol1PedestalMeta.payoffShown = true;
+      const cueTxt = game.vol1PedestalMeta.choice === "help"
+        ? "✨ 青莲灵契生效：青莲药师袍护脉，危急时按【R】唤沈清禾回春助阵！"
+        : "✨ 惊鸿剑诀生效：本命飞剑已 +1，惊鸿剑气贯穿敌阵！";
+      addFloat(cueTxt, arena.player.x, arena.player.y - 68, game.vol1PedestalMeta.choice === "help" ? "#4ad2b8" : "#ffe89e", 16, true);
+      showToast(cueTxt, { tier: 2, key: "vol1_pedestal_payoff", throttleMs: 2500 });
+      saveGame();
+    }
     updateHud();
   }
 
@@ -22854,7 +23394,7 @@ const ART = {
       id: "wolf", art: "item_jade",
       name: "聚宝金灵", isBoss: false, isTreasure: true, enraged: false,
       mech: null, wardHp: 0, maxWardHp: 0, mirrorTimer: 0, blinkCd: 99,
-      x: pos.x, y: pos.y, vx: 2.6, vy: -2.2, kx: 0, ky: 0, sx: 1, sy: 1,
+      x: pos.x, y: pos.y, vx: 2.6, vy: -2.2, kx: 0, ky: 0, sx: 1, sy: 1, facing: 1,
       r: 28, hp: 95, maxHp: 95, posture: 50, maxPosture: 50,
       atk: 0, heavy: 0, state: "flee", timer: 9.5, windupDur: 1,
       aimX: 0, aimY: 0, attackType: "none", hitFlash: 0, swordMarks: 0, chillTimer: 0, burnTimer: 0
@@ -22868,9 +23408,10 @@ const ART = {
       const dist = 45 + Math.random() * spread;
       spawnSingleEnemy(id, cx + Math.cos(ang) * dist, cy + Math.sin(ang) * dist * 0.65, mult, false);
     });
-    // M2 3-Role Tactical Squad Synergy: Frontline Shield-Vanguard + Backline Hex-Chanter + Flank Assassin!
+    // M2 3-Role Tactical Squad Synergy: keep Stage 0 Layer 0 ("outpost") in Mortal realm as clean pack wolves (F28)
     const spawned = arena.enemies.slice(startIdx);
-    const allowTactical = forceTacticalSquad || (game && (game.openingChoice || arena.stageIdx > 0 || arena.towerMode));
+    const isMortalVol1Outpost = Boolean(game && rankOf(game.realm) === 0 && arena.stageIdx === 0 && !arena.towerMode && arena.roomBranch === "outpost");
+    const allowTactical = forceTacticalSquad || (!isMortalVol1Outpost && game && (game.openingChoice || arena.stageIdx > 0 || arena.towerMode));
     if (spawned.length >= 2 && allowTactical) {
       const van = spawned.find(e => e.id === "warden" || e.id === "puppet" || e.id === "sentinel") || spawned[0];
       van.tacticalRole = "shield_vanguard";
@@ -22934,6 +23475,7 @@ const ART = {
       mirrorTimer: 0,
       blinkCd: (id === "shadow" || id === "trial_heart" || (vSpec && vSpec.trait === "blink_swift")) ? 3.2 : 999,
       x: pos.x, y: pos.y, vx: 0, vy: 0, kx: 0, ky: 0, sx: 1, sy: 1,
+      facing: pos.x > (arena.player ? arena.player.x : 520) ? -1 : 1,
       r: isBoss ? 48 : 31,
       hp, maxHp: hp,
       posture: maxPos, maxPosture: maxPos,
@@ -23070,6 +23612,11 @@ const ART = {
       step = p.comboWindow > 0 ? (p.comboStep + 1) % 4 : 0;
       p.comboStep = step;
       p.comboWindow = 1.20;
+      if (playtestTelemetry.firstAttackMs === null) {
+        playtestTelemetry.firstAttackMs = Math.max(0, Date.now() - playtestTelemetry.sessionStartedAt);
+        playtestTelemetry.firstAttackSec = Number((playtestTelemetry.firstAttackMs / 1000).toFixed(2));
+      }
+      setPlayerAnimState(`light${step + 1}`, step === 3 ? 0.34 : 0.24);
       if (game && (game.tutorialStep || 0) === 0 && !game.tutorialDismissed) {
         arena.tutSlashes = (arena.tutSlashes || 0) + 1;
         if (arena.tutSlashes >= 3) advanceOnboardingStep(0);
@@ -23372,6 +23919,7 @@ const ART = {
     const zenMult = consumeZenEmpowerment();
     const baseAng = Math.atan2(pointer.y - p.y, pointer.x - p.x);
     p.facing = Math.cos(baseAng) >= 0 ? 1 : -1;
+    setPlayerAnimState("heavy", 0.36);
 
     let mpEmpowered = false;
     if ((game.mp || 0) >= 10) {
@@ -23414,6 +23962,7 @@ const ART = {
     if (lockTgt) ang = Math.atan2(lockTgt.y - p.y, lockTgt.x - p.x);
     p.facing = Math.cos(ang) >= 0 ? 1 : -1;
     p.comboWindow = 0;
+    setPlayerAnimState("heavy", 0.36);
     arena.morphCd = 0.55;
     registerStyleAction("morph", 95);
     const morphClashFoe = arena.enemies.find(e => e.hp > 0 && (e.grabWindup || (e.isBoss && (e.perilous || e.state === "lunge"))) && Math.hypot(e.x - p.x, e.y - p.y) < e.r + 168);
@@ -23549,6 +24098,7 @@ const ART = {
       return;
     }
     p.recallCd = arena.domain ? 0.85 : 1.55;
+    setPlayerAnimState("heavy", 0.34);
     arena.currentDmgBucket = 'flying_swords';
     arena.props.slice().forEach(pr => { if (pr.destructible && pr.hp > 0 && Math.hypot(pr.x - p.x, pr.y - p.y) < 280) damageBattleProp(pr, st.atk * 1.45); });
     if (hasSynergy(game, 'thunder_emp') || isThunderBuild(game)) triggerElectroPoolReaction(p.x, p.y, st.atk);
@@ -23649,6 +24199,7 @@ const ART = {
     p.vx = dx * 16.5;
     p.vy = dy * 16.5;
     p.facing = dx >= 0 ? 1 : -1;
+    setPlayerAnimState("dodge", 0.24);
     addRipple(p.x, p.y + 30, 44, "rgba(138, 255, 234, 0.65)");
     // Spire Curio 1 (`惊鸿枪影佩`): Dash afterimage automatically fires a piercing Dragon-Lance thrust!
     const dashSpearLv = getCurioStacks(game, "curio_dash_spear");
@@ -23674,6 +24225,7 @@ const ART = {
         if (e.perilous) {
           // Perilous Red Attack -> Triggers Perfect Dodge Time-Dilation (`极限闪避·太虚凝时`)!
           perfectDodge = true;
+          playtestTelemetry.perfectDodgeCount += 1;
         } else {
           // Golden Attack / Assassin Flank Telegraph -> Triggers See-Through Sword Deflect (`识破·万钧剑反`)!
           parried = true;
@@ -24405,6 +24957,12 @@ const ART = {
           ⏳ 寿元预估：成劫消耗 <b>12 月</b>（${prevWin.before.curYears}→${prevWin.after.curYears}/${prevWin.after.maxYears} 载，破境后上限大增）｜受挫散功耗 <b>18 月（1.5 载）</b>（${prevAbort.before.curYears}→${prevAbort.after.curYears}/${prevAbort.after.maxYears} 载）${prevAbort.warningText ? ` · <b>${escapeHtml(prevAbort.warningText)}</b>` : ""}
         </div>`;
       })()}
+      <div id="trib-rule-comparison" class="trib-rule-box">
+        <strong style="color:#ffe89e;">📜 天劫评阶与路线对照：</strong>
+        ${pillSpec
+          ? `<span>① <b>破境丹稳渡</b>：3 重天雷 + 3 层护脉丹障 + 延寿 +10 载，弹反 ≥1 次或护脉丹障存留即成【天道一品】；② <b>无丹强渡</b>：5 重强化天雷，需 <b>空格一闪弹反 ≥2 次</b> 方成【天道一品】，功成另赐灵石。</span>`
+          : `<span><b>凡人引气初劫（无需破境丹）</b>：3 重紫霄天雷；落雷瞬间按 <b>空格一闪弹反 ≥1 次</b> → 铸就【天道一品】（全属性倍率 +14%）；零弹反稳过 → 【地道上品】（全属性倍率 +9%）。炼气期后将开启「破境丹稳渡 vs 无丹强渡」双路线。</span>`}
+      </div>
       ${pathBody}
     `, true);
   }
@@ -24487,13 +25045,34 @@ const ART = {
   function completeLiveTribulation() {
     if (!game || !arena.tribulation) return;
     const tb = arena.tribulation;
+    const parries = tb.parryCount || 0;
+    const reqParries = tb.hardcore ? 2 : 1;
+    const shieldBonus = !tb.hardcore && ((tb.usedPill && (game.tribShield || 0) >= 1) || (game.tribShield || 0) > 0);
     const isHeaven = tb.hardcore
-      ? ((tb.parryCount || 0) >= 2)
-      : ((tb.parryCount || 0) >= 1 || (tb.usedPill && (game.tribShield || 0) >= 1) || (game.tribShield || 0) > 0);
+      ? (parries >= 2)
+      : (parries >= 1 || shieldBonus);
     arena.tribulation = null;
 
     game.realm = tb.nextRealm;
     const newR = REALMS[game.realm];
+    const verdictReason = isHeaven
+      ? (parries >= reqParries
+        ? `本劫精准【空格一闪】迎雷弹反 ${parries} 次（达标 ≥${reqParries} 次），天雷淬骨铸就【天道一品】！`
+        : `破境护脉丹障稳护灵脉（弹反 ${parries} 次），顺势凝成【天道一品】！`)
+      : `本劫弹反 ${parries} 次（【天道一品】需 ≥${reqParries} 次），虽稳渡天劫但评定为【地道上品】。`;
+    arena.lastTribulationSummary = {
+      realm: game.realm,
+      realmName: newR ? newR.name : game.realm,
+      quality: isHeaven ? "heaven" : "earth",
+      qualityLabel: isHeaven ? "天道一品" : "地道上品",
+      parryCount: parries,
+      requiredParries: reqParries,
+      usedPill: Boolean(tb.usedPill),
+      hardcore: Boolean(tb.hardcore),
+      reason: verdictReason
+    };
+    playtestTelemetry.tribulationAttempts += 1;
+    playtestTelemetry.tribulationResult = Object.assign({}, arena.lastTribulationSummary);
     const overflowRatio = (tb.usedPill ? 0.55 : tb.hardcore ? 0.45 : 0.40) + (getSanctumLevel(game, "spirit_eye") >= 4 ? 0.15 : 0) + (game.perk === "calamity_phoenix" ? 0.15 : 0);
     const carry = newR.xpCap > 0 ? Math.min(Math.floor(newR.xpCap * overflowRatio), (game.overflowXp || 0) + (tb.usedPill ? Math.round(newR.xpCap * 0.10) : 0)) : 0;
     game.xp = carry;
@@ -24604,6 +25183,17 @@ const ART = {
       ? `<div class="pity-bar-card" style="border-color:rgba(128,236,255,0.55);color:#c8f7ff;"><span>☁ 金丹高潮过渡关已启：择完道果后可由【舆图 / 仙阁·问道阶梯】起飞征战【九霄云海空战】，首破立得【破云证道印】(+12攻 · 为元婴期远征/登仙台提供+15%收益)！</span></div>`
       : "";
 
+    const tribVerdictHtml = (() => {
+      const sum = arena.lastTribulationSummary;
+      const qLabel = sum ? sum.qualityLabel : (isHeaven ? "天道一品" : "地道上品");
+      const reasonTxt = sum
+        ? sum.reason
+        : (isHeaven ? "本劫迎雷识破弹反达标，凝成【天道一品】根基！" : "本劫稳渡天雷，评定为【地道上品】根基（迎雷弹反可铸天道一品）。");
+      return `<div id="trib-verdict-summary" class="trib-verdict-box">
+        <strong>✦ 破境评定：【${escapeHtml(qLabel)}】</strong> · <span>${escapeHtml(reasonTxt)}</span>
+      </div>`;
+    })();
+
     openModal(`
       <div class="drawer-mural-banner" style="height:104px;">
         <img src="${ART.banner_tribulation}" alt="逆天改命" />
@@ -24615,6 +25205,7 @@ const ART = {
           <span class="tag-chip mythic">本世永久先天神通</span>
         </div>
       </div>
+      ${tribVerdictHtml}
       ${unlockBanner}
       ${goldenCloudHint}
       <div class="law-draft-grid">
@@ -24944,9 +25535,12 @@ const ART = {
       const faceDiff = Math.abs(Math.atan2(Math.sin(atkFromAng - (e.shieldFacing || 0)), Math.cos(atkFromAng - (e.shieldFacing || 0))));
       const hitFront = faceDiff < 1.32; // ~75 deg frontal shield cone
       if (hitFront && !isHeavyBreak) {
-        Sound.clang(1.48, 0.10);
+        Sound.shieldAbsorb("enemy");
         spawnSparks(e.x + Math.cos(atkFromAng) * 24, e.y - 8, 8, atkFromAng, 1.8, "#ffe28a");
-        addFloat("🛡 正面玄盾格挡! 按`切巨阙破盾或绕背!", e.x, e.y - e.r - 22, "#ffe28a", 13.5, true);
+        const shieldHint = isActionUnlockedByRealm(game, "posture")
+          ? "🛡 正面玄盾格挡! 按`切巨阙破盾或绕背!"
+          : "🛡 正面玄盾格挡! 用【右键爆剑】或绕背破防!";
+        addFloat(shieldHint, e.x, e.y - e.r - 22, "#ffe28a", 13.5, true);
         rawDmg = Math.max(1, Math.round(rawDmg * 0.22));
         postureDmg = 2;
         knockImpulse = 0.5;
@@ -24993,10 +25587,12 @@ const ART = {
     if ((e.wardHp || 0) > 0) {
       const wChip = isHeavySkill ? postureDmg * 1.5 : postureDmg * 0.55;
       e.wardHp = Math.max(0, e.wardHp - wChip);
-      if (!isHeavySkill) rawDmg = Math.round(rawDmg * 0.55);
+      if (!isHeavySkill) {
+        Sound.shieldAbsorb("enemy");
+        rawDmg = Math.round(rawDmg * 0.55);
+      }
       if (e.wardHp <= 0) {
-        Sound.clang(0.82, 0.16);
-        Sound.drum(0.24);
+        Sound.shieldBreakSub();
         arena.shake = 11;
         spawnSparks(e.x, e.y, 20, 0, 6.28, "#ffe28a");
         arena.slashes.push({ x: e.x, y: e.y, r: e.r + 75, ang: 0, t: 0, color: "#ffe28a", heavy: true });
@@ -25260,8 +25856,7 @@ const ART = {
           game.mp = Math.min(st.maxMp, (game.mp || 0) + P.runBoons.vampiric_qi.mpGain);
           addFloat(`✦ 噬灵归元 +${vHeal}血`, arena.player.x, arena.player.y - 44, "#70ffe6", 14);
         }
-        Sound.drum(0.28);
-        Sound.clang(0.85, 0.16);
+        Sound.postureBreak();
         arena.hitStop = 0.095;
         arena.shake = 13;
         addDecal(e.x, e.y + 18, 0, 58, "scorch");
@@ -25521,11 +26116,11 @@ const ART = {
           const p2 = clampToPlaza(w * 0.69, h * 0.62, w, h);
           arena.props.push({
             id: "ped_shen", kind: "pedestal", choice: "help", art: "item_lotus", onLotus: true,
-            name: "青莲灵契", badge: "点击/Enter 结契沈清禾回春助阵", x: p1.x, y: p1.y, r: 42, progress: 0
+            name: "青莲灵契", badge: "点击/Enter 立得青莲药师袍(+34血+4减伤) · 下战按 R 唤沈清禾助阵", x: p1.x, y: p1.y, r: 42, progress: 0
           });
           arena.props.push({
-            id: "ped_sword", kind: "pedestal", choice: "trade", art: "relic_frost_sword",
-            name: "惊鸿剑诀", badge: "点击/Enter 获飞剑 +1 与灵品惊鸿青霜剑", x: p2.x, y: p2.y, r: 42, progress: 0
+            id: "ped_sword", kind: "pedestal", choice: "trade", art: "relic_frost_sword", onLotus: true,
+            name: "惊鸿剑诀", badge: "点击/Enter 立得飞剑 +1 + 惊鸿青霜剑(+10攻+4%暴) · 对比换装", x: p2.x, y: p2.y, r: 42, progress: 0
           });
           // Trigger Prologue Portrait Cutscene!
           playCutscene("prologue_rescue");
@@ -25898,6 +26493,27 @@ const ART = {
       }
     }
     p.lean += ((moving ? moveDirX * 0.11 : 0) - p.lean) * 0.22;
+    p.animT = (p.animT || 0) + dt;
+    if ((p.hitFlash || 0) > 0) p.hitFlash = Math.max(0, p.hitFlash - dt);
+    if (game && game.hp <= 0) {
+      if (p.animState !== "knockdown") setPlayerAnimState("knockdown", 99);
+    } else if (p.animState === "knockdown") {
+      setPlayerAnimState("idle", 0.25);
+    } else if (p.meditating) {
+      if (p.animState !== "meditate") setPlayerAnimState("meditate", 99);
+    } else if (p.dashTimer > 0) {
+      if (p.animState !== "dodge") setPlayerAnimState("dodge", 0.24);
+    } else {
+      const timedActive = ["light1", "light2", "light3", "light4", "heavy", "dodge", "hit"].includes(p.animState) && p.animT < (p.animDur || 0.24);
+      if (!timedActive) {
+        const nextBase = moving ? "run" : "idle";
+        if (p.animState !== nextBase) {
+          p.animState = nextBase;
+          p.animT = 0;
+          p.animDur = 0.4;
+        }
+      }
+    }
     const clampedP = clampToPlaza(p.x, p.y, w, h);
     p.x = clampedP.x; p.y = clampedP.y;
 
@@ -25929,13 +26545,6 @@ const ART = {
     for (let i = p.afterimages.length - 1; i >= 0; i--) {
       p.afterimages[i].a -= dt * 2.3;
       if (p.afterimages[i].a <= 0) p.afterimages.splice(i, 1);
-    }
-
-    const bgEl = document.getElementById("stage-bg-img");
-    if (bgEl) {
-      const px = ((p.x / w) - 0.5) * -14;
-      const py = ((p.y / h) - 0.5) * -10;
-      bgEl.style.transform = `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px)`;
     }
 
     const stunnedBoss = arena.enemies.find(e => e.isBoss && e.state === "stun");
@@ -26499,8 +27108,17 @@ const ART = {
         e.kx *= 0.82; e.ky *= 0.82;
       }
       let targetSx = 1.0, targetSy = 1.0;
-      if (e.state === "windup") { targetSx = 1.16; targetSy = 0.84; }
-      else if (e.state === "lunge") { targetSx = 0.86; targetSy = 1.16; }
+      if (e.state === "windup") {
+        if (e.id === "warden") { targetSx = 0.90; targetSy = 1.16; }
+        else if (e.id === "wolf") { targetSx = 1.15; targetSy = 0.82; }
+        else { targetSx = 1.14; targetSy = 0.86; }
+      } else if (e.state === "lunge") {
+        if (e.id === "wolf") { targetSx = 1.24; targetSy = 0.80; }
+        else { targetSx = 0.88; targetSy = 1.14; }
+      } else if (e.state === "recover") {
+        if (e.id === "warden") { targetSx = 1.10; targetSy = 0.88; }
+        else { targetSx = 0.92; targetSy = 1.08; }
+      }
       e.sx += (targetSx - e.sx) * 0.22;
       e.sy += (targetSy - e.sy) * 0.22;
 
@@ -26508,6 +27126,7 @@ const ART = {
       if (e.isTreasure) {
         e.timer -= dt;
         e.x += e.vx; e.y += e.vy;
+        if (Math.abs(e.vx) > 0.05) e.facing = e.vx >= 0 ? 1 : -1;
         const cp = clampToPlaza(e.x, e.y, w, h);
         if (Math.abs(cp.x - e.x) > 0.5) e.vx *= -1;
         if (Math.abs(cp.y - e.y) > 0.5) e.vy *= -1;
@@ -26595,10 +27214,31 @@ const ART = {
           addFloat("⚠ 旋空妖光 · 空格一闪穿波！", e.x, e.y - e.r - 24, "#ffe28a", 15, true, { banner: true, perilous: true });
         }
       }
+      const enterEnemyRecover = (en, durOverride = null) => {
+        const recDur = durOverride !== null ? durOverride : (en.enraged ? 0.36 : (en.id === "warden" ? 0.54 : 0.40));
+        en.state = "recover";
+        en.recoverTotal = recDur;
+        en.timer = recDur;
+      };
       if (e.state === "stun") {
         e.timer -= dt;
-        if (e.timer <= 0) { e.state = "chase"; e.timer = 0.65; }
+        if (e.timer <= 0) { e.state = "chase"; e.timer = 0.55; }
+      } else if (e.state === "recover") {
+        // Explicit post-attack recovery window; facing stays LOCKED until returning to chase!
+        if (e.id === "wolf" && (Math.abs(e.vx) > 0.15 || Math.abs(e.vy) > 0.15)) {
+          e.x += e.vx * dt * 16;
+          e.y += e.vy * dt * 16;
+          e.vx *= 0.84;
+          e.vy *= 0.84;
+        }
+        e.timer -= dt * slowMult;
+        if (e.timer <= 0) {
+          e.vx = 0; e.vy = 0;
+          e.state = "chase";
+          e.timer = e.enraged ? 0.36 : 0.48;
+        }
       } else if (e.state === "chase") {
+        if (Math.abs(dx) > 6) e.facing = dx >= 0 ? 1 : -1;
         const moveSpd = (e.isBoss ? 2.15 : 2.35) * slowMult;
         if (e.tacticalRole === "hex_chanter" && dist < 225) {
           e.x -= (dx / dist) * moveSpd * 0.85;
@@ -26611,13 +27251,25 @@ const ART = {
         if (e.timer <= 0 && dist < (e.attackType === "shot" ? 420 : 285)) {
           e.state = "windup";
           e.atkSeq = (e.atkSeq || 0) + 1;
-          // V19 4-Way Tactical Telegraph Rotation: Golden (`✦`), Crimson (`【危】`), Cyan-Violet Low Sweep (`【下危·跃】`), & Dark-Gold Grab (`【擒】拼刀反制`)!
-          e.grabWindup = e.isBoss && (e.atkSeq % 4 === 3);
-          e.lowSweepWindup = !e.grabWindup && ((e.isBoss && e.atkSeq % 4 === 2) || (!e.isBoss && e.attackType === "slam" && e.atkSeq % 2 === 0));
-          e.perilous = !e.grabWindup && !e.lowSweepWindup && (e.isBoss ? (e.atkSeq % 4 === 0) : (e.attackType === "slam" && e.atkSeq % 3 === 1));
+          // Lock facing once on windup entry; never snap backward mid-attack!
+          e.aimX = p.x; e.aimY = p.y;
+          if (Math.abs(e.aimX - e.x) > 4) e.facing = (e.aimX >= e.x) ? 1 : -1;
+          const canUseJump = isActionUnlockedByRealm(game, "jump");
+          const canUseClash = isActionUnlockedByRealm(game, "posture");
+          const isMortalWolfKing = e.id === "wolf" && e.isBoss && (!canUseJump || !canUseClash);
+          if (isMortalWolfKing) {
+            // F28 Mortal-Playable 2-Telegraph Wolf King Rhythm: Gold parryable lunge + Crimson dodgeable 3-claw!
+            e.grabWindup = false;
+            e.lowSweepWindup = false;
+            e.perilous = (e.atkSeq % 3 === 0);
+          } else {
+            // V19 4-Way Tactical Telegraph Rotation (respecting realm action unlocks!)
+            e.grabWindup = canUseClash && e.isBoss && (e.atkSeq % 4 === 3);
+            e.lowSweepWindup = canUseJump && !e.grabWindup && ((e.isBoss && e.atkSeq % 4 === 2) || (!e.isBoss && e.attackType === "slam" && e.atkSeq % 2 === 0));
+            e.perilous = !e.grabWindup && !e.lowSweepWindup && (e.isBoss ? (e.atkSeq % 4 === 0) : (e.attackType === "slam" && e.atkSeq % 3 === 1));
+          }
           e.timer = e.windupDur * ((e.perilous || e.lowSweepWindup || e.grabWindup) ? 1.12 : 0.92) * (e.enraged ? 0.84 : 1.0);
           e.curWindupTotal = e.timer;
-          e.aimX = p.x; e.aimY = p.y;
           if ((e.id === "puppet" || e.variantTrait === "mirror_pulse") && !e.perilous && !e.lowSweepWindup && !e.grabWindup && !e.partSevered) e.mirrorTimer = e.timer;
           if (e.grabWindup) {
             Sound.perilousGong();
@@ -26634,19 +27286,19 @@ const ART = {
       } else if (e.state === "windup") {
         e.timer -= dt * (inDomain ? 0.82 : 1.0) * witchMult;
         if (e.timer <= 0) {
+          const atkSpec = getEnemyAttackSpec(e);
           if (e.grabWindup) {
             e.grabWindup = false;
             Sound.drum(0.28);
-            const gAng = Math.atan2(p.y - e.y, p.x - e.x);
+            const gAng = Math.atan2(e.aimY - e.y, e.aimX - e.x);
             e.x += Math.cos(gAng) * 62;
             e.y += Math.sin(gAng) * 40;
             addRipple(e.x, e.y + 14, 96, "#ffae33");
-            if (Math.hypot(p.x - e.x, p.y - e.y) < e.r + 58 && (p.z || 0) < 20) {
+            if (Math.hypot(p.x - e.x, (p.y - (e.y + 14)) / 0.56) <= (e.r + 58) && (p.z || 0) < 20) {
               hurtPlayer(Math.round(e.heavy * 1.15), { sourceName: e.name || "镇守妖王", moveName: "暗金夺命投", isHeavy: true });
               addFloat("⚠ 被夺命投技擒中！(下次迎击触发拼刀)", p.x, p.y - 54, "#ffae33", 15, true);
             }
-            e.state = "chase";
-            e.timer = e.enraged ? 0.88 : 1.08;
+            enterEnemyRecover(e, e.enraged ? 0.40 : 0.50);
           } else if (e.lowSweepWindup) {
             e.lowSweepWindup = false;
             Sound.drum(0.24);
@@ -26656,8 +27308,7 @@ const ART = {
               spd: e.isBoss ? 190 : 165, dmg: Math.max(10, Math.round(e.heavy * 0.88)),
               hitPlayer: false, vaulted: false, owner: e
             });
-            e.state = "chase";
-            e.timer = e.enraged ? 0.85 : 1.08;
+            enterEnemyRecover(e, e.enraged ? 0.40 : 0.52);
           } else if (e.isBoss && e.perilous) {
             // Execute Differentiated Boss Perilous Signature Move!
             const bAng = Math.atan2(e.aimY - e.y, e.aimX - e.x);
@@ -26673,12 +27324,13 @@ const ART = {
                 });
               });
             } else if (e.id === "warden") {
-              // Mountain Colossus: Triple Meteor Crater Shockwaves!
-              addDecal(e.x, e.y + 14, 0, 72, "spider_crack");
-              arena.shockRings.push({ x: e.x, y: e.y + 14, r: 22, maxR: e.partSevered ? 135 : 310, spd: 205, hitPlayer: false, color: "#ffb142", sourceName: e.name || "守山石卫" });
-              if (p.invuln <= 0 && Math.hypot(p.x - e.x, p.y - e.y) < e.r + 86) hurtPlayer(e.heavy, { sourceName: e.name || "守山石卫", moveName: "陨岳重击", isHeavy: true });
+              // Mountain Colossus: Isometric Ellipse Slam matching visual telegraph!
+              addDecal(e.x, e.y + atkSpec.originYOff, 0, 72, "spider_crack");
+              arena.shockRings.push({ x: e.x, y: e.y + atkSpec.originYOff, r: 22, maxR: e.partSevered ? 135 : 310, spd: 205, hitPlayer: false, color: "#ffb142", sourceName: e.name || "守山石卫" });
+              if (p.invuln <= 0 && Math.hypot(p.x - e.x, (p.y - (e.y + atkSpec.originYOff)) / atkSpec.ellY) <= atkSpec.r) {
+                hurtPlayer(e.heavy, { sourceName: e.name || "守山石卫", moveName: "陨岳重击", isHeavy: true });
+              }
             } else if (e.id === "serpent") {
-              // Frost Serpent: Lingering Abyssal Frost Pool + Fan Orbs!
               if (!e.partSevered) arena.frostPools.push({ x: e.aimX, y: e.aimY, r: 92, life: 5.5 });
               for (let k = -2; k <= 2; k++) {
                 arena.projectiles.push({
@@ -26689,7 +27341,6 @@ const ART = {
                 });
               }
             } else if (e.id === "puppet") {
-              // Sword Automaton: 4-Direction Cross Sword Waves!
               for (let q = 0; q < (e.partSevered ? 2 : 4); q++) {
                 const qa = bAng + (q * Math.PI) / 2;
                 arena.projectiles.push({
@@ -26700,25 +27351,38 @@ const ART = {
                 });
               }
             } else {
-              // Celestial Gatekeeper: Twin Counter-Rotating Beams + Sky Thunder!
               arena.skyBolts.push({ x: e.aimX, y: e.aimY, t: 0, color: "#ff7875" });
               arena.shockRings.push({ x: e.aimX, y: e.aimY, r: 18, maxR: 220, spd: 190, hitPlayer: false, color: "#d69eff", sourceName: e.name || "天门道影" });
-              if (p.invuln <= 0 && Math.hypot(p.x - e.aimX, p.y - e.aimY) < 76) hurtPlayer(e.heavy, { sourceName: e.name || "天门道影", moveName: "九霄天雷", isHeavy: true });
+              if (p.invuln <= 0 && Math.hypot(p.x - e.aimX, (p.y - e.aimY) / 0.56) <= 76) hurtPlayer(e.heavy, { sourceName: e.name || "天门道影", moveName: "九霄天雷", isHeavy: true });
             }
             e.perilous = false;
-            e.state = "chase";
-            e.timer = e.enraged ? 0.88 : 1.12;
+            enterEnemyRecover(e, e.enraged ? 0.42 : 0.54);
           } else if (e.attackType === "charge") {
-            const ang = Math.atan2(e.aimY - e.y, e.aimX - e.x);
-            const lSpd = e.enraged ? 14.0 : 12.2;
-            e.vx = Math.cos(ang) * lSpd; e.vy = Math.sin(ang) * lSpd;
-            e.state = "lunge"; e.timer = 0.28;
+            const cSpec = getEnemyAttackSpec(e);
+            const lungeSpd = cSpec.len / cSpec.dur;
+            e.lungeStartX = e.x;
+            e.lungeStartY = e.y;
+            e.lungeAng = cSpec.ang;
+            e.lungeLen = cSpec.len;
+            e.lungeHalfW = cSpec.halfW;
+            e.lungeDur = cSpec.dur;
+            e.lungeOriginYOff = cSpec.originYOff;
+            e.lungeHitDone = false;
+            e.vx = Math.cos(cSpec.ang) * (lungeSpd / 60);
+            e.vy = Math.sin(cSpec.ang) * (lungeSpd / 60);
+            e.state = "lunge";
+            e.timer = cSpec.dur;
           } else if (e.attackType === "slam") {
+            const sSpec = getEnemyAttackSpec(e);
             Sound.drum(0.18);
             Sound.slash(true);
-            addDecal(e.x, e.y + 14, 0, e.r + 45, "scorch");
-            arena.slashes.push({ x: e.x, y: e.y, r: e.r + 78, ang: 0, t: 0, color: "#ff6b6b", heavy: false });
-            if (p.invuln <= 0 && Math.hypot(p.x - e.x, p.y - e.y) < e.r + 72) hurtPlayer(e.heavy, { sourceName: e.name || "妖兽", moveName: "重劈震地", isHeavy: true });
+            addDecal(e.x, e.y + sSpec.originYOff, 0, sSpec.r * 0.72, "scorch");
+            arena.slashes.push({ x: e.x, y: e.y, r: sSpec.r, ang: 0, t: 0, color: "#ff6b6b", heavy: false });
+            // Exact isometric ellipse hit check matching telegraph!
+            const isoDist = Math.hypot(p.x - e.x, (p.y - (e.y + sSpec.originYOff)) / sSpec.ellY);
+            if (p.invuln <= 0 && isoDist <= sSpec.r) {
+              hurtPlayer(e.heavy, { sourceName: e.name || "妖兽", moveName: "重劈震地", isHeavy: true });
+            }
             if (e.enraged) {
               for (let k = 0; k < 6; k++) {
                 const oa = (k * Math.PI * 2) / 6 + 0.3;
@@ -26730,9 +27394,9 @@ const ART = {
                 });
               }
             }
-            e.state = "chase"; e.timer = e.enraged ? 0.82 : 1.05;
+            enterEnemyRecover(e, e.enraged ? 0.40 : (e.id === "warden" ? 0.56 : 0.44));
           } else {
-            const baseAng = Math.atan2(p.y - e.y, p.x - e.x);
+            const baseAng = Math.atan2(e.aimY - e.y, e.aimX - e.x);
             const angles = e.enraged ? [-0.44, -0.22, 0, 0.22, 0.44] : [-0.24, 0, 0.24];
             const orbCol = e.variantTrait === "chill" ? "#72e6ff" : (e.variantColor || "#ff6b81");
             angles.forEach(off => {
@@ -26743,18 +27407,39 @@ const ART = {
                 sourceName: e.name || "敌方妖修", moveName: "妖元灵弹"
               });
             });
-            e.state = "chase"; e.timer = e.enraged ? 0.90 : 1.15;
+            enterEnemyRecover(e, e.enraged ? 0.36 : 0.46);
           }
         }
       } else if (e.state === "lunge") {
-        e.x += e.vx; e.y += e.vy;
-        e.timer -= dt;
-        if (p.invuln <= 0 && Math.hypot(p.x - e.x, p.y - e.y) < e.r + 24) {
-          hurtPlayer(e.heavy, { sourceName: e.name || "妖兽", moveName: "疾冲扑咬", isHeavy: true });
-          e.timer = 0;
-          if (e.mech === "drain") e.hp = Math.min(e.maxHp, e.hp + Math.round(e.maxHp * 0.08));
+        // Frame-rate-independent dt-scaled lunge matching shared telegraph corridor!
+        const dur = e.lungeDur || 0.28;
+        const len = e.lungeLen || 210;
+        const ang = Number.isFinite(e.lungeAng) ? e.lungeAng : Math.atan2(e.vy || 0, e.vx || (e.facing || 1));
+        const halfW = e.lungeHalfW || 18;
+        const stepDist = (len / dur) * dt * witchMult;
+        e.x += Math.cos(ang) * stepDist;
+        e.y += Math.sin(ang) * stepDist;
+        e.timer -= dt * witchMult;
+        if (!e.lungeHitDone && p.invuln <= 0) {
+          const ox = e.lungeStartX !== undefined ? e.lungeStartX : e.x;
+          const oy = (e.lungeStartY !== undefined ? e.lungeStartY : e.y) + (e.lungeOriginYOff || 12);
+          const relX = p.x - ox;
+          const relY = (p.y + 12) - oy;
+          const cosA = Math.cos(ang), sinA = Math.sin(ang);
+          const along = relX * cosA + relY * sinA;
+          const perp = -relX * sinA + relY * cosA;
+          const inCorridor = along >= -16 && along <= len + 16 && Math.abs(perp) <= halfW + 14;
+          const nearBody = Math.hypot(p.x - e.x, p.y - e.y) <= e.r + 28;
+          if (inCorridor && nearBody) {
+            e.lungeHitDone = true;
+            hurtPlayer(e.heavy, { sourceName: e.name || "妖兽", moveName: "疾冲扑咬", isHeavy: true });
+            e.timer = 0;
+            if (e.mech === "drain") e.hp = Math.min(e.maxHp, e.hp + Math.round(e.maxHp * 0.08));
+          }
         }
-        if (e.timer <= 0) { e.state = "chase"; e.timer = e.enraged ? 0.72 : 0.92; }
+        if (e.timer <= 0) {
+          enterEnemyRecover(e, e.enraged ? 0.36 : 0.42);
+        }
       }
       const ce = clampToPlaza(e.x, e.y, w, h);
       e.x = ce.x; e.y = ce.y;
@@ -27244,8 +27929,21 @@ const ART = {
     const r = REALMS[game.realm];
     const keptXp = r && r.xpCap > 0 ? Math.round(r.xpCap * 0.75) : Math.max(0, Math.floor(num(game.xp, 0)));
     const reviewHtml = buildDefeatReviewHtml(isTribulation);
+    playtestTelemetry.defeatCount += 1;
+    const lastHit = arena.encounterTelemetry && arena.encounterTelemetry.recentHits && arena.encounterTelemetry.recentHits.length
+      ? arena.encounterTelemetry.recentHits[arena.encounterTelemetry.recentHits.length - 1]
+      : null;
+    playtestTelemetry.defeatAttribution.push({
+      isTribulation: !!isTribulation,
+      source: lastHit ? `${lastHit.sourceName || ""}·${lastHit.moveName || ""}` : (isTribulation ? "九霄雷劫" : "未知"),
+      ts: Date.now()
+    });
 
     if (isTribulation) {
+      const tbNow = arena.tribulation;
+      const tribBreakdownLine = tbNow
+        ? `⚡ 天劫复盘：余 ${Math.max(0, tbNow.boltsLeft || 0)}/${tbNow.totalBolts || 3} 道天雷 · 已弹反 ${tbNow.parryCount || 0} 次 · 建议雷圈缩至最紧瞬间按【空格一闪】或先炼回春/破境丹再冲关。`
+        : "⚡ 天劫复盘：可在紫电雷圈落定瞬间按【空格一闪】弹反，或先返听雨洞府备足丹药与护脉属性后再冲关。";
       openModal(`
         <div class="modal-header">
           <div class="drawer-mural-banner" style="height:86px;width:100%;">
@@ -27263,6 +27961,7 @@ const ART = {
           <p style="font-size:var(--fs-sm);color:var(--text-sub);line-height:1.55;">
             天雷贯脉、气血耗尽。系统不会自动扣丹或免费重聚气血——您可主动服丹强续本劫，或散功避劫安全退回整备（保留 75% 境界修为，绝不死档）。
           </p>
+          <div id="trib-defeat-breakdown" class="trib-rule-box">${escapeHtml(tribBreakdownLine)}</div>
           ${reviewHtml}
           <div class="defeat-decision-grid">
             <button type="button" class="defeat-opt-btn" data-defeat-act="revive-trib-pill" ${canPillRevive ? "" : "disabled"}>
@@ -27354,6 +28053,7 @@ const ART = {
       arena.defeatRevivesUsed = (arena.defeatRevivesUsed || 0) + 1;
       game.hp = Math.round(st.maxHp * (act === "revive-trib-pill" ? 0.50 : 0.55));
       p.invuln = act === "revive-trib-pill" ? 1.6 : 2.0;
+      setPlayerAnimState("idle", 0.25);
       arena.defeatPending = null;
       releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       closeModal();
@@ -27381,6 +28081,7 @@ const ART = {
       arena.defeatRevivesUsed = (arena.defeatRevivesUsed || 0) + 1;
       game.hp = Math.round(st.maxHp * 0.45);
       p.invuln = 1.8;
+      setPlayerAnimState("idle", 0.25);
       arena.defeatPending = null;
       releasePauseToken(defeatPauseToken); defeatPauseToken = null;
       closeModal();
@@ -27466,6 +28167,7 @@ const ART = {
       const absorbed = Math.min(p.shieldHp, dmg);
       p.shieldHp -= absorbed;
       dmg -= absorbed;
+      Sound.shieldAbsorb("player");
       if (dmg <= 0) {
         p.invuln = 0.32;
         addFloat("灵盾抵御！", p.x, p.y - 44, "#70ffe6", 16);
@@ -27487,12 +28189,15 @@ const ART = {
       arena.bossRush.damageTaken = (arena.bossRush.damageTaken || 0) + dmg;
     }
     p.invuln = 0.42;
+    p.hitFlash = 0.24;
     arena.comboCount = Math.floor(arena.comboCount * 0.5);
     arena.shake = 7;
-    Sound.drum(0.14);
+    Sound.playerHurt(Boolean(opts && opts.isHeavy));
     addFloat(`-${dmg}`, p.x, p.y - 40, "#ff6b6b", 17);
     if (game.hp <= 0) {
+      setPlayerAnimState("knockdown", 99);
       if (arena.coop2P && arena.coop2P.active && !arena.coop2P.downed && triggerCoopQiTransferRescue("2p")) {
+        setPlayerAnimState("idle", 0.25);
         updateHud();
         return;
       }
@@ -27500,13 +28205,22 @@ const ART = {
       openDefeatDecisionModal(!!arena.tribulation);
       return;
     }
+    // Non-blocking visual recoil/stagger pose (never locks player input!)
+    setPlayerAnimState("hit", (opts && opts.isHeavy) ? 0.28 : 0.20, { recoilDir: -p.facing });
     updateHud();
   }
 
   function activatePedestalChoice(pr) {
-    if (!game) return;
-    game.openingChoice = pr.choice;
-    if (pr.choice === "help") {
+    if (!game || game.openingChoice) return;
+    const choice = (typeof pr === "string") ? pr : (pr && pr.choice);
+    if (choice !== "help" && choice !== "trade") return;
+    game.openingChoice = choice;
+    game.vol1PedestalMeta = { choice, payoffShown: false };
+    playtestTelemetry.pedestalChoice = choice;
+    if (playtestTelemetry.pedestalChoiceSec === null) {
+      playtestTelemetry.pedestalChoiceSec = Number(((Date.now() - playtestTelemetry.sessionStartedAt) / 1000).toFixed(2));
+    }
+    if (choice === "help") {
       game.aids.shen = true;
       game.dao.benevolence += 10;
       acquireGearItem({
@@ -27546,7 +28260,7 @@ const ART = {
     if (!game.tutorialDismissed && (game.tutorialStep || 0) < 2) {
       game.tutorialStep = 2;
     }
-    if (pr.choice === "help") {
+    if (choice === "help") {
       queueNewUnlockCardsForState(game);
     }
     showToast("✨ 破庙初缘已定！可择阵门【踏入青岚荒野】追击雾隐狼王，或【先返听雨洞府】整备炼丹！");
@@ -27582,7 +28296,151 @@ const ART = {
     return st;
   }
 
-  function drawSprite(key, x, y, size, flipX = false, hitWhite = false, alpha = 1.0, sx = 1.0, sy = 1.0, rot = 0) {
+  const SPRITE_ANCHORS = Object.freeze({
+    actor_player_battle: { ax: 0.5, ay: 0.86 },
+    char_player_seated:  { ax: 0.5, ay: 0.86 },
+    actor_shen:          { ax: 0.5, ay: 0.88 },
+    actor_lu:            { ax: 0.5, ay: 0.88 },
+    actor_pei:           { ax: 0.5, ay: 0.88 },
+    actor_yan:           { ax: 0.5, ay: 0.88 },
+    enemy_wolf:          { ax: 0.5, ay: 0.82 },
+    enemy_warden:        { ax: 0.5, ay: 0.88 },
+    enemy_serpent:       { ax: 0.5, ay: 0.86 },
+    enemy_puppet:        { ax: 0.5, ay: 0.86 },
+    enemy_shadow:        { ax: 0.5, ay: 0.86 },
+    enemy_sentinel:      { ax: 0.5, ay: 0.86 },
+    lotus_pedestal_shrine: { ax: 0.5, ay: 0.78 },
+    prop_puppet_dummy:   { ax: 0.5, ay: 0.88 }
+  });
+
+  function setPlayerAnimState(state, dur = 0.26, opts = {}) {
+    if (!arena || !arena.player) return;
+    const p = arena.player;
+    p.animState = state || "idle";
+    p.animT = 0;
+    p.animDur = Math.max(0.08, Number(dur) || 0.26);
+    if (opts && typeof opts.recoilDir === "number") p.recoilDir = opts.recoilDir;
+  }
+
+  function computePlayerVisualPose(p, nowSec = 0) {
+    const st = (p && p.animState) || "idle";
+    const t = Math.max(0, (p && p.animT) || 0);
+    const dur = Math.max(0.08, (p && p.animDur) || 0.25);
+    const prog = Math.min(1, t / dur);
+    const f = (p && p.facing) ? (p.facing < 0 ? -1 : 1) : 1;
+    const rm = isReducedMotionActive();
+    let ox = 0, oy = 0, sx = 1.0, sy = 1.0, rot = (p && p.lean) || 0;
+    if (st === "idle") {
+      const br = rm ? 0 : Math.sin(nowSec * 2.8) * 0.024;
+      sx = 1 - br * 0.55;
+      sy = 1 + br;
+      rot = 0;
+    } else if (st === "run") {
+      const stride = rm ? 0 : Math.sin((p && p.bob) || nowSec * 10);
+      oy = rm ? 0 : -Math.abs(stride) * 4.2;
+      sx = 1.03;
+      sy = 0.97;
+      rot = f * 0.095;
+    } else if (st === "light1" || st === "light2" || st === "light3" || st === "light4") {
+      const stepIdx = Number(st.slice(5)) || 1;
+      const swing = Math.sin(prog * Math.PI);
+      const reach = stepIdx === 4 ? 13 : (6 + stepIdx * 2);
+      ox = f * reach * swing;
+      oy = stepIdx === 4 ? -6 * swing : -2.5 * swing;
+      sx = 1 + (stepIdx === 4 ? 0.14 : 0.08) * swing;
+      sy = 1 - (stepIdx === 4 ? 0.10 : 0.06) * swing;
+      rot = f * (stepIdx % 2 === 1 ? 0.16 : -0.11) * swing;
+    } else if (st === "heavy") {
+      const wave = prog < 0.35 ? -(prog / 0.35) : Math.sin(((prog - 0.35) / 0.65) * Math.PI);
+      ox = f * 14 * wave;
+      oy = -5 * Math.max(0, wave);
+      sx = 1 + 0.15 * Math.max(0, wave) - 0.06 * Math.max(0, -wave);
+      sy = 1 - 0.11 * Math.max(0, wave) + 0.08 * Math.max(0, -wave);
+      rot = f * 0.21 * wave;
+    } else if (st === "dodge") {
+      const dashW = 1 - prog * 0.65;
+      ox = f * 10 * dashW;
+      oy = 4 * dashW;
+      sx = 1 + 0.18 * dashW;
+      sy = 1 - 0.16 * dashW;
+      rot = f * 0.22 * dashW;
+    } else if (st === "hit") {
+      const rec = 1 - prog;
+      const rDir = (p && p.recoilDir) ? (p.recoilDir < 0 ? -1 : 1) : -f;
+      ox = rDir * 9 * rec;
+      oy = -2 * rec;
+      sx = 1 - 0.08 * rec;
+      sy = 1 + 0.07 * rec;
+      rot = -rDir * 0.16 * rec;
+    } else if (st === "knockdown") {
+      ox = -f * 8;
+      oy = 18;
+      sx = 1.12;
+      sy = 0.78;
+      rot = -f * 0.92;
+    } else if (st === "meditate") {
+      oy = rm ? -3 : (-4 + Math.sin(nowSec * 2.6) * 2.4);
+      rot = 0;
+    }
+    return {
+      state: st,
+      ox: Number(ox.toFixed(2)),
+      oy: Number(oy.toFixed(2)),
+      sx: Number(sx.toFixed(3)),
+      sy: Number(sy.toFixed(3)),
+      rot: Number(rot.toFixed(3)),
+      hitFlash: Boolean(p && (p.hitFlash || 0) > 0)
+    };
+  }
+
+  function getEnemyAttackSpec(e) {
+    if (!e) return { kind: "slam", shape: "ellipse", r: 90, ellY: 0.56, originYOff: 14 };
+    const isPeril = !!e.perilous;
+    const isGrab = !!e.grabWindup;
+    const isLow = !!e.lowSweepWindup;
+    if (e.attackType === "charge" && !isPeril && !isGrab && !isLow) {
+      const tx = Number.isFinite(e.aimX) && (e.aimX !== 0 || e.aimY !== 0) ? e.aimX : (e.x + (e.facing || 1) * 180);
+      const ty = Number.isFinite(e.aimY) && (e.aimX !== 0 || e.aimY !== 0) ? e.aimY : e.y;
+      return {
+        kind: "charge",
+        shape: "rect",
+        len: e.isBoss ? 236 : 210,
+        halfW: e.isBoss ? 24 : 18,
+        dur: e.enraged ? 0.26 : 0.30,
+        originYOff: 12,
+        ang: Math.atan2(ty - e.y, tx - e.x)
+      };
+    }
+    return {
+      kind: isPeril ? "perilous_slam" : "slam",
+      shape: "ellipse",
+      r: isPeril ? (e.r + 92) : (e.r + 74),
+      ellY: 0.56,
+      originYOff: 14
+    };
+  }
+
+  function getEnemyStateSnapshot(e) {
+    const target = e || (arena && arena.enemies && arena.enemies[0]) || null;
+    if (!target) return null;
+    return {
+      uid: target.uid,
+      id: target.id,
+      name: target.name,
+      state: target.state,
+      facing: target.facing || 1,
+      x: Number((target.x || 0).toFixed(1)),
+      y: Number((target.y || 0).toFixed(1)),
+      timer: Number((target.timer || 0).toFixed(3)),
+      perilous: !!target.perilous,
+      lowSweepWindup: !!target.lowSweepWindup,
+      grabWindup: !!target.grabWindup,
+      attackType: target.attackType,
+      attackSpec: getEnemyAttackSpec(target)
+    };
+  }
+
+  function drawSprite(key, x, y, size, flipX = false, hitWhite = false, alpha = 1.0, sx = 1.0, sy = 1.0, rot = 0, anchorFoot = false) {
     const im = IMG_CACHE[key];
     if (!im || !im.complete || im.naturalWidth === 0) return;
     ctx.save();
@@ -27593,11 +28451,14 @@ const ART = {
     const ratio = im.naturalWidth / im.naturalHeight;
     const dw = ratio >= 1 ? size : size * ratio;
     const dh = ratio >= 1 ? size / ratio : size;
-    ctx.drawImage(im, -dw / 2, -dh / 2, dw, dh);
+    const anc = anchorFoot ? (SPRITE_ANCHORS[key] || { ax: 0.5, ay: 0.86 }) : { ax: 0.5, ay: 0.5 };
+    const dx = -dw * anc.ax;
+    const dy = -dh * anc.ay;
+    ctx.drawImage(im, dx, dy, dw, dh);
     if (hitWhite) {
       ctx.globalCompositeOperation = "lighter";
       ctx.globalAlpha *= 0.72;
-      ctx.drawImage(im, -dw / 2, -dh / 2, dw, dh);
+      ctx.drawImage(im, dx, dy, dw, dh);
     }
     ctx.restore();
   }
@@ -27654,11 +28515,14 @@ const ART = {
       ctx.translate(da.x + half * slide, da.y - da.t * 16 + half * 5);
       ctx.rotate(half * da.t * 0.18);
       if (da.flip) ctx.scale(-1, 1);
-      ctx.filter = `brightness(${1.4 + da.t * 1.4}) sepia(${da.t * 0.6})`;
       ctx.beginPath();
       if (half < 0) ctx.rect(-dw, -dh / 2, dw * 2, dh * 0.52);
       else ctx.rect(-dw, 0, dw * 2, dh * 0.55);
       ctx.clip();
+      ctx.drawImage(im, -dw / 2, -dh / 2, dw, dh);
+      // Fast zero-filter additive flash pass (replaces software ctx.filter stall)
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = alpha * Math.min(0.65, 0.25 + da.t * 0.45);
       ctx.drawImage(im, -dw / 2, -dh / 2, dw, dh);
       ctx.restore();
     });
@@ -27931,10 +28795,7 @@ const ART = {
     for (const it of placed) {
       const bx = it.drawX - it.boxW / 2;
       const by = it.drawY - it.boxH;
-      const grad = ctx.createLinearGradient(bx, by, bx, by + it.boxH);
-      grad.addColorStop(0, "rgba(9, 24, 30, 0.90)");
-      grad.addColorStop(1, "rgba(4, 12, 16, 0.92)");
-      ctx.fillStyle = grad;
+      ctx.fillStyle = "rgba(6, 17, 22, 0.92)";
       ctx.strokeStyle = it.accentCol;
       ctx.lineWidth = 1.05;
       ctx.beginPath();
@@ -28029,27 +28890,170 @@ const ART = {
     ctx.restore();
   }
 
+  // ==================== Q4 (F25) VOL 1 & SANCTUM 3-LAYER ATMOSPHERIC DEPTH + UNIFIED PARALLAX ====================
+  let _lastBgTransform = "";
+  let _lastBgFilter = "";
+  let _lastCanvasFilter = "";
+  const _sceneLayerCache = { key: "", w: 0, h: 0, far: null, mid: null, fg: null };
+  const visualLayersRuntime = {
+    enabled: true,
+    reducedMotion: false,
+    stageMode: "vol1",
+    bgParallaxX: 0,
+    bgParallaxY: 0,
+    fgOffsetX: 0,
+    fgOffsetY: 0,
+    fgMarginPct: 0.11,
+    activeDrawn: false
+  };
+  function getVisualLayersState() {
+    return Object.assign({}, visualLayersRuntime, {
+      enabled: Boolean(a11ySettings && a11ySettings.enhancedVisualLayers),
+      reducedMotion: isReducedMotionActive()
+    });
+  }
+  function setVisualLayersEnabled(flag) {
+    a11ySettings.enhancedVisualLayers = Boolean(flag);
+    saveA11ySettings();
+    return getVisualLayersState();
+  }
+  function getOrBuildSceneDepthLayers(modeKey, w, h) {
+    if (_sceneLayerCache.key === modeKey && _sceneLayerCache.w === w && _sceneLayerCache.h === h && _sceneLayerCache.far) {
+      return _sceneLayerCache;
+    }
+    const mk = () => {
+      const c = document.createElement("canvas");
+      c.width = Math.max(64, Math.floor(w));
+      c.height = Math.max(64, Math.floor(h));
+      return c;
+    };
+    const farC = mk(), midC = mk(), fgC = mk();
+    const fCtx = farC.getContext("2d");
+    const mCtx = midC.getContext("2d");
+    const nCtx = fgC.getContext("2d");
+    const isSanctum = modeKey === "sanctum";
+
+    // Far Layer: Atmospheric ink-wash mountain ridge & mist haze
+    const farGrad = fCtx.createLinearGradient(0, 0, 0, h * 0.42);
+    farGrad.addColorStop(0, isSanctum ? "rgba(18, 42, 46, 0.34)" : "rgba(10, 24, 30, 0.42)");
+    farGrad.addColorStop(0.65, isSanctum ? "rgba(38, 86, 84, 0.12)" : "rgba(32, 68, 76, 0.14)");
+    farGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    fCtx.fillStyle = farGrad;
+    fCtx.fillRect(0, 0, w, h * 0.44);
+    fCtx.fillStyle = isSanctum ? "rgba(14, 34, 38, 0.24)" : "rgba(8, 20, 26, 0.30)";
+    fCtx.beginPath();
+    fCtx.moveTo(0, h * 0.24);
+    fCtx.quadraticCurveTo(w * 0.18, h * 0.11, w * 0.38, h * 0.20);
+    fCtx.quadraticCurveTo(w * 0.62, h * 0.08, w * 0.84, h * 0.19);
+    fCtx.lineTo(w, h * 0.14);
+    fCtx.lineTo(w, 0);
+    fCtx.lineTo(0, 0);
+    fCtx.closePath();
+    fCtx.fill();
+
+    // Mid Layer: Wet bluestone rain sheen (Vol 1) or warm courtyard lantern pools (Sanctum)
+    const lanternSpots = isSanctum
+      ? [[0.24, 0.44, 140, "rgba(255, 224, 146, 0.13)"], [0.76, 0.46, 140, "rgba(255, 224, 146, 0.13)"], [0.50, 0.32, 165, "rgba(112, 255, 230, 0.09)"]]
+      : [[0.20, 0.40, 145, "rgba(255, 198, 108, 0.11)"], [0.80, 0.42, 135, "rgba(128, 228, 240, 0.09)"], [0.52, 0.62, 220, "rgba(148, 224, 236, 0.07)"]];
+    for (const [rx, ry, rad, col] of lanternSpots) {
+      const g = mCtx.createRadialGradient(w * rx, h * ry, 6, w * rx, h * ry, rad);
+      g.addColorStop(0, col);
+      g.addColorStop(1, "rgba(0, 0, 0, 0)");
+      mCtx.fillStyle = g;
+      mCtx.beginPath();
+      mCtx.ellipse(w * rx, h * ry, rad, rad * 0.54, 0, 0, Math.PI * 2);
+      mCtx.fill();
+    }
+
+    // Near Foreground Layer: Corner bamboo fronds / temple eave silhouettes strictly clamped to outer 10-11% bottom corners!
+    const marginW = w * 0.108;
+    const cornerTop = h * 0.77;
+    nCtx.fillStyle = isSanctum ? "rgba(8, 24, 26, 0.46)" : "rgba(5, 14, 18, 0.56)";
+    // Bottom-left silhouette cluster
+    nCtx.beginPath();
+    nCtx.moveTo(0, h);
+    nCtx.lineTo(0, cornerTop);
+    nCtx.quadraticCurveTo(marginW * 0.42, cornerTop + 26, marginW * 0.88, h - 18);
+    nCtx.lineTo(marginW, h);
+    nCtx.closePath();
+    nCtx.fill();
+    // Bottom-right silhouette cluster
+    nCtx.beginPath();
+    nCtx.moveTo(w, h);
+    nCtx.lineTo(w, cornerTop + 8);
+    nCtx.quadraticCurveTo(w - marginW * 0.45, cornerTop + 30, w - marginW * 0.90, h - 16);
+    nCtx.lineTo(w - marginW, h);
+    nCtx.closePath();
+    nCtx.fill();
+    // Delicate bamboo leaf strokes inside outer 10.5% corners
+    nCtx.strokeStyle = isSanctum ? "rgba(74, 168, 152, 0.24)" : "rgba(92, 152, 162, 0.22)";
+    nCtx.lineWidth = 2.0;
+    for (let b = 0; b < 3; b++) {
+      nCtx.beginPath();
+      nCtx.moveTo(10 + b * 24, h);
+      nCtx.quadraticCurveTo(22 + b * 28, h - 54 - b * 14, 48 + b * 26, h - 88 - b * 10);
+      nCtx.stroke();
+      nCtx.beginPath();
+      nCtx.moveTo(w - 10 - b * 24, h);
+      nCtx.quadraticCurveTo(w - 22 - b * 28, h - 50 - b * 14, w - 48 - b * 26, h - 84 - b * 10);
+      nCtx.stroke();
+    }
+
+    _sceneLayerCache.key = modeKey;
+    _sceneLayerCache.w = w;
+    _sceneLayerCache.h = h;
+    _sceneLayerCache.far = farC;
+    _sceneLayerCache.mid = midC;
+    _sceneLayerCache.fg = fgC;
+    return _sceneLayerCache;
+  }
+
   function renderArenaCanvas() {
     const w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
     const nowSec = performance.now() * 0.001;
+    const rm = isReducedMotionActive();
+    const degLvl = getEffectivePerfDegradeLevel();
+    const layersOn = Boolean(a11ySettings && a11ySettings.enhancedVisualLayers) && degLvl < 2;
+    const isDepthScene = Boolean(arena.sanctumMode || (!arena.towerMode && arena.stageIdx === 0));
 
     const bgEl = document.getElementById("stage-bg-img");
-    const effZoom = photoMode.active ? photoMode.zoom : (arena.camZoom || 1);
+    const effZoom = photoMode.active ? photoMode.zoom : (rm ? 1.0 : (arena.camZoom || 1));
+    const pNormX = (game && arena.player && w > 0) ? ((arena.player.x / w) - 0.5) : 0;
+    const pNormY = (game && arena.player && h > 0) ? ((arena.player.y / h) - 0.5) : 0;
+    const bgPx = photoMode.active ? (photoMode.panX * 0.45) : (rm ? 0 : (pNormX * -42 * 0.35));
+    const bgPy = photoMode.active ? (photoMode.panY * 0.45) : (rm ? 0 : (pNormY * -28 * 0.35));
+    visualLayersRuntime.enabled = Boolean(a11ySettings && a11ySettings.enhancedVisualLayers);
+    visualLayersRuntime.reducedMotion = rm;
+    visualLayersRuntime.stageMode = arena.sanctumMode ? "sanctum" : `stage_${arena.stageIdx}`;
+    visualLayersRuntime.bgParallaxX = Number(bgPx.toFixed(2));
+    visualLayersRuntime.bgParallaxY = Number(bgPy.toFixed(2));
+    visualLayersRuntime.fgOffsetX = rm ? 0 : Number(Math.max(-18, Math.min(18, bgPx * -1.25)).toFixed(2));
+    visualLayersRuntime.fgOffsetY = rm ? 0 : Number(Math.max(-10, Math.min(10, bgPy * -1.25)).toFixed(2));
+    visualLayersRuntime.activeDrawn = Boolean(layersOn && isDepthScene);
+
     const filterCss = photoMode.active
       ? (photoMode.filter === "ink" ? "grayscale(0.88) contrast(1.32) brightness(1.06)"
         : photoMode.filter === "thunder" ? "hue-rotate(28deg) saturate(1.38) contrast(1.14)"
         : photoMode.filter === "ember" ? "sepia(0.38) saturate(1.48) contrast(1.15)" : "none")
       : "none";
     if (bgEl) {
-      bgEl.style.filter = filterCss;
-      if (photoMode.active || Math.abs(effZoom - 1) > 0.002) {
-        bgEl.style.transform = `translate(${(photoMode.active ? photoMode.panX * 0.45 : 0).toFixed(1)}px, ${(photoMode.active ? photoMode.panY * 0.45 : 0).toFixed(1)}px) scale(${effZoom.toFixed(3)})`;
-      } else if (bgEl.style.transform) {
-        bgEl.style.transform = "";
+      if (_lastBgFilter !== filterCss) {
+        bgEl.style.filter = filterCss === "none" ? "" : filterCss;
+        _lastBgFilter = filterCss;
+      }
+      const nextTransform = (photoMode.active || Math.abs(effZoom - 1) > 0.002 || Math.abs(bgPx) > 0.05 || Math.abs(bgPy) > 0.05)
+        ? `translate(${bgPx.toFixed(1)}px, ${bgPy.toFixed(1)}px) scale(${effZoom.toFixed(3)})`
+        : "translate(0px, 0px) scale(1.000)";
+      if (_lastBgTransform !== nextTransform) {
+        bgEl.style.transform = nextTransform;
+        _lastBgTransform = nextTransform;
       }
     }
-    canvas.style.filter = filterCss;
+    if (_lastCanvasFilter !== filterCss) {
+      canvas.style.filter = filterCss;
+      _lastCanvasFilter = filterCss;
+    }
 
     ctx.save();
     const focX = arena.camFocusT > 0 ? (w / 2 + (arena.camFocusX - w / 2) * 0.28) : w / 2;
@@ -28058,61 +29062,75 @@ const ART = {
       ctx.translate(w / 2 + photoMode.panX, h / 2 + photoMode.panY);
       ctx.scale(photoMode.zoom, photoMode.zoom);
       ctx.translate(-w / 2, -h / 2);
-    } else if ((arena.camZoom || 1) > 1.002 || Math.abs(arena.camKickX || 0) > 0.2) {
-      const kScale = a11ySettings.reducedMotion ? 0 : a11ySettings.shakeScale;
+    } else if (!rm && ((arena.camZoom || 1) > 1.002 || Math.abs(arena.camKickX || 0) > 0.2)) {
+      const kScale = a11ySettings.shakeScale;
       ctx.translate(w / 2 + (arena.camKickX || 0) * kScale, h / 2 + (arena.camKickY || 0) * kScale);
       ctx.scale(arena.camZoom || 1, arena.camZoom || 1);
       ctx.translate(-focX, -focY);
     }
-    const effShakeScale = a11ySettings.reducedMotion ? 0 : a11ySettings.shakeScale;
+    const effShakeScale = rm ? 0 : a11ySettings.shakeScale;
     if (arena.shake > 0.2 && effShakeScale > 0.01) {
       const effShake = arena.shake * effShakeScale;
       ctx.translate((Math.random() - 0.5) * effShake, (Math.random() - 0.5) * effShake);
     }
 
-    // 0a. Fast Stamp-Cached Drifting Cloud-Shadow Layer
-    const shadowStamp = getGlowStamp("rgba(2, 8, 12, 0.17)");
-    for (let cs = 0; cs < 2; cs++) {
-      const cx = ((nowSec * 28 + cs * w * 0.55) % (w * 1.4)) - w * 0.2;
-      const cy = h * (0.35 + cs * 0.28);
-      const cr = w * 0.32;
-      ctx.drawImage(shadowStamp, cx - cr, cy - cr * 0.65, cr * 2, cr * 1.3);
+    // F25 Vol 1 & Sanctum Offscreen-Cached Far & Mid Depth Layers
+    let depthCache = null;
+    if (layersOn && isDepthScene) {
+      depthCache = getOrBuildSceneDepthLayers(arena.sanctumMode ? "sanctum" : "vol1", w, h);
+      ctx.drawImage(depthCache.far, bgPx * 0.65, bgPy * 0.65);
+      ctx.drawImage(depthCache.mid, bgPx * 0.25, bgPy * 0.25);
+    }
+
+    // 0a. Fast Stamp-Cached Drifting Cloud-Shadow Layer (degrades cleanly at Level 2 & freezes under reducedMotion)
+    if (degLvl < 2) {
+      const shadowStamp = getGlowStamp("rgba(2, 8, 12, 0.17)");
+      for (let cs = 0; cs < 2; cs++) {
+        const driftT = rm ? 0 : nowSec;
+        const cx = ((driftT * 28 + cs * w * 0.55) % (w * 1.4)) - w * 0.2;
+        const cy = h * (0.35 + cs * 0.28);
+        const cr = w * 0.32;
+        ctx.drawImage(shadowStamp, cx - cr, cy - cr * 0.65, cr * 2, cr * 1.3);
+      }
     }
 
     // 0. Enhanced Volumetric Cloud God-Rays (`云隙体积神光`)
-    ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-    const ksRay = getKarmaState(game);
-    const rayCol = ksRay.mode === "demonic" ? "rgba(255, 86, 108, 0.055)" : arena.sanctumMode ? "rgba(255, 234, 172, 0.085)" : arena.stageIdx === 2 ? "rgba(98, 238, 230, 0.06)" : arena.stageIdx === 3 ? "rgba(188, 130, 255, 0.05)" : "rgba(255, 234, 178, 0.068)";
-    for (let r = 0; r < 4; r++) {
-      const rx = w * (0.16 + r * 0.22) + Math.sin(nowSec * 0.42 + r * 1.3) * 32;
-      const rg = ctx.createLinearGradient(rx - 90, 0, rx + 165, h * 0.92);
-      rg.addColorStop(0, rayCol);
-      rg.addColorStop(0.55, rayCol.replace(/0\.0\d+/, "0.025"));
-      rg.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = rg;
-      ctx.beginPath();
-      ctx.moveTo(rx - 72, 0);
-      ctx.lineTo(rx + 84, 0);
-      ctx.lineTo(rx + 275, h * 0.94);
-      ctx.lineTo(rx + 55, h * 0.94);
-      ctx.closePath();
-      ctx.fill();
+    if (degLvl < 2) {
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      const ksRay = getKarmaState(game);
+      const rayCol = ksRay.mode === "demonic" ? "rgba(255, 86, 108, 0.055)" : arena.sanctumMode ? "rgba(255, 234, 172, 0.085)" : arena.stageIdx === 2 ? "rgba(98, 238, 230, 0.06)" : arena.stageIdx === 3 ? "rgba(188, 130, 255, 0.05)" : "rgba(255, 234, 178, 0.068)";
+      for (let r = 0; r < 4; r++) {
+        const rx = w * (0.16 + r * 0.22) + (rm ? 0 : Math.sin(nowSec * 0.42 + r * 1.3) * 32);
+        const rg = ctx.createLinearGradient(rx - 90, 0, rx + 165, h * 0.92);
+        rg.addColorStop(0, rayCol);
+        rg.addColorStop(0.55, rayCol.replace(/0\.0\d+/, "0.025"));
+        rg.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = rg;
+        ctx.beginPath();
+        ctx.moveTo(rx - 72, 0);
+        ctx.lineTo(rx + 84, 0);
+        ctx.lineTo(rx + 275, h * 0.94);
+        ctx.lineTo(rx + 55, h * 0.94);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
     }
-    ctx.restore();
 
     // 0b. V18 Real-Time Water & Polished White-Jade Planar Character Reflections (`水面/白玉台实时角色倒影`)
-    if (game) {
+    if (game && degLvl < 1) {
       const reflAlpha = (arena.sanctumMode || arena.stageIdx === 0 || arena.stageIdx === 2 || arena.stageIdx === 4) ? 0.19 : 0.12;
       ctx.save();
-      const reflSkew = Math.sin(nowSec * 3.2) * 0.05;
+      const reflSkew = rm ? 0 : Math.sin(nowSec * 3.2) * 0.05;
       const pRef = arena.player;
+      const pPoseRef = computePlayerVisualPose(pRef, nowSec);
       const pImg = IMG_CACHE[pRef.meditating ? "char_player_seated" : "actor_player_battle"];
       if (pImg && pImg.complete) {
         ctx.save();
         ctx.globalAlpha = reflAlpha * Math.max(0.25, 1 - (pRef.z || 0) / 130);
-        ctx.translate(pRef.x, pRef.y + 36 + (pRef.z || 0) * 0.22);
-        ctx.transform(pRef.facing < 0 ? -1 : 1, 0, reflSkew, -0.44, 0, 0);
+        ctx.translate(pRef.x + pPoseRef.ox, pRef.y + 36 + (pRef.z || 0) * 0.22);
+        ctx.transform((pRef.facing < 0 ? -1 : 1) * pPoseRef.sx, 0, reflSkew, -0.44 * pPoseRef.sy, 0, 0);
         ctx.drawImage(pImg, -52, -52, 104, 104);
         ctx.restore();
       }
@@ -28120,10 +29138,11 @@ const ART = {
         const eImg = IMG_CACHE[e.art];
         if (!eImg || !eImg.complete) continue;
         const esz = e.isBoss ? 132 : e.isTreasure ? 58 : 90;
+        const eFlip = (e.facing !== undefined ? e.facing < 0 : e.x > pRef.x);
         ctx.save();
         ctx.globalAlpha = reflAlpha * 0.85 * Math.max(0.25, 1 - (e.airborneZ || 0) / 110);
         ctx.translate(e.x, e.y + e.r * 0.68);
-        ctx.transform(e.x > pRef.x ? -1 : 1, 0, -reflSkew, -0.40, 0, 0);
+        ctx.transform(eFlip ? -1 : 1, 0, -reflSkew, -0.40, 0, 0);
         ctx.drawImage(eImg, -esz / 2, -esz / 2, esz, esz);
         ctx.restore();
       }
@@ -28412,22 +29431,22 @@ const ART = {
         const mainStroke = isGrab ? "#ffae33" : isLow ? "#38f9d7" : isPeril ? "#ff4d4f" : "#ffe27a";
         const mainFill   = isGrab ? `rgba(255, 174, 51, ${0.20 + prog * 0.30})` : isLow ? `rgba(56, 249, 215, ${0.16 + prog * 0.28})` : isPeril ? `rgba(235, 45, 55, ${0.18 + prog * 0.32})` : `rgba(255, 215, 90, ${0.14 + prog * 0.28})`;
 
+        const atkSpec = getEnemyAttackSpec(e);
         ctx.save();
-        if (e.attackType === "charge" && !isPeril) {
-          const ang = Math.atan2(e.aimY - e.y, e.aimX - e.x);
-          ctx.translate(e.x, e.y + 12);
-          ctx.rotate(ang);
+        if (atkSpec.shape === "rect") {
+          ctx.translate(e.x, e.y + atkSpec.originYOff);
+          ctx.rotate(atkSpec.ang);
           ctx.fillStyle = mainFill;
           ctx.strokeStyle = mainStroke;
           ctx.lineWidth = 2.2;
-          ctx.fillRect(0, -18, 210, 36);
-          ctx.strokeRect(0, -18, 210, 36);
+          ctx.fillRect(0, -atkSpec.halfW, atkSpec.len, atkSpec.halfW * 2);
+          ctx.strokeRect(0, -atkSpec.halfW, atkSpec.len, atkSpec.halfW * 2);
           ctx.fillStyle = "rgba(255, 244, 180, 0.45)";
-          ctx.fillRect(0, -18, 210 * prog, 36);
+          ctx.fillRect(0, -atkSpec.halfW, atkSpec.len * prog, atkSpec.halfW * 2);
         } else {
-          const maxR = isPeril ? (e.r + 96) : (e.r + 74);
-          ctx.translate(e.x, e.y + 14);
-          ctx.scale(1, 0.56);
+          const maxR = atkSpec.r;
+          ctx.translate(e.x, e.y + atkSpec.originYOff);
+          ctx.scale(1, atkSpec.ellY);
           ctx.fillStyle = mainFill;
           ctx.strokeStyle = mainStroke;
           ctx.lineWidth = isPeril ? 3.4 : 2.6;
@@ -28476,7 +29495,7 @@ const ART = {
           ctx.fillText("危", 0, 0);
         } else if (prog > 0.35) {
           ctx.globalCompositeOperation = "lighter";
-          ctx.translate(e.x + (e.x > arena.player.x ? -22 : 22), e.y - 22);
+          ctx.translate(e.x + ((e.facing !== undefined ? e.facing < 0 : e.x > arena.player.x) ? -22 : 22), e.y - 22);
           ctx.rotate(nowSec * 6);
           ctx.fillStyle = "#fff6cc";
           for (let g = 0; g < 2; g++) {
@@ -28853,16 +29872,22 @@ const ART = {
           drawSprite("heaven_gate", pr.x, pr.y - 34, 152);
           drawNameplatePill(pr.name, pr.badge || "点击/Enter 渡劫飞升", pr.x, pr.y - 112, "#ffe89e", true);
         } else if (pr.onLotus) {
-          drawSprite("lotus_pedestal_shrine", pr.x, pr.y + 12, 82);
+          drawSprite("lotus_pedestal_shrine", pr.x, pr.y + 24, 82, false, false, 1.0, 1.0, 1.0, 0, true);
           const isFullActor = pr.art && pr.art.startsWith("actor_");
-          const hover = isFullActor ? Math.sin(nowSec * 2.4 + pr.x * 0.01) * 2.5 : Math.sin(nowSec * 3.2) * 4.5;
+          const hover = rm ? 0 : (isFullActor ? Math.sin(nowSec * 2.4 + pr.x * 0.01) * 2.5 : Math.sin(nowSec * 3.2) * 4.5);
           drawSprite(pr.art, pr.x, pr.y - (isFullActor ? 26 : 14) + hover, isFullActor ? 108 : 54);
+          drawNameplatePill(pr.bubble || pr.name, pr.badge, pr.x, pr.y - (isFullActor ? 84 : 58), accentCol, showSub || !!pr.bubble);
+        } else if (pr.art && pr.art.startsWith("actor_")) {
+          // F25 Grounded Living NPC: tight contact shadow, foot-anchored, subtle standing breath (oy = 0), gentle facing toward player within 260px
+          const breath = rm ? 0 : Math.sin(nowSec * 2.2 + pr.x * 0.01) * 0.018;
+          const npcFlip = game && pDist < 260 ? (arena.player.x < pr.x) : false;
+          drawSprite(pr.art, pr.x, pr.y + 24, 108, npcFlip, false, 1.0, 1 - breath * 0.5, 1 + breath, 0, true);
           if (pr.kind === "npc_ward" && !pr.rescued) {
             ctx.strokeStyle = "rgba(112, 255, 230, 0.78)";
             ctx.lineWidth = 2;
             ctx.beginPath(); ctx.ellipse(pr.x, pr.y + 18, 48, 24, 0, 0, Math.PI * 2); ctx.stroke();
           }
-          drawNameplatePill(pr.bubble || pr.name, pr.badge, pr.x, pr.y - (isFullActor ? 84 : 58), accentCol, showSub || !!pr.bubble);
+          drawNameplatePill(pr.bubble || pr.name, pr.badge, pr.x, pr.y - 82, accentCol, showSub || !!pr.bubble);
         } else if (pr.destructible) {
           const pSize = pr.kind === "ward_pylon" ? 122 : pr.kind === "frost_crystal" ? 104 : 84;
           if (pr.kind === "ward_pylon") {
@@ -29030,7 +30055,25 @@ const ART = {
             ctx.stroke();
             ctx.restore();
           }
-          drawSprite(e.art, e.x, e.y - 8 - liftZ, e.isBoss ? 132 : e.isTreasure ? 58 : 90, e.x > arena.player.x, e.hitFlash > 0, 1.0, e.sx, e.sy);
+          const eFacing = e.facing !== undefined ? e.facing : (e.x > arena.player.x ? -1 : 1);
+          const eFlip = eFacing < 0;
+          const eSize = e.isBoss ? 132 : e.isTreasure ? 58 : 90;
+          const eFootY = e.y + e.r * 0.68 - liftZ + (e.id === "warden" && e.state === "windup" ? -7 : 0);
+          const eRot = (e.state === "recover" && e.id === "warden") ? (eFacing * 0.08) : (e.state === "lunge" && e.id === "wolf" ? eFacing * 0.10 : 0);
+          drawSprite(e.art, e.x, eFootY, eSize, eFlip, e.hitFlash > 0, 1.0, e.sx, e.sy, eRot, true);
+          // Distinct readable cues for Wolf (muzzle glint) vs Warden (amber hammer sparks) vs Recover (stagger aura)
+          if (e.state === "windup" && e.id === "wolf") {
+            drawPointLight(e.x + eFacing * (e.isBoss ? 34 : 22), e.y - 16 - liftZ, e.isBoss ? 36 : 24, e.perilous ? "rgba(255, 82, 82, 0.72)" : "rgba(255, 226, 122, 0.68)");
+          } else if (e.state === "windup" && e.id === "warden") {
+            drawPointLight(e.x, e.y - (e.isBoss ? 54 : 38) - liftZ, e.isBoss ? 52 : 34, "rgba(255, 184, 72, 0.58)");
+          } else if (e.state === "recover") {
+            ctx.save();
+            ctx.strokeStyle = "rgba(112, 255, 230, 0.68)";
+            ctx.lineWidth = 1.6;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r * 0.62, e.r * 0.85, e.r * 0.36, 0, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
+          }
         }
 
         // Frontline Shield-Vanguard Directional Bronze-Jade Shield Arc
@@ -29099,7 +30142,8 @@ const ART = {
         }
 
         if (e.mirrorTimer > 0) {
-          drawSprite("relic_cloud_mirror", e.x + (e.x > arena.player.x ? -32 : 32), e.y - 12, 46, false, false, 0.92, 1, 1, nowSec * 5);
+          const mFace = e.facing !== undefined ? e.facing : (e.x > arena.player.x ? -1 : 1);
+          drawSprite("relic_cloud_mirror", e.x + (mFace < 0 ? -32 : 32), e.y - 12, 46, false, false, 0.92, 1, 1, nowSec * 5);
         }
 
         const marks = e.swordMarks || 0;
@@ -29124,13 +30168,9 @@ const ART = {
         ctx.stroke();
 
         const hpRatio = Math.max(0, Math.min(1, e.hp / Math.max(1, e.maxHp)));
-        const hpGrad = ctx.createLinearGradient(bx, by, bx + bw, by);
-        if (e.isTreasure) { hpGrad.addColorStop(0, "#d89e36"); hpGrad.addColorStop(1, "#ffe680"); }
-        else if (e.enraged) { hpGrad.addColorStop(0, "#b81d24"); hpGrad.addColorStop(1, "#ff5e57"); }
-        else { hpGrad.addColorStop(0, "#c83b3b"); hpGrad.addColorStop(1, "#ff7870"); }
-        ctx.fillStyle = hpGrad;
+        ctx.fillStyle = e.isTreasure ? "#f0c858" : e.enraged ? "#e03e3e" : "#e55858";
         ctx.fillRect(bx, by, bw * hpRatio, 5);
-        ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+        ctx.fillStyle = "rgba(255, 255, 255, 0.24)";
         ctx.fillRect(bx, by, bw * hpRatio, 1.5);
 
         ctx.fillStyle = "#f2cf72";
@@ -29276,7 +30316,7 @@ const ART = {
             ctx.beginPath(); ctx.arc(qs.x, qs.y, 3.6, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
           }
-          const levY = Math.sin(nowSec * 4) * 5;
+          const levY = rm ? 0 : Math.sin(nowSec * 4) * 5;
           drawSprite("char_player_seated", p.x, p.y - 20 + levY, 102, p.facing < 0, false);
         } else {
           ctx.strokeStyle = p.invuln > 0 ? "#8affea" : arena.weaponPosture === "xuanzhong" ? "#ffb84d" : SWORD_STANCES[arena.stanceIdx].color;
@@ -29354,7 +30394,9 @@ const ART = {
             drawBaguaCircle(p.x, p.y + 34, 96, af.color, -nowSec * 2.4, 0.88, true);
             drawSprite(af.art, p.x, p.y - 78 - liftP + bobY * 0.5, 256, p.facing < 0, false, 0.94);
           }
-          drawSprite(activeHeroSpec.sprite, p.x, p.y - 12 - mountOffset - liftP + bobY, 104, p.facing < 0, (p.hyperArmorTimer || 0) > 0 && Math.floor(nowSec * 14) % 2 === 0, 1.0, 1.0, 1.0, p.lean);
+          const pPose = computePlayerVisualPose(p, nowSec);
+          const pHitFlash = pPose.hitFlash || ((p.hyperArmorTimer || 0) > 0 && Math.floor(nowSec * 14) % 2 === 0);
+          drawSprite(activeHeroSpec.sprite, p.x + pPose.ox, p.y + 34 - mountOffset - liftP + pPose.oy, 104, p.facing < 0, pHitFlash, 1.0, pPose.sx, pPose.sy, pPose.rot, true);
 
           // V24 Yuqing & Shangqing Tri-Clone Phantoms (`一气化三清 · 玉清青莲法身 & 上清紫电法身`)
           if (arena.sanqingState && arena.sanqingState.active) {
@@ -29692,10 +30734,12 @@ const ART = {
     const stg = arena.sanctumMode ? STAGES[1] : arena.towerMode ? STAGES[3] : STAGES[arena.stageIdx];
     // AAA Multi-Biome Climate: Bamboo Rain + Puddle Ripples, Cold-Pond Blizzard, Cloud-Sea Plumes & Boss Domain Sky!
     const domWeather = arena.bossDomain ? arena.bossDomain.weather : null;
-    if (stg.particleKind === "rain_mist" || domWeather === "blood_rain") {
+    if ((stg.particleKind === "rain_mist" || domWeather === "blood_rain") && !rm) {
       ctx.strokeStyle = domWeather === "blood_rain" ? "rgba(255, 110, 110, 0.30)" : "rgba(185, 230, 240, 0.26)";
       ctx.lineWidth = 1.15;
-      for (const r of rainDrops) {
+      const rainStep = degLvl >= 1 ? 2 : 1;
+      for (let ri = 0; ri < rainDrops.length; ri += rainStep) {
+        const r = rainDrops[ri];
         r.y += 0.014; r.x -= 0.0025;
         if (r.y > 1) {
           if (Math.random() < 0.08 && arena.ripples.length < 16) {
@@ -29709,10 +30753,10 @@ const ART = {
         ctx.lineTo(r.x * w - 4, r.y * h + r.l);
         ctx.stroke();
       }
-    } else if ((!arena.sanctumMode && arena.stageIdx === 2) || domWeather === "blizzard") {
-      // Cold-Pond Crystalline Drifting Snowflakes!
+    } else if (((!arena.sanctumMode && arena.stageIdx === 2) || domWeather === "blizzard") && !rm) {
       ctx.fillStyle = "rgba(220, 250, 255, 0.55)";
-      for (let sn = 0; sn < 28; sn++) {
+      const snowCount = degLvl >= 1 ? 14 : 28;
+      for (let sn = 0; sn < snowCount; sn++) {
         const sxN = ((sn * 0.137 + nowSec * (0.03 + (sn % 3) * 0.01)) % 1.0) * w;
         const syN = ((sn * 0.219 + nowSec * (0.055 + (sn % 4) * 0.012)) % 1.0) * h;
         ctx.beginPath();
@@ -29722,12 +30766,15 @@ const ART = {
     }
 
     // Fast Stamp-Cached Parallax Cloud-Sea Mist Plumes (`云海流岚`)
-    const mistStamp = getGlowStamp(arena.sanctumMode ? "rgba(210, 245, 238, 0.10)" : "rgba(165, 220, 225, 0.075)");
-    for (let cm = 0; cm < 3; cm++) {
-      const mx = ((nowSec * (18 + cm * 7) + cm * w * 0.42) % (w * 1.5)) - w * 0.25;
-      const my = cm === 0 ? h * 0.90 : cm === 1 ? h * 0.12 : h * 0.84;
-      const mr = w * 0.26;
-      ctx.drawImage(mistStamp, mx - mr, my - mr * 0.5, mr * 2, mr);
+    if (degLvl < 2) {
+      const mistStamp = getGlowStamp(arena.sanctumMode ? "rgba(210, 245, 238, 0.10)" : "rgba(165, 220, 225, 0.075)");
+      const mistT = rm ? 0 : nowSec;
+      for (let cm = 0; cm < 3; cm++) {
+        const mx = ((mistT * (18 + cm * 7) + cm * w * 0.42) % (w * 1.5)) - w * 0.25;
+        const my = cm === 0 ? h * 0.90 : cm === 1 ? h * 0.12 : h * 0.84;
+        const mr = w * 0.26;
+        ctx.drawImage(mistStamp, mx - mr, my - mr * 0.5, mr * 2, mr);
+      }
     }
 
     if (arena.bossDomain && arena.bossDomain.skyTint) {
@@ -29738,32 +30785,41 @@ const ART = {
       ctx.fillStyle = "rgba(22, 85, 98, 0.18)";
       ctx.fillRect(0, 0, w, h);
     }
-    ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-    for (const m of arena.ambientMotes) {
-      m.x += m.vx + Math.sin(nowSec + m.phase) * 0.0003;
-      m.y += m.vy;
-      if (m.y < 0) { m.y = 1; m.x = Math.random(); }
-      if (m.x < 0) m.x = 1;
-      if (m.x > 1) m.x = 0;
-      const pulse = 0.35 + 0.35 * Math.sin(nowSec * 2.2 + m.phase);
-      ctx.fillStyle = stg.particleKind === "lotus_glow"
-        ? `rgba(110, 255, 230, ${pulse})`
-        : stg.particleKind === "ghost_ember"
-          ? `rgba(120, 255, 180, ${pulse})`
-          : `rgba(255, 228, 150, ${pulse})`;
-      ctx.beginPath();
-      ctx.arc(m.x * w, m.y * h, m.r, 0, Math.PI * 2);
-      ctx.fill();
+    if (!rm) {
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      const moteStep = degLvl >= 2 ? 3 : degLvl >= 1 ? 2 : 1;
+      for (let mi = 0; mi < arena.ambientMotes.length; mi += moteStep) {
+        const m = arena.ambientMotes[mi];
+        m.x += m.vx + Math.sin(nowSec + m.phase) * 0.0003;
+        m.y += m.vy;
+        if (m.y < 0) { m.y = 1; m.x = Math.random(); }
+        if (m.x < 0) m.x = 1;
+        if (m.x > 1) m.x = 0;
+        const pulse = 0.35 + 0.35 * Math.sin(nowSec * 2.2 + m.phase);
+        ctx.fillStyle = stg.particleKind === "lotus_glow"
+          ? `rgba(110, 255, 230, ${pulse})`
+          : stg.particleKind === "ghost_ember"
+            ? `rgba(120, 255, 180, ${pulse})`
+            : `rgba(255, 228, 150, ${pulse})`;
+        ctx.beginPath();
+        ctx.arc(m.x * w, m.y * h, m.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
     }
-    ctx.restore();
+
+    // F25 Near Foreground Framing Silhouettes (drawn AFTER Y-sorted actors, strictly clamped to outer bottom 10-11% corners, BEFORE flushNameplates/floats so danger telegraphs & UI are NEVER occluded!)
+    if (depthCache && depthCache.fg) {
+      ctx.drawImage(depthCache.fg, visualLayersRuntime.fgOffsetX, visualLayersRuntime.fgOffsetY);
+    }
 
     // Static vignette handled by zero-cost GPU #stage-vignette-css layer!
 
     if (game) {
       const stV = getCombatStats(game);
       if (game.hp > 0 && game.hp / stV.maxHp < 0.35) {
-        const pulse = 0.16 + 0.10 * Math.sin(nowSec * 5.5);
+        const pulse = rm ? 0.18 : (0.16 + 0.10 * Math.sin(nowSec * 5.5));
         const lowG = ctx.createRadialGradient(w * 0.5, h * 0.5, Math.min(w, h) * 0.32, w * 0.5, h * 0.5, Math.max(w, h) * 0.72);
         lowG.addColorStop(0, "rgba(0,0,0,0)");
         lowG.addColorStop(1, `rgba(185, 24, 28, ${pulse.toFixed(3)})`);
@@ -29851,7 +30907,7 @@ const ART = {
       ctx.restore();
     }
 
-    if (arena.flash > 0.01) {
+    if (!rm && arena.flash > 0.01) {
       ctx.fillStyle = arena.flashColor;
       ctx.globalAlpha = arena.flash;
       ctx.fillRect(0, 0, w, h);
@@ -29859,7 +30915,7 @@ const ART = {
     ctx.restore();
 
     // V21 Zero-Overhead Radial Speed-Lines & Prismatic Chromatic Glint (`径向速度线冲击环与高光琉璃色散`)
-    if (arena.radialBurst || (arena.cloudFlight && arena.cloudFlight.active)) {
+    if (!rm && (arena.radialBurst || (arena.cloudFlight && arena.cloudFlight.active))) {
       const rb = arena.radialBurst;
       const fade = rb ? Math.max(0, 1 - rb.t) * rb.intensity : 0.34;
       const cx = rb ? rb.x : w * 0.35;
@@ -29894,10 +30950,10 @@ const ART = {
     }
 
     // V18 2–3 Frame High-Contrast Black-White-Cinnabar Sumi-Ink Impact Frame (`朱砂水墨一闪定格帧`)!
-    if ((arena.impactFrames || 0) > 0 || (photoMode.active && photoMode.previewImpact)) {
+    if ((!rm && (arena.impactFrames || 0) > 0) || (photoMode.active && photoMode.previewImpact)) {
       const ix = arena.impactX || (arena.player ? arena.player.x : w * 0.5);
       const iy = arena.impactY || (arena.player ? arena.player.y : h * 0.5);
-      const invertPhase = (arena.impactFrames % 2 === 1) && !photoMode.previewImpact;
+      const invertPhase = !rm && (arena.impactFrames % 2 === 1) && !photoMode.previewImpact;
       ctx.save();
       ctx.fillStyle = invertPhase ? "rgba(248, 244, 234, 0.78)" : "rgba(6, 8, 12, 0.68)";
       ctx.fillRect(0, 0, w, h);
@@ -30028,6 +31084,9 @@ const ART = {
       const cf = arena.cloudFlight;
       const skyBoss = arena.enemies.find(e => e.isBoss && e.hp > 0);
       bossBanner.style.display = "flex";
+      const rcc = document.getElementById("region-cinema-card");
+      if (rcc) rcc.classList.remove("show");
+      if (regionCardTimer) { clearTimeout(regionCardTimer); regionCardTimer = null; }
       if (titanHud) titanHud.classList.remove("active");
       if (climbBtn) climbBtn.classList.remove("active");
       document.getElementById("boss-banner-name").textContent = skyBoss ? `☁ ${skyBoss.name}` : "☁ 九霄云海 · 高速御剑破阵航程";
@@ -30041,6 +31100,9 @@ const ART = {
       const rMeta = SPIRE_ROOM_TYPES.find(x => x.id === sp.roomType) || SPIRE_ROOM_TYPES[0];
       const rem = arena.enemies.filter(e => e.hp > 0).length;
       bossBanner.style.display = "flex";
+      const rcc = document.getElementById("region-cinema-card");
+      if (rcc) rcc.classList.remove("show");
+      if (regionCardTimer) { clearTimeout(regionCardTimer); regionCardTimer = null; }
       if (titanHud) titanHud.classList.remove("active");
       if (climbBtn) climbBtn.classList.remove("active");
       const spPractice = Boolean(sp.practiceMode || (sp.startFloor && sp.startFloor > 1));
@@ -30055,6 +31117,9 @@ const ART = {
     if (arena.sectDefense && arena.sectDefense.active && bossBanner) {
       const sd = arena.sectDefense;
       bossBanner.style.display = "flex";
+      const rcc = document.getElementById("region-cinema-card");
+      if (rcc) rcc.classList.remove("show");
+      if (regionCardTimer) { clearTimeout(regionCardTimer); regionCardTimer = null; }
       if (titanHud) titanHud.classList.remove("active");
       if (climbBtn) climbBtn.classList.remove("active");
       document.getElementById("boss-banner-name").textContent = `🛡 护山大阵 · 第 ${sd.wave}/${sd.maxWaves} 波百鬼夜行`;
@@ -30089,7 +31154,10 @@ const ART = {
       if (climbBtn) {
         climbBtn.classList.toggle("active", !!(boss.isTitan && boss.titanCollapsed && !boss.climbExecuted && !boss.climbInProgress));
       }
-      bossBanner.style.display = "flex"; const rcc = document.getElementById("region-cinema-card"); if (rcc) rcc.classList.remove("active");
+      bossBanner.style.display = "flex";
+      const rcc = document.getElementById("region-cinema-card");
+      if (rcc) rcc.classList.remove("show");
+      if (regionCardTimer) { clearTimeout(regionCardTimer); regionCardTimer = null; }
       const brPracticePrefix = (arena.bossRush && arena.bossRush.active && (arena.bossRush.practiceMode || (arena.bossRush.startBout && arena.bossRush.startBout > 1))) ? "【练习·无奖】" : "";
       document.getElementById("boss-banner-name").textContent = `${brPracticePrefix}${boss.name}`;
       const hasPylon = arena.props.some(p => p.kind === "ward_pylon" && p.hp > 0);
@@ -30801,6 +31869,7 @@ const ART = {
     box.setAttribute("data-tier", modalTier);
     box.innerHTML = html;
     bd.classList.add("open");
+    notePlaytestMenuOpen();
     renderPropInteractHud();
     focusDialogSafely(box);
     return true;
@@ -30843,6 +31912,7 @@ const ART = {
     const bd = document.getElementById("modal-backdrop");
     const wasOpen = !!(bd && bd.classList.contains("open"));
     if (bd) bd.classList.remove("open");
+    notePlaytestMenuClose();
     const prevTok = modalPauseToken;
     modalPauseToken = null;
     releasePauseToken(prevTok);
@@ -30907,6 +31977,7 @@ const ART = {
     drawerOpen = true;
     if (!drawerPauseToken) drawerPauseToken = acquirePauseToken("drawer", tab || "drawer");
     if (panel) panel.classList.add("drawer-open");
+    notePlaytestMenuOpen();
     document.querySelectorAll(".nav-tab-btn").forEach(b => b.classList.toggle("active", b.getAttribute("data-tab") === tab));
     renderDrawerContent();
     renderPropInteractHud();
@@ -30925,6 +31996,7 @@ const ART = {
     const modalOpen = !!(document.getElementById("modal-backdrop") && document.getElementById("modal-backdrop").classList.contains("open"));
     const panel = document.getElementById("jade-panel");
     if (panel) panel.classList.remove("drawer-open");
+    notePlaytestMenuClose();
     document.querySelectorAll(".nav-tab-btn").forEach(b => b.classList.remove("active"));
     renderPropInteractHud();
     if (wasOpen && !modalOpen) {
@@ -32364,6 +33436,7 @@ const ART = {
       return { ok: false, reason: "insufficient_stones" };
     }
 
+    const beforeStats = getCombatStats(game);
     const snap = {
       stones: game.stones,
       lvl: eq.lvl,
@@ -32390,6 +33463,7 @@ const ART = {
     Sound.clang(1.35, 0.14);
     Sound.fanfare();
     showToast(`批量淬火功成！【${eq.name} +${eq.lvl}】（共耗 ${preview.totalCost} 灵石）`);
+    recordVol1PrepUpgradeDelta(beforeStats, `${eq.name} +${eq.lvl}`);
     updateHud();
     if (drawerOpen) renderDrawerContent();
     return { ok: true, slot, steps: preview.steps, toLvl: eq.lvl, totalCost: preview.totalCost };
@@ -32781,9 +33855,16 @@ const ART = {
           <div class="a11y-row">
             <div>
               <strong style="font-size:12px;color:#e6f4f1;">减弱动态效果 (Reduced Motion)</strong>
-              <div style="font-size:10px;color:var(--text-sub);">遵循系统 prefers-reduced-motion 或手动开启：关闭震屏与顿帧并大幅缩短界面过渡动效</div>
+              <div style="font-size:10px;color:var(--text-sub);">遵循系统 prefers-reduced-motion 或手动开启：关闭震屏、顿帧、定格帧与视差动效</div>
             </div>
             <button type="button" id="btn-a11y-reduced-motion" class="btn-ghost ${a11ySettings.reducedMotion ? "active-pill" : ""}" style="padding:5px 14px;font-size:11.5px;" data-action="toggle-a11y-reduced-motion">${a11ySettings.reducedMotion ? "已开启 ✓" : "已关闭"}</button>
+          </div>
+          <div class="a11y-row">
+            <div>
+              <strong style="font-size:12px;color:#e6f4f1;">首卷分层景深与前景氛围 (Enhanced Visual Layers)</strong>
+              <div style="font-size:10px;color:var(--text-sub);">开启破庙/洞府远中近三层景深光雾与边角竹影（绝不遮挡敌方危招，减弱动态下自动静止）</div>
+            </div>
+            <button type="button" id="btn-a11y-visual-layers" class="btn-ghost ${a11ySettings.enhancedVisualLayers ? "active-pill" : ""}" style="padding:5px 14px;font-size:11.5px;" data-action="toggle-a11y-visual-layers">${a11ySettings.enhancedVisualLayers ? "已开启 ✓" : "已关闭"}</button>
           </div>
           <div class="a11y-row">
             <div>
@@ -32818,6 +33899,10 @@ const ART = {
                 </div>
               </div>
             `).join("")}
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:6px;border-top:1px dashed rgba(112,255,230,0.22);gap:8px;flex-wrap:wrap;">
+            <span style="font-size:10.5px;color:var(--text-sub);">📋 试玩观察辅助（纯内存采样，绝不写入玩家存档）</span>
+            <button type="button" id="btn-export-playtest-telemetry" class="btn-ghost" style="padding:3px 10px;font-size:10.5px;" data-action="export-playtest-telemetry">导出本次试玩观察数据 (JSON)</button>
           </div>
         </div>`;
     } else {
@@ -34896,6 +35981,22 @@ const ART = {
       saveA11ySettings(); openSettingsModal();
       return;
     }
+    if (t.getAttribute("data-action") === "toggle-a11y-visual-layers") {
+      a11ySettings.enhancedVisualLayers = !a11ySettings.enhancedVisualLayers;
+      saveA11ySettings(); openSettingsModal();
+      return;
+    }
+    if (t.getAttribute("data-action") === "export-playtest-telemetry") {
+      const payload = exportPlaytestSessionJson();
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+          navigator.clipboard.writeText(payload).catch(() => {});
+        }
+      } catch (e) {}
+      Sound.noticeCue(2);
+      showToast(`📋 已生成本次试玩观察 JSON（${payload.length} 字节，纯内存采样）`, { tier: 2, key: "export_playtest", throttleMs: 1200 });
+      return;
+    }
     if (t.hasAttribute("data-set-notice-level")) {
       const nl = t.getAttribute("data-set-notice-level");
       if (["full", "lite", "minimal"].includes(nl)) {
@@ -35409,12 +36510,14 @@ const ART = {
       if ((eq.lvl || 0) >= 10) { showToast("该仙装已淬火至圆满 +10！"); return; }
       const cost = getGearEnhanceCost(game, eq);
       if (game.stones < cost) { showToast(`淬火需 ${cost} 灵石`); return; }
+      const beforeStats = getCombatStats(game);
       game.stones -= cost;
       eq.lvl = (eq.lvl || 0) + 1;
       if (game.goalStats) game.goalStats.craftOrLoot = (game.goalStats.craftOrLoot || 0) + 1;
       Sound.clang(1.35, 0.14);
       Sound.fanfare();
       showToast(`淬火功成！【${eq.name} +${eq.lvl}】基础属性大幅跃升！`);
+      recordVol1PrepUpgradeDelta(beforeStats, `${eq.name} +${eq.lvl}`);
       saveGame(); updateHud(); renderDrawerContent();
       return;
     }
@@ -36053,7 +37156,9 @@ const ART = {
 
   let lastTs = performance.now();
   function mainLoop(now) {
-    const dt = Math.min(0.05, (now - lastTs) / 1000);
+    const rawFrameMs = Math.max(0, now - lastTs);
+    recordPerfFrameSample(rawFrameMs);
+    const dt = Math.min(0.05, rawFrameMs / 1000);
     lastTs = now;
     stepArena(dt);
     stepCombatCalmScheduler(dt);
@@ -36494,7 +37599,44 @@ const ART = {
     LIFESPAN_THRESHOLDS,
     previewLifespanImpact,
     normalizeLoadedGame,
-    createFreshGame
+    createFreshGame,
+    // Q4 (F24–F29) action rig, telegraph parity, layered scene depth, audio/perf/transition/playtest telemetry hooks
+    SPRITE_ANCHORS,
+    setPlayerAnimState,
+    computePlayerVisualPose,
+    getEnemyAttackSpec,
+    getEnemyStateSnapshot,
+    getVisualLayersState,
+    setVisualLayersEnabled,
+    getAudioCueTelemetry: () => ({ lastCue: Sound.lastCue, cueLog: Sound.getCueLog(), stems: Object.assign({}, Sound.stems) }),
+    clearAudioCueTelemetry: () => Sound.clearCueLog(),
+    Sound,
+    transitionStageScene,
+    getSceneTransitionState: () => Object.assign({}, sceneTransitionState),
+    isReducedMotionActive,
+    clearTransientMotionEffects,
+    getPerfStats,
+    resetPerfStats,
+    setPerfDegradeOverride,
+    getVol1JourneyPhase,
+    getLastTribulationSummary: () => arena.lastTribulationSummary ? Object.assign({}, arena.lastTribulationSummary) : null,
+    getPlaytestTelemetry,
+    resetPlaytestTelemetry,
+    exportPlaytestSessionJson,
+    getArtDecodeSummary: () => {
+      const keys = Object.keys(ART);
+      const decoded = [];
+      const failed = [];
+      for (const k of keys) {
+        const im = IMG_CACHE[k];
+        if (im && im.complete && im.naturalWidth > 0 && im.naturalHeight > 0) {
+          decoded.push({ key: k, w: im.naturalWidth, h: im.naturalHeight });
+        } else {
+          failed.push({ key: k, complete: Boolean(im && im.complete), w: im ? im.naturalWidth : 0, h: im ? im.naturalHeight : 0 });
+        }
+      }
+      return { total: keys.length, decodedCount: decoded.length, decoded, failed };
+    }
   };
   window.__CHENYUAN_V24__ = {
     getState: () => ({

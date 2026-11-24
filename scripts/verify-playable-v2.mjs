@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P5 + R2–R7 + Q0–Q2 · 共 60 项）
+ * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P5 + R2–R7 + Q0–Q4 · 共 70 项）
  *
  * 用法：
  *   node scripts/verify-playable-v2.mjs
@@ -11,6 +11,7 @@
  */
 
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -9397,6 +9398,724 @@ try {
       assert.equal(f23Edge.multiJumpTip, true, "Jumping 73.9%->91.4% in one step must still set seenLifespan75Tip");
       assert.equal(f23Edge.r1PrevTxt.includes("75%"), false, "Taixu Round 1 at 851/1140 should not warn 75% yet");
       assert.ok(f23Edge.r2PrevTxt.includes("75%") && f23Edge.r2PrevHasWarn, `Taixu Round 2 at 854/1140 must refresh #taixu-craft-lifespan-preview with 75% warning, got: ${f23Edge.r2PrevTxt}`);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // ==================== Q4 (F24–F29) FIRST-VOLUME POLISH, ACTION RIG, PARALLAX, WEBP QA, AUDIO/PERF & VERTICAL SLICE ====================
+  await runSuite("Q4-1", "Q4 F24 主角动作状态机、足底锚点与妖狼/石卫朝向锁定及红金判定一致", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q4-1", true);
+    try {
+      const rigCheck = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        const p = s.arena.player;
+        const anchors = api.SPRITE_ANCHORS;
+
+        // Verify all protagonist pose states produce distinct deterministic transforms
+        const states = ["idle", "run", "light1", "light2", "light3", "light4", "heavy", "dodge", "hit", "knockdown", "meditate"];
+        const poses = {};
+        for (const stName of states) {
+          api.setPlayerAnimState(stName, 0.30, { recoilDir: -1 });
+          p.animT = 0.12;
+          poses[stName] = api.computePlayerVisualPose(p, 0.75);
+        }
+
+        // Verify live combat hooks trigger expected states
+        api.setPlayerAnimState("idle", 0.3);
+        p.slashCd = 0; p.comboWindow = 0;
+        api.fireManualSlash();
+        const afterLight1 = p.animState;
+
+        p.dashCd = 0;
+        api.triggerDashParry();
+        const afterDodge = p.animState;
+
+        p.invuln = 0;
+        api.hurtPlayer(12, { sourceName: "青岚妖狼", moveName: "扑咬", isHeavy: false });
+        const afterHit = p.animState;
+        const hitFlashActive = p.hitFlash > 0;
+
+        // Verify non-lethal hit does NOT lock attack input
+        p.slashCd = 0;
+        api.fireManualSlash();
+        const canAttackAfterHit = p.animState.startsWith("light");
+
+        // Verify lethal hit sets knockdown and revive resets to idle
+        p.invuln = 0;
+        s.game.inventory.healing_pill = 2;
+        api.hurtPlayer(9999, { uncapped: true, sourceName: "雾隐狼王", moveName: "重击", isHeavy: true });
+        const afterKnockdown = p.animState;
+        api.resolveDefeatChoice("revive-pill");
+        const afterRevive = p.animState;
+
+        return {
+          anchorsOk: Boolean(anchors && anchors.actor_player_battle && anchors.enemy_wolf && anchors.enemy_warden && anchors.actor_shen),
+          poses,
+          afterLight1,
+          afterDodge,
+          afterHit,
+          hitFlashActive,
+          canAttackAfterHit,
+          afterKnockdown,
+          afterRevive
+        };
+      });
+
+      assert.equal(rigCheck.anchorsOk, true, "SPRITE_ANCHORS must define foot anchors for player, wolf, warden, and living NPCs");
+      assert.equal(rigCheck.afterLight1, "light1");
+      assert.equal(rigCheck.afterDodge, "dodge");
+      assert.equal(rigCheck.afterHit, "hit");
+      assert.equal(rigCheck.hitFlashActive, true);
+      assert.equal(rigCheck.canAttackAfterHit, true, "Non-lethal hit recoil must remain non-blocking");
+      assert.equal(rigCheck.afterKnockdown, "knockdown");
+      assert.equal(rigCheck.afterRevive, "idle");
+      assert.notEqual(rigCheck.poses.light1.ox, rigCheck.poses.idle.ox, "light1 must lunge forward vs idle");
+      assert.ok(Math.abs(rigCheck.poses.knockdown.rot) > 0.5, "knockdown must rotate into fallen posture");
+      assert.ok(rigCheck.poses.dodge.sx > 1.05, "dodge must stretch horizontally");
+
+      // Verify Wolf facing lock + shared rect telegraph/corridor hitbox + recover state
+      const enemyCheck = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        const p = s.arena.player;
+        s.arena.enemies = [];
+        s.arena.projectiles = [];
+        p.x = 460; p.y = 480; p.invuln = 0; p.shieldHp = 0;
+        api.spawnSingleEnemy("wolf", 640, 480, 1.0, false);
+        const wolf = s.arena.enemies[0];
+        wolf.timer = 0.01;
+        api.stepArena(0.03); // chase -> windup facing left (-1)
+        const windupState = wolf.state;
+        const windupFacing = wolf.facing;
+        const wolfSpec = api.getEnemyAttackSpec(wolf);
+
+        // Move player behind wolf during windup -> facing MUST stay locked!
+        p.x = 760; p.y = 480;
+        api.stepArena(0.05);
+        const facingDuringWindup = wolf.facing;
+
+        // Place player clearly OUTSIDE lateral corridor (perp = 120 > halfW + 14) and complete lunge -> MUST NOT hit!
+        const hitsBeforeMiss = (s.arena.encounterTelemetry && s.arena.encounterTelemetry.hitsTaken) || 0;
+        const hpBeforeMiss = s.game.hp;
+        p.x = 540; p.y = 620; p.invuln = 0;
+        wolf.timer = 0.01;
+        api.stepArena(0.03); // windup -> lunge
+        const lungeState = wolf.state;
+        const facingDuringLunge = wolf.facing;
+        for (let i = 0; i < 16; i++) api.stepArena(0.03);
+        const hitsAfterMiss = (s.arena.encounterTelemetry && s.arena.encounterTelemetry.hitsTaken) || 0;
+        const hpAfterMiss = s.game.hp;
+        const stateAfterLunge = wolf.state;
+
+        // Verify Warden isometric ellipse parity: inside ellipse hits, outside y-axis (circular <= r but iso > r) misses!
+        s.arena.enemies = [];
+        api.spawnSingleEnemy("warden", 620, 480, 1.0, false);
+        const warden = s.arena.enemies[0];
+        warden.state = "windup";
+        warden.perilous = false;
+        warden.lowSweepWindup = false;
+        warden.grabWindup = false;
+        warden.timer = 0.01;
+        const wardenSpec = api.getEnemyAttackSpec(warden);
+        // Place player at dx=0, dy=wardenSpec.r * 0.72 from originYOff -> circular dist < r, but isometric ellipse dist = 0.72/0.56 > 1.0 -> MUST MISS!
+        const hitsWardenBeforeMiss = (s.arena.encounterTelemetry && s.arena.encounterTelemetry.hitsTaken) || 0;
+        const hpWardenBeforeMiss = s.game.hp;
+        p.x = warden.x;
+        p.y = warden.y + wardenSpec.originYOff + wardenSpec.r * 0.72;
+        p.invuln = 0;
+        api.stepArena(0.03);
+        const hitsWardenAfterMiss = (s.arena.encounterTelemetry && s.arena.encounterTelemetry.hitsTaken) || 0;
+        const hpWardenAfterMiss = s.game.hp;
+        const wardenStateAfterSlam = warden.state;
+
+        // Now place player inside isometric ellipse (dx=0, dy=wardenSpec.r * 0.40) -> MUST HIT!
+        warden.state = "windup";
+        warden.timer = 0.01;
+        p.x = warden.x;
+        p.y = warden.y + wardenSpec.originYOff + wardenSpec.r * 0.40;
+        p.invuln = 0;
+        const hpWardenBeforeHit = s.game.hp;
+        api.stepArena(0.03);
+        const hpWardenAfterHit = s.game.hp;
+
+        return {
+          windupState,
+          windupFacing,
+          facingDuringWindup,
+          lungeState,
+          facingDuringLunge,
+          wolfSpec,
+          hitsBeforeMiss,
+          hitsAfterMiss,
+          hpBeforeMiss,
+          hpAfterMiss,
+          stateAfterLunge,
+          wardenSpec,
+          hitsWardenBeforeMiss,
+          hitsWardenAfterMiss,
+          hpWardenBeforeMiss,
+          hpWardenAfterMiss,
+          wardenStateAfterSlam,
+          hpWardenBeforeHit,
+          hpWardenAfterHit,
+          snap: api.getEnemyStateSnapshot(warden)
+        };
+      });
+
+      assert.equal(enemyCheck.windupState, "windup");
+      assert.equal(enemyCheck.windupFacing, -1);
+      assert.equal(enemyCheck.facingDuringWindup, -1, "Wolf facing MUST stay locked during windup even if player moves behind");
+      assert.equal(enemyCheck.lungeState, "lunge");
+      assert.equal(enemyCheck.facingDuringLunge, -1, "Wolf facing MUST stay locked during lunge");
+      assert.equal(enemyCheck.wolfSpec.shape, "rect");
+      assert.equal(enemyCheck.hitsAfterMiss, enemyCheck.hitsBeforeMiss, "Player standing outside wolf charge corridor must take 0 hits");
+      assert.ok(enemyCheck.hpAfterMiss >= enemyCheck.hpBeforeMiss, "Player standing outside wolf charge corridor must NOT lose HP");
+      assert.equal(enemyCheck.stateAfterLunge, "recover", "Wolf must enter explicit recover state after lunge");
+      assert.equal(enemyCheck.wardenSpec.shape, "ellipse");
+      assert.equal(enemyCheck.hitsWardenAfterMiss, enemyCheck.hitsWardenBeforeMiss, "Player outside Warden isometric ellipse must take 0 hits");
+      assert.ok(enemyCheck.hpWardenAfterMiss >= enemyCheck.hpWardenBeforeMiss, "Player outside Warden isometric ellipse must NOT lose HP");
+      assert.equal(enemyCheck.wardenStateAfterSlam, "recover", "Warden must enter explicit recover state after slam");
+      assert.ok(enemyCheck.hpWardenAfterHit < enemyCheck.hpWardenBeforeHit, "Player inside Warden isometric ellipse must take slam damage");
+      assert.equal(enemyCheck.snap.id, "warden");
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  await runSuite("Q4-2", "Q4 F25 首卷三层景深视差修复、前景不遮危招、可视化开关持久化与活体NPC落地", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q4-2", true);
+    try {
+      // Move player off-center and wait for renderArenaCanvas to write unified #stage-bg-img transform
+      const parallaxCheck = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.arena.player.x = 1080;
+        s.arena.player.y = 540;
+        return api.getVisualLayersState();
+      });
+      await page.waitForTimeout(120);
+      const afterFrame = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const bgEl = document.getElementById("stage-bg-img");
+        const st = api.getVisualLayersState();
+        const shenProp = api.getState().arena.props.find(pr => pr.id === "shen_rescue");
+        return {
+          bgTransform: bgEl ? bgEl.style.transform : "",
+          st,
+          shenHasLotus: Boolean(shenProp && shenProp.onLotus)
+        };
+      });
+      assert.ok(afterFrame.bgTransform && afterFrame.bgTransform.includes("translate("), `Unified #stage-bg-img parallax transform must persist, got: ${afterFrame.bgTransform}`);
+      assert.ok(Math.abs(afterFrame.st.bgParallaxX) > 0.5, `Expected non-zero far parallaxX when player is off-center, got ${afterFrame.st.bgParallaxX}`);
+      assert.equal(afterFrame.st.activeDrawn, true, "Vol 1 enhanced visual layers must be active by default");
+      assert.ok(afterFrame.st.fgMarginPct <= 0.12, `Foreground silhouettes must be clamped to outer <=12% corner margin, got ${afterFrame.st.fgMarginPct}`);
+      assert.equal(afterFrame.shenHasLotus, false, "Living NPC shen_rescue must NOT hover on lotus pedestal");
+
+      // Check Sanctum living NPCs vs ritual shrines
+      const sanctumCheck = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        api.enterSanctumHub();
+        const props = api.getState().arena.props;
+        const livingIds = ["hub_shen", "hub_lu", "hub_pei", "hub_yan"];
+        const shrineIds = ["hub_merchant", "hub_scripture_hall"];
+        return {
+          livingAnyLotus: livingIds.some(id => Boolean(props.find(p => p.id === id)?.onLotus)),
+          shrinesAllLotus: shrineIds.every(id => Boolean(props.find(p => p.id === id)?.onLotus)),
+          visualState: api.getVisualLayersState()
+        };
+      });
+      assert.equal(sanctumCheck.livingAnyLotus, false, "Sanctum living NPCs (shen/lu/pei/yan) must NOT carry onLotus: true");
+      assert.equal(sanctumCheck.shrinesAllLotus, true, "Sanctum ritual shrines (hub_merchant/hub_scripture_hall) must retain onLotus: true");
+
+      // Toggle #btn-a11y-visual-layers OFF via Settings -> Accessibility and verify reload persistence
+      await page.click("#btn-open-settings");
+      await page.waitForSelector('#modal-backdrop.open [data-sys-tab="accessibility"]');
+      await page.click('#modal-backdrop.open [data-sys-tab="accessibility"]');
+      await page.waitForSelector("#btn-a11y-visual-layers");
+      await page.click("#btn-a11y-visual-layers");
+      await page.waitForTimeout(80);
+      const offState = await page.evaluate(() => window.__CHENYUAN_V25__.getVisualLayersState());
+      assert.equal(offState.enabled, false, "Clicking #btn-a11y-visual-layers must disable enhancedVisualLayers");
+
+      await page.reload({ waitUntil: "domcontentloaded" });
+      const persistedOff = await page.evaluate(() => window.__CHENYUAN_V25__.getVisualLayersState().enabled);
+      assert.equal(persistedOff, false, "enhancedVisualLayers toggle must persist across reload in A11Y_STORAGE_KEY");
+
+      // Re-enable layers, enable reducedMotion -> parallax & foreground offset must freeze to 0
+      await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        api.setVisualLayersEnabled(true);
+      });
+      await page.click("#btn-continue-save");
+      await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+      await page.click("#btn-open-settings");
+      await page.waitForSelector('#modal-backdrop.open [data-sys-tab="accessibility"]');
+      await page.click('#modal-backdrop.open [data-sys-tab="accessibility"]');
+      await page.click("#btn-a11y-reduced-motion");
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(120);
+      const rmFrozen = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        api.getState().arena.player.x = 1120;
+        return api.getVisualLayersState();
+      });
+      await page.waitForTimeout(100);
+      const rmFrozenAfter = await page.evaluate(() => window.__CHENYUAN_V25__.getVisualLayersState());
+      assert.equal(rmFrozenAfter.reducedMotion, true);
+      assert.equal(rmFrozenAfter.bgParallaxX, 0, "Parallax X must freeze to 0 under reducedMotion");
+      assert.equal(rmFrozenAfter.fgOffsetX, 0, "Foreground parallax offset must freeze to 0 under reducedMotion");
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  await runSuite("Q4-3", "Q4 F26 115项内联WebP解码完整、5项RGBA资产保护与art-manifest二进制质检通过", async () => {
+    // 1. Run scripts/art-manifest.mjs --check and --json directly in Node
+    const checkOut = execFileSync(process.execPath, [path.join(REPO_ROOT, "scripts", "art-manifest.mjs"), "--check"], {
+      cwd: REPO_ROOT,
+      encoding: "utf8"
+    });
+    assert.ok(checkOut.includes("art-manifest OK"), `art-manifest --check failed: ${checkOut}`);
+
+    const jsonOut = execFileSync(process.execPath, [path.join(REPO_ROOT, "scripts", "art-manifest.mjs"), "--json"], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+      maxBuffer: 10 * 1024 * 1024
+    });
+    const manifest = JSON.parse(jsonOut);
+    assert.equal(manifest.summary.inlineCount, 115, `Expected 115 inline ART entries, got ${manifest.summary.inlineCount}`);
+    assert.equal(manifest.summary.protectedRgbaCount, 5, "All 5 divergent inline RGBA assets must be audited and protected");
+    for (const p of manifest.protectedRgbaAudit) {
+      assert.equal(p.inlineAlpha, true, `Protected inline asset ${p.key} must retain RGBA alpha`);
+      assert.ok(p.inlineBytes > p.diskBytes, `Protected inline asset ${p.key} (${p.inlineBytes}B) must remain larger than RGB disk copy (${p.diskBytes}B)`);
+    }
+    assert.equal(manifest.preloadAudit.length, 13, `Expected 13 preload-only assets audited, got ${manifest.preloadAudit.length}`);
+
+    // 2. Verify all 115 inline ART images genuinely decode with naturalWidth/naturalHeight matching RIFF/WEBP headers in 1440x900 Chromium
+    const { ctx, page } = await startCleanGamePage(browser, "Q4-3", true);
+    try {
+      await page.waitForFunction(() => window.__CHENYUAN_V25__.getArtDecodeSummary().decodedCount === 115, { timeout: 10000 });
+      const decodeCheck = await page.evaluate((expectedDims) => {
+        const summary = window.__CHENYUAN_V25__.getArtDecodeSummary();
+        const dimMismatches = [];
+        for (const item of summary.decoded) {
+          const exp = expectedDims[item.key];
+          if (!exp || exp[0] !== item.w || exp[1] !== item.h) {
+            dimMismatches.push(`${item.key}: got ${item.w}x${item.h}, expected ${exp ? exp.join("x") : "none"}`);
+          }
+        }
+        const domImgs = Array.from(document.querySelectorAll("img[src^='data:image/webp']"));
+        const brokenDomImgs = domImgs.filter(el => el.complete && el.naturalWidth === 0).map(el => el.id || el.alt || "img");
+        return {
+          total: summary.total,
+          decodedCount: summary.decodedCount,
+          failed: summary.failed,
+          dimMismatches,
+          domImgCount: domImgs.length,
+          brokenDomImgs
+        };
+      }, Object.fromEntries(manifest.inlineAssets.map(a => [a.key, [a.webp.width, a.webp.height]])));
+      assert.equal(decodeCheck.total, 115, "Runtime const ART must preserve all 115 entries");
+      assert.equal(decodeCheck.decodedCount, 115, `All 115 inline WebP images must decode in Chromium, failed: ${JSON.stringify(decodeCheck.failed)}`);
+      assert.equal(decodeCheck.dimMismatches.length, 0, `Chromium decoded dimensions must match RIFF/WEBP headers: ${decodeCheck.dimMismatches.join("; ")}`);
+      assert.equal(decodeCheck.brokenDomImgs.length, 0, `Broken inline WebP <img> elements: ${decodeCheck.brokenDomImgs.join(", ")}`);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  await runSuite("Q4-4", "Q4 F27 七层音效遥测、400ms水墨转场与横幅修复、完全减弱动效及无截断性能基线", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q4-4", true);
+    try {
+      // 1. Verify real Chromium user activation -> Sound.ctx creation, first-cue audible, 7-tier Sound cue layering, and GainNode suppression on stem=0 / muted=true
+      await page.mouse.click(720, 450);
+      const audioCheck = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const hasBeenActive = Boolean(navigator.userActivation && navigator.userActivation.hasBeenActive);
+        if (api.Sound.ctx && typeof api.Sound.ctx.close === "function") {
+          try { api.Sound.ctx.close(); } catch (e) {}
+        }
+        api.Sound.ctx = null;
+        api.Sound.noiseBuf = null;
+        api.Sound.muted = false;
+        api.clearAudioCueTelemetry();
+        api.Sound.fleshHit(1);
+        api.Sound.fleshHit(2);
+        api.Sound.shieldAbsorb("player");
+        api.Sound.deflectClang();
+        api.Sound.postureBreak();
+        api.Sound.playerHurt(true);
+        api.Sound.dialogueCue();
+        api.Sound.noticeCue(1);
+        const logAll = api.getAudioCueTelemetry().cueLog;
+        const tiers = Array.from(new Set(logAll.map(x => x.tier)));
+        const soundCtxExists = Boolean(api.Sound.ctx);
+        const firstCueAudible = Boolean(logAll[0] && logAll[0].audible === true);
+        const allActiveAudible = logAll.length > 0 && logAll.every(x => x.audible === true);
+
+        // Instrument AudioContext.createGain to prove real Web Audio synthesis vs suppression
+        const prevBlade = api.Sound.stems.blade;
+        const prevMuted = api.Sound.muted;
+        let activeSlashGains = 0;
+        let stemZeroGains = 0;
+        let mutedGains = 0;
+        let mutedRec = null;
+        let stemZeroSlashRec = null;
+        let globalMutedRec = null;
+        const origCreateGain = api.Sound.ctx ? api.Sound.ctx.createGain.bind(api.Sound.ctx) : null;
+        let gainCounter = 0;
+        if (api.Sound.ctx && origCreateGain) {
+          api.Sound.ctx.createGain = (...args) => {
+            gainCounter += 1;
+            return origCreateGain(...args);
+          };
+        }
+        try {
+          gainCounter = 0;
+          api.Sound.stems.blade = 1.0;
+          api.Sound.muted = false;
+          api.Sound.slash(true);
+          activeSlashGains = gainCounter;
+
+          // Zero blade stem and verify stemMuted telemetry flag + 0 GainNodes
+          gainCounter = 0;
+          api.Sound.stems.blade = 0;
+          api.Sound.fleshHit(1);
+          mutedRec = api.getAudioCueTelemetry().lastCue;
+          api.Sound.slash(true);
+          stemZeroSlashRec = api.getAudioCueTelemetry().lastCue;
+          stemZeroGains = gainCounter;
+
+          // Global mute and verify 0 GainNodes + audible=false
+          gainCounter = 0;
+          api.Sound.stems.blade = 1.0;
+          api.Sound.muted = true;
+          api.Sound.slash(true);
+          globalMutedRec = api.getAudioCueTelemetry().lastCue;
+          mutedGains = gainCounter;
+        } finally {
+          if (api.Sound.ctx && origCreateGain) api.Sound.ctx.createGain = origCreateGain;
+          api.Sound.stems.blade = prevBlade;
+          api.Sound.muted = prevMuted;
+        }
+        return {
+          hasBeenActive,
+          soundCtxExists,
+          firstCueAudible,
+          allActiveAudible,
+          activeSlashGains,
+          stemZeroGains,
+          mutedGains,
+          stemZeroSlashRec,
+          globalMutedRec,
+          tiers,
+          count: logAll.length,
+          mutedRec
+        };
+      });
+      assert.equal(audioCheck.hasBeenActive, true, "Real Chromium user click must activate navigator.userActivation.hasBeenActive");
+      assert.equal(audioCheck.soundCtxExists, true, "Sound.ensure() must create real AudioContext after user activation in Chromium");
+      assert.equal(audioCheck.firstCueAudible, true, "First post-gesture cue must initialize AudioContext before recordCue so audible=true");
+      assert.equal(audioCheck.allActiveAudible, true, "All unmuted active cues across 7 tiers must log audible=true");
+      assert.ok(audioCheck.activeSlashGains > 0, `Active unmuted Sound.slash(true) must synthesize Web Audio GainNodes, got ${audioCheck.activeSlashGains}`);
+      for (const reqTier of ["light", "heavy", "block", "deflect", "break", "hurt", "ui"]) {
+        assert.ok(audioCheck.tiers.includes(reqTier), `Missing audio tier "${reqTier}" in Sound telemetry: ${audioCheck.tiers.join(", ")}`);
+      }
+      assert.equal(audioCheck.mutedRec.stemMuted, true, "Zeroing blade stem must mark cue stemMuted=true");
+      assert.equal(audioCheck.mutedRec.audible, false, "Zeroing blade stem must prevent audible output");
+      assert.equal(audioCheck.stemZeroSlashRec.audible, false, "Zeroing blade stem must prevent slash audible output");
+      assert.equal(audioCheck.stemZeroGains, 0, `Zeroing blade stem must create 0 GainNodes, got ${audioCheck.stemZeroGains}`);
+      assert.equal(audioCheck.globalMutedRec.audible, false, "Global Sound.muted=true must mark cue audible=false");
+      assert.equal(audioCheck.mutedGains, 0, `Global Sound.muted=true must create 0 GainNodes, got ${audioCheck.mutedGains}`);
+
+      // 2. Verify 400ms semantic ink-wash scene transition & #region-cinema-card "show" dismissal when boss appears
+      const transCheck = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        api.transitionStageScene("arena_sanctum_hub", "hub");
+        const stMid = api.getSceneTransitionState();
+        const veilActive = document.getElementById("scene-transition-veil")?.classList.contains("active");
+        return { stMid, veilActive };
+      });
+      assert.equal(transCheck.veilActive, true, "#scene-transition-veil must activate during non-reduced-motion transition");
+      assert.equal(transCheck.stMid.durMs, 400);
+      await page.waitForTimeout(260);
+      const transDone = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const veilStill = document.getElementById("scene-transition-veil")?.classList.contains("active");
+        const cardShowBefore = document.getElementById("region-cinema-card")?.classList.contains("show");
+        // Spawn a boss and call updateBossBannerAndRecallOrb -> MUST remove "show" (fixing old "active" bug!)
+        api.spawnSingleEnemy("wolf", 700, 480, 1.0, true, "雾隐狼王");
+        api.updateBossBannerAndRecallOrb();
+        const cardShowAfterBoss = document.getElementById("region-cinema-card")?.classList.contains("show");
+        return { veilStill, cardShowBefore, cardShowAfterBoss };
+      });
+      assert.equal(transDone.veilStill, false, "#scene-transition-veil must fade back out cleanly");
+      assert.equal(transDone.cardShowBefore, true, "#region-cinema-card must show after transition");
+      assert.equal(transDone.cardShowAfterBoss, false, "updateBossBannerAndRecallOrb must clear #region-cinema-card.show when boss appears");
+
+      // 3. Verify complete reducedMotion suppression (impactFrames, radialBurst, flash, camZoom, veil instant)
+      const rmCheck = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.arena.shake = 14;
+        s.arena.flash = 0.5;
+        s.arena.camZoom = 1.12;
+        window.__CHENYUAN_V18__.triggerImpactFrame(3, "#e62e2d");
+        // Enable reducedMotion via Accessibility UI
+        s.a11ySettings.reducedMotion = true;
+        api.clearTransientMotionEffects();
+        window.__CHENYUAN_V18__.triggerImpactFrame(3, "#e62e2d");
+        api.transitionStageScene("arena_wilderness", "stg_0");
+        const ts = api.getSceneTransitionState();
+        return {
+          shake: s.arena.shake,
+          flash: s.arena.flash,
+          impactFrames: s.arena.impactFrames,
+          radialBurst: s.arena.radialBurst,
+          camZoom: s.arena.camZoom,
+          lastWasInstant: ts.lastWasInstant,
+          veilActive: document.getElementById("scene-transition-veil")?.classList.contains("active")
+        };
+      });
+      assert.equal(rmCheck.shake, 0);
+      assert.equal(rmCheck.flash, 0);
+      assert.equal(rmCheck.impactFrames, 0, "triggerImpactFrame must be suppressed under reducedMotion");
+      assert.equal(rmCheck.radialBurst, null);
+      assert.equal(rmCheck.camZoom, 1);
+      assert.equal(rmCheck.lastWasInstant, true, "transitionStageScene must collapse to instant swap under reducedMotion");
+      assert.equal(rmCheck.veilActive, false);
+
+      // 4. Verify unclamped perf telemetry & graceful degradation preserving combat telegraphs
+      await page.waitForTimeout(180);
+      const perfCheck = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const stats = api.getPerfStats();
+        api.setPerfDegradeOverride(2);
+        const degStats = api.getPerfStats();
+        // Spawn windup wolf -> getEnemyAttackSpec & state remain intact at degradeLevel 2
+        const s = api.getState();
+        s.arena.enemies = [];
+        api.spawnSingleEnemy("wolf", 680, 480, 1.0, false);
+        s.arena.enemies[0].state = "windup";
+        const specAtDeg2 = api.getEnemyAttackSpec(s.arena.enemies[0]);
+        const clearedDegLevel = api.setPerfDegradeOverride(null);
+        return { stats, degStats, specAtDeg2, clearedDegLevel };
+      });
+      assert.ok(perfCheck.stats.sampleCount >= 3, `Expected perf ring samples >= 3, got ${perfCheck.stats.sampleCount}`);
+      assert.ok(perfCheck.stats.firstInteractiveMs !== null && perfCheck.stats.firstInteractiveMs >= 0);
+      assert.ok(perfCheck.stats.firstPlayableMs !== null && perfCheck.stats.firstPlayableMs >= 0);
+      assert.equal(perfCheck.degStats.degradeLevel, 2);
+      assert.equal(perfCheck.clearedDegLevel, 0, "Clearing perf degrade override to null must immediately reset degradeLevel to 0");
+      assert.equal(perfCheck.specAtDeg2.shape, "rect", "Graceful degradation level 2 must NEVER degrade combat telegraphs");
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  await runSuite("Q4-5", "Q4 F28+F29 首卷完整体验闭环、凡人禁锁提示清理、渡劫评定明晰与试玩遥测存档隔离", async () => {
+    // 1. Verify F29 protocol doc exists & explicitly states NOT_RUN with zero fabricated tester results
+    const protoPath = path.join(REPO_ROOT, "docs", "analysis", "playtest-protocol-v1.md");
+    assert.equal(fs.existsSync(protoPath), true, "docs/analysis/playtest-protocol-v1.md must exist");
+    const protoText = fs.readFileSync(protoPath, "utf8");
+    assert.ok(protoText.includes("NOT_RUN"), "F29 playtest protocol must explicitly record Status: NOT_RUN");
+    assert.ok(protoText.includes("0 / 5~8") || protoText.includes("`0` 名"), "F29 playtest protocol must explicitly record 0 human testers completed");
+
+    const { ctx, page } = await startCleanGamePage(browser, "Q4-5", false);
+    try {
+      // 2. Prologue -> Pedestal choice ("trade" string signature) -> Layer 0 Mortal clean wolves (0 tactical squad, 0 locked-key hint)
+      const vol1Flow = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        const phaseStart = api.getVol1JourneyPhase();
+        const visibleHudBtns = Array.from(document.querySelectorAll("button")).filter(el => {
+          if (el.closest("#welcome-screen, #side-panel, #modal-backdrop, #pavilion-popover, #story-dialogue-bar, #ending-overlay")) return false;
+          const cs = window.getComputedStyle(el);
+          const rect = el.getBoundingClientRect();
+          return cs.display !== "none" && cs.visibility !== "hidden" && Number(cs.opacity) > 0 && rect.width > 2 && rect.height > 2;
+        }).length;
+        // Defeat the 3 prologue wolves to rescue Shen Qinghe & spawn both pedestals
+        s.arena.enemies.slice().forEach(e => {
+          e.hp = 1;
+          api.damageEnemy(e, 500, true, 50, 0, 2, true);
+        });
+        const skipDlg = document.getElementById("btn-dlg-skip");
+        if (skipDlg && document.getElementById("story-dialogue-bar")?.classList.contains("open")) skipDlg.click();
+        const phaseAfterRescue = api.getVol1JourneyPhase();
+        const pedBadges = s.arena.props.filter(pr => pr.kind === "pedestal").map(pr => pr.badge || "");
+        // Accept string signature on activatePedestalChoice
+        api.activatePedestalChoice("trade");
+        const portalsAfterChoice = s.arena.props.map(p => p.id);
+        const enemiesAfterChoice = s.arena.enemies.length;
+
+        // Enter Stage 0 Layer 0 ("outpost") in Mortal realm -> clean wolves, NO shield_vanguard / hex_chanter / flank_assassin!
+        api.initArenaStage(0, false);
+        const layer0Roles = s.arena.enemies.map(e => e.tacticalRole || null);
+        const payoffShown = Boolean(s.game.vol1PedestalMeta && s.game.vol1PedestalMeta.payoffShown);
+
+        // Verify Mortal shield-block hint does NOT leak backquote (`切巨阙)
+        const testShieldEnemy = s.arena.enemies[0];
+        if (testShieldEnemy) {
+          testShieldEnemy.frontShieldHp = 60;
+          testShieldEnemy.maxFrontShieldHp = 60;
+          testShieldEnemy.shieldFacing = Math.atan2(s.arena.player.y - testShieldEnemy.y, s.arena.player.x - testShieldEnemy.x);
+          s.arena.floats = [];
+          api.damageEnemy(testShieldEnemy, 15, false, 5, 0, 1, false);
+        }
+        const mortalFloats = s.arena.floats.map(f => f.text);
+        const hasLockedBackquoteHint = mortalFloats.some(t => t.includes("按`切巨阙"));
+
+        // Enter Sanctum -> check onboarding coach shortest prep path + stat delta upgrade + P3-1 HUD count <= 14!
+        api.enterSanctumHub();
+        const sanctumPhase = api.getVol1JourneyPhase();
+        const coachTextBefore = document.getElementById("onboarding-coach-bar")?.textContent || "";
+        s.game.stones = 200;
+        const wpnName = s.game.equippedGear.weapon ? s.game.equippedGear.weapon.name : "";
+        const beforeAtk = api.getCombatStats(s.game).atk;
+        const enhPreview = api.computeBatchEnhancePreview(s.game, "weapon", 1);
+        const enhRes = api.executeGearBatchEnhance("weapon", 1);
+        const afterAtk = api.getCombatStats(s.game).atk;
+        const sanctumToasts = Array.from(document.querySelectorAll("#toast-container .toast-pill")).map(el => el.textContent || "");
+        const lastUpgradeRec = api.getPlaytestTelemetry().sanctumUpgrades.slice(-1)[0] || null;
+        const prepDone = Boolean(s.game.vol1Prep && s.game.vol1Prep.upgradeDone);
+        const coachTextAfter = document.getElementById("onboarding-coach-bar")?.textContent || "";
+        const sanctumCoachBtnCount = document.querySelectorAll("#onboarding-coach-bar button").length;
+
+        // Verify Mortal Wolf King Boss 2-phase telegraphs NEVER emit grabWindup or lowSweepWindup!
+        api.initArenaStage(0, false);
+        if (s.arena.dungeonMap) s.arena.dungeonMap.currentNodeId = "n4_0";
+        s.arena.roomBranch = "boss";
+        s.arena.enemies = [];
+        api.spawnSingleEnemy("wolf", 660, 480, 1.0, true, "雾隐狼王");
+        const boss = s.arena.enemies[0];
+        const bossPhase = api.getVol1JourneyPhase();
+        let sawGrab = false, sawLowSweep = false, sawGold = false, sawPeril = false;
+        for (let seq = 0; seq < 6; seq++) {
+          boss.state = "chase";
+          boss.timer = 0.01;
+          boss.x = s.arena.player.x + 140;
+          boss.y = s.arena.player.y;
+          api.stepArena(0.03);
+          if (boss.grabWindup) sawGrab = true;
+          if (boss.lowSweepWindup) sawLowSweep = true;
+          if (boss.perilous) sawPeril = true;
+          else sawGold = true;
+        }
+
+        // Defeat Wolf King -> trigger real 580ms stage clear persistence!
+        boss.hp = 1;
+        api.damageEnemy(boss, 500, true, 50, 0, 4, true);
+
+        return {
+          phaseStart,
+          phaseAfterRescue,
+          pedBadges,
+          portalsAfterChoice,
+          enemiesAfterChoice,
+          layer0Roles,
+          payoffShown,
+          hasLockedBackquoteHint,
+          sanctumPhase,
+          coachTextBefore,
+          wpnName,
+          beforeAtk,
+          afterAtk,
+          enhPreviewDelta: enhPreview ? enhPreview.dAtk : 0,
+          sanctumToasts,
+          lastUpgradeRec,
+          enhResOk: enhRes.ok,
+          prepDone,
+          coachTextAfter,
+          sanctumCoachBtnCount,
+          visibleHudBtns,
+          bossPhase,
+          sawGrab,
+          sawLowSweep,
+          sawGold,
+          sawPeril
+        };
+      });
+
+      // Wait for real 580ms boss clear timer (preserving E2E-T4-01 timing!)
+      await page.waitForFunction(() => window.__CHENYUAN_V25__.isStageBossDefeated(window.__CHENYUAN_V25__.getState().game, 0), { timeout: 2500 });
+      const tribFlow = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        // Skip clear_stage0 cutscene if open, close recap modal if open
+        const skipBtn = document.getElementById("btn-dlg-skip");
+        if (skipBtn && document.getElementById("story-dialogue-bar")?.classList.contains("open")) skipBtn.click();
+        api.closeModal();
+
+        const bossDefeated = api.isStageBossDefeated(s.game, 0);
+        s.game.xp = api.REALMS.mortal.xpCap;
+        api.openTribulationPrepModal();
+        const ruleCompTxt = document.getElementById("trib-rule-comparison")?.textContent || "";
+        const hasNormalBtn = Boolean(document.querySelector('[data-trib-start="normal"]'));
+        api.startLiveTribulation({ confirmed: true, mode: "normal" });
+        s.arena.tribulation.parryCount = 1;
+        api.completeLiveTribulation();
+        const tribSummary = api.getLastTribulationSummary();
+        api.openDestinyFruitModal(true);
+        const verdictTxt = document.getElementById("trib-verdict-summary")?.textContent || "";
+        api.closeModal();
+
+        // Verify playtest telemetry isolation: ZERO playtest keys written into STORAGE_KEY or META_KEY!
+        const rawMain = localStorage.getItem("chenyuan_wendao_v11_save") || "";
+        const rawMeta = localStorage.getItem("chenyuan_wendao_v11_meta") || "";
+        const ptTele = api.getPlaytestTelemetry();
+        const ptJson = api.exportPlaytestSessionJson();
+
+        return {
+          bossDefeated,
+          ruleCompTxt,
+          hasNormalBtn,
+          tribSummary,
+          verdictTxt,
+          ptTele,
+          ptJsonValid: JSON.parse(ptJson).schema === "chenyuan_playtest_telemetry_v1",
+          leakedInMain: rawMain.includes("playtestTelemetry") || rawMain.includes("menuDwellMs") || rawMain.includes("firstAttackSec"),
+          leakedInMeta: rawMeta.includes("playtestTelemetry") || rawMeta.includes("menuDwellMs") || rawMeta.includes("firstAttackSec")
+        };
+      });
+
+      assert.equal(vol1Flow.phaseStart, "prologue_rescue");
+      assert.equal(vol1Flow.phaseAfterRescue, "pedestal_choice");
+      assert.ok(vol1Flow.pedBadges.some(b => b.includes("R 唤沈清禾")) && vol1Flow.pedBadges.some(b => b.includes("飞剑 +1")), `Pedestals must preview next-fight payoff: ${vol1Flow.pedBadges.join(" | ")}`);
+      assert.ok(vol1Flow.portalsAfterChoice.includes("portal_act1_wilderness") && vol1Flow.portalsAfterChoice.includes("portal_sanctum_prep"));
+      assert.equal(vol1Flow.enemiesAfterChoice, 0, "P2-1 invariant: pedestal choice must spawn 0 enemies");
+      assert.equal(vol1Flow.layer0Roles.every(r => r === null), true, `Stage 0 Layer 0 Mortal must have clean wolves without tactical roles, got: ${vol1Flow.layer0Roles.join(",")}`);
+      assert.equal(vol1Flow.payoffShown, true, "Pedestal choice payoff cue must fire on entering first Wilderness fight");
+      assert.equal(vol1Flow.hasLockedBackquoteHint, false, "Mortal player must NEVER see locked backquote posture hint");
+      assert.equal(vol1Flow.sanctumPhase, "sanctum_prep");
+      assert.ok(vol1Flow.coachTextBefore.includes("仙葫已满酿") && vol1Flow.coachTextBefore.includes("绝不强制炼丹"), `Sanctum prep coach bar missing D01 guidance: ${vol1Flow.coachTextBefore}`);
+      assert.equal(vol1Flow.enhResOk, true);
+      assert.equal(vol1Flow.wpnName, "凡品·青竹灵剑", `Expected default starter sword equipped, got ${vol1Flow.wpnName}`);
+      assert.ok(vol1Flow.enhPreviewDelta >= 1, `Starter sword +1 preview must show >= +1 ATK, got ${vol1Flow.enhPreviewDelta}`);
+      assert.ok(vol1Flow.afterAtk > vol1Flow.beforeAtk, `Quenching starter sword +1 in Sanctum must increase ATK (${vol1Flow.beforeAtk} -> ${vol1Flow.afterAtk})`);
+      assert.equal(vol1Flow.afterAtk - vol1Flow.beforeAtk, vol1Flow.enhPreviewDelta, "Starter sword +1 actual ATK delta must match upfront preview");
+      assert.ok(vol1Flow.sanctumToasts.some(t => t.includes("✦ 洞府整备生效") && t.includes("攻击 +1")), `Expected visible Sanctum stat-delta toast with 攻击 +1, got: ${vol1Flow.sanctumToasts.join(" | ")}`);
+      assert.ok(vol1Flow.lastUpgradeRec && vol1Flow.lastUpgradeRec.delta.includes("攻击 +1"), `Expected telemetry delta to record 攻击 +1, got: ${JSON.stringify(vol1Flow.lastUpgradeRec)}`);
+      assert.equal(vol1Flow.prepDone, true);
+      assert.ok(vol1Flow.coachTextAfter.includes("已完成1项整备强化"), `Sanctum prep coach bar must mark upgrade done: ${vol1Flow.coachTextAfter}`);
+      assert.equal(vol1Flow.sanctumCoachBtnCount, 0, "Sanctum shortest prep coach bar must add 0 extra HUD <button> elements");
+      assert.ok(vol1Flow.visibleHudBtns <= 14, `P3-1 guardrail: Mortal start HUD visible buttons must remain <= 14, got ${vol1Flow.visibleHudBtns}`);
+      assert.equal(vol1Flow.bossPhase, "wolf_king_boss");
+      assert.equal(vol1Flow.sawGrab, false, "Mortal Wolf King must NOT use Foundation-locked grabWindup");
+      assert.equal(vol1Flow.sawLowSweep, false, "Mortal Wolf King must NOT use Qi-locked lowSweepWindup");
+      assert.equal(vol1Flow.sawGold, true, "Mortal Wolf King must use Gold parryable attacks");
+      assert.equal(vol1Flow.sawPeril, true, "Mortal Wolf King must use Crimson dodgeable perilous attacks");
+      assert.equal(tribFlow.bossDefeated, true, "Killing Stage 0 Wolf King must persist defeatedStageBosses[0]");
+      assert.ok(tribFlow.ruleCompTxt.includes("天道一品") && tribFlow.ruleCompTxt.includes("地道上品"), "Tribulation prep must render #trib-rule-comparison");
+      assert.equal(tribFlow.hasNormalBtn, true);
+      assert.equal(tribFlow.tribSummary.quality, "heaven");
+      assert.equal(tribFlow.tribSummary.parryCount, 1);
+      assert.ok(tribFlow.verdictTxt.includes("天道一品") && tribFlow.verdictTxt.includes("弹反 1 次"), `Destiny fruit modal must render #trib-verdict-summary with parry reason, got: ${tribFlow.verdictTxt}`);
+      assert.equal(tribFlow.ptTele.protocolStatus, "NOT_RUN");
+      assert.equal(tribFlow.ptTele.pedestalChoice, "trade");
+      assert.equal(tribFlow.ptJsonValid, true);
+      assert.equal(tribFlow.leakedInMain, false, "Playtest telemetry must NEVER leak into STORAGE_KEY");
+      assert.equal(tribFlow.leakedInMeta, false, "Playtest telemetry must NEVER leak into META_KEY");
     } finally {
       await ctx.close();
     }
