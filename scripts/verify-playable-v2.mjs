@@ -10655,8 +10655,32 @@ try {
       assert.equal(vol5Check.vol5ModalOpen, true);
       assert.ok(vol5Check.vol5DualNote.includes("化神丹") && vol5Check.vol5DualNote.includes("无丹"));
 
+      // 1b. Objectives Vol 5 CTA with enter_vol5_resonance unseen must close #modal-backdrop so #story-dialogue-bar is unobstructed
+      const objIntroState = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const { game } = api.getState();
+        game.realm = "nascent";
+        delete game.seenCutscenes.enter_vol5_resonance;
+        api.enterSanctumHub({ skipSave: true });
+        api.openObjectivesModal("mainline");
+        const cta = document.querySelector('#modal-backdrop.open [data-action="open-vol5-resonance"]');
+        if (!cta) return { hadCta: false };
+        cta.click();
+        return {
+          hadCta: true,
+          modalStillOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open")),
+          dialogueOpen: Boolean(document.getElementById("story-dialogue-bar")?.classList.contains("open"))
+        };
+      });
+      assert.equal(objIntroState.hadCta, true, "Objectives mainline tab at Nascent must render Vol 5 CTA");
+      assert.equal(objIntroState.modalStillOpen, false, "openVol5ResonanceFlow() must close #modal-backdrop before playing enter_vol5_resonance cutscene");
+      assert.equal(objIntroState.dialogueOpen, true, "enter_vol5_resonance cutscene dialogue bar must be visible and unobstructed");
+      await page.click("#btn-dlg-skip");
+      await page.waitForSelector("#modal-backdrop.open #vol5-resonance-modal-body", { timeout: 4000 });
+      await page.evaluate(() => window.__CHENYUAN_V25__.closeModal());
+
       // 2. Five Endgame Mode Bugfixes
-      const modeFixes = await page.evaluate(() => {
+      const modeFixes = await page.evaluate((sk) => {
         const api = window.__CHENYUAN_V25__;
         const q6 = window.__CHENYUAN_DEBUG__.q6;
         const { game, arena } = api.getState();
@@ -10688,15 +10712,21 @@ try {
         q6.selectSpireCurioAndAdvance("curio_parry_meteor", 1);
         const spireFloorStonesWithCloud = game.stones; // Math.round(75 * 1.15) === 86
 
-        // Fix 1: Custom Seed Workshop temp curio isolation in saveGame() + victory modal restore
+        // Fix 1: Custom Seed Workshop temp curio isolation in saveGame() + cloud export + victory modal restore
         game.spireCurios = {};
         const validSeed = window.__CHENYUAN_V22__.encodeWorkshopSeed({ boss1: 0, boss2: 7, affixes: 0, curioIdx: 1, hazards: 0 });
         window.__CHENYUAN_V22__.launchCustomSeedEncounter(validSeed);
         const tempDuring = q6.getActiveCustomSeedTempCurio();
         const curioLvDuring = tempDuring ? (game.spireCurios[tempDuring.cid] || 0) : 0;
         api.saveGame({ forceOverwrite: true });
-        const savedRaw = JSON.parse(localStorage.getItem(api.STORAGE_KEY) || "{}");
-        const savedCurioLeaked = tempDuring ? Boolean(savedRaw.game && savedRaw.game.spireCurios && savedRaw.game.spireCurios[tempDuring.cid]) : true;
+        const savedRaw = JSON.parse(localStorage.getItem(sk) || "{}");
+        const savedHasGame = Boolean(savedRaw && savedRaw.game);
+        const savedCurioLeaked = (!savedHasGame || !tempDuring) ? true : Boolean(savedRaw.game.spireCurios && savedRaw.game.spireCurios[tempDuring.cid]);
+        const cloudCode = api.exportFullCloudSaveCode();
+        const parsedCloud = api.parseCloudSaveCode(cloudCode);
+        const cloudCurioLeaked = (!parsedCloud || !parsedCloud.ok || !tempDuring)
+          ? true
+          : Boolean(parsedCloud.normalizedGame && parsedCloud.normalizedGame.spireCurios && parsedCloud.normalizedGame.spireCurios[tempDuring.cid]);
         for (const e of arena.enemies.slice()) api.handleEnemyDeath(e);
         return {
           rushHasSeven: rushModalText.includes("踏天七阵连战") && !rushModalText.includes("踏天六阵连战"),
@@ -10705,19 +10735,46 @@ try {
           spireChipTxt,
           spireFloorStonesWithCloud,
           curioLvDuring,
+          savedHasGame,
           savedCurioLeaked,
+          cloudCurioLeaked,
           tempCid: tempDuring ? tempDuring.cid : null
         };
-      });
+      }, STORAGE_KEY);
       await page.waitForSelector("#modal-backdrop.open #btn-ws-victory-replay", { timeout: 4000 });
-      const afterWsVictory = await page.evaluate((cid) => {
+      const afterWsVictory = await page.evaluate(({ cid, sk }) => {
         const api = window.__CHENYUAN_V25__;
+        const q6 = window.__CHENYUAN_DEBUG__.q6;
+        const persist = window.__CHENYUAN_DEBUG__.persistence;
         const g = api.getState().game;
         const modalTxt = (document.getElementById("modal-content")?.textContent || "");
         const restored = cid ? !(g.spireCurios && g.spireCurios[cid]) : false;
         api.closeModal();
-        return { modalTxt, restored };
-      }, modeFixes.tempCid);
+
+        // Cross-save safety: launching Custom Seed with temp curio and resolving a multi-tab conflict via load-latest-save must NOT delete legitimate curio on loaded save
+        g.spireCurios = {};
+        const seed2 = window.__CHENYUAN_V22__.encodeWorkshopSeed({ boss1: 0, boss2: 7, affixes: 0, curioIdx: 1, hazards: 0 });
+        window.__CHENYUAN_V22__.launchCustomSeedEncounter(seed2);
+        const curRaw = JSON.parse(localStorage.getItem(sk) || "{}");
+        const externalGame = JSON.parse(JSON.stringify(curRaw.game || g));
+        externalGame.spireCurios = Object.assign({}, externalGame.spireCurios || {}, { [cid]: 2 });
+        const extPayload = { game: externalGame, stageIdx: 0, stanceIdx: 0, towerMode: false, sanctumMode: true };
+        const extEnv = Object.assign({
+          envelopeVersion: 2,
+          saveRev: (Number(curRaw.saveRev) || 1) + 5,
+          tabId: "other_tab_curio_test",
+          updatedAt: Date.now() + 1000,
+          checksum: persist.computeSaveChecksum(persist.buildCanonicalSavePayload(extPayload))
+        }, extPayload);
+        localStorage.setItem(sk, JSON.stringify(extEnv));
+        api.saveGame();
+        const loadLatestBtn = document.querySelector('[data-action="load-latest-save"]');
+        if (loadLatestBtn) loadLatestBtn.click();
+        const loadedGame = api.getState().game;
+        const loadedCurioPreserved = cid ? (loadedGame && loadedGame.spireCurios && loadedGame.spireCurios[cid] === 2) : false;
+        const tempClearedAfterLoad = q6.getActiveCustomSeedTempCurio() === null;
+        return { modalTxt, restored, hadLoadLatestBtn: Boolean(loadLatestBtn), loadedCurioPreserved, tempClearedAfterLoad };
+      }, { cid: modeFixes.tempCid, sk: STORAGE_KEY });
 
       assert.equal(modeFixes.rushHasSeven, true, "Boss Rush modal must display 7-bout copy");
       assert.equal(modeFixes.cloudGearDelivered, true, "Cloud Sea completion must deliver guaranteed rarity-3 gear after initArenaStage");
@@ -10725,9 +10782,14 @@ try {
       assert.ok(modeFixes.spireChipTxt.includes("+15%"), `Spire modal missing Cloud Sea chip: ${modeFixes.spireChipTxt}`);
       assert.equal(modeFixes.spireFloorStonesWithCloud, Math.round(75 * 1.15), "Spire floor stones must apply Cloud Sea +15% yield");
       assert.equal(modeFixes.curioLvDuring, 2, "Custom Seed encounter must temporarily grant selected Lv.2 test curio during combat");
+      assert.equal(modeFixes.savedHasGame, true, "saveGame() must persist formal game envelope to STORAGE_KEY");
       assert.equal(modeFixes.savedCurioLeaked, false, "saveGame() during Custom Seed run must NOT leak temp test curio into localStorage");
+      assert.equal(modeFixes.cloudCurioLeaked, false, "exportFullCloudSaveCode() during Custom Seed run must NOT leak temp test curio");
       assert.equal(afterWsVictory.restored, true, "Custom Seed victory must restore pre-encounter spireCurios");
       assert.ok(afterWsVictory.modalTxt.includes("太虚造化试剑大捷"), "Custom Seed victory modal must open on boss clear");
+      assert.equal(afterWsVictory.hadLoadLatestBtn, true, "Multi-tab conflict modal must render load-latest-save button");
+      assert.equal(afterWsVictory.loadedCurioPreserved, true, "load-latest-save during Custom Seed run must preserve legitimate spireCurios on loaded save");
+      assert.equal(afterWsVictory.tempClearedAfterLoad, true, "activeCustomSeedTempCurio must be cleared after load-latest-save");
 
       // Fix 3 + Expedition stage resonance: Sect Defense wave-3 victory modal & Expedition modal synergy tags
       const sdAndExp = await page.evaluate(() => {

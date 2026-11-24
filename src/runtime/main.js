@@ -7346,13 +7346,33 @@
   let activeCustomSeedTempCurio = null;
 
   function getActiveCustomSeedTempCurio() {
-    return activeCustomSeedTempCurio ? Object.assign({}, activeCustomSeedTempCurio) : null;
+    if (!activeCustomSeedTempCurio) return null;
+    return {
+      cid: activeCustomSeedTempCurio.cid,
+      hadKey: !!activeCustomSeedTempCurio.hadKey,
+      prevLv: activeCustomSeedTempCurio.prevLv
+    };
+  }
+
+  function getSanitizedGameForPersistence(g = game) {
+    if (!g) return g;
+    const rec = activeCustomSeedTempCurio;
+    if (rec && rec.targetGame === g && g.spireCurios && rec.cid) {
+      const cleanCurios = Object.assign({}, g.spireCurios);
+      if (rec.hadKey) {
+        cleanCurios[rec.cid] = rec.prevLv;
+      } else {
+        delete cleanCurios[rec.cid];
+      }
+      return Object.assign({}, g, { spireCurios: cleanCurios });
+    }
+    return g;
   }
 
   function restoreCustomSeedTempCurio() {
     const rec = activeCustomSeedTempCurio;
     activeCustomSeedTempCurio = null;
-    if (!rec || !game || !game.spireCurios || !rec.cid) return false;
+    if (!rec || !game || rec.targetGame !== game || !game.spireCurios || !rec.cid) return false;
     if (rec.hadKey) {
       game.spireCurios[rec.cid] = rec.prevLv;
     } else {
@@ -7438,7 +7458,7 @@
       const prevLv = hadKey ? game.spireCurios[cid] : 0;
       const nextLv = Math.min(PERM_GROWTH_CAPS.spireCurioMaxStack, Math.max(getCurioStacks(game, cid), 2));
       if (!hadKey || nextLv !== prevLv) {
-        tempCurioRestore = { cid, hadKey, prevLv };
+        tempCurioRestore = { cid, hadKey, prevLv, targetGame: game };
         activeCustomSeedTempCurio = tempCurioRestore;
         game.spireCurios[cid] = nextLv;
       }
@@ -9252,7 +9272,7 @@
     if (!game || sandboxMode) return "";
     const payload = {
       v: 24,
-      game,
+      game: getSanitizedGameForPersistence(game),
       metaState,
       a11ySettings,
       stems: Sound.stems
@@ -9427,6 +9447,7 @@
         showToast(`⚠ 云码导入失败：${reason}`);
         return { ok: false, reason };
       }
+      activeCustomSeedTempCurio = null;
       clearTransientChoiceQueues();
       saveA11ySettings();
       try { localStorage.setItem(STEMS_STORAGE_KEY, JSON.stringify(Sound.stems)); } catch (e) {}
@@ -11433,8 +11454,9 @@
       if (game && !saveReadOnlyMode && !saveConflictState && !storageReadError) {
         saveGame();
       }
+      const sanitizedFormalGame = game ? getSanitizedGameForPersistence(game) : null;
       preSandboxSnapshot = {
-        game: game ? JSON.parse(JSON.stringify(game)) : null,
+        game: sanitizedFormalGame ? JSON.parse(JSON.stringify(sanitizedFormalGame)) : null,
         meta: JSON.parse(JSON.stringify(ensureMetaState())),
         arenaSnap: {
           stageIdx: arena.stageIdx,
@@ -11445,7 +11467,8 @@
         loadedSaveRev,
         lastSavedPayloadChecksum
       };
-      game = game ? JSON.parse(JSON.stringify(game)) : createFreshGame("顾长青", "sword_bone");
+      activeCustomSeedTempCurio = null;
+      game = sanitizedFormalGame ? JSON.parse(JSON.stringify(sanitizedFormalGame)) : createFreshGame("顾长青", "sword_bone");
       sandboxMode = true;
       game.unlockAllArcana = true;
       game.pendingRewards = [];
@@ -11553,7 +11576,7 @@
 
   function computeCurrentPayloadChecksum() {
     if (!game) return null;
-    const gameSnap = safeAssignPlain({}, game);
+    const gameSnap = safeAssignPlain({}, getSanitizedGameForPersistence(game));
     if (gameSnap.expeditions && typeof gameSnap.expeditions === "object" && !Array.isArray(gameSnap.expeditions)) {
       const exSnap = safeAssignPlain({}, gameSnap.expeditions);
       delete exSnap.tickTimer;
@@ -11954,16 +11977,7 @@
     }
 
     const nextRev = Math.max(Math.max(0, Math.floor(num(loadedSaveRev, 0))), Math.max(0, Math.floor(num(externalMaxRev, 0)))) + 1;
-    let gameForSave = game;
-    if (activeCustomSeedTempCurio && game && game.spireCurios && activeCustomSeedTempCurio.cid) {
-      const cleanCurios = Object.assign({}, game.spireCurios);
-      if (activeCustomSeedTempCurio.hadKey) {
-        cleanCurios[activeCustomSeedTempCurio.cid] = activeCustomSeedTempCurio.prevLv;
-      } else {
-        delete cleanCurios[activeCustomSeedTempCurio.cid];
-      }
-      gameForSave = Object.assign({}, game, { spireCurios: cleanCurios });
-    }
+    const gameForSave = getSanitizedGameForPersistence(game);
     const payloadObj = {
       game: gameForSave,
       stageIdx: arena.stageIdx,
@@ -13802,6 +13816,7 @@
     }
     try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
     clearTransientChoiceQueues();
+    activeCustomSeedTempCurio = null;
     game = null;
     loadedSaveRev = 0;
     lastSavedPayloadChecksum = null;
@@ -15243,6 +15258,8 @@
       && !arena.defeatPending
     );
     if (canPlayIntro) {
+      closeModal();
+      closeDrawer();
       playCutscene("enter_vol5_resonance", () => { openVol5ResonanceModal(); });
       return true;
     }
@@ -28915,6 +28932,7 @@
         return;
       }
       clearTransientChoiceQueues();
+      activeCustomSeedTempCurio = null;
       sandboxMode = false;
       preSandboxSnapshot = null;
       const s = res.bundle;
@@ -29005,6 +29023,7 @@
         saveGame();
       }
       clearTransientChoiceQueues();
+      activeCustomSeedTempCurio = null;
       game = null;
       lastSavedPayloadChecksum = null;
       arena.stageEpoch += 1;
@@ -29134,6 +29153,7 @@
       } catch (e) {}
       try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
       clearTransientChoiceQueues();
+      activeCustomSeedTempCurio = null;
       game = null;
       loadedSaveRev = 0;
       lastSavedPayloadChecksum = null;
