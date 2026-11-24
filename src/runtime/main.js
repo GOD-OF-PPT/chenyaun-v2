@@ -1293,7 +1293,7 @@
     if (now - lastKillCamStampAt < 3000) return;
     lastKillCamStampAt = now;
     const level = (a11ySettings && a11ySettings.combatNoticeLevel) || "lite";
-    if (!a11ySettings.reducedMotion) {
+    if (!isReducedMotionActive()) {
       arena.camZoom = 1.11;
       arena.hitStop = 0.085;
     }
@@ -2319,7 +2319,10 @@
     combatNoticeLevel: "lite" // "full" | "lite" | "minimal"
   };
   function isReducedMotionActive() {
-    return Boolean(a11ySettings && a11ySettings.reducedMotion);
+    return Boolean(
+      (a11ySettings && a11ySettings.reducedMotion) ||
+      (reducedMotionMq && reducedMotionMq.matches)
+    );
   }
   function clearTransientMotionEffects() {
     arena.shake = 0;
@@ -2338,10 +2341,11 @@
     sceneTransitionState.active = false;
   }
   function applyReducedMotionClass() {
+    const reduced = isReducedMotionActive();
     if (document && document.documentElement) {
-      document.documentElement.classList.toggle("reduced-motion", !!a11ySettings.reducedMotion);
+      document.documentElement.classList.toggle("reduced-motion", reduced);
     }
-    if (a11ySettings.reducedMotion) {
+    if (reduced) {
       clearTransientMotionEffects();
     }
   }
@@ -19760,7 +19764,7 @@
     if (stepTitanClimbCinematic(dt)) { updateBossBannerAndRecallOrb(); updateComboRankSeal(); return; }
     if (stepRavineGlide(dt)) { updateComboRankSeal(); return; }
     if (arena.hitStop > 0) {
-      if (a11ySettings.reducedMotion || a11ySettings.hitStopScale <= 0.02) arena.hitStop = 0;
+      if (isReducedMotionActive() || a11ySettings.hitStopScale <= 0.02) arena.hitStop = 0;
       else { arena.hitStop -= dt / a11ySettings.hitStopScale; if (arena.hitStop > 0) return; }
     }
 
