@@ -3233,6 +3233,7 @@
   // Interactive Karma Duality Dilemma Modal (`红尘因果奇遇抉择`) — Non-Repeating & Chapter-Gated (S10)
   function openKarmaDilemmaModal(forcedIdx = null) {
     if (!game) return false;
+    if (!guardNotInTribulation("红尘问心抉择")) return false;
     const done = ensureCompletedKarmaIds(game);
     const prog = getKarmaDilemmaProgress(game);
     let kd = null;
@@ -3304,6 +3305,7 @@
 
   function resolveKarmaDilemmaChoice(kdId, side) {
     if (!game || typeof kdId !== "string") return false;
+    if (!guardNotInTribulation("红尘问心抉择")) return false;
     if (!guardNotPracticeMode("红尘问心抉择")) return false;
     const kd = KARMA_DILEMMAS.find(x => x.id === kdId);
     if (!kd) return false;
@@ -4644,6 +4646,23 @@
     arena.mountState = null;
     arena.pillAcolyte = null;
     arena.spatialRifts = [];
+    // R5B-1: Purge ALL temporary active fields, domains, summoned allies, zones & projectiles when leaving Sanctum Hub
+    arena.qimenArray = null;
+    arena.qimenCd = 0;
+    arena.domain = null;
+    arena.activeAllies = [];
+    arena.zones = [];
+    arena.witchTime = 0;
+    arena.lotusVortexes = [];
+    arena.thunderOrbs = [];
+    arena.jadeDecoys = [];
+    arena.fireZones = [];
+    arena.waterPools = [];
+    arena.frostPools = [];
+    arena.projectiles = [];
+    arena.hoverChakrams = [];
+    arena.groundSweeps = [];
+    arena.meteorBursts = [];
     if (arena.player) {
       arena.player.invuln = 0;
       arena.player.shieldHp = 0;
@@ -4707,6 +4726,10 @@
     }
     if (arena.customSeedRun && arena.customSeedRun.active) {
       showToast("⚠ 正在进行【造化种子工坊】演武，无法引动天劫！请先按 H 返回听雨洞府。");
+      return false;
+    }
+    if (arena.towerMode) {
+      showToast("⚠ 正在挑战【镇魔塔】，无法中途引动天劫！请先按 H 返回听雨洞府。");
       return false;
     }
     return true;
@@ -4863,6 +4886,11 @@
     arena.drops = [];
     arena.props = [];
     arena.zones = [];
+    arena.qimenArray = null;
+    arena.qimenCd = 0;
+    arena.domain = null;
+    arena.activeAllies = [];
+    arena.witchTime = 0;
     arena.slashes = [];
     arena.lightnings = [];
     arena.decals = [];
@@ -5972,6 +6000,15 @@
     arena.projectiles = [];
     arena.props = [];
     arena.drops = [];
+    arena.zones = [];
+    arena.qimenArray = null;
+    arena.qimenCd = 0;
+    arena.domain = null;
+    arena.activeAllies = [];
+    arena.witchTime = 0;
+    arena.lotusVortexes = [];
+    arena.thunderOrbs = [];
+    arena.jadeDecoys = [];
     arena.waterPools = [];
     arena.fireZones = [];
     arena.frostPools = [];
@@ -6438,6 +6475,18 @@
     arena.projectiles = [];
     arena.props = [];
     arena.drops = [];
+    arena.zones = [];
+    arena.qimenArray = null;
+    arena.qimenCd = 0;
+    arena.domain = null;
+    arena.activeAllies = [];
+    arena.witchTime = 0;
+    arena.lotusVortexes = [];
+    arena.thunderOrbs = [];
+    arena.jadeDecoys = [];
+    arena.fireZones = [];
+    arena.waterPools = [];
+    arena.frostPools = [];
     arena.hoverChakrams = [];
     arena.groundSweeps = [];
     const pPos = clampToPlaza(w * 0.34, h * 0.56, w, h);
@@ -7616,8 +7665,10 @@
 
     const cv = document.getElementById("fx-canvas");
     const w = (cv && cv.width) || 1440, h = (cv && cv.height) || 900;
+    const wasSanctum = !!arena.sanctumMode;
     arena.stageEpoch += 1;
     arena.sanctumMode = false;
+    if (wasSanctum) resetSanctumDojoCombatGauges();
     arena.towerMode = false;
     arena.bossRush = null;
     arena.sectDefense = null;
@@ -9593,7 +9644,7 @@
         </div>
       </div>
       ${blockedReason ? `<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.75);border:1px solid rgba(255,120,112,0.65);color:#ffd5d0;font-size:11.5px;">⚠ ${escapeHtml(blockedReason)}</div>` : ""}
-      <div id="cloud-import-error-msg" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.85);border:1px solid rgba(255,120,112,0.75);color:#ffd5d0;font-size:11.5px;"></div>
+      <div id="cloud-import-error-msg" role="alert" aria-live="assertive" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.85);border:1px solid rgba(255,120,112,0.75);color:#ffd5d0;font-size:11.5px;"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;">
         <button type="button" class="btn-ghost" data-action="cancel-cloud-import">取消返回</button>
         <button type="button" id="btn-confirm-cloud-import" class="btn-gold" data-action="confirm-cloud-import">确认覆盖并导入</button>
@@ -11767,6 +11818,23 @@
     arena.mountState = null;
     arena.pillAcolyte = null;
     arena.spatialRifts = [];
+    // R5B-1: Purge ALL temporary active fields, domains, summoned allies, zones & projectiles on Sandbox/Practice/Reset exits
+    arena.qimenArray = null;
+    arena.qimenCd = 0;
+    arena.domain = null;
+    arena.activeAllies = [];
+    arena.zones = [];
+    arena.witchTime = 0;
+    arena.lotusVortexes = [];
+    arena.thunderOrbs = [];
+    arena.jadeDecoys = [];
+    arena.fireZones = [];
+    arena.waterPools = [];
+    arena.frostPools = [];
+    arena.projectiles = [];
+    arena.hoverChakrams = [];
+    arena.groundSweeps = [];
+    arena.meteorBursts = [];
     if (arena.player) {
       arena.player.shieldHp = 0;
       arena.player.invuln = 0;
@@ -12284,6 +12352,7 @@
         检测到本地存档 <code style="color:#ffe28a;">${escapeHtml(storageReadError.key)}</code> 读取失败：<b>${escapeHtml(storageReadError.reason)}</b>。<br/>
         系统已原样保留受损存档数据，<b>不会静默删除或覆盖</b>。您可先复制受损原文留存，或显式确认覆盖并开启新卷。
       </div>
+      <div id="corrupt-save-overwrite-error-msg" role="alert" aria-live="assertive" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.88);border:1px solid rgba(255,120,112,0.8);color:#ffd5d0;font-size:12px;line-height:1.5;"></div>
       <div class="defeat-decision-grid">
         ${storageReadError.raw ? `<button type="button" class="defeat-opt-btn retreat" data-action="copy-corrupt-save-raw">
           <div><div style="font-weight:700;color:#80ffea;">📋 复制受损存档原文（保留原档）</div><div style="font-size:11px;color:var(--text-sub);">将原始字符串复制到剪贴板，原本地存档保持不变</div></div>
@@ -12314,6 +12383,7 @@
         检测到元存档 <code style="color:#ffe28a;">${escapeHtml(metaReadError.key)}</code> 读取失败：<b>${escapeHtml(metaReadError.reason)}</b>。<br/>
         系统已原样保留受损元存档数据，在您显式确认重置之前<b>绝不会覆写</b>。建议先复制原文留存。
       </div>
+      <div id="corrupt-meta-reset-error-msg" role="alert" aria-live="assertive" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.88);border:1px solid rgba(255,120,112,0.8);color:#ffd5d0;font-size:12px;line-height:1.5;"></div>
       <div class="defeat-decision-grid">
         ${metaReadError.raw ? `<button type="button" class="defeat-opt-btn retreat" data-action="copy-corrupt-meta-raw">
           <div><div style="font-weight:700;color:#80ffea;">📋 复制原文（保留原档）</div><div style="font-size:11px;color:var(--text-sub);">将受损元存档原文复制到剪贴板，原本地数据保持不变</div></div>
@@ -12345,6 +12415,7 @@
         另一标签页于 <b>${tsStr}</b> 保存了更新进度（道号 <b>${escapeHtml(info.externalName)}</b> · <b>${escapeHtml(info.externalRealm)}</b>，灵石 ${escapeHtml(safeText(info.externalStones, "0"))}，本页原为 v${loadedSaveRev}）。<br/>
         为防止误覆盖较新进度，本页已暂停自动写入，请选择处理方式：
       </div>
+      <div id="save-conflict-error-msg" role="alert" aria-live="assertive" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.88);border:1px solid rgba(255,120,112,0.8);color:#ffd5d0;font-size:12px;line-height:1.5;"></div>
       <div class="defeat-decision-grid">
         <button type="button" class="defeat-opt-btn retreat" data-action="load-latest-save">
           <div><div style="font-weight:700;color:#80ffea;">↻ 载入最新标签页进度（推荐）</div><div style="font-size:11px;color:var(--text-sub);">同步为 v${info.externalRev} 最新存档并恢复自动保存</div></div>
@@ -14476,6 +14547,7 @@
     saveConflictState = null;
     storageWriteError = null;
     arena.stageEpoch += 1;
+    arena.sanctumMode = false;
     arena.bossRush = null;
     arena.celestialSpire = null;
     arena.customSeedRun = null;
@@ -14497,6 +14569,8 @@
     const customDr = document.getElementById("title-custom-drawer");
     if (customDr) customDr.classList.add("open");
     closePavilionPopover();
+    hideDojoControlBar();
+    syncDojoTrainingHudVisibility();
     closeModal(); closeDrawer();
     syncPendingRewardsBadge();
     restoreTriggerFocus(null);
@@ -14564,6 +14638,7 @@
 
   function upgradeSanctumBuilding(bId) {
     if (!game) return false;
+    if (!guardNotInTribulation("洞府灵脉升阶")) return false;
     if (!guardNotPracticeMode("洞府灵脉升阶")) return false;
     const spec = SANCTUM_BUILDINGS.find(b => b.id === bId);
     const lvMap = ensureSanctumLevels(game);
@@ -16533,6 +16608,9 @@
     arena.tribulation = null;
     pointer.moveTarget = null;
 
+    arena.qimenArray = null;
+    arena.qimenCd = 0;
+    arena.domain = null;
     arena.activeAllies = [];
     arena.skyBolts = [];
     arena.shockRings = [];
@@ -16728,6 +16806,8 @@
     renderGearCompareCard();
     arena.midEventSpawned = false;
     arena.stageElement = null;
+    arena.qimenArray = null;
+    arena.qimenCd = 0;
     arena.domain = null;
     arena.hitStop = 0;
     arena.player.meditating = false;
@@ -29703,6 +29783,13 @@
     if (m1Act === "confirm-overwrite-corrupt-new") {
       if (startFreshGameSession(true)) {
         showToast("已确认覆盖旧损坏存档并开启全新道途！");
+      } else {
+        const corErrEl = document.getElementById("corrupt-save-overwrite-error-msg");
+        if (corErrEl) {
+          const errMsg = (storageWriteError && storageWriteError.message) ? storageWriteError.message : "新档写入失败，原受损存档仍保留";
+          corErrEl.textContent = `⚠ 覆盖写入失败：${errMsg}（原受损存档已原样保留，请清理存储空间后重试）`;
+          corErrEl.style.display = "block";
+        }
       }
       return;
     }
@@ -29763,6 +29850,15 @@
         const errMsg = (metaWriteError && metaWriteError.message) ? metaWriteError.message : "元存档写入失败";
         renderWelcomeSaveStatusBanner();
         renderHudSaveAlert();
+        const metaErrEl = document.getElementById("corrupt-meta-reset-error-msg");
+        if (metaErrEl) {
+          metaErrEl.textContent = `⚠ 元存档重置写入失败：${errMsg}（受损元存档已原样保留，请清理存储空间后重试）`;
+          metaErrEl.style.display = "block";
+        }
+        const modalBoxMeta = document.getElementById("modal-content");
+        if (modalBoxMeta && document.getElementById("modal-backdrop")?.classList.contains("open") && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+          focusDialogSafely(modalBoxMeta);
+        }
         showToast(`⚠ 元存档重置写入失败：${errMsg}`);
         return;
       }
@@ -29886,6 +29982,13 @@
         const bdNow = document.getElementById("modal-backdrop");
         if (!(bdNow && bdNow.classList.contains("open"))) {
           focusSaveAlertOrFallback(storageReadError ? "overwrite-with-current-save" : "load-latest-save");
+        } else {
+          const conflictErrEl = document.getElementById("save-conflict-error-msg");
+          if (conflictErrEl) {
+            const readMsg = (storageReadError && storageReadError.reason) ? storageReadError.reason : "最新存档读取异常";
+            conflictErrEl.textContent = `⚠ 载入最新存档失败：${readMsg}（已保留本页只读态）`;
+            conflictErrEl.style.display = "block";
+          }
         }
         return;
       }
@@ -30028,6 +30131,16 @@
         renderHudSaveAlert();
         const modalStillOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
         if (modalStillOpen) {
+          const conflictErrEl = document.getElementById("save-conflict-error-msg");
+          if (conflictErrEl) {
+            const errReason = (storageWriteError && storageWriteError.message)
+              ? storageWriteError.message
+              : (storageReadError && storageReadError.reason)
+                ? storageReadError.reason
+                : "本地存档写入失败";
+            conflictErrEl.textContent = `⚠ 强制覆盖存档失败：${errReason}（已保留当前状态与原存档，请清理存储空间或选择只读态）`;
+            conflictErrEl.style.display = "block";
+          }
           if (document.activeElement === document.body || !isElementFocusable(document.activeElement)) {
             focusDialogSafely(document.getElementById("modal-content") || modalBackdrop);
           }
@@ -30066,6 +30179,7 @@
       practiceFormalSnapshot = null;
       lastSavedPayloadChecksum = null;
       arena.stageEpoch += 1;
+      arena.sanctumMode = false;
       arena.bossRush = null;
       arena.celestialSpire = null;
       arena.customSeedRun = null;
@@ -30088,6 +30202,7 @@
       renderWelcomeScreen();
       closePavilionPopover();
       hideDojoControlBar();
+      syncDojoTrainingHudVisibility();
       closeModal();
       closeDrawer();
       syncPendingRewardsBadge();
@@ -30153,6 +30268,7 @@
         <p style="font-size:12.5px;color:var(--text-main);line-height:1.6;">
           清空后将删除当前修途进度并返回标题界面（轮回飞升累世功德与最高纪录仍保留）。若仅想返回标题，请点击“取消”并选择“保存并返回标题主菜单”。
         </p>
+        <div id="reset-save-error-msg" role="alert" aria-live="assertive" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(92,22,22,0.88);border:1px solid rgba(255,120,112,0.8);color:#ffd5d0;font-size:12px;line-height:1.5;"></div>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
           <button type="button" class="btn-ghost" data-modal-close="1">取消保留</button>
           <button type="button" class="btn-gold" style="background:linear-gradient(135deg,#8c2222,#cc483c);color:#fff;" data-action="execute-reset-save">确认清空存档</button>
@@ -30214,6 +30330,11 @@
         storageWriteError = { message: `清空存档失败：${rmRes.message}`, at: Date.now() };
         saveAlertDismissed = false;
         renderHudSaveAlert();
+        const resetErrEl = document.getElementById("reset-save-error-msg");
+        if (resetErrEl) {
+          resetErrEl.textContent = `⚠ 无法清空本地存档：${rmRes.message}（原存档仍保留，未返回标题页）`;
+          resetErrEl.style.display = "block";
+        }
         showToast(`⚠ 无法清空本地存档：${rmRes.message}（原存档仍保留，未返回标题页）！`, { critical: true, key: "save_remove_err", throttleMs: 0 });
         const modalBox = document.getElementById("modal-content");
         if (modalBox && document.getElementById("modal-backdrop")?.classList.contains("open")) {
@@ -30232,6 +30353,7 @@
       storageWriteError = null;
       storageReadError = null;
       arena.stageEpoch += 1;
+      arena.sanctumMode = false;
       arena.bossRush = null;
       arena.celestialSpire = null;
       arena.customSeedRun = null;
@@ -30251,6 +30373,8 @@
       if (wsReset) wsReset.style.display = "flex";
       renderWelcomeScreen();
       closePavilionPopover();
+      hideDojoControlBar();
+      syncDojoTrainingHudVisibility();
       closeModal();
       closeDrawer();
       syncPendingRewardsBadge();
@@ -30835,6 +30959,7 @@
       return;
     }
     if (t.hasAttribute("data-light-star")) {
+      if (!guardNotInTribulation("二十八星宿点星")) return;
       if (!guardNotPracticeMode("二十八星宿点星")) return;
       const mid = t.getAttribute("data-light-star");
       if (!Array.isArray(game.litStars)) game.litStars = [];
@@ -30923,6 +31048,7 @@
       return;
     }
     if (t.getAttribute("data-action") === "open-karma-dilemma") {
+      if (!guardNotInTribulation("红尘问心抉择")) return;
       openKarmaDilemmaModal();
       return;
     }

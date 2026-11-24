@@ -527,8 +527,8 @@ export const tests = [
         api.saveGame();
         const diskDuring = JSON.parse(localStorage.getItem(sk) || "{}");
         const diskCuriosDuring = (diskDuring && diskDuring.game && diskDuring.game.spireCurios) || {};
-        const cloudCode = v24.exportFullCloudSaveCode();
-        const cloudParsed = v24.parseCloudSaveCode(cloudCode);
+        const cloudCode = api.exportFullCloudSaveCode();
+        const cloudParsed = api.parseCloudSaveCode(cloudCode);
         const cloudCuriosDuring = (cloudParsed && cloudParsed.ok && cloudParsed.normalizedGame && cloudParsed.normalizedGame.spireCurios) || {};
         const boss = s.arena.enemies.find((e) => e.isBoss) || s.arena.enemies[0];
         if (boss) {
@@ -1653,13 +1653,19 @@ export const tests = [
       const quotaRollback = await p1.evaluate(() => {
         const api = window.__CHENYUAN_V25__;
         const s = api.getState();
+        const errEl = document.getElementById("save-conflict-error-msg");
+        const cs = errEl ? getComputedStyle(errEl) : null;
+        const rect = errEl ? errEl.getBoundingClientRect() : null;
         return {
           modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
           isPractice: api.isPracticeModeActive(),
           sanctumMode: s.arena.sanctumMode,
           bossRushActive: Boolean(s.arena.bossRush && s.arena.bossRush.active),
           writeErr: api.getPersistenceState().storageWriteError?.message || "",
-          focusIsBody: document.activeElement === document.body
+          focusIsBody: document.activeElement === document.body,
+          inlineErrRole: errEl ? errEl.getAttribute("role") : null,
+          inlineErrVisible: Boolean(errEl && cs && cs.display !== "none" && Number(cs.opacity) === 1 && rect && rect.width > 0 && rect.height > 0),
+          inlineErrText: errEl ? (errEl.textContent || "") : ""
         };
       });
       assert.equal(quotaRollback.modalOpen, true, "R4A-1: Modal stays open on QuotaExceededError");
@@ -1668,6 +1674,9 @@ export const tests = [
       assert.equal(quotaRollback.bossRushActive, true, "R4A-1: Boss Rush Practice stays intact");
       assert.ok(quotaRollback.writeErr.includes("QuotaExceededError"), "R4A-1: Explicit QuotaExceededError message recorded");
       assert.equal(quotaRollback.focusIsBody, false, "R4A-1: Focus stays off BODY");
+      assert.equal(quotaRollback.inlineErrRole, "alert", "R5A-1: #save-conflict-error-msg has role='alert'");
+      assert.equal(quotaRollback.inlineErrVisible, true, "R5A-1: #save-conflict-error-msg is visibly rendered inside open modal");
+      assert.ok(quotaRollback.inlineErrText.includes("QuotaExceededError"), "R5A-1: #save-conflict-error-msg reports QuotaExceededError");
 
       // Retry after quota clears -> pristine formal snapshot written & clean Sanctum Hub
       await p1.evaluate(() => {
@@ -1898,6 +1907,302 @@ export const tests = [
       assert.equal(r4bAll.pillsAfterBlocked, 2, "R4B-3: Breakthrough pill consumption blocked mid-tribulation");
       assert.ok(r4bAll.hpAfterBolt < r4bAll.hpBeforeBolt, "R4B-3: Hardcore Defiant bolt bypasses game.tribShield");
       assert.equal(r4bAll.shieldAfterBolt, 2, "R4B-3: Pre-existing game.tribShield preserved untouched in Hardcore mode");
+    }
+  },
+
+  // ==================== E2E-T5-14: Round 5 Final Convergence Fixes (R5A-1/2 + R5B-1/2/3) ====================
+  {
+    id: "E2E-T5-14",
+    title: "R5A-1/2 & R5B-1/2/3: Visible inline modal role=alert storage errors, title-return Dojo cleanup, Qimen/Domain/Allies/Zones purge, Karma Dilemma & Demon Tower tribulation guards",
+    features: ["R5A-1", "R5A-2", "R5B-1", "R5B-2", "R5B-3", "T2", "T6", "S10", "G7"],
+    async fn(env) {
+      const page = await env.openPage("t5-14");
+      await env.startFreshGame(page, "五轮终审");
+
+      // 1. R5B-3: Demon Tower blocks KeyB, openTribulationPrepModal, and startLiveTribulation
+      await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.realm = "nascent";
+        s.game.xp = api.REALMS.nascent.xpCap;
+        s.game.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true };
+        s.game.aids = { shen: true, pei: true, lu: true, yan: true };
+        api.initArenaStage(3, true);
+        api.focusBattlefield();
+      });
+      await page.keyboard.press("KeyB");
+      const r5b3 = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        const modalAfterKeyB = document.getElementById("modal-backdrop").classList.contains("open");
+        api.openTribulationPrepModal();
+        const prepOpened = document.getElementById("modal-backdrop").classList.contains("open");
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        return {
+          towerMode: Boolean(s.arena.towerMode),
+          modalAfterKeyB,
+          prepOpened,
+          tribActive: Boolean(s.arena.tribulation)
+        };
+      });
+      assert.equal(r5b3.towerMode, true, "R5B-3: Active Demon Tower");
+      assert.equal(r5b3.modalAfterKeyB, false, "R5B-3: KeyB blocked inside Demon Tower");
+      assert.equal(r5b3.prepOpened, false, "R5B-3: openTribulationPrepModal blocked inside Demon Tower");
+      assert.equal(r5b3.tribActive, false, "R5B-3: startLiveTribulation blocked inside Demon Tower");
+
+      // 2. R5B-2: Karma Dilemma blocked mid-Hardcore-Tribulation via real #nav-btn-story UI AND direct API
+      await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        api.initArenaStage(1, false);
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        s.game.hp = 20;
+        s.arena.player.shieldHp = 0;
+        s.game.completedKarmaIds = [];
+      });
+      await page.click("#nav-btn-story");
+      await page.waitForSelector('[data-action="open-karma-dilemma"]', { state: "visible" });
+      await page.click('[data-action="open-karma-dilemma"]');
+      const r5b2 = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        const modalAfterUiClick = document.getElementById("modal-backdrop").classList.contains("open");
+        const directOpen = api.openKarmaDilemmaModal(0);
+        const directResolve = api.resolveKarmaDilemmaChoice("kd_1", "right");
+        const res = {
+          modalAfterUiClick,
+          directOpen,
+          directResolve,
+          hp: s.game.hp,
+          shieldHp: s.arena.player.shieldHp,
+          karmaDone: (s.game.completedKarmaIds || []).length,
+          tribActive: Boolean(s.arena.tribulation)
+        };
+        api.closeDrawer();
+        s.arena.tribulation = null;
+        return res;
+      });
+      assert.equal(r5b2.modalAfterUiClick, false, "R5B-2: Real UI [data-action='open-karma-dilemma'] blocked mid-Hardcore-Tribulation");
+      assert.equal(r5b2.directOpen, false, "R5B-2: openKarmaDilemmaModal() returns false mid-Hardcore-Tribulation");
+      assert.equal(r5b2.directResolve, false, "R5B-2: resolveKarmaDilemmaChoice() returns false mid-Hardcore-Tribulation");
+      assert.equal(r5b2.hp, 20, "R5B-2: HP not healed mid-Hardcore-Tribulation");
+      assert.equal(r5b2.shieldHp, 0, "R5B-2: Shield not granted mid-Hardcore-Tribulation");
+      assert.equal(r5b2.karmaDone, 0, "R5B-2: completedKarmaIds untouched");
+      assert.equal(r5b2.tribActive, true, "R5B-2: Live Tribulation stayed active");
+
+      // 3. R5B-1: Full purge of qimenArray/domain/activeAllies/zones/witchTime across ALL 6 Sanctum exits + Sandbox exit
+      const r5b1 = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const v22 = window.__CHENYUAN_V22__;
+        const s = api.getState();
+        s.game.realm = "spirit";
+        s.game.xp = api.REALMS.spirit.xpCap;
+        s.game.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
+
+        const seedActiveFieldsInSanctum = () => {
+          api.enterSanctumHub();
+          v22.deployOrCycleQimenArray();
+          s.arena.domain = { x: s.arena.player.x, y: s.arena.player.y, r: 220, life: 7.0, maxLife: 7.0, color: "#80ffea" };
+          s.arena.activeAllies.push({ id: "shen", __sanctumLeakMarker: true, x: s.arena.player.x + 25, y: s.arena.player.y, life: 8.0, maxLife: 8.0, healCd: 0.1 });
+          s.arena.zones.push({ kind: "lotus_heal", __sanctumLeakMarker: true, x: s.arena.player.x, y: s.arena.player.y, r: 160, life: 5.0, maxLife: 5.0 });
+          s.arena.lotusVortexes.push({ x: s.arena.player.x, y: s.arena.player.y, r: 120, life: 3.0, maxLife: 3.0, rot: 0, tickCd: 0, dmg: 100 });
+          s.arena.thunderOrbs.push({ x: s.arena.player.x, y: s.arena.player.y, life: 4.0, tickCd: 0.1 });
+          s.arena.jadeDecoys.push({ x: s.arena.player.x, y: s.arena.player.y, facing: 1, life: 1.0, maxLife: 1.0, dmg: 100 });
+          s.arena.witchTime = 1.4;
+        };
+        const snap = () => ({
+          qimen: Boolean(s.arena.qimenArray),
+          qimenCd: s.arena.qimenCd,
+          domain: Boolean(s.arena.domain),
+          allies: (s.arena.activeAllies || []).length,
+          leakedAllies: (s.arena.activeAllies || []).filter(a => a && a.__sanctumLeakMarker).length,
+          zones: (s.arena.zones || []).length,
+          leakedZones: (s.arena.zones || []).filter(z => z && z.__sanctumLeakMarker).length,
+          vortexes: (s.arena.lotusVortexes || []).length,
+          orbs: (s.arena.thunderOrbs || []).length,
+          decoys: (s.arena.jadeDecoys || []).length,
+          witchTime: s.arena.witchTime
+        });
+
+        seedActiveFieldsInSanctum(); api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        const afterTrib = snap();
+        window.__CHENYUAN_V23__.setCelestialTimePhase(1, true);
+        s.game.hp = 200;
+        s.arena.tribulation.strikes = [];
+        s.arena.tribulation.cooldown = 99;
+        for (let k = 0; k < 20; k++) api.stepArena(0.05);
+        const hpAfter1s = s.game.hp;
+        s.arena.tribulation = null;
+
+        seedActiveFieldsInSanctum(); api.startBossRushGauntlet(1); const afterRush = snap();
+        seedActiveFieldsInSanctum(); api.startCelestialSpireRun(1); const afterSpire = snap();
+        seedActiveFieldsInSanctum(); api.startCloudSeaAerialStage(); const afterCloud = snap();
+        seedActiveFieldsInSanctum(); api.startSectDefenseSiege(); const afterSect = snap();
+        seedActiveFieldsInSanctum(); api.initArenaStage(0, false); const afterStage0 = snap();
+
+        // Sandbox exit on Mortal save
+        s.game.realm = "mortal";
+        api.saveGame({ forceOverwrite: true });
+        api.enterSandboxMode();
+        v22.deployOrCycleQimenArray();
+        s.arena.domain = { x: s.arena.player.x, y: s.arena.player.y, r: 220, life: 7.0, maxLife: 7.0, color: "#80ffea" };
+        s.arena.activeAllies.push({ id: "shen", __sanctumLeakMarker: true, x: s.arena.player.x + 25, y: s.arena.player.y, life: 8.0, maxLife: 8.0, healCd: 0.1 });
+        s.arena.zones.push({ kind: "lotus_heal", __sanctumLeakMarker: true, x: s.arena.player.x, y: s.arena.player.y, r: 160, life: 5.0, maxLife: 5.0 });
+        api.exitSandboxMode();
+        const afterSandbox = snap();
+        return { afterTrib, hpAfter1s, afterRush, afterSpire, afterCloud, afterSect, afterStage0, afterSandbox };
+      });
+      for (const [label, snap, allowAutoDefenseAllies] of [
+        ["Hardcore Tribulation", r5b1.afterTrib, false],
+        ["Boss Rush 1", r5b1.afterRush, false],
+        ["Spire 1", r5b1.afterSpire, false],
+        ["Cloud Sea", r5b1.afterCloud, false],
+        ["Sect Defense", r5b1.afterSect, true],
+        ["Stage 0", r5b1.afterStage0, false],
+        ["Sandbox Exit", r5b1.afterSandbox, false]
+      ]) {
+        assert.equal(snap.qimen, false, `R5B-1 (${label}): qimenArray purged`);
+        assert.equal(snap.qimenCd, 0, `R5B-1 (${label}): qimenCd purged`);
+        assert.equal(snap.domain, false, `R5B-1 (${label}): domain purged`);
+        assert.equal(snap.leakedAllies, 0, `R5B-1 (${label}): prior Sanctum activeAllies purged`);
+        assert.equal(snap.leakedZones, 0, `R5B-1 (${label}): prior Sanctum zones purged`);
+        if (!allowAutoDefenseAllies) {
+          assert.equal(snap.allies, 0, `R5B-1 (${label}): activeAllies purged`);
+          assert.equal(snap.zones, 0, `R5B-1 (${label}): zones purged`);
+        }
+        assert.equal(snap.vortexes, 0, `R5B-1 (${label}): lotusVortexes purged`);
+        assert.equal(snap.orbs, 0, `R5B-1 (${label}): thunderOrbs purged`);
+        assert.equal(snap.decoys, 0, `R5B-1 (${label}): jadeDecoys purged`);
+        assert.equal(snap.witchTime, 0, `R5B-1 (${label}): witchTime purged`);
+      }
+      assert.equal(r5b1.hpAfter1s, 200, `R5B-1: Exact 0 leaked Sanctum Qimen/Ally/Lotus heal in Hardcore Tribulation (200 -> ${r5b1.hpAfter1s})`);
+
+      // 4. R5A-1 (confirm-reset-save & confirm-reset-corrupt-meta inline role="alert" errors) + R5A-2 (all 3 title-return Dojo cleanups)
+      await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        api.enterSanctumHub();
+        api.saveGame({ forceOverwrite: true });
+      });
+      await page.click("#btn-toggle-dojo-bar");
+      await page.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
+
+      // R5A-1 confirm-reset-save SecurityError
+      await page.click("#btn-open-settings");
+      await page.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+      await page.click('[data-sys-tab="controls"]');
+      await page.click('[data-action="confirm-reset-save"]');
+      await page.waitForSelector('#modal-backdrop.open [data-action="execute-reset-save"]');
+      await page.evaluate((sk) => {
+        window.__e2eR5OrigRm = Storage.prototype.removeItem;
+        Storage.prototype.removeItem = function(k) {
+          if (k === sk) throw new DOMException("Read-only storage", "SecurityError");
+          return window.__e2eR5OrigRm.call(this, k);
+        };
+      }, STORAGE_KEY);
+      await page.click('[data-action="execute-reset-save"]');
+      const resetErr = await page.evaluate((sk) => {
+        const el = document.getElementById("reset-save-error-msg");
+        const cs = el ? getComputedStyle(el) : null;
+        const rect = el ? el.getBoundingClientRect() : null;
+        Storage.prototype.removeItem = window.__e2eR5OrigRm;
+        delete window.__e2eR5OrigRm;
+        return {
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          role: el ? el.getAttribute("role") : null,
+          visible: Boolean(el && cs && cs.display !== "none" && Number(cs.opacity) === 1 && rect && rect.width > 0 && rect.height > 0),
+          text: el ? (el.textContent || "") : "",
+          savePreserved: Boolean(localStorage.getItem(sk))
+        };
+      }, STORAGE_KEY);
+      assert.equal(resetErr.modalOpen, true, "R5A-1 reset-save: modal stays open on SecurityError");
+      assert.equal(resetErr.role, "alert", "R5A-1 reset-save: role='alert'");
+      assert.equal(resetErr.visible, true, "R5A-1 reset-save: inline error visibly rendered");
+      assert.ok(resetErr.text.includes("SecurityError"), "R5A-1 reset-save: reports SecurityError");
+      assert.equal(resetErr.savePreserved, true, "R5A-1 reset-save: primary save preserved");
+      await page.click('[data-modal-close="1"]');
+      await page.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+
+      // R5A-2 return-title-safe + corrupt META_KEY for R5A-1 confirm-reset-corrupt-meta
+      await page.evaluate((mk) => { localStorage.setItem(mk, "{bad_meta_e2e"); }, META_KEY);
+      await page.click("#btn-open-settings");
+      await page.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+      await page.click('[data-sys-tab="controls"]');
+      await page.click('[data-action="return-title-safe"]');
+      await page.waitForSelector("#welcome-screen", { state: "visible" });
+      const checkDojoClean = () => page.evaluate(() => {
+        const db = document.getElementById("dojo-control-bar");
+        const hud = document.getElementById("dojo-training-hud");
+        return {
+          sanctumMode: window.__CHENYUAN_V25__.getState().arena.sanctumMode,
+          active: db.classList.contains("active"),
+          expanded: db.classList.contains("expanded"),
+          caret: (document.getElementById("lbl-dojo-caret")?.textContent || "").trim(),
+          trainingHud: Boolean(hud && hud.classList.contains("active"))
+        };
+      });
+      const cleanReturn = await checkDojoClean();
+      assert.deepEqual(cleanReturn, { sanctumMode: false, active: false, expanded: false, caret: "▾", trainingHud: false }, "R5A-2: return-title-safe clears Sanctum/Dojo DOM");
+
+      // R5A-1 confirm-reset-corrupt-meta QuotaExceededError
+      await page.waitForSelector('[data-action="prompt-reset-corrupt-meta"]', { state: "visible" });
+      await page.click('[data-action="prompt-reset-corrupt-meta"]');
+      await page.waitForSelector('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
+      await page.evaluate((mk) => {
+        window.__e2eR5OrigSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === mk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+          return window.__e2eR5OrigSet.call(this, k, v);
+        };
+      }, META_KEY);
+      await page.click('[data-action="confirm-reset-corrupt-meta"]');
+      const metaErr = await page.evaluate((mk) => {
+        const el = document.getElementById("corrupt-meta-reset-error-msg");
+        const cs = el ? getComputedStyle(el) : null;
+        const rect = el ? el.getBoundingClientRect() : null;
+        Storage.prototype.setItem = window.__e2eR5OrigSet;
+        delete window.__e2eR5OrigSet;
+        return {
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          role: el ? el.getAttribute("role") : null,
+          visible: Boolean(el && cs && cs.display !== "none" && Number(cs.opacity) === 1 && rect && rect.width > 0 && rect.height > 0),
+          text: el ? (el.textContent || "") : "",
+          corruptPreserved: localStorage.getItem(mk) === "{bad_meta_e2e"
+        };
+      }, META_KEY);
+      assert.equal(metaErr.modalOpen, true, "R5A-1 corrupt-meta: modal stays open on QuotaExceededError");
+      assert.equal(metaErr.role, "alert", "R5A-1 corrupt-meta: role='alert'");
+      assert.equal(metaErr.visible, true, "R5A-1 corrupt-meta: inline error visibly rendered");
+      assert.ok(metaErr.text.includes("QuotaExceededError"), "R5A-1 corrupt-meta: reports QuotaExceededError");
+      assert.equal(metaErr.corruptPreserved, true, "R5A-1 corrupt-meta: corrupt META_KEY preserved");
+      await page.click('[data-action="confirm-reset-corrupt-meta"]');
+      await page.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+
+      // R5A-2 execute-reset-save & executeReincarnation
+      await page.click("#btn-continue-save");
+      await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      await page.evaluate(() => { window.__CHENYUAN_V25__.enterSanctumHub(); });
+      await page.click("#btn-toggle-dojo-bar");
+      await page.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
+      await page.click("#btn-open-settings");
+      await page.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+      await page.click('[data-sys-tab="controls"]');
+      await page.click('[data-action="confirm-reset-save"]');
+      await page.waitForSelector('#modal-backdrop.open [data-action="execute-reset-save"]');
+      await page.click('[data-action="execute-reset-save"]');
+      await page.waitForSelector("#welcome-screen", { state: "visible" });
+      const cleanReset = await checkDojoClean();
+      assert.deepEqual(cleanReset, { sanctumMode: false, active: false, expanded: false, caret: "▾", trainingHud: false }, "R5A-2: execute-reset-save clears Sanctum/Dojo DOM");
+
+      await page.click("#btn-start-new");
+      await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      await env.dismissOpeningIfAny(page);
+      await page.evaluate(() => { window.__CHENYUAN_V25__.enterSanctumHub(); });
+      await page.click("#btn-toggle-dojo-bar");
+      await page.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
+      const reincOk = await page.evaluate(() => window.__CHENYUAN_V25__.executeReincarnation({ source: "bingjie" }));
+      assert.equal(reincOk, true, "R5A-2: executeReincarnation succeeded");
+      const cleanReinc = await checkDojoClean();
+      assert.deepEqual(cleanReinc, { sanctumMode: false, active: false, expanded: false, caret: "▾", trainingHud: false }, "R5A-2: executeReincarnation clears Sanctum/Dojo DOM");
     }
   }
 ];

@@ -11295,7 +11295,7 @@ try {
     await tab2.click("#btn-start-new");
     await tab2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
     await dismissOpeningScroll(tab2);
-    await tab1.waitForTimeout(250);
+    await tab1.waitForFunction(() => Boolean(window.__CHENYUAN_V25__.getPersistenceState().saveConflictState), null, { timeout: 3000 });
 
     const tab1Conflict = await tab1.evaluate((sk) => {
       const api = window.__CHENYUAN_V25__;
@@ -11344,7 +11344,7 @@ try {
     await pageB.waitForSelector('[data-action="execute-reset-save"]');
     await pageB.evaluate(() => { const tc = document.getElementById("toast-container"); if (tc) tc.innerHTML = ""; });
     await pageB.click('[data-action="execute-reset-save"]');
-    await pageB.waitForTimeout(100);
+    await pageB.waitForTimeout(15);
     const resetErrRes = await pageB.evaluate((sk) => ({
       welcomeVisible: document.getElementById("welcome-screen")?.style.display !== "none",
       hasGame: Boolean(window.__CHENYUAN_V25__.getState().game),
@@ -11372,7 +11372,7 @@ try {
     }, META_KEY);
     await pageB.waitForSelector('#modal-backdrop.open [data-action="confirm-bingjie-reincarnate"]');
     await pageB.click('#modal-backdrop.open [data-action="confirm-bingjie-reincarnate"]');
-    await pageB.waitForTimeout(100);
+    await pageB.waitForTimeout(15);
     const bingjieErrRes = await pageB.evaluate(({ sk, mk }) => {
       const api = window.__CHENYUAN_V25__;
       return {
@@ -11433,13 +11433,13 @@ try {
     await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
     await dismissOpeningScroll(tabA);
 
-    const tabB = await ctxA.newPage();
-    attachErrorListeners(tabB, "T5-3-A5B");
-    await tabB.goto(targetUrl, { waitUntil: "domcontentloaded" });
-    await tabB.waitForSelector("#btn-continue-save");
-    await tabB.click("#btn-continue-save");
-    await tabB.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-    await tabB.evaluate(() => { window.__CHENYUAN_V25__.getState().game.stones = 333; window.__CHENYUAN_V25__.saveGame(); });
+    await tabA.evaluate((sk) => {
+      const liveEnv = JSON.parse(localStorage.getItem(sk));
+      const foreignEnv = Object.assign({}, liveEnv, { saveRev: (liveEnv.saveRev || 1) + 1, tabId: "tab_foreign_t53" });
+      const raw = JSON.stringify(foreignEnv);
+      localStorage.setItem(sk, raw);
+      window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: raw }));
+    }, STORAGE_KEY);
     await tabA.waitForSelector('#modal-backdrop.open [data-action="stay-readonly-save"]');
 
     // Test modal-from-alert stay-readonly-save: first close/reopen conflict modal via #hud-save-alert trigger
@@ -11460,7 +11460,7 @@ try {
     await tabA.evaluate((sk) => { localStorage.setItem(sk, "{CORRUPT_A5_JSON"); }, STORAGE_KEY);
     await tabA.focus('#hud-save-alert [data-action="load-latest-save"]');
     await tabA.click('#hud-save-alert [data-action="load-latest-save"]');
-    await tabA.waitForTimeout(80);
+    await tabA.waitForTimeout(10);
     const corruptAlertFocus = await tabA.evaluate((sk) => ({
       isBody: document.activeElement === document.body,
       tag: document.activeElement?.tagName,
@@ -11483,10 +11483,9 @@ try {
     await tabA.waitForSelector('#hud-save-alert [data-action="load-latest-save"]');
     await tabA.focus('#hud-save-alert [data-action="load-latest-save"]');
     await tabA.click('#hud-save-alert [data-action="load-latest-save"]');
-    await tabA.waitForTimeout(80);
+    await tabA.waitForTimeout(10);
     const deletedAlertFocus = await tabA.evaluate(() => ({ isBody: document.activeElement === document.body, tag: document.activeElement?.tagName }));
     assert.equal(deletedAlertFocus.isBody, false, `A-5: load-latest-save failure (deleted disk) must keep focus off BODY (got ${deletedAlertFocus.tag})`);
-    await tabB.close();
 
     // Part B (A-6): retry-meta-save failure, corrupt-disk toast, and recovery focus retention
     const ctxM = ctxA;
@@ -11509,7 +11508,7 @@ try {
     await pageM.waitForSelector('#hud-save-alert [data-action="retry-meta-save"]');
     await pageM.focus('#hud-save-alert [data-action="retry-meta-save"]');
     await pageM.click('#hud-save-alert [data-action="retry-meta-save"]');
-    await pageM.waitForTimeout(60);
+    await pageM.waitForTimeout(10);
     const metaFailFocus = await pageM.evaluate(() => ({ isBody: document.activeElement === document.body, tag: document.activeElement?.tagName }));
     assert.equal(metaFailFocus.isBody, false, `A-6: retry-meta-save failure must keep focus off BODY (got ${metaFailFocus.tag})`);
 
@@ -11521,7 +11520,7 @@ try {
     }, META_KEY);
     await pageM.focus('#hud-save-alert [data-action="retry-meta-save"]');
     await pageM.click('#hud-save-alert [data-action="retry-meta-save"]');
-    await pageM.waitForTimeout(60);
+    await pageM.waitForTimeout(10);
     const metaCorruptRes = await pageM.evaluate((mk) => ({
       isBody: document.activeElement === document.body,
       hasMetaReadErr: Boolean(window.__CHENYUAN_V25__.getPersistenceState().metaReadError),
@@ -11545,7 +11544,7 @@ try {
     await pageM.waitForSelector('#hud-save-alert [data-action="retry-meta-save"]');
     await pageM.focus('#hud-save-alert [data-action="retry-meta-save"]');
     await pageM.click('#hud-save-alert [data-action="retry-meta-save"]');
-    await pageM.waitForTimeout(60);
+    await pageM.waitForTimeout(10);
     const metaRecoverRes = await pageM.evaluate(() => ({
       isBody: document.activeElement === document.body,
       activeId: document.activeElement?.id || "",
@@ -11554,16 +11553,18 @@ try {
     assert.equal(metaRecoverRes.alertDisplay, "none", "A-6: alert must hide after meta write recovery");
     assert.equal(metaRecoverRes.isBody, false, `A-6: retry-meta-save recovery must restore focus off BODY (got id=${metaRecoverRes.activeId})`);
     await pageM.evaluate(() => { Storage.prototype.setItem = window.__t5OrigSetItemMeta; });
-    await ctxM.close();
 
-    // Part C (A-7 + A-9 F3 on welcome screen): startFreshGameSession repeat <6s write failure emits toast; F3 blocked on welcome screen
-    const ctxW = await newIsolatedContext(browser);
-    const pageW = await ctxW.newPage();
-    attachErrorListeners(pageW, "T5-3-A7A9");
-    await pageW.goto(targetUrl, { waitUntil: "domcontentloaded" });
-    await pageW.waitForSelector("#welcome-screen", { state: "visible" });
+    // Part C (A-7 + A-9 F3 on welcome screen): reuse pageM via return-title-safe (0 extra page load)
+    await pageM.click("#btn-open-settings");
+    await pageM.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+    await pageM.click('[data-sys-tab="controls"]');
+    await pageM.click('[data-action="return-title-safe"]');
+    await pageM.waitForSelector("#welcome-screen", { state: "visible" });
+    await pageM.evaluate((sk) => { localStorage.removeItem(sk); }, STORAGE_KEY);
+    const ctxW = ctxM;
+    const pageW = pageM;
     await pageW.keyboard.press("F3");
-    await pageW.waitForTimeout(80);
+    await pageW.waitForTimeout(20);
     const f3WelcomeOpen = await pageW.evaluate(() => Boolean(document.getElementById("action-telemetry-panel")?.classList.contains("open")));
     assert.equal(f3WelcomeOpen, false, "A-9: F3 must NOT open #action-telemetry-panel over #welcome-screen");
 
@@ -11603,7 +11604,7 @@ try {
     // A-10 Part 1: During active opening_scroll cutscene, clicking [data-tab="cultivate"] must NOT stack drawer
     await pageK.waitForSelector("#story-dialogue-bar.open");
     await pageK.click('.nav-tab-btn[data-tab="cultivate"]', { force: true });
-    await pageK.waitForTimeout(80);
+    await pageK.waitForTimeout(10);
     const cutsceneDrawerCheck = await pageK.evaluate(() => ({
       drawerOpen: Boolean(document.getElementById("jade-panel")?.classList.contains("drawer-open")),
       cutsceneOpen: Boolean(document.getElementById("story-dialogue-bar")?.classList.contains("open")),
@@ -11641,13 +11642,12 @@ try {
     await pageK.waitForSelector('#modal-backdrop.open [data-modal-close="1"]');
     await pageK.click('#modal-backdrop.open [data-modal-close="1"]');
     await pageK.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
-    await pageK.waitForTimeout(120);
     const craftAfterClose = await pageK.evaluate(() => window.__CHENYUAN_V23__.getState().craftMinigame.open);
     assert.equal(craftAfterClose, false, "A-8: closeModal() via button must reset craftMinigame.open to false");
     await pageK.click("#btn-open-settings");
     await pageK.waitForSelector("#modal-backdrop.open");
     await pageK.keyboard.press("Space");
-    await pageK.waitForTimeout(60);
+    await pageK.waitForTimeout(10);
     const craftStrikes = await pageK.evaluate(() => window.__CHENYUAN_V23__.getState().craftMinigame.strikes);
     assert.equal(craftStrikes, 0, "A-8: Space inside Settings must NOT fire ghost craftMinigame strikes");
     await pageK.keyboard.press("Escape");
@@ -11657,7 +11657,7 @@ try {
     await pageK.click("#btn-pavilion-menu");
     await pageK.waitForSelector("#pavilion-popover.open");
     await pageK.keyboard.press("Escape");
-    await pageK.waitForTimeout(60);
+    await pageK.waitForTimeout(10);
     const pavEsc1 = await pageK.evaluate(() => ({
       open: Boolean(document.getElementById("pavilion-popover")?.classList.contains("open")),
       activeId: document.activeElement?.id || ""
@@ -11673,7 +11673,7 @@ try {
     });
     await pageK.focus("#btn-goals-modal");
     await pageK.keyboard.press("Space");
-    await pageK.waitForTimeout(100);
+    await pageK.waitForSelector("#modal-backdrop.open");
     const hudSpaceRes = await pageK.evaluate(() => ({
       modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open")),
       dashCd: window.__CHENYUAN_V25__.getState().arena.player.dashCd
@@ -11696,7 +11696,7 @@ try {
     await pageK.waitForSelector("#btn-skip-onboarding", { state: "visible" });
     await pageK.focus("#btn-skip-onboarding");
     await pageK.keyboard.press("Enter");
-    await pageK.waitForTimeout(60);
+    await pageK.waitForTimeout(10);
     assert.equal(await pageK.evaluate(() => document.activeElement === document.body), false, "A-10: #btn-skip-onboarding must not drop focus to BODY");
 
     // 2) #btn-unlock-dismiss and #btn-unlock-try
@@ -11711,7 +11711,7 @@ try {
     await pageK.waitForSelector("#new-unlock-card #btn-unlock-dismiss", { state: "visible" });
     await pageK.focus("#btn-unlock-dismiss");
     await pageK.keyboard.press("Enter");
-    await pageK.waitForTimeout(60);
+    await pageK.waitForTimeout(10);
     assert.equal(await pageK.evaluate(() => document.activeElement === document.body), false, "A-10: #btn-unlock-dismiss must not drop focus to BODY");
 
     await pageK.evaluate(() => {
@@ -11725,7 +11725,7 @@ try {
     await pageK.waitForSelector("#new-unlock-card #btn-unlock-try", { state: "visible" });
     await pageK.focus("#btn-unlock-try");
     await pageK.keyboard.press("Enter");
-    await pageK.waitForTimeout(60);
+    await pageK.waitForTimeout(10);
     assert.equal(await pageK.evaluate(() => document.activeElement === document.body), false, "A-10: #btn-unlock-try must not drop focus to BODY");
 
     // 3) #gear-compare-card Step 1 smelt-arm & compare-keep-bag
@@ -11738,10 +11738,10 @@ try {
       api.requestCalmReevaluation({ immediate: true });
     });
     await pageK.waitForSelector('#gear-compare-card [data-action="compare-smelt-new"]', { state: "visible" });
-    await pageK.waitForTimeout(300);
+    await pageK.waitForTimeout(260);
     await pageK.focus('#gear-compare-card [data-action="compare-smelt-new"]');
     await pageK.keyboard.press("Enter");
-    await pageK.waitForTimeout(60);
+    await pageK.waitForTimeout(10);
     const smeltArmFocus = await pageK.evaluate(() => ({
       isBody: document.activeElement === document.body,
       activeAction: document.activeElement?.getAttribute?.("data-action") || ""
@@ -11751,7 +11751,7 @@ try {
 
     await pageK.focus('#gear-compare-card [data-action="compare-keep-bag"]');
     await pageK.keyboard.press("Enter");
-    await pageK.waitForTimeout(60);
+    await pageK.waitForTimeout(10);
     assert.equal(await pageK.evaluate(() => document.activeElement === document.body), false, "A-10: compare-keep-bag must NOT drop focus to BODY");
     await ctxK.close();
   });
@@ -11774,9 +11774,9 @@ try {
       Math.random = () => (++calls <= 12 ? 0.001 : window.__t5OrigRand());
     });
     await page1.click('#modal-backdrop.open [data-start-rush="1"]');
-    await page1.waitForTimeout(350);
+    await page1.waitForFunction(() => (window.__CHENYUAN_V25__.getState().arena.bossRush?.elapsed || 0) > 0.04, null, { timeout: 3000 });
     const t0 = await page1.evaluate(() => window.__CHENYUAN_V25__.getState().arena.bossRush?.elapsed || 0);
-    await page1.waitForTimeout(350);
+    await page1.waitForFunction((prev) => (window.__CHENYUAN_V25__.getState().arena.bossRush?.elapsed || 0) > prev + 0.12, t0, { timeout: 3000 });
     const b1State = await page1.evaluate(() => {
       Math.random = window.__t5OrigRand;
       const a = window.__CHENYUAN_V25__.getState().arena;
@@ -11818,8 +11818,8 @@ try {
       api.saveGame();
       const diskDuring = JSON.parse(localStorage.getItem(sk) || "{}");
       const diskCuriosDuring = (diskDuring && diskDuring.game && diskDuring.game.spireCurios) || {};
-      const cloudCode = v24.exportFullCloudSaveCode();
-      const cloudParsed = v24.parseCloudSaveCode(cloudCode);
+      const cloudCode = api.exportFullCloudSaveCode();
+      const cloudParsed = api.parseCloudSaveCode(cloudCode);
       const cloudCuriosDuring = (cloudParsed && cloudParsed.ok && cloudParsed.normalizedGame && cloudParsed.normalizedGame.spireCurios) || {};
       // Kill spawned workshop boss
       const boss = s.arena.enemies.find(e => e.isBoss) || s.arena.enemies[0];
@@ -11846,7 +11846,7 @@ try {
     assert.equal(wsActiveRes.starPtsAfterKill, 0, "B-2: Killing workshop boss must NOT grant formal bonusStarPts");
 
     await page2.keyboard.press("KeyH");
-    await page2.waitForTimeout(180);
+    await page2.waitForFunction(() => window.__CHENYUAN_V25__.getState().arena.sanctumMode === true, null, { timeout: 3000 });
     await page2.reload({ waitUntil: "domcontentloaded" });
     await page2.waitForSelector("#btn-continue-save", { state: "visible" });
     await page2.click("#btn-continue-save");
@@ -11886,7 +11886,7 @@ try {
       api.saveMeta();
       api.startBossRushGauntlet(7);
     });
-    await page3.waitForTimeout(120);
+    await page3.waitForFunction(() => window.__CHENYUAN_V25__.isPracticeModeActive() === true, null, { timeout: 3000 });
     const b3Probe = await page3.evaluate(() => {
       const api = window.__CHENYUAN_V25__;
       const s = api.getState();
@@ -11923,7 +11923,7 @@ try {
         realm: s.game.realm
       };
     });
-    await page3.waitForTimeout(250);
+    await page3.waitForTimeout(140);
     const xpAfterPracticeMed = await page3.evaluate(() => window.__CHENYUAN_V25__.getState().game.xp);
     assert.equal(b3Probe.inPractice, true, "B-3: Boss Rush Wave 7 must be in Practice Mode");
     assert.equal(b3Probe.qCraftOk, false, "B-3: Quick Craft must be blocked in Practice Mode");
@@ -11940,7 +11940,7 @@ try {
     assert.equal(xpAfterPracticeMed, 0, `B-3: Practice Mode meditation must NOT grant formal 0-aging XP, got ${xpAfterPracticeMed}`);
 
     await page3.keyboard.press("KeyH");
-    await page3.waitForTimeout(180);
+    await page3.waitForFunction(() => window.__CHENYUAN_V25__.getState().arena.sanctumMode === true, null, { timeout: 3000 });
     const b3Disk = await page3.evaluate(({ sk, mk }) => ({
       save: JSON.parse(localStorage.getItem(sk)),
       meta: JSON.parse(localStorage.getItem(mk) || "{}")
@@ -12021,7 +12021,7 @@ try {
     await page.keyboard.press("KeyH");
     await page.click("#btn-sanctum-hub");
     await page.keyboard.press("KeyM");
-    await page.waitForTimeout(80);
+    await page.waitForTimeout(15);
     const b5Res = await page.evaluate(() => {
       const s = window.__CHENYUAN_V25__.getState();
       return {
@@ -12046,19 +12046,17 @@ try {
       g.stones = 200;
       g.litStars = [];
       api.openStarChartModal();
-    });
-    await page.waitForSelector("#modal-backdrop.open [data-light-star]");
-    // Exhaust all free star points cleanly
-    for (let i = 0; i < 20; i++) {
-      const left = await page.evaluate(() => {
+      // Exhaust all free star points cleanly in-DOM so modal sits at exact 0 Star Points
+      for (let i = 0; i < 20; i++) {
         const txt = document.querySelector("#modal-content")?.textContent || "";
         const m = txt.match(/可用星魂点：\s*(\d+)/);
-        return m ? Number(m[1]) : 0;
-      });
-      if (left <= 0) break;
-      await page.click('#modal-content [data-light-star]:not(.lit)');
-      await page.waitForTimeout(30);
-    }
+        if (!m || Number(m[1]) <= 0) break;
+        const btn = document.querySelector('#modal-content [data-light-star]:not(.lit)');
+        if (!btn) break;
+        btn.click();
+      }
+    });
+    await page.waitForSelector("#modal-backdrop.open [data-light-star]:not(.lit)");
     const b6Before = await page.evaluate(() => {
       const g = window.__CHENYUAN_V25__.getState().game;
       const tc = document.getElementById("toast-container");
@@ -12066,7 +12064,7 @@ try {
       return { stones: g.stones, litCount: g.litStars.length };
     });
     await page.click('#modal-content [data-light-star]:not(.lit)');
-    await page.waitForTimeout(60);
+    await page.waitForTimeout(15);
     const b6After = await page.evaluate(() => {
       const g = window.__CHENYUAN_V25__.getState().game;
       return {
@@ -12080,7 +12078,7 @@ try {
     assert.ok(b6After.toasts.includes("凝炼星魂"), `B-6: Must show explicit guidance toast, got: ${b6After.toasts}`);
     // Explicit buy button still works
     await page.click('#modal-content [data-action="buy-star-point"]');
-    await page.waitForTimeout(60);
+    await page.waitForTimeout(15);
     assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones), b6Before.stones - 60, "B-6: Explicit buy-star-point button must deduct 60 stones");
     await page.keyboard.press("Escape");
     await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
@@ -12310,12 +12308,14 @@ try {
       api.saveGame({ forceOverwrite: true, userInitiated: true });
       api.saveMeta({ forceReset: true });
     }, META_KEY);
-    await p2.reload({ waitUntil: "domcontentloaded" });
-    await p2.waitForSelector("#btn-continue-save", { state: "visible" });
-    await p2.click("#btn-continue-save");
-    await p2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-    await p2.evaluate(() => { window.__CHENYUAN_V25__.saveMeta(); });
-    await p1.waitForTimeout(100);
+    await p2.evaluate(() => {
+      const api = window.__CHENYUAN_V25__;
+      const ms = api.getMetaState();
+      ms.reincarnationPoints = 0;
+      ms.metaRev = 0;
+      api.saveMeta({ forceReset: true });
+    });
+    await p1.waitForTimeout(40);
 
     await p1.evaluate((sk) => {
       window.__r2a2OrigRm = Storage.prototype.removeItem;
@@ -12328,7 +12328,7 @@ try {
     for (let i = 0; i < 2; i++) {
       await p1.waitForSelector('#modal-backdrop.open [data-action="confirm-bingjie-reincarnate"]');
       await p1.click('#modal-backdrop.open [data-action="confirm-bingjie-reincarnate"]');
-      await p1.waitForTimeout(220);
+      await p1.waitForTimeout(20);
     }
     const r2a2Res = await p1.evaluate(({ sk, mk }) => {
       Storage.prototype.removeItem = window.__r2a2OrigRm;
@@ -12838,14 +12838,17 @@ try {
       await p2.waitForSelector("#btn-continue-save", { state: "visible" });
       await p2.click("#btn-continue-save");
       await p2.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
-      // Case A: Tab 2 updates stones & saves foreign rev
-      const tab2Rev = await p2.evaluate(() => {
+      // Case A: Tab 2 updates stones & saves foreign rev (also capture tab2HighRaw for Part C!)
+      const { tab2Rev, tab2HighRaw } = await p2.evaluate((sk) => {
         const api = window.__CHENYUAN_V25__;
         const s = api.getState();
         s.game.stones = 9999;
         api.saveGame();
-        return api.getPersistenceState().loadedSaveRev;
-      });
+        return {
+          tab2Rev: api.getPersistenceState().loadedSaveRev,
+          tab2HighRaw: localStorage.getItem(sk)
+        };
+      }, STORAGE_KEY);
       await p1.waitForFunction(() => window.__CHENYUAN_V25__.getActiveModalKind() === "save_conflict", null, { timeout: 3000 });
       await p1.evaluate(() => { const tc = document.getElementById("toast-container"); if (tc) tc.innerHTML = ""; });
       await p1.click('[data-action="overwrite-with-current-save"]');
@@ -12914,33 +12917,13 @@ try {
       assert.notEqual(caseBRes.activeTag, "BODY", "R3A-1 Case B: Focus must stay off BODY");
       assert.ok(caseBRes.toasts.some(t => t.includes("强制覆盖存档")), `R3A-1 Case B: Toast feedback must be emitted (got: ${JSON.stringify(caseBRes.toasts)})`);
 
-      // Part C (R3A-3): Delayed foreign StorageEvent with higher saveRev over locally-owned lower-rev disk save must be ignored
-      await p1.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        for (let i = 0; i < 4; i++) {
-          api.getState().game.stones += 10;
-          api.saveGame();
-        }
-      });
-      await p2.reload({ waitUntil: "domcontentloaded" });
-      await p2.waitForSelector("#btn-continue-save", { state: "visible" });
-      await p2.click("#btn-continue-save");
-      await p2.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
-      const tab2HighRaw = await p2.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
-        api.getState().game.stones += 55;
-        api.saveGame();
-        return localStorage.getItem(sk);
-      }, STORAGE_KEY);
-      await p2.click("#btn-open-settings");
-      await p2.click('[data-sys-tab="controls"]');
-      await p2.click('[data-action="confirm-reset-save"]');
-      await p2.click('[data-action="execute-reset-save"]');
+      // Part C (R3A-3): Delayed foreign StorageEvent with higher saveRev (real tab2HighRaw from p2 Case A) over locally-owned lower-rev disk save must be ignored
       await p2.close();
-      await p1.evaluate(() => {
+      await p1.evaluate((sk) => {
         const api = window.__CHENYUAN_V25__;
         api.closeModal();
-      });
+        localStorage.removeItem(sk);
+      }, STORAGE_KEY);
       await p1.click("#btn-open-settings");
       await p1.click('[data-sys-tab="controls"]');
       await p1.click('[data-action="return-title-safe"]');
@@ -12982,8 +12965,11 @@ try {
       }));
       assert.equal(popAfterModal.popOpen, false, "R3A-2: openModal() must dismiss #pavilion-popover");
       assert.equal(popAfterModal.btnOpen, false, "R3A-2: openModal() must remove .open from #btn-pavilion-menu");
-      // Force-open popover behind modal to also verify return-title-safe & welcome occlusion guard
-      await page.evaluate(() => document.getElementById("pavilion-popover").classList.add("open"));
+      // Force-open popover behind modal & seed corrupt STORAGE_KEY so return-title-safe also renders #save-status-banner with 0 page reload!
+      await page.evaluate((sk) => {
+        document.getElementById("pavilion-popover").classList.add("open");
+        localStorage.setItem(sk, "{CORRUPT_JSON");
+      }, STORAGE_KEY);
       await page.click('[data-sys-tab="controls"]');
       await page.click('[data-action="return-title-safe"]');
       await page.waitForSelector("#welcome-screen", { state: "visible" });
@@ -13004,8 +12990,6 @@ try {
       assert.equal(r3a2Welcome.inPopover, false, "R3A-2: Focus must never escape into occluded #pavilion-popover");
 
       // Verify modal opened OVER #welcome-screen (corrupt save confirmation) still focuses a button inside #modal-content
-      await page.evaluate((sk) => { localStorage.setItem(sk, "{CORRUPT_JSON"); }, STORAGE_KEY);
-      await page.reload({ waitUntil: "domcontentloaded" });
       await page.waitForSelector("#save-status-banner", { state: "visible" });
       await page.click("#btn-start-new");
       await page.waitForFunction(() => document.getElementById("modal-backdrop").classList.contains("open"));
@@ -13390,7 +13374,7 @@ try {
     }
   });
 
-  await runSuite("T5-10", "M7b Round 4 最终收敛门禁 6 项缺陷回归(R4A-1/DEFECT-R3-2A + R4A-2/3 + R4B-1/2/3)", async () => {
+  await runSuite("T5-10", "M7b Round 4 & Round 5 收敛门禁全量回归(R4A-1..3 + R4B-1..3 + R5A-1/2 + R5B-1/2/3)", async () => {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     try {
       // Part A (R4A-2): #welcome-screen Tab/Shift+Tab focus trap & occluded HUD click guards while game === null
@@ -13478,17 +13462,13 @@ try {
         api.startBossRushGauntlet(7);
         s.game.inventory.spirit_pill = 2;
       });
-      const page2 = await ctx.newPage();
-      attachErrorListeners(page2, "T5-10-P2");
-      await page2.goto(targetUrl, { waitUntil: "domcontentloaded" });
-      await page2.waitForSelector("#btn-continue-save", { state: "visible" });
-      await page2.click("#btn-continue-save");
-      await page2.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
-      await page2.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        api.getState().game.stones = 9999;
-        api.saveGame();
-      });
+      await page1.evaluate((sk) => {
+        const liveEnv = JSON.parse(localStorage.getItem(sk));
+        const foreignEnv = Object.assign({}, liveEnv, { saveRev: (liveEnv.saveRev || 1) + 1, tabId: "tab_foreign_t510_a" });
+        const raw = JSON.stringify(foreignEnv);
+        localStorage.setItem(sk, raw);
+        window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: raw }));
+      }, STORAGE_KEY);
       await page1.waitForFunction(() => document.getElementById("modal-backdrop").classList.contains("open"));
 
       // Inject QuotaExceededError on Tab 1 and click overwrite-with-current-save
@@ -13506,6 +13486,9 @@ try {
         const api = window.__CHENYUAN_V25__;
         const s = api.getState();
         const ps = api.getPersistenceState();
+        const errEl = document.getElementById("save-conflict-error-msg");
+        const cs = errEl ? getComputedStyle(errEl) : null;
+        const rect = errEl ? errEl.getBoundingClientRect() : null;
         return {
           modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
           isPractice: api.isPracticeModeActive(),
@@ -13513,7 +13496,10 @@ try {
           bossRushActive: Boolean(s.arena.bossRush && s.arena.bossRush.active),
           writeErr: ps.storageWriteError ? ps.storageWriteError.message : "",
           memPill: s.game.inventory.spirit_pill,
-          focusIsBody: document.activeElement === document.body
+          focusIsBody: document.activeElement === document.body,
+          inlineErrRole: errEl ? errEl.getAttribute("role") : null,
+          inlineErrVisible: Boolean(errEl && cs && cs.display !== "none" && Number(cs.opacity) === 1 && rect && rect.width > 0 && rect.height > 0),
+          inlineErrText: errEl ? (errEl.textContent || "") : ""
         };
       });
       assert.equal(afterQuota1.modalOpen, true, "R4A-1: save_conflict modal must remain open on QuotaExceededError");
@@ -13523,6 +13509,9 @@ try {
       assert.ok(afterQuota1.writeErr.includes("QuotaExceededError"), `R4A-1: Expected QuotaExceededError feedback, got ${afterQuota1.writeErr}`);
       assert.equal(afterQuota1.memPill, 2, "R4A-1: Practice game state rolled back cleanly");
       assert.equal(afterQuota1.focusIsBody, false, "R4A-1: Focus must not drop to BODY on QuotaExceededError");
+      assert.equal(afterQuota1.inlineErrRole, "alert", "R5A-1: #save-conflict-error-msg must have role='alert'");
+      assert.equal(afterQuota1.inlineErrVisible, true, "R5A-1: #save-conflict-error-msg must be visibly rendered inside open save_conflict modal");
+      assert.ok(afterQuota1.inlineErrText.includes("QuotaExceededError"), `R5A-1: #save-conflict-error-msg must show QuotaExceededError, got: ${afterQuota1.inlineErrText}`);
 
       // Path A: Clear quota error & retry overwrite-with-current-save -> must succeed, write pristine formal snapshot, and enter clean Sanctum Hub
       await page1.evaluate(() => {
@@ -13564,15 +13553,15 @@ try {
       assert.equal(afterRetryOk.diskPill, 3, "R4A-1 Path A: Formal snapshot spirit_pill (3) written to disk");
 
       // Path B: QuotaExceededError -> stay-readonly-save -> Practice Mode coherent & KeyH exits cleanly to full Sanctum
-      await page1.evaluate(() => {
+      await page1.evaluate((sk) => {
         const api = window.__CHENYUAN_V25__;
         api.startBossRushGauntlet(7);
-      });
-      await page2.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        api.getState().game.stones = 8888;
-        api.saveGame({ forceOverwrite: true });
-      });
+        const liveEnv = JSON.parse(localStorage.getItem(sk));
+        const foreignEnv = Object.assign({}, liveEnv, { saveRev: (liveEnv.saveRev || 1) + 1, tabId: "tab_foreign_t510_b" });
+        const raw = JSON.stringify(foreignEnv);
+        localStorage.setItem(sk, raw);
+        window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: raw }));
+      }, STORAGE_KEY);
       await page1.waitForFunction(() => document.getElementById("modal-backdrop").classList.contains("open"));
       await page1.evaluate(() => {
         window.__t510OrigSetItem = Storage.prototype.setItem;
@@ -13626,7 +13615,6 @@ try {
       assert.equal(afterKeyH.nonDummyEnemies, 0, "R4A-1 Path B: 0 bosses stranded in Sanctum Hub after KeyH");
       assert.ok(afterKeyH.propsCount >= 4, "R4A-1 Path B: Full Sanctum props restored after KeyH");
       assert.equal(afterKeyH.dojoActive, true, "R4A-1 Path B: Dojo bar active after KeyH");
-      await page2.close();
 
       // Clear read-only mode cleanly on page1 so Parts C..F run in normal formal state
       await page1.evaluate(() => {
@@ -13715,11 +13703,15 @@ try {
         const cloudSea = tryTribInTrial(() => api.startCloudSeaAerialStage());
         const bossRush = tryTribInTrial(() => api.startBossRushGauntlet(1));
         const spire = tryTribInTrial(() => api.startCelestialSpireRun(1));
+        const demonTower = tryTribInTrial(() => api.initArenaStage(3, true));
+        const inDemonTower = Boolean(s.arena.towerMode);
 
         // Now start legitimate Hardcore Defiant Live Tribulation on Stage 1 and test encounter_stele & boon_stele guards
         api.initArenaStage(1, false);
         api.startLiveTribulation({ confirmed: true, mode: "defiant" });
         s.game.hp = 25;
+        s.arena.player.shieldHp = 0;
+        s.game.completedKarmaIds = [];
         const p = s.arena.player;
         const encProp = { id: "t510_enc", kind: "encounter_stele", name: "上古奇遇碑", x: p.x, y: p.y, r: 60 };
         const boonProp = { id: "t510_boon", kind: "boon_stele", nodeId: "n0_0", name: "秘境道韵碑", x: p.x, y: p.y, r: 60 };
@@ -13731,12 +13723,19 @@ try {
         });
         api.openEncounterModal(0);
         api.openRunBoonDraftModal("n0_0", false);
+        const karmaOpenBlocked = api.openKarmaDilemmaModal(0);
+        const karmaResolveBlocked = api.resolveKarmaDilemmaChoice("kd_1", "right");
         const encStillPresent = s.arena.props.includes(encProp);
         const modalOpenMidTrib = document.getElementById("modal-backdrop").classList.contains("open");
         const hpMidTrib = s.game.hp;
+        const shieldMidTrib = s.arena.player.shieldHp;
+        const karmaDoneCount = (s.game.completedKarmaIds || []).length;
         const tribStillActive = Boolean(s.arena.tribulation);
-        s.arena.tribulation = null;
-        return { sectDefense, cloudSea, bossRush, spire, encStillPresent, modalOpenMidTrib, hpMidTrib, tribStillActive };
+        return {
+          sectDefense, cloudSea, bossRush, spire, demonTower, inDemonTower,
+          encStillPresent, modalOpenMidTrib, hpMidTrib, shieldMidTrib,
+          karmaOpenBlocked, karmaResolveBlocked, karmaDoneCount, tribStillActive
+        };
       });
       assert.equal(r4b1Res.sectDefense.prepOpened, false, "R4B-1: Sect Defense blocks openTribulationPrepModal");
       assert.equal(r4b1Res.sectDefense.tribStarted, false, "R4B-1: Sect Defense blocks startLiveTribulation");
@@ -13746,12 +13745,57 @@ try {
       assert.equal(r4b1Res.bossRush.tribStarted, false, "R4B-1: Boss Rush blocks startLiveTribulation");
       assert.equal(r4b1Res.spire.prepOpened, false, "R4B-1: Celestial Spire blocks openTribulationPrepModal");
       assert.equal(r4b1Res.spire.tribStarted, false, "R4B-1: Celestial Spire blocks startLiveTribulation");
+      assert.equal(r4b1Res.inDemonTower, true, "R5B-3: Demon Tower mode active for guard test");
+      assert.equal(r4b1Res.demonTower.prepOpened, false, "R5B-3: Demon Tower blocks openTribulationPrepModal");
+      assert.equal(r4b1Res.demonTower.tribStarted, false, "R5B-3: Demon Tower blocks startLiveTribulation");
       assert.equal(r4b1Res.encStillPresent, true, "R4B-1: encounter_stele must NOT be consumed during Live Tribulation");
-      assert.equal(r4b1Res.modalOpenMidTrib, false, "R4B-1: encounter_stele / boon_stele / modals blocked during Live Tribulation");
-      assert.equal(r4b1Res.hpMidTrib, 25, "R4B-1: HP unaffected by blocked mid-tribulation encounter props");
+      assert.equal(r4b1Res.modalOpenMidTrib, false, "R4B-1/R5B-2: encounter_stele / boon_stele / Karma modals blocked during Live Tribulation");
+      assert.equal(r4b1Res.karmaOpenBlocked, false, "R5B-2: openKarmaDilemmaModal() must return false during Live Tribulation");
+      assert.equal(r4b1Res.karmaResolveBlocked, false, "R5B-2: resolveKarmaDilemmaChoice() must return false during Live Tribulation");
+      assert.equal(r4b1Res.karmaDoneCount, 0, "R5B-2: Blocked Karma Dilemma must not mutate completedKarmaIds");
+      assert.equal(r4b1Res.hpMidTrib, 25, "R4B-1/R5B-2: HP unaffected by blocked mid-tribulation encounter/karma triggers");
+      assert.equal(r4b1Res.shieldMidTrib, 0, "R5B-2: Shield unaffected by blocked mid-tribulation karma trigger");
       assert.equal(r4b1Res.tribStillActive, true, "R4B-1: Live Tribulation stayed active");
 
-      // Part E (R4B-2): Sanctum Dojo overdrive & Gourd soak/shield/invuln purge on Boss Rush 1, Stage 0, and Hardcore Tribulation (preserving weaponForm/weaponPosture)
+      // R5B-2 real UI click check via #nav-btn-story -> [data-action="open-karma-dilemma"] mid-Hardcore-Tribulation
+      await page1.click("#nav-btn-story");
+      await page1.waitForSelector('[data-action="open-karma-dilemma"]', { state: "visible" });
+      await page1.click('[data-action="open-karma-dilemma"]');
+      const r5b2Ui = await page1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        const res = {
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          hp: s.game.hp,
+          shieldHp: s.arena.player.shieldHp,
+          tribActive: Boolean(s.arena.tribulation)
+        };
+        api.closeDrawer();
+        s.arena.tribulation = null;
+        return res;
+      });
+      assert.equal(r5b2Ui.modalOpen, false, "R5B-2 UI: Clicking [data-action='open-karma-dilemma'] mid-Hardcore-Tribulation must NOT open Karma modal");
+      assert.equal(r5b2Ui.hp, 25, "R5B-2 UI: Real UI Karma click mid-Hardcore-Tribulation must NOT heal HP");
+      assert.equal(r5b2Ui.shieldHp, 0, "R5B-2 UI: Real UI Karma click mid-Hardcore-Tribulation must NOT grant shield");
+      assert.equal(r5b2Ui.tribActive, true, "R5B-2 UI: Hardcore Tribulation remained active");
+
+      // R5B-3 real KeyB press check inside Demon Tower
+      await page1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        api.initArenaStage(3, true);
+        api.focusBattlefield();
+      });
+      await page1.keyboard.press("KeyB");
+      const r5b3KeyB = await page1.evaluate(() => ({
+        towerMode: window.__CHENYUAN_V25__.getState().arena.towerMode,
+        modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+        tribActive: Boolean(window.__CHENYUAN_V25__.getState().arena.tribulation)
+      }));
+      assert.equal(r5b3KeyB.towerMode, true, "R5B-3 KeyB: Still in Demon Tower");
+      assert.equal(r5b3KeyB.modalOpen, false, "R5B-3 KeyB: KeyB inside Demon Tower must NOT open Tribulation Prep modal");
+      assert.equal(r5b3KeyB.tribActive, false, "R5B-3 KeyB: KeyB inside Demon Tower must NOT start Live Tribulation");
+
+      // Part E (R4B-2 + R5B-1): Sanctum Dojo overdrive, Qimen/Domain/Allies/Zones/Vortexes/Orbs/Decoys/WitchTime purge across ALL 6 Sanctum exits + Sandbox exit
       const r4b2Res = await page1.evaluate(() => {
         const api = window.__CHENYUAN_V25__;
         const v22 = window.__CHENYUAN_V22__;
@@ -13760,6 +13804,7 @@ try {
         s.game.realm = "spirit";
         s.game.xp = api.REALMS.spirit.xpCap;
         s.game.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
+        s.game.aids = { shen: true, pei: true, lu: true, yan: true };
         s.game.gourd.soaks = ["iron_lotus", "samadhi_fire", "wind_feather", "crimson_vine"];
 
         const buffUpInSanctum = () => {
@@ -13776,6 +13821,14 @@ try {
           v24.triggerSanqingTriClones();
           v24.castShanheShejiDomain();
           v22.triggerAstralGiantForm();
+          v22.deployOrCycleQimenArray();
+          s.arena.domain = { x: s.arena.player.x, y: s.arena.player.y, r: 220, life: 7.0, maxLife: 7.0, color: "#80ffea" };
+          s.arena.activeAllies.push({ id: "shen", __sanctumLeakMarker: true, x: s.arena.player.x + 30, y: s.arena.player.y, life: 8.0, maxLife: 8.0, healCd: 0.1 });
+          s.arena.zones.push({ kind: "lotus_heal", __sanctumLeakMarker: true, x: s.arena.player.x, y: s.arena.player.y, r: 160, life: 5.0, maxLife: 5.0 });
+          s.arena.lotusVortexes.push({ x: s.arena.player.x, y: s.arena.player.y, r: 120, life: 3.0, maxLife: 3.0, rot: 0, tickCd: 0, dmg: 100 });
+          s.arena.thunderOrbs.push({ x: s.arena.player.x, y: s.arena.player.y, life: 4.0, tickCd: 0.1 });
+          s.arena.jadeDecoys.push({ x: s.arena.player.x, y: s.arena.player.y, facing: 1, life: 1.0, maxLife: 1.0, dmg: 100 });
+          s.arena.witchTime = 1.5;
           s.arena.player.invuln = 1.25;
           s.arena.player.shieldHp = 240;
           s.arena.pillAcolyte = { x: s.arena.player.x, y: s.arena.player.y, life: 10 };
@@ -13788,6 +13841,17 @@ try {
           echoQueueLen: v24.getState().echoQueueLen,
           shanheDomain: Boolean(s.arena.shanheDomain),
           pillAcolyte: Boolean(s.arena.pillAcolyte),
+          qimenArray: Boolean(s.arena.qimenArray),
+          qimenCd: s.arena.qimenCd,
+          domain: Boolean(s.arena.domain),
+          activeAlliesLen: (s.arena.activeAllies || []).length,
+          leakedAlliesLen: (s.arena.activeAllies || []).filter(a => a && a.__sanctumLeakMarker).length,
+          zonesLen: (s.arena.zones || []).length,
+          leakedZonesLen: (s.arena.zones || []).filter(z => z && z.__sanctumLeakMarker).length,
+          witchTime: s.arena.witchTime,
+          lotusVortexesLen: (s.arena.lotusVortexes || []).length,
+          thunderOrbsLen: (s.arena.thunderOrbs || []).length,
+          jadeDecoysLen: (s.arena.jadeDecoys || []).length,
           invuln: s.arena.player.invuln,
           shieldHp: s.arena.player.shieldHp,
           hyperArmor: s.arena.player.hyperArmorTimer,
@@ -13807,25 +13871,87 @@ try {
         const afterStage0 = snapshotBuffs();
 
         buffUpInSanctum();
+        api.startCelestialSpireRun(1);
+        const afterSpire1 = snapshotBuffs();
+
+        buffUpInSanctum();
+        api.startCloudSeaAerialStage();
+        const afterCloudSea = snapshotBuffs();
+
+        buffUpInSanctum();
+        api.startSectDefenseSiege();
+        const afterSectDef = snapshotBuffs();
+
+        buffUpInSanctum();
         api.startLiveTribulation({ confirmed: true, mode: "defiant" });
         const afterTrib = snapshotBuffs();
-        // Verify a direct Hardcore bolt deals damage (no leaked Sanctum invuln)
+        // Verify a direct Hardcore bolt deals damage AND stepping 1s under noon (0% ambient regen) yields EXACT 0 leaked Qimen/Ally/Lotus heal
+        window.__CHENYUAN_V23__.setCelestialTimePhase(1, true);
         const hpBeforeBolt = s.game.hp;
         s.arena.tribulation.strikes = [{ x: s.arena.player.x, y: s.arena.player.y, r: 72, t: 0.99, hit: false, parried: false }];
         api.stepArena(0.05);
         const hpAfterBolt = s.game.hp;
+        s.arena.tribulation.strikes = [];
+        s.arena.tribulation.cooldown = 99;
+        for (let k = 0; k < 20; k++) api.stepArena(0.05);
+        const hpAfter1sNoQimen = s.game.hp;
         s.arena.tribulation = null;
-        return { afterRush1, afterStage0, afterTrib, hpBeforeBolt, hpAfterBolt };
+
+        // R5B-1 Sandbox Exit test on Formal Mortal save: Qimen/Domain/Allies/Zones deployed in Sandbox must purge on exitSandboxMode()
+        api.initArenaStage(0, false);
+        s.game.realm = "mortal";
+        api.saveGame({ forceOverwrite: true });
+        api.enterSandboxMode();
+        v22.deployOrCycleQimenArray();
+        s.arena.domain = { x: s.arena.player.x, y: s.arena.player.y, r: 220, life: 7.0, maxLife: 7.0, color: "#80ffea" };
+        s.arena.activeAllies.push({ id: "shen", x: s.arena.player.x + 25, y: s.arena.player.y, life: 8.0, maxLife: 8.0, healCd: 0.1 });
+        s.arena.zones.push({ kind: "lotus_heal", x: s.arena.player.x, y: s.arena.player.y, r: 160, life: 5.0, maxLife: 5.0 });
+        api.exitSandboxMode();
+        const afterSandboxExit = {
+          qimenArray: Boolean(s.arena.qimenArray),
+          domain: Boolean(s.arena.domain),
+          activeAlliesLen: (s.arena.activeAllies || []).length,
+          zonesLen: (s.arena.zones || []).length,
+          witchTime: s.arena.witchTime
+        };
+        return {
+          afterRush1, afterStage0, afterSpire1, afterCloudSea, afterSectDef, afterTrib,
+          hpBeforeBolt, hpAfterBolt, hpAfter1sNoQimen, afterSandboxExit
+        };
       });
-      for (const [label, snap] of [["Boss Rush 1", r4b2Res.afterRush1], ["Stage 0", r4b2Res.afterStage0], ["Hardcore Tribulation", r4b2Res.afterTrib]]) {
+      for (const [label, snap, allowAutoDefenseAllies] of [
+        ["Boss Rush 1", r4b2Res.afterRush1, false],
+        ["Stage 0", r4b2Res.afterStage0, false],
+        ["Spire 1", r4b2Res.afterSpire1, false],
+        ["Cloud Sea", r4b2Res.afterCloudSea, false],
+        ["Sect Defense", r4b2Res.afterSectDef, true],
+        ["Hardcore Tribulation", r4b2Res.afterTrib, false]
+      ]) {
         assert.equal(snap.astralEnergy, 0, `R4B-2 (${label}): astralEnergy purged`);
         assert.equal(snap.astralForm, false, `R4B-2 (${label}): astralForm purged`);
         assert.equal(snap.sanqingActive, false, `R4B-2 (${label}): sanqingState purged`);
         assert.equal(snap.echoQueueLen, 0, `R4B-2 (${label}): sanqingEchoQueue purged`);
         assert.equal(snap.shanheDomain, false, `R4B-2 (${label}): shanheDomain purged`);
         assert.equal(snap.pillAcolyte, false, `R4B-2 (${label}): pillAcolyte purged`);
+        assert.equal(snap.qimenArray, false, `R5B-1 (${label}): qimenArray purged`);
+        assert.equal(snap.qimenCd, 0, `R5B-1 (${label}): qimenCd purged`);
+        assert.equal(snap.domain, false, `R5B-1 (${label}): domain purged`);
+        assert.equal(snap.leakedAlliesLen, 0, `R5B-1 (${label}): prior Sanctum activeAllies purged`);
+        assert.equal(snap.leakedZonesLen, 0, `R5B-1 (${label}): prior Sanctum zones purged`);
+        if (!allowAutoDefenseAllies) {
+          assert.equal(snap.activeAlliesLen, 0, `R5B-1 (${label}): activeAllies purged`);
+          assert.equal(snap.zonesLen, 0, `R5B-1 (${label}): zones purged`);
+        }
+        assert.equal(snap.witchTime, 0, `R5B-1 (${label}): witchTime purged`);
+        assert.equal(snap.lotusVortexesLen, 0, `R5B-1 (${label}): lotusVortexes purged`);
+        assert.equal(snap.thunderOrbsLen, 0, `R5B-1 (${label}): thunderOrbs purged`);
+        assert.equal(snap.jadeDecoysLen, 0, `R5B-1 (${label}): jadeDecoys purged`);
         assert.equal(snap.invuln, 0, `R4B-2 (${label}): invuln purged`);
-        assert.equal(snap.shieldHp, 0, `R4B-2 (${label}): shieldHp purged`);
+        if (allowAutoDefenseAllies) {
+          assert.ok(snap.shieldHp < 240, `R4B-2 (${label}): prior Sanctum 240 shieldHp purged (got ${snap.shieldHp})`);
+        } else {
+          assert.equal(snap.shieldHp, 0, `R4B-2 (${label}): shieldHp purged`);
+        }
         assert.equal(snap.hyperArmor, 0, `R4B-2 (${label}): hyperArmorTimer purged`);
         assert.equal(snap.samadhi, false, `R4B-2 (${label}): samadhiFireReady purged`);
         assert.equal(snap.gourdHaste, 0, `R4B-2 (${label}): gourdHasteTimer purged`);
@@ -13834,6 +13960,12 @@ try {
         assert.equal(snap.weaponPosture, "xuanwu", `R4B-2 (${label}): persistent weaponPosture preserved`);
       }
       assert.ok(r4b2Res.hpAfterBolt < r4b2Res.hpBeforeBolt, `R4B-2: Direct Hardcore bolt must deal damage (not negated by Sanctum invuln): ${r4b2Res.hpBeforeBolt} -> ${r4b2Res.hpAfterBolt}`);
+      assert.equal(r4b2Res.hpAfter1sNoQimen, r4b2Res.hpAfterBolt, `R5B-1: Exact 0 leaked Sanctum Qimen/Ally/Lotus heal in Hardcore Tribulation (${r4b2Res.hpAfterBolt} -> ${r4b2Res.hpAfter1sNoQimen})`);
+      assert.equal(r4b2Res.afterSandboxExit.qimenArray, false, "R5B-1 Sandbox Exit: qimenArray purged");
+      assert.equal(r4b2Res.afterSandboxExit.domain, false, "R5B-1 Sandbox Exit: domain purged");
+      assert.equal(r4b2Res.afterSandboxExit.activeAlliesLen, 0, "R5B-1 Sandbox Exit: activeAllies purged");
+      assert.equal(r4b2Res.afterSandboxExit.zonesLen, 0, "R5B-1 Sandbox Exit: zones purged");
+      assert.equal(r4b2Res.afterSandboxExit.witchTime, 0, "R5B-1 Sandbox Exit: witchTime purged");
 
       // Part F (R4B-3): Hardcore Defiant ignores game.tribShield (preserving it untouched) AND consumeInventoryItem blocks breakthrough pills mid-tribulation
       const r4b3Res = await page1.evaluate(() => {
@@ -13873,6 +14005,164 @@ try {
       assert.equal(r4b3Res.shieldAfterBlockedConsume, 2, "R4B-3: Blocked breakthrough pill must NOT increase tribShield");
       assert.ok(r4b3Res.hpAfterHardcoreBolt < r4b3Res.hpBeforeHardcoreBolt, `R4B-3: Hardcore Defiant bolt must bypass game.tribShield (${r4b3Res.hpBeforeHardcoreBolt} -> ${r4b3Res.hpAfterHardcoreBolt})`);
       assert.equal(r4b3Res.shieldAfterHardcoreBolt, 2, "R4B-3: Pre-existing game.tribShield must remain preserved untouched in Hardcore Defiant mode");
+
+      // Part G (R5A-1 reset-save & corrupt-meta inline role="alert" errors + R5A-2 all 3 title-return Sanctum/Dojo DOM cleanups)
+      await page1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        api.enterSanctumHub();
+        api.saveGame({ forceOverwrite: true });
+      });
+      await page1.click("#btn-toggle-dojo-bar");
+      await page1.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
+      // R5A-1 Case C: confirm-reset-save SecurityError shows visible inline #reset-save-error-msg role="alert"
+      await page1.click("#btn-open-settings");
+      await page1.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+      await page1.click('[data-sys-tab="controls"]');
+      await page1.click('[data-action="confirm-reset-save"]');
+      await page1.waitForSelector('#modal-backdrop.open [data-action="execute-reset-save"]');
+      await page1.evaluate((sk) => {
+        window.__t510OrigRm = Storage.prototype.removeItem;
+        Storage.prototype.removeItem = function(k) {
+          if (k === sk) throw new DOMException("Read-only storage", "SecurityError");
+          return window.__t510OrigRm.call(this, k);
+        };
+      }, STORAGE_KEY);
+      await page1.click('[data-action="execute-reset-save"]');
+      const resetErrCheck = await page1.evaluate((sk) => {
+        const el = document.getElementById("reset-save-error-msg");
+        const cs = el ? getComputedStyle(el) : null;
+        const rect = el ? el.getBoundingClientRect() : null;
+        Storage.prototype.removeItem = window.__t510OrigRm;
+        delete window.__t510OrigRm;
+        return {
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          role: el ? el.getAttribute("role") : null,
+          visible: Boolean(el && cs && cs.display !== "none" && Number(cs.opacity) === 1 && rect && rect.width > 0 && rect.height > 0),
+          text: el ? (el.textContent || "") : "",
+          savePreserved: Boolean(localStorage.getItem(sk))
+        };
+      }, STORAGE_KEY);
+      assert.equal(resetErrCheck.modalOpen, true, "R5A-1 reset-save: modal stays open on SecurityError");
+      assert.equal(resetErrCheck.role, "alert", "R5A-1 reset-save: #reset-save-error-msg has role='alert'");
+      assert.equal(resetErrCheck.visible, true, "R5A-1 reset-save: #reset-save-error-msg visibly rendered inside open modal");
+      assert.ok(resetErrCheck.text.includes("SecurityError"), `R5A-1 reset-save: error text includes SecurityError, got: ${resetErrCheck.text}`);
+      assert.equal(resetErrCheck.savePreserved, true, "R5A-1 reset-save: primary save preserved on SecurityError");
+      await page1.click('[data-modal-close="1"]');
+      await page1.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+
+      // R5A-2 Path 1 (return-title-safe) + seed corrupt META_KEY for R5A-1 Case B
+      await page1.evaluate((mk) => { localStorage.setItem(mk, "{bad_meta_r5"); }, META_KEY);
+      await page1.click("#btn-open-settings");
+      await page1.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+      await page1.click('[data-sys-tab="controls"]');
+      await page1.click('[data-action="return-title-safe"]');
+      await page1.waitForSelector("#welcome-screen", { state: "visible" });
+      const r5a2ReturnTitle = await page1.evaluate(() => {
+        const db = document.getElementById("dojo-control-bar");
+        const hud = document.getElementById("dojo-training-hud");
+        return {
+          sanctumMode: window.__CHENYUAN_V25__.getState().arena.sanctumMode,
+          dojoActive: db.classList.contains("active"),
+          dojoExpanded: db.classList.contains("expanded"),
+          caret: (document.getElementById("lbl-dojo-caret")?.textContent || "").trim(),
+          trainingHudActive: Boolean(hud && hud.classList.contains("active"))
+        };
+      });
+      assert.equal(r5a2ReturnTitle.sanctumMode, false, "R5A-2 return-title-safe: sanctumMode cleared");
+      assert.equal(r5a2ReturnTitle.dojoActive, false, "R5A-2 return-title-safe: dojo bar .active cleared");
+      assert.equal(r5a2ReturnTitle.dojoExpanded, false, "R5A-2 return-title-safe: dojo bar .expanded cleared");
+      assert.equal(r5a2ReturnTitle.caret, "▾", "R5A-2 return-title-safe: dojo caret reset");
+      assert.equal(r5a2ReturnTitle.trainingHudActive, false, "R5A-2 return-title-safe: #dojo-training-hud .active cleared");
+
+      // R5A-1 Case B: confirm-reset-corrupt-meta QuotaExceededError shows visible inline #corrupt-meta-reset-error-msg role="alert"
+      await page1.waitForSelector('[data-action="prompt-reset-corrupt-meta"]', { state: "visible" });
+      await page1.click('[data-action="prompt-reset-corrupt-meta"]');
+      await page1.waitForSelector('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
+      await page1.evaluate((mk) => {
+        window.__t510OrigSetMeta = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === mk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+          return window.__t510OrigSetMeta.call(this, k, v);
+        };
+      }, META_KEY);
+      await page1.click('[data-action="confirm-reset-corrupt-meta"]');
+      const metaErrCheck = await page1.evaluate((mk) => {
+        const el = document.getElementById("corrupt-meta-reset-error-msg");
+        const cs = el ? getComputedStyle(el) : null;
+        const rect = el ? el.getBoundingClientRect() : null;
+        Storage.prototype.setItem = window.__t510OrigSetMeta;
+        delete window.__t510OrigSetMeta;
+        return {
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          role: el ? el.getAttribute("role") : null,
+          visible: Boolean(el && cs && cs.display !== "none" && Number(cs.opacity) === 1 && rect && rect.width > 0 && rect.height > 0),
+          text: el ? (el.textContent || "") : "",
+          corruptPreserved: localStorage.getItem(mk) === "{bad_meta_r5"
+        };
+      }, META_KEY);
+      assert.equal(metaErrCheck.modalOpen, true, "R5A-1 corrupt-meta: modal stays open on QuotaExceededError");
+      assert.equal(metaErrCheck.role, "alert", "R5A-1 corrupt-meta: #corrupt-meta-reset-error-msg has role='alert'");
+      assert.equal(metaErrCheck.visible, true, "R5A-1 corrupt-meta: #corrupt-meta-reset-error-msg visibly rendered inside open modal");
+      assert.ok(metaErrCheck.text.includes("QuotaExceededError"), `R5A-1 corrupt-meta: error text includes QuotaExceededError, got: ${metaErrCheck.text}`);
+      assert.equal(metaErrCheck.corruptPreserved, true, "R5A-1 corrupt-meta: corrupt META_KEY preserved untouched");
+      await page1.click('[data-action="confirm-reset-corrupt-meta"]');
+      await page1.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+
+      // R5A-2 Path 2 (execute-reset-save) & Path 3 (executeReincarnation) from Sanctum Hub with expanded Dojo bar
+      await page1.click("#btn-continue-save");
+      await page1.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      await page1.evaluate(() => { window.__CHENYUAN_V25__.enterSanctumHub(); });
+      await page1.click("#btn-toggle-dojo-bar");
+      await page1.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
+      await page1.click("#btn-open-settings");
+      await page1.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+      await page1.click('[data-sys-tab="controls"]');
+      await page1.click('[data-action="confirm-reset-save"]');
+      await page1.waitForSelector('#modal-backdrop.open [data-action="execute-reset-save"]');
+      await page1.click('[data-action="execute-reset-save"]');
+      await page1.waitForSelector("#welcome-screen", { state: "visible" });
+      const r5a2ResetSave = await page1.evaluate(() => {
+        const db = document.getElementById("dojo-control-bar");
+        const hud = document.getElementById("dojo-training-hud");
+        return {
+          sanctumMode: window.__CHENYUAN_V25__.getState().arena.sanctumMode,
+          dojoActive: db.classList.contains("active"),
+          dojoExpanded: db.classList.contains("expanded"),
+          caret: (document.getElementById("lbl-dojo-caret")?.textContent || "").trim(),
+          trainingHudActive: Boolean(hud && hud.classList.contains("active"))
+        };
+      });
+      assert.equal(r5a2ResetSave.sanctumMode, false, "R5A-2 execute-reset-save: sanctumMode cleared");
+      assert.equal(r5a2ResetSave.dojoActive, false, "R5A-2 execute-reset-save: dojo bar .active cleared");
+      assert.equal(r5a2ResetSave.dojoExpanded, false, "R5A-2 execute-reset-save: dojo bar .expanded cleared");
+      assert.equal(r5a2ResetSave.caret, "▾", "R5A-2 execute-reset-save: dojo caret reset");
+      assert.equal(r5a2ResetSave.trainingHudActive, false, "R5A-2 execute-reset-save: #dojo-training-hud .active cleared");
+
+      await page1.click("#btn-start-new");
+      await page1.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      await dismissOpeningScroll(page1);
+      await page1.evaluate(() => { window.__CHENYUAN_V25__.enterSanctumHub(); });
+      await page1.click("#btn-toggle-dojo-bar");
+      await page1.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
+      const r5a2Reinc = await page1.evaluate(() => {
+        const ok = window.__CHENYUAN_V25__.executeReincarnation({ source: "bingjie" });
+        const db = document.getElementById("dojo-control-bar");
+        const hud = document.getElementById("dojo-training-hud");
+        return {
+          ok,
+          sanctumMode: window.__CHENYUAN_V25__.getState().arena.sanctumMode,
+          dojoActive: db.classList.contains("active"),
+          dojoExpanded: db.classList.contains("expanded"),
+          caret: (document.getElementById("lbl-dojo-caret")?.textContent || "").trim(),
+          trainingHudActive: Boolean(hud && hud.classList.contains("active"))
+        };
+      });
+      assert.equal(r5a2Reinc.ok, true, "R5A-2 executeReincarnation: succeeded cleanly");
+      assert.equal(r5a2Reinc.sanctumMode, false, "R5A-2 executeReincarnation: sanctumMode cleared");
+      assert.equal(r5a2Reinc.dojoActive, false, "R5A-2 executeReincarnation: dojo bar .active cleared");
+      assert.equal(r5a2Reinc.dojoExpanded, false, "R5A-2 executeReincarnation: dojo bar .expanded cleared");
+      assert.equal(r5a2Reinc.caret, "▾", "R5A-2 executeReincarnation: dojo caret reset");
+      assert.equal(r5a2Reinc.trainingHudActive, false, "R5A-2 executeReincarnation: #dojo-training-hud .active cleared");
     } finally {
       await ctx.close();
     }
