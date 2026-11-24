@@ -52,7 +52,7 @@ export const tests = [
 
       // 3. Fill mortal XP without defeating stage 0 boss -> verify boss gate (S1)
       await page.evaluate((xpCap) => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.realm = "mortal";
         game.xp = xpCap;
@@ -66,7 +66,7 @@ export const tests = [
 
       // 4. Defeat stage 0 boss -> verify post-boss cutscene & volume-end card (S7)
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.openingChoice = "help";
         game.seenCutscenes = Object.assign({}, game.seenCutscenes, { boss_pre_stage0: true });
@@ -125,9 +125,9 @@ export const tests = [
       await pageB.waitForTimeout(200);
 
       await pageA.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.stones = 1234;
-        window.__CHENYUAN_V25__.saveGame();
+        window.__CHENYUAN_DEBUG__.saveGame();
       });
       await waitForCrossTabConflict(pageB, 2500);
 
@@ -247,7 +247,7 @@ export const tests = [
 
       // 2. Late-game precondition: golden/spirit with all laws owned & bonded companions
       await page.evaluate((allLaws) => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.realm = "spirit";
         game.xp = 14500;

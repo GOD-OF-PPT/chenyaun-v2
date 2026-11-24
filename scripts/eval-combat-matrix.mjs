@@ -276,24 +276,24 @@ export function loadPlayableEngine(seed = 20261124) {
 
   const ctx = vm.createContext(sandbox);
   vm.runInContext(scriptMatch[1], ctx, { filename: "playable-v2.html" });
-  const v25 = sandbox.__CHENYUAN_V25__;
-  if (!v25) throw new Error("__CHENYUAN_V25__ did not initialize in VM context");
-  if (!v25.getState().game) {
+  const debug = sandbox.__CHENYUAN_DEBUG__;
+  if (!debug) throw new Error("__CHENYUAN_DEBUG__ did not initialize in VM context");
+  if (!debug.getState().game) {
     document.getElementById("btn-start-new").click();
     // Close opening cutscene & transition cleanly so cutscene.active === false and stepArena runs freely
-    v25.enterSanctumHub({ skipSave: true });
-    const tokens = v25.getPauseTokens ? v25.getPauseTokens() : [];
-    tokens.forEach(tk => v25.releasePauseToken(tk.id));
-    v25.getState().arena.paused = false;
+    debug.enterSanctumHub({ skipSave: true });
+    const tokens = debug.getPauseTokens ? debug.getPauseTokens() : [];
+    tokens.forEach(tk => debug.releasePauseToken(tk.id));
+    debug.getState().arena.paused = false;
   }
   const aimPointer = (x, y) => {
     const fns = docListeners.get("pointermove") || [];
     fns.forEach(fn => fn({ clientX: x, clientY: y, target: ensureEl("fx-canvas", "canvas") }));
   };
-  return { sandbox, v25, rng, aimPointer };
+  return { sandbox, debug, rng, aimPointer };
 }
 
-function buildGearLoadout(v25, realmIdx, tier, rng) {
+function buildGearLoadout(debug, realmIdx, tier, rng) {
   const stageTier = Math.min(4, realmIdx);
   const cfg = tier === "entry"
     ? { minRarity: Math.min(1, Math.floor(realmIdx / 2)), lvl: 0 }
@@ -305,8 +305,8 @@ function buildGearLoadout(v25, realmIdx, tier, rng) {
   const equipped = {};
   let allWithinBudget = true;
   for (const slot of slots) {
-    const it = v25.rollGearItem(stageTier, cfg.minRarity, slot, { usePity: false, rng });
-    const budgetCheck = v25.computeGearAffixBudget(it);
+    const it = debug.rollGearItem(stageTier, cfg.minRarity, slot, { usePity: false, rng });
+    const budgetCheck = debug.computeGearAffixBudget(it);
     if (!budgetCheck.withinBudget) allWithinBudget = false;
     it.lvl = cfg.lvl;
     equipped[slot] = it;
@@ -314,10 +314,10 @@ function buildGearLoadout(v25, realmIdx, tier, rng) {
   return { equipped, allWithinBudget };
 }
 
-function configureCharacter(v25, realmId, realmIdx, gearTier, school, petId, rng) {
-  const stObj = v25.getState();
+function configureCharacter(debug, realmId, realmIdx, gearTier, school, petId, rng) {
+  const stObj = debug.getState();
   const g = stObj.game;
-  const fresh = v25.createFreshGame("评测修士", "sword_bone", 0);
+  const fresh = debug.createFreshGame("评测修士", "sword_bone", 0);
   Object.keys(g).forEach(k => { delete g[k]; });
   Object.assign(g, fresh);
 
@@ -338,7 +338,7 @@ function configureCharacter(v25, realmId, realmIdx, gearTier, school, petId, rng
     g.relicStars[g.loadout.relic] = Math.min(4, Math.max(1, Math.ceil(realmIdx * 0.7)));
   }
 
-  const { equipped, allWithinBudget } = buildGearLoadout(v25, realmIdx, gearTier, rng);
+  const { equipped, allWithinBudget } = buildGearLoadout(debug, realmIdx, gearTier, rng);
   g.equippedGear = equipped;
 
   // Assign realm-appropriate Dao Laws only for median/strong mid-late builds
@@ -346,22 +346,22 @@ function configureCharacter(v25, realmId, realmIdx, gearTier, school, petId, rng
   if (realmIdx >= 2 && gearTier !== "entry") g.laws.push("crit_lotus");
   if (realmIdx >= 3 && gearTier === "strong") g.laws.push("stagger_surge", "wealth_power");
 
-  const stats = v25.getCombatStats(g);
+  const stats = debug.getCombatStats(g);
   g.hp = stats.maxHp;
   g.mp = stats.maxMp;
   return { g, stats, allWithinBudget };
 }
 
-function setupEncounter(v25, realmIdx, archetype) {
+function setupEncounter(debug, realmIdx, archetype) {
   // Cleanly clear any cutscene/modal/pause tokens left over from the previous scenario
-  v25.enterSanctumHub({ skipSave: true });
-  v25.closeModal();
-  (v25.getPauseTokens ? v25.getPauseTokens() : []).forEach(tk => v25.releasePauseToken(tk.id));
+  debug.enterSanctumHub({ skipSave: true });
+  debug.closeModal();
+  (debug.getPauseTokens ? debug.getPauseTokens() : []).forEach(tk => debug.releasePauseToken(tk.id));
 
-  const { arena, game } = v25.getState();
+  const { arena, game } = debug.getState();
   const stageIdx = Math.min(4, realmIdx);
-  const act = v25.CAMPAIGN_ACTS[stageIdx] || v25.CAMPAIGN_ACTS[0];
-  const mult = v25.STAGE_SCALING[stageIdx] || 1.0;
+  const act = debug.CAMPAIGN_ACTS[stageIdx] || debug.CAMPAIGN_ACTS[0];
+  const mult = debug.STAGE_SCALING[stageIdx] || 1.0;
 
   arena.stageIdx = stageIdx;
   arena.sanctumMode = false;
@@ -402,26 +402,26 @@ function setupEncounter(v25, realmIdx, archetype) {
   arena.player.comboStep = 0;
   arena.player.comboWindow = 0;
   arena.morphCd = 0;
-  v25.resetEncounterTelemetry();
+  debug.resetEncounterTelemetry();
 
   const cx = 740;
   const cy = 480;
   if (archetype === "mob_pack") {
-    v25.spawnEnemyPack(act.waves[0], cx, cy, 40, mult, false);
+    debug.spawnEnemyPack(act.waves[0], cx, cy, 40, mult, false);
   } else if (archetype === "mixed_squad") {
-    v25.spawnEnemyPack(act.waves[2] || act.waves[0], cx, cy, 50, mult, true);
+    debug.spawnEnemyPack(act.waves[2] || act.waves[0], cx, cy, 50, mult, true);
   } else if (archetype === "shielded_elite") {
     const eliteId = act.stageIdx >= 3 ? "sentinel" : "warden";
-    v25.spawnSingleEnemy(eliteId, cx, cy, mult * 1.45, false, `护盾精英·${act.actLabel}`);
+    debug.spawnSingleEnemy(eliteId, cx, cy, mult * 1.45, false, `护盾精英·${act.actLabel}`);
     if (arena.enemies[0]) {
       arena.enemies[0].wardHp = Math.max(arena.enemies[0].wardHp || 0, Math.round(arena.enemies[0].maxPosture * 0.8));
       arena.enemies[0].maxWardHp = arena.enemies[0].wardHp;
     }
   } else if (archetype === "stage_boss") {
-    v25.spawnSingleEnemy(act.boss, cx, cy, mult, true, act.bossName);
+    debug.spawnSingleEnemy(act.boss, cx, cy, mult, true, act.bossName);
   } else if (archetype === "tribulation_pressure") {
     const tribId = act.stageIdx >= 3 ? "trial_thunder" : "warden";
-    v25.spawnSingleEnemy(tribId, cx, cy, mult * 1.6, false, `天劫心魔·${v25.REALMS[game.realm].name}`);
+    debug.spawnSingleEnemy(tribId, cx, cy, mult * 1.6, false, `天劫心魔·${debug.REALMS[game.realm].name}`);
   }
 
   // Place enemies close enough for melee/skill engagement from tick 0
@@ -435,15 +435,15 @@ function setupEncounter(v25, realmIdx, archetype) {
   return { initialEnemyHp, enemyCount: arena.enemies.length, sampleHeavy };
 }
 
-function simulateScenario(v25, { realmId, realmIdx, gearTier, school, petId, strategy, archetype }, rng, aimPointer) {
-  const { g, stats, allWithinBudget } = configureCharacter(v25, realmId, realmIdx, gearTier, school, petId, rng);
-  const { initialEnemyHp, enemyCount, sampleHeavy } = setupEncounter(v25, realmIdx, archetype);
-  const { arena } = v25.getState();
+function simulateScenario(debug, { realmId, realmIdx, gearTier, school, petId, strategy, archetype }, rng, aimPointer) {
+  const { g, stats, allWithinBudget } = configureCharacter(debug, realmId, realmIdx, gearTier, school, petId, rng);
+  const { initialEnemyHp, enemyCount, sampleHeavy } = setupEncounter(debug, realmIdx, archetype);
+  const { arena } = debug.getState();
 
   // Compute exact heavy hits survivable using actual hurtPlayer DR/single-hit-cap rules
   const drMult = Math.max(0.35, 100 / (100 + Math.max(0, stats.dmgReduce || 0)));
   const rawHeavyDmg = Math.max(4, Math.round(sampleHeavy * drMult));
-  const cappedHeavyDmg = Math.min(rawHeavyDmg, Math.max(4, Math.round(stats.maxHp * v25.SINGLE_HIT_CAP_RATIO)));
+  const cappedHeavyDmg = Math.min(rawHeavyDmg, Math.max(4, Math.round(stats.maxHp * debug.SINGLE_HIT_CAP_RATIO)));
   const heavyHitsSurvivable = Number((stats.maxHp / Math.max(1, cappedHeavyDmg)).toFixed(2));
 
   const dt = 0.05; // 20 Hz fixed step
@@ -474,20 +474,20 @@ function simulateScenario(v25, { realmId, realmIdx, gearTier, school, petId, str
       // Heal when below 42% HP if strategy uses survival loop
       if (strategy === "full_school_loop" && g.hp > 0 && g.hp <= stats.maxHp * 0.42) {
         if ((g.gourd && g.gourd.charges > 0) || (g.inventory && g.inventory.healing_pill > 0)) {
-          v25.useQuickHealingPill();
+          debug.useQuickHealingPill();
         }
       }
 
       // React to enemy windup in combo_detonate / full_school_loop
       const imminent = arena.enemies.some(e => e.state === "windup" && e.timer <= 0.24);
       if (imminent && (strategy === "combo_detonate" || strategy === "full_school_loop") && (arena.player.dashCd || 0) <= 0) {
-        v25.triggerDashParry();
+        debug.triggerDashParry();
         dodgeAttempts += 1;
       }
 
       // Full school loop: cast pet ultimate when ready & MP/mark detonation rhythm
       if (strategy === "full_school_loop" && g.pet && g.pet.id && (arena.petUltCd || 0) <= 0) {
-        v25.castPetUltimate();
+        debug.castPetUltimate();
         skillCasts += 1;
       }
 
@@ -497,19 +497,19 @@ function simulateScenario(v25, { realmId, realmIdx, gearTier, school, petId, str
         && (totalMarks >= (school === "talisman" ? 2 : 3) || (arena.player.comboWindow > 0.3 && (arena.morphCd || 0) <= 0));
 
       if (wantDetonate) {
-        v25.recallAndDetonateSwords();
+        debug.recallAndDetonateSwords();
         actionsTaken += 1;
       } else if ((arena.player.slashCd || 0) <= 0) {
-        v25.fireManualSlash();
+        debug.fireManualSlash();
         actionsTaken += 1;
       }
     }
 
-    v25.stepArena(dt);
+    debug.stepArena(dt);
     elapsed += dt;
   }
 
-  const tel = v25.getEncounterTelemetry();
+  const tel = debug.getEncounterTelemetry();
   const won = arena.enemies.length === 0 && g.hp > 0 && !arena.defeatPending;
   const remainingEnemyHp = arena.enemies.reduce((s, e) => s + Math.max(0, e.hp), 0);
 
@@ -555,7 +555,7 @@ function median(arr) {
 }
 
 function runMatrix(opts) {
-  const { v25, rng, aimPointer } = loadPlayableEngine(opts.seed);
+  const { debug, rng, aimPointer } = loadPlayableEngine(opts.seed);
   const realms = ["mortal", "qi", "foundation", "golden", "nascent", "spirit"];
   const schools = ["sword", "talisman"];
   const results = [];
@@ -569,13 +569,13 @@ function runMatrix(opts) {
     for (const school of schools) {
       // Standard median build across 3 key archetypes
       for (const archetype of ["mob_pack", "shielded_elite", "stage_boss"]) {
-        results.push(simulateScenario(v25, {
+        results.push(simulateScenario(debug, {
           realmId, realmIdx, gearTier: "median", school, petId, strategy: "full_school_loop", archetype
         }, rng, aimPointer));
       }
       // Entry vs Strong gear on stage_boss
       for (const gearTier of ["entry", "strong"]) {
-        results.push(simulateScenario(v25, {
+        results.push(simulateScenario(debug, {
           realmId, realmIdx, gearTier, school, petId, strategy: "full_school_loop", archetype: "stage_boss"
         }, rng, aimPointer));
       }
@@ -583,11 +583,11 @@ function runMatrix(opts) {
 
     // Strategy sensitivity & extra encounter archetypes (mixed_squad, tribulation_pressure) on sword school
     for (const strategy of ["afk", "basic_lmb", "combo_detonate"]) {
-      results.push(simulateScenario(v25, {
+      results.push(simulateScenario(debug, {
         realmId, realmIdx, gearTier: "median", school: "sword", petId, strategy, archetype: "mixed_squad"
       }, rng, aimPointer));
     }
-    results.push(simulateScenario(v25, {
+    results.push(simulateScenario(debug, {
       realmId, realmIdx, gearTier: "median", school: "talisman", petId, strategy: "full_school_loop", archetype: "tribulation_pressure"
     }, rng, aimPointer));
   });
@@ -610,12 +610,12 @@ function runMatrix(opts) {
       schoolsEvaluated: schools,
       totalScenarios: results.length,
       configSnapshot: {
-        passiveSoftCapKnee: v25.COMBAT_RULE_PARAMS.passiveSoftCapKnee,
-        passiveSoftCapMax: v25.COMBAT_RULE_PARAMS.passiveSoftCapMax,
-        activeMultCap: v25.COMBAT_RULE_PARAMS.activeMultCap,
-        singleHitCapRatio: v25.SINGLE_HIT_CAP_RATIO,
-        stageScaling: v25.STAGE_SCALING,
-        gearEnhanceStepPct: v25.GEAR_ENHANCE_STEP_PCT
+        passiveSoftCapKnee: debug.COMBAT_RULE_PARAMS.passiveSoftCapKnee,
+        passiveSoftCapMax: debug.COMBAT_RULE_PARAMS.passiveSoftCapMax,
+        activeMultCap: debug.COMBAT_RULE_PARAMS.activeMultCap,
+        singleHitCapRatio: debug.SINGLE_HIT_CAP_RATIO,
+        stageScaling: debug.STAGE_SCALING,
+        gearEnhanceStepPct: debug.GEAR_ENHANCE_STEP_PCT
       }
     },
     summary: {

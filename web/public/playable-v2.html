@@ -7595,6 +7595,7 @@ const ART = {
     };
   }
 
+  // --- [runtime] src/runtime/world-data.js ---
   // ==================== 2. CELESTIAL OMENS & CORE WORLD DATA ====================
   // Shared single source of truth for combat rule parameters referenced by BOTH live formulas and copy builders (F06)
 
@@ -9279,6 +9280,7 @@ const ART = {
     return true;
   }
 
+  // --- [runtime] src/runtime/narrative-state.js ---
   // ==================== 5C. CINEMATIC STORY DIALOGUE SCRIPTS ====================
   const CHAPTER_CUTSCENES = {
     opening_scroll: [
@@ -10364,6 +10366,7 @@ const ART = {
     if (arena.distortionRings.length > 10) arena.distortionRings.shift();
   }
 
+  // --- [runtime] src/runtime/flagship-systems.js ---
   // ==================== V18 FLAGSHIP SYSTEMS: IMPACT FRAMES, Z-AXIS AERIAL, KARMA DUALITY, IMMORTAL GOURD, WARDROBE & PHOTO MODE ====================
   const GOURD_SOAKS = {
     iron_lotus:      { id: "iron_lotus",      name: "金刚玉莲子", badge: "4秒霸体·48%减伤", desc: "饮用仙葫后凝结4秒金刚不坏霸体，霸体期间所受伤害降至 52%（减免 48%）并净化寒毒。" },
@@ -12178,6 +12181,7 @@ const ART = {
     );
   }
 
+  // --- [runtime] src/runtime/endgame-modes.js ---
   // ==================== V17 MYRIAD SWORD GRAVEYARD BOSS RUSH & INNER DEMON MIRROR DUEL ====================
   function openBossRushModal() {
     if (!game) return;
@@ -14199,6 +14203,7 @@ const ART = {
     codexRafId = requestAnimationFrame(tick);
   }
 
+  // --- [runtime] src/runtime/primordial-systems.js ---
   // ==================== V22 PRIMORDIAL FINALE MODULES ====================
   const STEMS_STORAGE_KEY = "chenyuan_stems_v22";
   function applySanitizedAudioStems(p) {
@@ -16163,6 +16168,7 @@ const ART = {
     }
   }
 
+  // --- [runtime] src/runtime/genesis-dojo.js ---
   // ==================== V24 GENESIS COLLECTOR'S EDITION MODULES ====================
   // 1. Custom 4-Step Cross-Weapon Combo Sequencer (`太虚创招谱 · 四段三器自由混编器`)
   const COMBO_SEQ_MODULES = {
@@ -18999,6 +19005,7 @@ const ART = {
     return g;
   }
 
+  // --- [runtime] src/runtime/persistence-sandbox.js ---
   // ==================== M1 INDUSTRIAL-GRADE SAVE, VALIDATION & MULTI-TAB CONFLICT ENGINE ====================
   const TAB_ID = "tab_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
   let loadedSaveRev = 0;
@@ -19806,8 +19813,7 @@ const ART = {
     return ["shen", "pei", "lu", "yan"].filter(id => getCompanionBondTier(g, id) >= 1);
   }
 
-
-
+  // --- [runtime] src/runtime/scheduler-rewards.js ---
   // ==================== Q1 (F07–F13): PAUSE TOKENS, MODAL PRIORITY, NOTICE BUS & PERSISTED PENDING REWARDS ====================
   const COMBAT_CALM_GRACE_SEC = 0.8;
   const RESOLVED_REWARD_ID_LIMIT = 128;
@@ -21196,8 +21202,7 @@ const ART = {
     requestCalmReevaluation();
   }
 
-
-
+  // --- [runtime] src/runtime/sanctum-ecosystem.js ---
   // ==================== M3 ENGINE: SANCTUM CONSTRUCTION, LIFESPAN, COMPANION PRESENCE & KARMA WORLD ====================
   function ensureSanctumLevels(g) {
     if (!g) return { spirit_eye: 1, cauldron: 1, sword_forge: 1, scripture_hall: 1, guard_array: 1 };
@@ -23090,6 +23095,7 @@ const ART = {
     return { vol: "仙途圆满", step: "仙途圆满 → 劫火周目 / 锁妖塔纪录", tab: "explore" };
   }
 
+  // --- [runtime] src/runtime/stage-expedition.js ---
   // ==================== 6. SANCTUM HUB, CLEAN EXPEDITION ROOMS & 2-WAY BRANCHING PORTALS ====================
   function initScarfRibbon() {
     arena.player.scarfPts = [];
@@ -24628,6 +24634,7 @@ const ART = {
     });
   }
 
+  // --- [runtime] src/runtime/combat-skills.js ---
   // ==================== 7. COMBAT SKILLS, SYNERGIES & TAIXU DOMAIN ====================
   function pushBladeArc(x, y, ang, r, color, dir = 1, heavy = false, form = "arc") {
     arena.bladeArcs.push({ x, y, ang, r, color, dir, heavy, form, t: 0 });
@@ -26626,6 +26633,7 @@ const ART = {
     `, false, { kind: "iconic_draft" });
   }
 
+  // --- [runtime] src/runtime/combat-step.js ---
   // ==================== 9. DAMAGE, LOOT BEAMS, BRANCHING ROOMS & 60FPS STEP ====================
   function damageEnemy(e, rawDmg, forceCrit = false, postureDmg = 10, hitAng = null, knockImpulse = 4.0, isHeavySkill = false) {
     if (!e || e.hp <= 0 || !game) return;
@@ -29417,6 +29425,7 @@ const ART = {
     saveGame(); updateHud();
   }
 
+  // --- [runtime] src/runtime/renderer.js ---
   // ==================== 10. SHADER-GRADE GUOFENG 2.5D CANVAS RENDERER (WITH SKY LOOT BEAMS!) ====================
   const canvas = document.getElementById("fx-canvas");
   const ctx = canvas.getContext("2d");
@@ -32347,6 +32356,7 @@ const ART = {
     }
   }
 
+  // --- [runtime] src/runtime/ui-modals-drawer.js ---
   // ==================== 11. CHARACTER RADAR SHEET, 4-SLOT GEAR, CLOUD MARKET & COMPENDIUM ====================
   function buildDaoRadarSvg(g) {
     // 5-Axis SVG Pentagon Radar: 仁心 / 锋芒 / 本真 / 丹器 / 剑威
@@ -35471,6 +35481,7 @@ const ART = {
     return !!(target.closest && target.closest("[contenteditable=''], [contenteditable='true']"));
   }
 
+  // --- [runtime] src/runtime/input-handlers.js ---
   // ==================== 12. INPUTS & MAIN 60FPS LOOP ====================
   window.addEventListener("keydown", (ev) => {
     GamepadSystem.setMode("kb");
@@ -38467,33 +38478,7 @@ const ART = {
     }
   });
 
-  setInterval(() => {
-    if (game && !arena.paused && document.getElementById("welcome-screen").style.display === "none") {
-      Sound.tickBgm(arena.enemies.length > 0);
-    }
-  }, 620);
-
-  let lastTs = performance.now();
-  function mainLoop(now) {
-    const rawFrameMs = Math.max(0, now - lastTs);
-    recordPerfFrameSample(rawFrameMs);
-    const dt = Math.min(0.05, rawFrameMs / 1000);
-    lastTs = now;
-    stepArena(dt);
-    stepCombatCalmScheduler(dt);
-    renderArenaCanvas();
-    if (drawerOpen && currentTab === "cultivate") renderWardrobePreviewCanvas();
-    if (craftMinigame.open) renderCraftMinigameCanvas(dt);
-    requestAnimationFrame(mainLoop);
-  }
-
-  window.__CHENYUAN_V18__ = {
-    getState: () => ({ game, arena, photoMode }),
-    triggerImpactFrame,
-    openKarmaDilemmaModal,
-    togglePhotoMode,
-    exportPhotoModePng
-  };
+  // Rescued delegated DOM listeners (audio stems, workshop, a11y sliders, cultivate details toggle, combo/temper/expedition change)
   document.addEventListener("input", (ev) => {
     const t = ev.target;
     if (!t) return;
@@ -38527,16 +38512,6 @@ const ART = {
     }
   });
 
-  window.__CHENYUAN_V19__ = {
-    getState: () => ({ game, arena, photoMode, soundPan: Sound.lastPanVal, soundSurf: Sound.lastSurface }),
-    castSoulSpiritSkill,
-    startBladeClash,
-    pumpBladeClashInput,
-    startGhostRecording,
-    toggleGhostPlayback,
-    openStarChartModal,
-    getStyleRankSpec
-  };
   const panelScrollBodyEl = document.getElementById("panel-scroll-body");
   if (panelScrollBodyEl) {
     panelScrollBodyEl.addEventListener("toggle", (ev) => {
@@ -38593,27 +38568,32 @@ const ART = {
     }
   });
 
-  window.__CHENYUAN_V25__ = {
-    getState: () => ({
-      game,
-      arena,
-      pity: ensureDeterministicPity(game),
-      drawerOpen,
-      realmSpec: game ? REALMS[game.realm] : null,
-      persistence: {
-        tabId: TAB_ID,
-        loadedSaveRev,
-        storageReadError,
-        storageWriteError,
-        saveConflictState,
-        saveReadOnlyMode,
-        metaReadError,
-        metaWriteError,
-        metaRev: Number(metaState.metaRev) || 0
-      },
-      a11ySettings
-    }),
-    getPersistenceState: () => ({
+  // --- [runtime] src/runtime/main.js ---
+  // ==================== 13. MAIN 60FPS RUNTIME LOOP SHELL ====================
+  setInterval(() => {
+    if (game && !arena.paused && document.getElementById("welcome-screen").style.display === "none") {
+      Sound.tickBgm(arena.enemies.length > 0);
+    }
+  }, 620);
+
+  let lastTs = performance.now();
+  function mainLoop(now) {
+    const rawFrameMs = Math.max(0, now - lastTs);
+    recordPerfFrameSample(rawFrameMs);
+    const dt = Math.min(0.05, rawFrameMs / 1000);
+    lastTs = now;
+    stepArena(dt);
+    stepCombatCalmScheduler(dt);
+    renderArenaCanvas();
+    if (drawerOpen && currentTab === "cultivate") renderWardrobePreviewCanvas();
+    if (craftMinigame.open) renderCraftMinigameCanvas(dt);
+    requestAnimationFrame(mainLoop);
+  }
+
+  // ==================== D06 (R3-F03): UNIFIED DEBUG FACADE ====================
+  // Single authoritative inspection & testing facade (`window.__CHENYUAN_DEBUG__`).
+  function getPersistenceSnapshot() {
+    return {
       tabId: TAB_ID,
       loadedSaveRev,
       storageReadError,
@@ -38623,7 +38603,144 @@ const ART = {
       metaReadError,
       metaWriteError,
       metaRev: Number(metaState.metaRev) || 0
+    };
+  }
+
+  function getArtDecodeSummarySnapshot() {
+    const keys = Object.keys(ART);
+    const decoded = [];
+    const failed = [];
+    for (const k of keys) {
+      const im = IMG_CACHE[k];
+      if (im && im.complete && im.naturalWidth > 0 && im.naturalHeight > 0) {
+        decoded.push({ key: k, w: im.naturalWidth, h: im.naturalHeight });
+      } else {
+        failed.push({ key: k, complete: Boolean(im && im.complete), w: im ? im.naturalWidth : 0, h: im ? im.naturalHeight : 0 });
+      }
+    }
+    return { total: keys.length, decodedCount: decoded.length, decoded, failed };
+  }
+
+  function getEncounterTelemetrySnapshot() {
+    return arena.encounterTelemetry
+      ? Object.assign({}, arena.encounterTelemetry, { recentHits: (arena.encounterTelemetry.recentHits || []).slice() })
+      : null;
+  }
+
+  window.__CHENYUAN_DEBUG__ = {
+    version: "d06-unified-1",
+    getState: () => ({
+      game,
+      arena,
+      pity: (game && game.pity && typeof game.pity === "object" && !Array.isArray(game.pity))
+        ? game.pity
+        : { epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 },
+      drawerOpen,
+      realmSpec: game ? REALMS[game.realm] : null,
+      persistence: getPersistenceSnapshot(),
+      a11ySettings,
+      photoMode,
+      soundPan: Sound.lastPanVal,
+      soundSurf: Sound.lastSurface,
+      artCount: Object.keys(ART).length,
+      activeHero: getActivePlayableSpec(),
+      curioPoolCount: SPIRE_CURIOS.length,
+      sixAspect: getCurrentSixAspectSpec(),
+      codexSelectedId,
+      codexDemoAnimT,
+      workshopState,
+      audioStems: Sound.stems,
+      celestialPhase: getCurrentCelestialPhase(),
+      coop2P: arena.coop2P || null,
+      primordialCrafts: (game && game.primordialCrafts) || null,
+      craftMinigame,
+      highlightCount: (arena.highlightFrames || []).length,
+      sanqing: arena.sanqingState || null,
+      echoQueueLen: (arena.sanqingEchoQueue || []).length,
+      shanhe: arena.shanheDomain || null,
+      warship: arena.warshipStrike || null,
+      customSeq: (game && game.customComboSeq) || null,
+      expeditions: (game && game.expeditions) || null
     }),
+    rules: {
+      computeCombatStatLedger,
+      getCombatStats,
+      effectiveGearVal,
+      computeGearAffixBudget,
+      rollGearItem,
+      getLifespanInfo,
+      previewLifespanImpact,
+      computeRecipeCostBreakdown,
+      computeBatchRecipeCost,
+      computeBatchEnhancePreview,
+      computeCompetitionScore,
+      getScoreGrade,
+      applySingleHitCap,
+      getExpeditionNodeStageSynergy,
+      getSpireCloudSeaYieldMult,
+      computeEndgameMasteryResonance,
+      buildVol5ResonanceSnapshot
+    },
+    q6: {
+      VOLUME_CAMPAIGN_GUIDE,
+      VOL5_RESONANCE_PILLARS,
+      HIGH_TIER_MODE_REGISTRY,
+      EXPEDITION_NODE_STAGE_MAP,
+      getExpeditionNodeStageSynergy,
+      getSpireCloudSeaYieldMult,
+      computeEndgameMasteryResonance,
+      buildVol5ResonanceSnapshot,
+      openVol5ResonanceModal,
+      openVol5ResonanceFlow,
+      getUnlockedCoop2PRoster,
+      getActiveCustomSeedTempCurio,
+      restoreCustomSeedTempCurio,
+      openCustomSeedVictoryModal,
+      openSectDefenseResultModal,
+      getVisualLayersState,
+      getEnemyAttackSpec,
+      resolveCutsceneLines,
+      getKarmaEndingEpilogue,
+      renderArenaCanvas,
+      openVolumeEndRecapModal,
+      triggerAscendGateAction,
+      stepCloudSeaFlight,
+      stepSectDefenseSiege,
+      startCelestialSpireRun,
+      selectSpireCurioAndAdvance
+    },
+    persistence: {
+      STORAGE_KEY,
+      META_KEY,
+      computeSaveChecksum,
+      buildCanonicalSavePayload,
+      parseAndValidateSaveRaw,
+      mergeMetaStates,
+      normalizeGearItem,
+      normalizeLoadedGame,
+      exportFullCloudSaveCode,
+      importFullCloudSaveCode
+    },
+    art: {
+      getCount: () => Object.keys(ART).length,
+      getKeys: () => Object.keys(ART),
+      getDecodeSummary: getArtDecodeSummarySnapshot
+    },
+    telemetry: {
+      getNoticeState: () => ({
+        inbox: { items: combatInbox.slice(), unread: combatInboxUnread },
+        activeUnlockCardId,
+        pendingUnlockCards: pendingUnlockCardQueue.slice()
+      }),
+      getPendingRewards: () => getPendingRewardsByKind(),
+      getPauseTokens: getPauseTokensSnapshot,
+      getEncounterTelemetry: getEncounterTelemetrySnapshot,
+      getFramePerfSnapshot: getPerfStats,
+      getPerfStats
+    },
+
+    // --- Direct runtime & subsystem bindings (363 unique keys unified) ---
+    getPersistenceState: getPersistenceSnapshot,
     inspectSavedBundle,
     saveGame,
     openTribulationPrepModal,
@@ -38874,7 +38991,7 @@ const ART = {
     openBatchEnhanceModal,
     executeAlchemyBatchCraft,
     executeGearBatchEnhance,
-    getEncounterTelemetry: () => arena.encounterTelemetry ? Object.assign({}, arena.encounterTelemetry, { recentHits: (arena.encounterTelemetry.recentHits || []).slice() }) : null,
+    getEncounterTelemetry: getEncounterTelemetrySnapshot,
     resetEncounterTelemetry,
     getCultivateGroupState: () => Object.assign({}, cultivateGroupOpen),
     renderDrawerContent,
@@ -38942,75 +39059,31 @@ const ART = {
     getPlaytestTelemetry,
     resetPlaytestTelemetry,
     exportPlaytestSessionJson,
-    getArtDecodeSummary: () => {
-      const keys = Object.keys(ART);
-      const decoded = [];
-      const failed = [];
-      for (const k of keys) {
-        const im = IMG_CACHE[k];
-        if (im && im.complete && im.naturalWidth > 0 && im.naturalHeight > 0) {
-          decoded.push({ key: k, w: im.naturalWidth, h: im.naturalHeight });
-        } else {
-          failed.push({ key: k, complete: Boolean(im && im.complete), w: im ? im.naturalWidth : 0, h: im ? im.naturalHeight : 0 });
-        }
-      }
-      return { total: keys.length, decodedCount: decoded.length, decoded, failed };
-    }
-  };
-  window.__CHENYUAN_V24__ = {
-    getState: () => ({
-      game,
-      arena,
-      sanqing: ensureSanqingState(),
-      echoQueueLen: (arena.sanqingEchoQueue || []).length,
-      shanhe: arena.shanheDomain,
-      warship: arena.warshipStrike,
-      customSeq: ensureCustomComboSeq(game),
-      expeditions: ensureExpeditionState(game),
-      artCount: Object.keys(ART).length
-    }),
-    triggerSanqingTriClones,
-    castShanheShejiDomain,
-    stampNextShanheMantra,
-    detonateShanheScrollBreak,
-    triggerWarshipOrbitalStrike,
-    openComboSequencerModal,
-    openExpeditionSandboxModal,
-    claimExpeditionRewards,
-    exportFullCloudSaveCode,
-    importFullCloudSaveCode
-  };
-  window.__CHENYUAN_V23__ = {
-    getState: () => ({
-      game,
-      arena,
-      celestialPhase: getCurrentCelestialPhase(),
-      coop2P: ensureCoop2PState(),
-      primordialCrafts: ensurePrimordialCrafts(game),
-      craftMinigame,
-      highlightCount: (arena.highlightFrames || []).length,
-      artCount: Object.keys(ART).length
-    }),
-    toggleLocalCoop2P,
-    cycleCoop2PPartner,
-    triggerCoop2PAttack,
-    triggerCoopQiTransferRescue,
-    setCelestialTimePhase,
-    cycleCelestialTimePhase,
-    openTaixuCraftMinigameModal,
-    strikeTaixuCraftMinigame,
-    spawnSpatialSwordRift,
-    captureBattleHighlightFrame,
-    openComicBattleScrollModal,
-    renderFourPanelComicScrollCanvas,
-    exportComicBattleScrollPng
-  };
-  window.__CHENYUAN_V22__ = {
-    getState: () => ({
-      game, arena, workshopState,
-      audioStems: Sound.stems,
-      artCount: Object.keys(ART).length
-    }),
+    getArtDecodeSummary: getArtDecodeSummarySnapshot,
+
+    // --- 51 additional unique subsystem bindings (flagship / hall-of-fame / endgame / primordial / genesis) ---
+    triggerImpactFrame,
+    togglePhotoMode,
+    exportPhotoModePng,
+    castSoulSpiritSkill,
+    startBladeClash,
+    pumpBladeClashInput,
+    startGhostRecording,
+    toggleGhostPlayback,
+    getStyleRankSpec,
+    startColossalTitanRaid: () => startBossRushGauntlet(7),
+    triggerTitanClimbFinisher,
+    triggerTagTeamSwitch,
+    cycleWeaponArsenalForm,
+    triggerSwordGlideRavineDash,
+    buildBladeSplineSamples,
+    triggerSkyBarrelRollAndShield,
+    fireCloudSeaSwordBarrage,
+    executeSixAspectAwakeningSkill: () => executeSixAspectAwakeningSkill(getCombatStats(game), 1.0, 1.0),
+    castDualHeroBondUltimate,
+    openSpireCurioDraftModal,
+    selectSpireCurioAndAdvance,
+    triggerRadialChromaticBurst,
     triggerAstralGiantForm,
     castAstralStarRiverBombardment,
     triggerTitanVsTitanClash,
@@ -39018,137 +39091,28 @@ const ART = {
     triggerVaultDismountStrike,
     deployOrCycleQimenArray,
     triggerQimenResonanceNova,
-    openCustomWorkshopModal,
     encodeWorkshopSeed,
     decodeWorkshopSeed,
-    launchCustomSeedEncounter
-  };
-  window.__CHENYUAN_V21__ = {
-    getState: () => ({
-      game, arena, a11ySettings,
-      artCount: Object.keys(ART).length,
-      curioPoolCount: SPIRE_CURIOS.length,
-      sixAspect: getCurrentSixAspectSpec(),
-      codexSelectedId, codexDemoAnimT
-    }),
-    startCloudSeaAerialStage,
-    triggerSkyBarrelRollAndShield,
-    fireCloudSeaSwordBarrage,
-    executeSixAspectAwakeningSkill: () => executeSixAspectAwakeningSkill(getCombatStats(game), 1.0, 1.0),
-    castDualHeroBondUltimate,
-    openCelestialSpireModal,
-    startCelestialSpireRun,
-    openSpireCurioDraftModal,
-    selectSpireCurioAndAdvance,
-    triggerRadialChromaticBurst
-  };
-  window.__CHENYUAN_V20__ = {
-    getState: () => ({ game, arena, a11ySettings, artCount: Object.keys(ART).length, activeHero: getActivePlayableSpec() }),
-    startColossalTitanRaid: () => startBossRushGauntlet(7),
-    triggerTitanClimbFinisher,
-    triggerTagTeamSwitch,
-    cycleWeaponArsenalForm,
-    triggerSwordGlideRavineDash,
-    startSectDefenseSiege,
-    buildBladeSplineSamples
-  };
-  // ==================== Q5 (F31/F32): ADDITIVE COMPAT DEBUG FACADE ====================
-  // Strictly additive facade delegating to preserved window.__CHENYUAN_V18__..__CHENYUAN_V25__.
-  window.__CHENYUAN_DEBUG__ = {
-    version: "q5-compat-1",
-    namespaces: {
-      v18: window.__CHENYUAN_V18__,
-      v19: window.__CHENYUAN_V19__,
-      v20: window.__CHENYUAN_V20__,
-      v21: window.__CHENYUAN_V21__,
-      v22: window.__CHENYUAN_V22__,
-      v23: window.__CHENYUAN_V23__,
-      v24: window.__CHENYUAN_V24__,
-      v25: window.__CHENYUAN_V25__
-    },
-    getNamespace: (ver) => {
-      const key = String(ver || "").toLowerCase();
-      return hasOwn(window.__CHENYUAN_DEBUG__.namespaces, key)
-        ? window.__CHENYUAN_DEBUG__.namespaces[key]
-        : null;
-    },
-    getState: () => window.__CHENYUAN_V25__.getState(),
-    rules: {
-      computeCombatStatLedger,
-      getCombatStats,
-      effectiveGearVal,
-      computeGearAffixBudget,
-      rollGearItem,
-      getLifespanInfo,
-      previewLifespanImpact,
-      computeRecipeCostBreakdown,
-      computeBatchRecipeCost,
-      computeBatchEnhancePreview,
-      computeCompetitionScore,
-      getScoreGrade,
-      applySingleHitCap,
-      getExpeditionNodeStageSynergy,
-      getSpireCloudSeaYieldMult,
-      computeEndgameMasteryResonance,
-      buildVol5ResonanceSnapshot
-    },
-    q6: {
-      VOLUME_CAMPAIGN_GUIDE,
-      VOL5_RESONANCE_PILLARS,
-      HIGH_TIER_MODE_REGISTRY,
-      EXPEDITION_NODE_STAGE_MAP,
-      getExpeditionNodeStageSynergy,
-      getSpireCloudSeaYieldMult,
-      computeEndgameMasteryResonance,
-      buildVol5ResonanceSnapshot,
-      openVol5ResonanceModal,
-      openVol5ResonanceFlow,
-      getUnlockedCoop2PRoster,
-      getActiveCustomSeedTempCurio,
-      restoreCustomSeedTempCurio,
-      openCustomSeedVictoryModal,
-      openSectDefenseResultModal,
-      getVisualLayersState,
-      getEnemyAttackSpec,
-      resolveCutsceneLines,
-      getKarmaEndingEpilogue,
-      renderArenaCanvas,
-      openVolumeEndRecapModal,
-      triggerAscendGateAction,
-      stepCloudSeaFlight,
-      stepSectDefenseSiege,
-      startCelestialSpireRun,
-      selectSpireCurioAndAdvance
-    },
-    persistence: {
-      STORAGE_KEY,
-      META_KEY,
-      computeSaveChecksum,
-      buildCanonicalSavePayload,
-      parseAndValidateSaveRaw,
-      mergeMetaStates,
-      normalizeGearItem,
-      normalizeLoadedGame,
-      exportFullCloudSaveCode: (...args) => window.__CHENYUAN_V24__.exportFullCloudSaveCode(...args),
-      importFullCloudSaveCode: (...args) => window.__CHENYUAN_V24__.importFullCloudSaveCode(...args)
-    },
-    art: {
-      getCount: () => Object.keys(ART).length,
-      getKeys: () => Object.keys(ART),
-      getDecodeSummary: () => window.__CHENYUAN_V25__.getArtDecodeSummary()
-    },
-    telemetry: {
-      getNoticeState: () => ({
-        inbox: window.__CHENYUAN_V25__.getCombatInbox(),
-        activeUnlockCardId: window.__CHENYUAN_V25__.getActiveUnlockCardId(),
-        pendingUnlockCards: window.__CHENYUAN_V25__.getPendingUnlockCardQueue()
-      }),
-      getPendingRewards: () => window.__CHENYUAN_V25__.getPendingRewards(),
-      getPauseTokens: () => window.__CHENYUAN_V25__.getPauseTokens(),
-      getEncounterTelemetry: () => window.__CHENYUAN_V25__.getEncounterTelemetry(),
-      getFramePerfSnapshot: () => window.__CHENYUAN_V25__.getPerfStats(),
-      getPerfStats: () => window.__CHENYUAN_V25__.getPerfStats()
-    }
+    launchCustomSeedEncounter,
+    toggleLocalCoop2P,
+    cycleCoop2PPartner,
+    triggerCoop2PAttack,
+    triggerCoopQiTransferRescue,
+    setCelestialTimePhase,
+    cycleCelestialTimePhase,
+    strikeTaixuCraftMinigame,
+    spawnSpatialSwordRift,
+    captureBattleHighlightFrame,
+    openComicBattleScrollModal,
+    renderFourPanelComicScrollCanvas,
+    exportComicBattleScrollPng,
+    triggerSanqingTriClones,
+    castShanheShejiDomain,
+    stampNextShanheMantra,
+    detonateShanheScrollBreak,
+    triggerWarshipOrbitalStrike,
+    openComboSequencerModal,
+    importFullCloudSaveCode
   };
   window.addEventListener("load", () => {
     preloadSprites();

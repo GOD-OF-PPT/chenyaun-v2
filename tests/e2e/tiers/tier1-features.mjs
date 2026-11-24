@@ -228,19 +228,19 @@ export const tests = [
 
       // Precondition: Tab A progresses meta (higher score + new seenEnemy) and writes meta
       await pageA.evaluate(() => {
-        const m = window.__CHENYUAN_V25__.getMetaState();
+        const m = window.__CHENYUAN_DEBUG__.getMetaState();
         m.bestScore = 4500;
         m.ascensions = 3;
         if (!m.seenEnemies.includes("wolf_king")) m.seenEnemies.push("wolf_king");
-        window.__CHENYUAN_V25__.saveMeta();
+        window.__CHENYUAN_DEBUG__.saveMeta();
       });
 
       // Precondition: Tab B has stale in-memory meta and writes a different field
       await pageB.evaluate(() => {
-        const m = window.__CHENYUAN_V25__.getMetaState();
+        const m = window.__CHENYUAN_DEBUG__.getMetaState();
         m.bestTower = 9;
         if (!m.seenEnemies.includes("stone_warden")) m.seenEnemies.push("stone_warden");
-        window.__CHENYUAN_V25__.saveMeta();
+        window.__CHENYUAN_DEBUG__.saveMeta();
       });
 
       // Wait for Chromium's multi-process StorageArea Mojo IPC replication (and CRDT storage-event healing
@@ -338,9 +338,9 @@ export const tests = [
 
       // Tab A saves a newer rev to trigger conflict on Tab B
       await pageA.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.stones = 777;
-        window.__CHENYUAN_V25__.saveGame();
+        window.__CHENYUAN_DEBUG__.saveGame();
       });
       await waitForCrossTabConflict(pageB, 2500);
 
@@ -380,7 +380,7 @@ export const tests = [
 
       // Verify pagehide flushes writable state on Tab A
       await pageA.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.stones = 888;
         window.dispatchEvent(new Event("pagehide"));
       });
@@ -566,12 +566,12 @@ export const tests = [
 
       // Precondition: mortal with full XP, 0 stages cleared
       await page.evaluate((xpCap) => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.realm = "mortal";
         game.xp = xpCap;
         game.stageStars = {};
-        window.__CHENYUAN_V25__.enterSanctumHub();
-        window.__CHENYUAN_V25__.updateHud();
+        window.__CHENYUAN_DEBUG__.enterSanctumHub();
+        window.__CHENYUAN_DEBUG__.updateHud();
       }, REALM_XP_CAPS.mortal);
       await page.waitForTimeout(150);
 
@@ -605,15 +605,15 @@ export const tests = [
 
       // Precondition: ascended with 0 stage stars and 0 bonded companions
       await page.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.realm = "ascended";
         game.status = "ascended";
         game.ending = null;
         game.stageStars = {};
         game.bondTiers = { shen: 0, pei: 0, lu: 0, yan: 0 };
         game.aids = { shen: false, pei: false, lu: false, yan: false };
-        window.__CHENYUAN_V25__.updateHud();
-        window.__CHENYUAN_V25__.openEndingModal();
+        window.__CHENYUAN_DEBUG__.updateHud();
+        window.__CHENYUAN_DEBUG__.openEndingModal();
       });
       await page.waitForSelector("#modal-backdrop.open");
       const firstEndingBtn = await page.$("button[data-choose-ending]");
@@ -673,7 +673,7 @@ export const tests = [
       const page = await env.openPage("t1-12");
       await env.startFreshGame(page);
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.openingChoice = "help";
         game.realm = "foundation";
@@ -700,10 +700,10 @@ export const tests = [
 
       // Trigger stage 2 (enter_secret) cutscene and read dialogue bar
       await page.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.realm = "golden";
         game.seenCutscenes = {};
-        window.__CHENYUAN_V25__.initArenaStage(2, false);
+        window.__CHENYUAN_DEBUG__.initArenaStage(2, false);
       });
       await page.waitForTimeout(250);
       const stage2Dlg = await page.evaluate(() =>
@@ -721,9 +721,9 @@ export const tests = [
 
       // Trigger stage 3 (enter_sword_mound) cutscene and check Yan Chen canonical role consistency
       await page.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.seenCutscenes = {};
-        window.__CHENYUAN_V25__.initArenaStage(3, false);
+        window.__CHENYUAN_DEBUG__.initArenaStage(3, false);
       });
       await page.waitForTimeout(250);
       const stage3Info = await page.evaluate(() => ({
@@ -754,7 +754,7 @@ export const tests = [
 
       // Precondition: all 18 mainline CHAPTERS steps satisfied & claimed, ascended
       await page.evaluate((stepIds) => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.openingChoice = "help";
         game.realm = "ascended";
         game.status = "ascended";
@@ -773,7 +773,7 @@ export const tests = [
         game.stageStars = { 0: 3, 1: 3, 2: 3, 3: 3, 4: 3 };
         game.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
         game.claimedStepIds = [...stepIds];
-        window.__CHENYUAN_V25__.updateHud();
+        window.__CHENYUAN_DEBUG__.updateHud();
       }, ALL_CHAPTER_STEP_IDS);
       await page.waitForTimeout(150);
 
@@ -804,7 +804,7 @@ export const tests = [
 
       // Precondition: nascent realm so astral/bond HUD indicators are active, zero meters, open dilemma 0 (no fillIntent)
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game, arena } = v25.getState();
         game.realm = "nascent";
         arena.swordIntent = 0;
@@ -812,7 +812,7 @@ export const tests = [
         arena.astralEnergy = 0;
         v25.syncProgressiveSkillVisibility();
         v25.updateHud();
-        window.__CHENYUAN_V18__.openKarmaDilemmaModal(0);
+        window.__CHENYUAN_DEBUG__.openKarmaDilemmaModal(0);
       });
       await page.waitForSelector("#modal-backdrop.open");
       await page.click('button[data-karma-side="right"]');
@@ -843,7 +843,7 @@ export const tests = [
 
       // Precondition: enter stage 0 boss wave (boss_pre_stage0 already seen so clear_stage0 is cleanly tested) and defeat the real stage 0 boss
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.openingChoice = "help";
         game.seenCutscenes = Object.assign({}, game.seenCutscenes, { boss_pre_stage0: true });
@@ -937,11 +937,11 @@ export const tests = [
 
       // Precondition: foundation realm, no pei_meet choice
       await page.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.realm = "foundation";
         game.choices = {};
         game.seenCutscenes = {};
-        window.__CHENYUAN_V25__.updateHud();
+        window.__CHENYUAN_DEBUG__.updateHud();
       });
       await page.waitForTimeout(150);
 
@@ -956,7 +956,7 @@ export const tests = [
 
       // Enter stage 2 without pei_meet -> must not assume prior familiarity
       await page.evaluate(() => {
-        window.__CHENYUAN_V25__.initArenaStage(2, false);
+        window.__CHENYUAN_DEBUG__.initArenaStage(2, false);
       });
       await page.waitForTimeout(200);
       const dlgText = await page.evaluate(() =>
@@ -980,10 +980,10 @@ export const tests = [
       await env.startFreshGame(page);
 
       await page.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.realm = "spirit";
-        window.__CHENYUAN_V25__.enterSanctumHub();
-        window.__CHENYUAN_V25__.updateHud();
+        window.__CHENYUAN_DEBUG__.enterSanctumHub();
+        window.__CHENYUAN_DEBUG__.updateHud();
       });
       await page.waitForTimeout(150);
 
@@ -1026,11 +1026,11 @@ export const tests = [
 
       // Precondition: golden realm (not nascent/spirit), test high-tier combat keys
       await page.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.realm = "golden";
         game.unlockAllArcana = false;
-        window.__CHENYUAN_V25__.updateHud();
-        window.__CHENYUAN_V25__.syncProgressiveSkillVisibility();
+        window.__CHENYUAN_DEBUG__.updateHud();
+        window.__CHENYUAN_DEBUG__.syncProgressiveSkillVisibility();
       });
       await page.waitForTimeout(150);
 
@@ -1061,14 +1061,14 @@ export const tests = [
       await env.startFreshGame(page);
 
       await page.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.realm = "nascent";
         game.stones = 500;
         game.bondTiers = { shen: 1, pei: 0, lu: 0, yan: 0 };
         game.aids = { shen: true, pei: false, lu: false, yan: false };
-        window.__CHENYUAN_V25__.enterSanctumHub();
-        window.__CHENYUAN_V25__.updateHud();
-        window.__CHENYUAN_V25__.openExpeditionSandboxModal();
+        window.__CHENYUAN_DEBUG__.enterSanctumHub();
+        window.__CHENYUAN_DEBUG__.updateHud();
+        window.__CHENYUAN_DEBUG__.openExpeditionSandboxModal();
       });
       await page.waitForSelector("#modal-backdrop.open");
 
@@ -1084,7 +1084,7 @@ export const tests = [
       // Empty bank must disable #btn-claim-expedition and return 0 stones on direct claim
       const emptyState = await page.evaluate(() => {
         const btn = document.getElementById("btn-claim-expedition");
-        const directRes = window.__CHENYUAN_V25__.claimExpeditionRewards();
+        const directRes = window.__CHENYUAN_DEBUG__.claimExpeditionRewards();
         return {
           btnDisabled: Boolean(btn && btn.disabled),
           directGained: directRes?.gainedStones || 0
@@ -1096,7 +1096,7 @@ export const tests = [
       // Seed real banked stones -> first UI claim grants stones, button disables, and second claim yields 0 stones
       const stonesBeforeClaim = (await getHudState(page)).stones;
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         v25.getState().game.expeditions.bankedStones = 30;
         v25.openExpeditionSandboxModal();
       });
@@ -1111,7 +1111,7 @@ export const tests = [
       );
       const afterFirstState = await page.evaluate(() => {
         const btn = document.getElementById("btn-claim-expedition");
-        const secondRes = window.__CHENYUAN_V25__.claimExpeditionRewards();
+        const secondRes = window.__CHENYUAN_DEBUG__.claimExpeditionRewards();
         return {
           btnDisabled: Boolean(btn && btn.disabled),
           secondGained: secondRes?.gainedStones || 0
@@ -1139,13 +1139,13 @@ export const tests = [
       await env.startFreshGame(page);
 
       await page.evaluate((allLaws) => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.realm = "golden";
         game.stones = 500;
         game.pet = { id: "fox", level: 1 };
         game.laws = [...allLaws];
-        window.__CHENYUAN_V25__.enterSanctumHub();
-        window.__CHENYUAN_V25__.updateHud();
+        window.__CHENYUAN_DEBUG__.enterSanctumHub();
+        window.__CHENYUAN_DEBUG__.updateHud();
       }, ALL_DAO_LAW_IDS);
       await page.waitForTimeout(150);
 
@@ -1176,7 +1176,7 @@ export const tests = [
 
       // Precondition: nascent realm with real scaled stage 4 boss wave spawned (mark stage 4 cutscenes seen so arena is not paused)
       const setup = await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.realm = "nascent";
         game.seenCutscenes = Object.assign({}, game.seenCutscenes, {
@@ -1222,7 +1222,7 @@ export const tests = [
 
       const hudBefore = await getHudState(page);
       const hpSnapBefore = await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         return {
           hpCur: game.hp,
@@ -1243,7 +1243,7 @@ export const tests = [
 
       // Trigger one real boss heavy projectile directly onto the player so damage passes through hurtPlayer()
       await page.evaluate((heavyDmg) => {
-        const { arena } = window.__CHENYUAN_V25__.getState();
+        const { arena } = window.__CHENYUAN_DEBUG__.getState();
         arena.paused = false;
         const p = arena.player;
         p.invuln = 0;
@@ -1268,7 +1268,7 @@ export const tests = [
       const deadline = Date.now() + 1500;
       while (Date.now() < deadline) {
         await page.waitForTimeout(80);
-        const cur = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.hp);
+        const cur = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.hp);
         if (cur < hpBefore) {
           hpAfter = cur;
           hpBarPctAfter = (await getHudState(page)).hpBarPct;
@@ -1299,12 +1299,12 @@ export const tests = [
       await env.startFreshGame(page);
 
       await page.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.realm = "nascent";
         game.stones = 200;
-        window.__CHENYUAN_V25__.enterSanctumHub();
-        window.__CHENYUAN_V25__.updateHud();
-        window.__CHENYUAN_V25__.openCelestialSpireModal();
+        window.__CHENYUAN_DEBUG__.enterSanctumHub();
+        window.__CHENYUAN_DEBUG__.updateHud();
+        window.__CHENYUAN_DEBUG__.openCelestialSpireModal();
       });
       await page.waitForSelector("#modal-backdrop.open");
       await page.click('button[data-start-spire="9"]');
@@ -1333,7 +1333,7 @@ export const tests = [
 
       // Precondition: defeat floor 9 enemies via handleEnemyDeath
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { arena } = v25.getState();
         for (const e of [...arena.enemies]) {
           e.hp = 0;
@@ -1375,12 +1375,12 @@ export const tests = [
 
       // Precondition: demonic karmaScore so karma market sells blood_fury_pill, plenty of stones
       await page.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.realm = "qi";
         game.karmaScore = -80;
         game.stones = 5000;
-        window.__CHENYUAN_V25__.enterSanctumHub();
-        window.__CHENYUAN_V25__.updateHud();
+        window.__CHENYUAN_DEBUG__.enterSanctumHub();
+        window.__CHENYUAN_DEBUG__.updateHud();
       });
       await page.waitForTimeout(150);
 
@@ -1462,15 +1462,15 @@ export const tests = [
       await env.startFreshGame(page);
 
       await page.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.realm = "qi";
         game.stones = 500;
         game.inventory.herb = 20;
         game.inventory.dew = 20;
         game.inventory.core = 10;
         game.elapsedMonths = 0;
-        window.__CHENYUAN_V25__.enterSanctumHub();
-        window.__CHENYUAN_V25__.updateHud();
+        window.__CHENYUAN_DEBUG__.enterSanctumHub();
+        window.__CHENYUAN_DEBUG__.updateHud();
       });
       await page.waitForTimeout(150);
 
@@ -1518,7 +1518,7 @@ export const tests = [
 
       // 1. Bag full (24 items) + 25th item drop must show explicit choice modal instead of auto-smelting
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.openingChoice = "help";
         game.realm = "qi";
@@ -1572,13 +1572,13 @@ export const tests = [
       await env.startFreshGame(page);
 
       await page.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.realm = "qi";
         game.inventory.herb = 20;
         game.inventory.core = 20;
         game.inventory.jade = 20;
-        window.__CHENYUAN_V25__.enterSanctumHub();
-        window.__CHENYUAN_V25__.updateHud();
+        window.__CHENYUAN_DEBUG__.enterSanctumHub();
+        window.__CHENYUAN_DEBUG__.updateHud();
       });
       await page.waitForTimeout(150);
 
@@ -1630,7 +1630,7 @@ export const tests = [
 
       // Precondition: full Boss Rush run starting from bout 1, advancing through bout 7 with slow time & hits taken
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.realm = "nascent";
         v25.openBossRushModal();
@@ -1641,7 +1641,7 @@ export const tests = [
 
       // Simulate full 7-bout completion with 0 skill bonuses (0 parries, 0 partBreaks, 0 affixes)
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { arena } = v25.getState();
         arena.parryCount = 0;
         arena.rushAffixes = [];
@@ -1714,7 +1714,7 @@ export const tests = [
 
       // Precondition: active stage 0 combat with a stunned keeper enemy and a stone drop 320px away
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         v25.initArenaStage(0, false);
         const { game, arena } = v25.getState();
         game.stones = 100;

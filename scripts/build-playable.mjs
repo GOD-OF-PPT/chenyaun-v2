@@ -51,7 +51,31 @@ export const ESM_MODULE_ORDER = [
 ];
 
 const RUNTIME_PREAMBLE_REL = "src/runtime/preamble.js";
-const RUNTIME_MAIN_REL = "src/runtime/main.js";
+
+/**
+ * Contiguous topological assembly order for runtime subsystem modules inside the single IIFE.
+ * Preserves exact 2-space top-level declaration indentation so `scripts/art-manifest.mjs`
+ * tracks `usageSymbols` with zero drift, and preserves load-time initialization order (zero TDZ).
+ */
+export const RUNTIME_MODULE_ORDER = [
+  "src/runtime/world-data.js",
+  "src/runtime/narrative-state.js",
+  "src/runtime/flagship-systems.js",
+  "src/runtime/endgame-modes.js",
+  "src/runtime/primordial-systems.js",
+  "src/runtime/genesis-dojo.js",
+  "src/runtime/persistence-sandbox.js",
+  "src/runtime/scheduler-rewards.js",
+  "src/runtime/sanctum-ecosystem.js",
+  "src/runtime/stage-expedition.js",
+  "src/runtime/combat-skills.js",
+  "src/runtime/combat-step.js",
+  "src/runtime/renderer.js",
+  "src/runtime/ui-modals-drawer.js",
+  "src/runtime/input-handlers.js",
+  "src/runtime/main.js"
+];
+
 const RUNTIME_DEBUG_FACADE_REL = "src/runtime/debug-facade.js";
 const RUNTIME_BOOT_REL = "src/runtime/boot.js";
 
@@ -368,7 +392,6 @@ export function assemblePlayableHtml(options = {}) {
   const { index, verifiedAssets, artBlock } = loadAndValidateArtIndex(repoRoot);
 
   const preamble = stripTrailingNewline(readUtf8Strict(RUNTIME_PREAMBLE_REL, repoRoot));
-  const mainRuntime = stripTrailingNewline(readUtf8Strict(RUNTIME_MAIN_REL, repoRoot));
   const bootRuntime = stripTrailingNewline(readUtf8Strict(RUNTIME_BOOT_REL, repoRoot));
 
   const facadeAbs = path.join(repoRoot, RUNTIME_DEBUG_FACADE_REL);
@@ -376,9 +399,16 @@ export function assemblePlayableHtml(options = {}) {
     ? stripTrailingNewline(readUtf8Strict(RUNTIME_DEBUG_FACADE_REL, repoRoot))
     : "";
 
+  const runtimeChunks = RUNTIME_MODULE_ORDER.map((relPath) => {
+    const chunk = stripTrailingNewline(readUtf8Strict(relPath, repoRoot));
+    if (/<\/script/i.test(chunk)) {
+      throw new Error(`Forbidden "</script" sequence found in ${relPath}`);
+    }
+    return `  // --- [runtime] ${relPath} ---\n${chunk}`;
+  });
+
   for (const [label, chunk] of [
     [RUNTIME_PREAMBLE_REL, preamble],
-    [RUNTIME_MAIN_REL, mainRuntime],
     [RUNTIME_DEBUG_FACADE_REL, debugFacade],
     [RUNTIME_BOOT_REL, bootRuntime]
   ]) {
@@ -404,8 +434,9 @@ export function assemblePlayableHtml(options = {}) {
     iifeParts.push(inlinedModules.join("\n\n"));
     iifeParts.push("");
   }
-  iifeParts.push(mainRuntime);
+  iifeParts.push(runtimeChunks.join("\n\n"));
   if (debugFacade.trim().length > 0) {
+    iifeParts.push("");
     iifeParts.push(debugFacade);
   }
   iifeParts.push(bootRuntime);
@@ -428,6 +459,7 @@ export function assemblePlayableHtml(options = {}) {
     bytes: buf.length,
     artCount: stats.artCount,
     moduleCount: ESM_MODULE_ORDER.length,
+    runtimeModuleCount: RUNTIME_MODULE_ORDER.length,
     scriptBytes: stats.scriptBytes
   };
 }
@@ -513,7 +545,7 @@ function main() {
     }
     console.log(
       `build-playable OK (--check): ${path.relative(REPO_ROOT, targetPath)} matches src/ byte-for-byte ` +
-      `(${built.bytes} bytes, ${built.artCount} WebP assets, ${built.moduleCount} ESM modules, sha256=${built.sha256.slice(0, 12)}).`
+      `(${built.bytes} bytes, ${built.artCount} WebP assets, ${built.moduleCount} ESM modules, ${built.runtimeModuleCount} runtime modules, sha256=${built.sha256.slice(0, 12)}).`
     );
     return;
   }
@@ -522,7 +554,7 @@ function main() {
   fs.writeFileSync(targetPath, built.buf);
   console.log(
     `build-playable OK: wrote ${path.relative(REPO_ROOT, targetPath)} ` +
-    `(${built.bytes} bytes, ${built.artCount} WebP assets, ${built.moduleCount} ESM modules, sha256=${built.sha256.slice(0, 12)}).`
+    `(${built.bytes} bytes, ${built.artCount} WebP assets, ${built.moduleCount} ESM modules, ${built.runtimeModuleCount} runtime modules, sha256=${built.sha256.slice(0, 12)}).`
   );
 }
 
