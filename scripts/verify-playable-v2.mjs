@@ -12022,7 +12022,10 @@ try {
       const wpnBox = await page.locator('#panel-scroll-body [data-enhance-slot="weapon"]').boundingBox();
       await page.mouse.move(wpnBox.x + wpnBox.width / 2, wpnBox.y + wpnBox.height / 2);
       await page.mouse.down();
-      await page.waitForTimeout(720); // >= 380ms + 220ms => >= 2 steps while still holding
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return h.active && h.didRepeat && h.steps >= 2;
+      }, null, { timeout: 3000 });
       const midHold = await page.evaluate(() => {
         const dbg = window.__CHENYUAN_DEBUG__;
         const statusEl = document.getElementById("hold-progression-status");
@@ -12036,7 +12039,7 @@ try {
         };
       });
       assert.equal(midHold.holdState.active, true, "Hold controller must stay active across renderDrawerContent() DOM replacement");
-      assert.ok(midHold.holdState.steps >= 2, `Expected >=2 hold steps by 720ms, got ${midHold.holdState.steps}`);
+      assert.ok(midHold.holdState.steps >= 2, `Expected >=2 hold steps during active hold, got ${midHold.holdState.steps}`);
       assert.equal(midHold.statusHidden, false, "#hold-progression-status must be visible during active hold");
       assert.ok(midHold.statusText.includes("长按连淬中") && midHold.statusText.includes("松手即停"));
       assert.equal(midHold.btnHasHoldingCls, true, "Refreshed button must retain .is-holding class after DOM rebuild");
@@ -12063,13 +12066,22 @@ try {
 
       // 3. Pointer stop conditions: pointer_leave, pointer_cancel, window_blur, ui_closed
       const stopMatrixChecks = {};
+      await page.evaluate(() => {
+        const g = window.__CHENYUAN_DEBUG__.getState().game;
+        g.equippedGear.weapon.lvl = 1;
+        g.stones = 2500;
+        window.__CHENYUAN_DEBUG__.renderDrawerContent();
+      });
       // (a) pointer_leave
       const boxA = await page.locator('#panel-scroll-body [data-enhance-slot="weapon"]').boundingBox();
       await page.mouse.move(boxA.x + boxA.width / 2, boxA.y + boxA.height / 2);
       await page.mouse.down();
-      await page.waitForTimeout(430);
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return h.active && h.didRepeat && h.steps >= 1;
+      }, null, { timeout: 3000 });
       await page.mouse.move(20, 20);
-      await page.waitForTimeout(50);
+      await page.waitForFunction(() => !window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().active, null, { timeout: 3000 });
       await page.mouse.up();
       stopMatrixChecks.pointerLeave = await page.evaluate(() => window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().lastStopReason);
 
@@ -12077,8 +12089,12 @@ try {
       const boxB = await page.locator('#panel-scroll-body [data-enhance-slot="weapon"]').boundingBox();
       await page.mouse.move(boxB.x + boxB.width / 2, boxB.y + boxB.height / 2);
       await page.mouse.down();
-      await page.waitForTimeout(430);
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return h.active && h.didRepeat && h.steps >= 1;
+      }, null, { timeout: 3000 });
       await page.evaluate(() => window.dispatchEvent(new PointerEvent("pointercancel", { bubbles: true })));
+      await page.waitForFunction(() => !window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().active, null, { timeout: 3000 });
       await page.mouse.up();
       stopMatrixChecks.pointerCancel = await page.evaluate(() => window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().lastStopReason);
 
@@ -12092,8 +12108,12 @@ try {
       const boxC = await page.locator('#panel-scroll-body [data-enhance-slot="weapon"]').boundingBox();
       await page.mouse.move(boxC.x + boxC.width / 2, boxC.y + boxC.height / 2);
       await page.mouse.down();
-      await page.waitForTimeout(430);
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return h.active && h.didRepeat && h.steps >= 1;
+      }, null, { timeout: 3000 });
       await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+      await page.waitForFunction(() => !window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().active, null, { timeout: 3000 });
       await page.mouse.up();
       stopMatrixChecks.windowBlur = await page.evaluate(() => window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().lastStopReason);
 
@@ -12101,8 +12121,12 @@ try {
       const boxD = await page.locator('#panel-scroll-body [data-enhance-slot="weapon"]').boundingBox();
       await page.mouse.move(boxD.x + boxD.width / 2, boxD.y + boxD.height / 2);
       await page.mouse.down();
-      await page.waitForTimeout(430);
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return h.active && h.didRepeat && h.steps >= 1;
+      }, null, { timeout: 3000 });
       await page.evaluate(() => window.__CHENYUAN_DEBUG__.closeDrawer());
+      await page.waitForFunction(() => !window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().active, null, { timeout: 3000 });
       await page.mouse.up();
       stopMatrixChecks.uiClosed = await page.evaluate(() => window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().lastStopReason);
 
@@ -12122,7 +12146,10 @@ try {
       await page.waitForSelector('#panel-scroll-body [data-enhance-slot="weapon"]');
       await page.focus('#panel-scroll-body [data-enhance-slot="weapon"]');
       await page.keyboard.down("Enter");
-      await page.waitForTimeout(950); // reaches +10 and auto-stops!
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return !h.active && h.lastStopReason === "max_level";
+      }, null, { timeout: 3000 });
       await page.keyboard.up("Enter");
       const maxLvlRes = await page.evaluate(() => {
         const dbg = window.__CHENYUAN_DEBUG__;
@@ -12152,7 +12179,10 @@ try {
       await page.waitForTimeout(60);
       assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.equippedGear.weapon.lvl), 1, "Keyboard Space quick tap must execute exact +1 step");
       await page.keyboard.down("Space");
-      await page.waitForTimeout(700);
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return !h.active && h.lastStopReason === "insufficient_stones";
+      }, null, { timeout: 3000 });
       await page.keyboard.up("Space");
       const insuffRes = await page.evaluate(() => ({
         lvl: window.__CHENYUAN_DEBUG__.getState().game.equippedGear.weapon.lvl,
@@ -12180,7 +12210,10 @@ try {
       const healBox = await healLoc.boundingBox();
       await page.mouse.move(healBox.x + healBox.width / 2, healBox.y + healBox.height / 2);
       await page.mouse.down();
-      await page.waitForTimeout(900);
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return !h.active && h.lastStopReason === "missing_materials";
+      }, null, { timeout: 3000 });
       await page.mouse.up();
       const missingMatRes = await page.evaluate(() => {
         const dbg = window.__CHENYUAN_DEBUG__;
@@ -12202,33 +12235,42 @@ try {
       assert.equal(missingMatRes.hold.lastStopReason, "missing_materials", "Long-press must stop with missing_materials without auto-buying");
       assert.ok(missingMatRes.warnHint.includes("不支持长按"), "Missing-material recipe must clearly indicate hold is unsupported");
 
-      // Holding when ALREADY missing mats must deduct 0 stones and never open buy modal; short click STILL opens buy modal!
+      // Regression (>=950ms hold): holding when ALREADY missing mats (no DOM rebuild) past 380+400ms MUST swallow trailing click on release;
+      // and an immediate fresh short click right after release MUST open buy-confirm modal with zero cooldown!
       const stonesBeforeMissingHold = missingMatRes.stones;
       await healLoc.scrollIntoViewIfNeeded();
       const healBox2 = await healLoc.boundingBox();
       await page.mouse.move(healBox2.x + healBox2.width / 2, healBox2.y + healBox2.height / 2);
+      const missingDownAt = Date.now();
       await page.mouse.down();
-      await page.waitForTimeout(460);
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return !h.active && h.didRepeat && h.lastStopReason === "missing_materials";
+      }, null, { timeout: 3000 });
+      const missingElapsed = Date.now() - missingDownAt;
+      if (missingElapsed < 950) await page.waitForTimeout(950 - missingElapsed);
       await page.mouse.up();
+      await page.waitForTimeout(60);
       const alreadyMissingHold = await page.evaluate(() => ({
         drawerOpen: window.__CHENYUAN_DEBUG__.getState().drawerOpen,
         stones: window.__CHENYUAN_DEBUG__.getState().game.stones,
         modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+        hasBuyConfirmBtn: Boolean(document.querySelector("#btn-confirm-alchemy-buy")),
         reason: window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().lastStopReason
       }));
-      assert.equal(alreadyMissingHold.drawerOpen, true, "Drawer must remain open after holding missing-material recipe");
-      assert.equal(alreadyMissingHold.stones, stonesBeforeMissingHold, "Holding a missing-material recipe must deduct 0 stones");
-      assert.equal(alreadyMissingHold.modalOpen, false, "Holding a missing-material recipe must NOT open buy modal");
+      assert.equal(alreadyMissingHold.drawerOpen, true, "Drawer must remain open after >=950ms hold on missing-material recipe");
+      assert.equal(alreadyMissingHold.stones, stonesBeforeMissingHold, "Holding a missing-material recipe for >=950ms must deduct 0 stones");
+      assert.equal(alreadyMissingHold.modalOpen, false, "Releasing >=950ms hold on missing-material recipe must NOT open buy modal");
+      assert.equal(alreadyMissingHold.hasBuyConfirmBtn, false, "#btn-confirm-alchemy-buy must remain absent after >=950ms missing-material hold");
       assert.equal(alreadyMissingHold.reason, "missing_materials");
 
-      // Short click on missing-material recipe STILL opens explicit buy-confirm modal!
-      await page.waitForTimeout(420);
+      // Immediate fresh short click (NO cooldown sleep) on missing-material recipe MUST still open explicit buy-confirm modal!
       await healLoc.scrollIntoViewIfNeeded();
       await healLoc.click();
       await page.waitForSelector("#modal-backdrop.open #btn-confirm-alchemy-buy");
       await page.evaluate(() => window.__CHENYUAN_DEBUG__.closeModal());
 
-      // Lifespan exhaustion guard during alchemy hold
+      // Lifespan exhaustion guard during alchemy hold (step 1 succeeds, step 2 blocked)
       await page.evaluate(() => {
         const dbg = window.__CHENYUAN_DEBUG__;
         const g = dbg.getState().game;
@@ -12244,7 +12286,10 @@ try {
       const healBox3 = await healLoc.boundingBox();
       await page.mouse.move(healBox3.x + healBox3.width / 2, healBox3.y + healBox3.height / 2);
       await page.mouse.down();
-      await page.waitForTimeout(850);
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return !h.active && h.lastStopReason === "lifespan_guard";
+      }, null, { timeout: 3000 });
       await page.mouse.up();
       const lfGuardRes = await page.evaluate(() => {
         const dbg = window.__CHENYUAN_DEBUG__;
@@ -12261,6 +12306,51 @@ try {
       assert.equal(lfGuardRes.isExhausted, false, "Lifespan guard must stop BEFORE crossing 100% exhaustion");
       assert.equal(lfGuardRes.remainMonths, 1, "Expected exactly 1 month remaining after stopping before exhausting step");
       assert.equal(lfGuardRes.reason, "lifespan_guard");
+
+      // Regression (>=950ms hold): ALREADY lifespan-guarded recipe (remainMonths === 2, recipe costs 3 months, no DOM rebuild)
+      // Holding >=950ms and releasing MUST swallow trailing click and craft 0 pills (never cross 100% exhaustion)!
+      await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        g.stones = 1000;
+        g.inventory.herb = 20;
+        g.inventory.healing_pill = 0;
+        const lf = dbg.getLifespanInfo(g);
+        g.elapsedMonths = Math.max(0, lf.maxMonths - (g.startAgeMonths || 216) - 2);
+        dbg.renderDrawerContent();
+      });
+      await healLoc.scrollIntoViewIfNeeded();
+      const healBox4 = await healLoc.boundingBox();
+      await page.mouse.move(healBox4.x + healBox4.width / 2, healBox4.y + healBox4.height / 2);
+      const lfDownAt = Date.now();
+      await page.mouse.down();
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return !h.active && h.didRepeat && h.lastStopReason === "lifespan_guard";
+      }, null, { timeout: 3000 });
+      const lfElapsed = Date.now() - lfDownAt;
+      if (lfElapsed < 950) await page.waitForTimeout(950 - lfElapsed);
+      await page.mouse.up();
+      await page.waitForTimeout(60);
+      const alreadyLfGuardRes = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        const lfAfter = dbg.getLifespanInfo(g);
+        return {
+          pills: g.inventory.healing_pill,
+          stones: g.stones,
+          herb: g.inventory.herb,
+          isExhausted: lfAfter.isExhausted,
+          remainMonths: lfAfter.remainMonths,
+          reason: dbg.q6.getHoldProgressionState().lastStopReason
+        };
+      });
+      assert.equal(alreadyLfGuardRes.reason, "lifespan_guard");
+      assert.equal(alreadyLfGuardRes.pills, 0, "Releasing >=950ms hold on lifespan-guarded recipe must craft 0 pills");
+      assert.equal(alreadyLfGuardRes.stones, 1000, "Releasing >=950ms hold on lifespan-guarded recipe must spend 0 stones");
+      assert.equal(alreadyLfGuardRes.herb, 20, "Releasing >=950ms hold on lifespan-guarded recipe must consume 0 herbs");
+      assert.equal(alreadyLfGuardRes.isExhausted, false, "Releasing >=950ms hold on lifespan-guarded recipe must NOT push player to 100% exhaustion");
+      assert.equal(alreadyLfGuardRes.remainMonths, 2, "Expected remainMonths to stay untouched at 2");
 
       // Save write failure (QuotaExceededError) atomic rollback for BOTH single/hold enhance AND single/hold alchemy
       const saveFailRes = await page.evaluate(() => {

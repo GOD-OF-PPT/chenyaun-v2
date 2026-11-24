@@ -1694,7 +1694,11 @@
                 ? `⏳ 冷却 ${sw.cooldownSec}s`
                 : sw.reason === "quota_exhausted"
                   ? `已满 (0/${sw.maxPerDay})`
-                  : "🔒 需3★扫荡";
+                  : sw.reason === "practice_mode"
+                    ? "🔒 练习禁扫荡"
+                    : sw.reason === "stage_locked"
+                      ? "🔒 未解锁"
+                      : "🔒 需3★扫荡";
             const swHardDis = !sw.eligible;
             return `
               <div class="visual-tile stage-card-tile ${active ? "equipped" : ""} ${ok ? "" : "is-locked"}" data-stage-card="${idx}" data-tip="${escTip(`${act.actLabel} · ${s.name}`, `首领：${s.bossName} · 产出：${s.dropPreview}`)}">
@@ -2812,20 +2816,44 @@
   };
   let suppressClickTarget = null;
 
-  function armSuppressClick(kind, key) {
+  function clearSuppressClick() {
+    suppressClickTarget = null;
+  }
+
+  function armSuppressClick(kind, key, opts = null) {
     const now = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
-    suppressClickTarget = { kind, key, until: now + 400 };
+    const awaitPointerRelease = Boolean(opts && opts.awaitPointerRelease);
+    const pointerId = (opts && opts.pointerId != null) ? opts.pointerId : null;
+    suppressClickTarget = {
+      kind,
+      key,
+      awaitPointerRelease,
+      pointerId,
+      until: awaitPointerRelease ? Infinity : now + 400
+    };
+  }
+
+  function releaseSuppressClickForPointer(pointerId = null, isCancel = false) {
+    if (!suppressClickTarget || !suppressClickTarget.awaitPointerRelease) return;
+    if (suppressClickTarget.pointerId != null && pointerId != null && suppressClickTarget.pointerId !== pointerId) return;
+    if (isCancel) {
+      suppressClickTarget = null;
+      return;
+    }
+    armSuppressClick(suppressClickTarget.kind, suppressClickTarget.key, { awaitPointerRelease: false });
   }
 
   function consumeSuppressedClick(kind, key) {
     if (!suppressClickTarget) return false;
     const now = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
-    if (now > suppressClickTarget.until) {
+    if (!suppressClickTarget.awaitPointerRelease && now > suppressClickTarget.until) {
       suppressClickTarget = null;
       return false;
     }
     if (suppressClickTarget.kind === kind && suppressClickTarget.key === key) {
-      suppressClickTarget = null;
+      if (!suppressClickTarget.awaitPointerRelease) {
+        suppressClickTarget = null;
+      }
       return true;
     }
     return false;
@@ -2942,7 +2970,10 @@
     holdProgression.steps += 1;
     holdProgression.totalStones += res.cost || 0;
     holdProgression.itemName = res.itemName || holdProgression.itemName;
-    armSuppressClick(holdProgression.kind, holdProgression.key);
+    armSuppressClick(holdProgression.kind, holdProgression.key, {
+      awaitPointerRelease: holdProgression.inputType === "pointer",
+      pointerId: holdProgression.pointerId
+    });
 
     if (holdProgression.kind === "enhance") {
       holdProgression.endLvl = res.newLvl;
@@ -2990,8 +3021,8 @@
     if (!cfg || !game || !drawerOpen || cutscene.active) return false;
     const bdEl = document.getElementById("modal-backdrop");
     if (bdEl && bdEl.classList.contains("open")) return false;
-    suppressClickTarget = null;
     if (holdProgression.active) stopHoldProgression("ui_closed");
+    clearSuppressClick();
 
     const kind = cfg.kind;
     const key = cfg.key;
@@ -3033,7 +3064,10 @@
       holdProgression.startTimer = null;
       if (!holdProgression.active) return;
       holdProgression.didRepeat = true;
-      armSuppressClick(holdProgression.kind, holdProgression.key);
+      armSuppressClick(holdProgression.kind, holdProgression.key, {
+        awaitPointerRelease: holdProgression.inputType === "pointer",
+        pointerId: holdProgression.pointerId
+      });
       const keepGoing = runHoldStep();
       if (keepGoing && holdProgression.active) {
         holdProgression.repeatTimer = setInterval(() => {
@@ -3077,8 +3111,13 @@
       itemName: holdProgression.itemName,
       reason
     };
+    const snapPointerId = holdProgression.pointerId;
     if (snap.didRepeat) {
-      armSuppressClick(snap.kind, snap.key);
+      const awaitRelease = snap.inputType === "pointer" && reason !== "released" && reason !== "pointer_cancel";
+      armSuppressClick(snap.kind, snap.key, {
+        awaitPointerRelease: awaitRelease,
+        pointerId: snapPointerId
+      });
     }
     holdProgression.active = false;
     holdProgression.kind = null;

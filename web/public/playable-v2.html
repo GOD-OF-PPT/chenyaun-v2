@@ -34664,7 +34664,11 @@ const ART = {
                 ? `⏳ 冷却 ${sw.cooldownSec}s`
                 : sw.reason === "quota_exhausted"
                   ? `已满 (0/${sw.maxPerDay})`
-                  : "🔒 需3★扫荡";
+                  : sw.reason === "practice_mode"
+                    ? "🔒 练习禁扫荡"
+                    : sw.reason === "stage_locked"
+                      ? "🔒 未解锁"
+                      : "🔒 需3★扫荡";
             const swHardDis = !sw.eligible;
             return `
               <div class="visual-tile stage-card-tile ${active ? "equipped" : ""} ${ok ? "" : "is-locked"}" data-stage-card="${idx}" data-tip="${escTip(`${act.actLabel} · ${s.name}`, `首领：${s.bossName} · 产出：${s.dropPreview}`)}">
@@ -35782,20 +35786,44 @@ const ART = {
   };
   let suppressClickTarget = null;
 
-  function armSuppressClick(kind, key) {
+  function clearSuppressClick() {
+    suppressClickTarget = null;
+  }
+
+  function armSuppressClick(kind, key, opts = null) {
     const now = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
-    suppressClickTarget = { kind, key, until: now + 400 };
+    const awaitPointerRelease = Boolean(opts && opts.awaitPointerRelease);
+    const pointerId = (opts && opts.pointerId != null) ? opts.pointerId : null;
+    suppressClickTarget = {
+      kind,
+      key,
+      awaitPointerRelease,
+      pointerId,
+      until: awaitPointerRelease ? Infinity : now + 400
+    };
+  }
+
+  function releaseSuppressClickForPointer(pointerId = null, isCancel = false) {
+    if (!suppressClickTarget || !suppressClickTarget.awaitPointerRelease) return;
+    if (suppressClickTarget.pointerId != null && pointerId != null && suppressClickTarget.pointerId !== pointerId) return;
+    if (isCancel) {
+      suppressClickTarget = null;
+      return;
+    }
+    armSuppressClick(suppressClickTarget.kind, suppressClickTarget.key, { awaitPointerRelease: false });
   }
 
   function consumeSuppressedClick(kind, key) {
     if (!suppressClickTarget) return false;
     const now = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
-    if (now > suppressClickTarget.until) {
+    if (!suppressClickTarget.awaitPointerRelease && now > suppressClickTarget.until) {
       suppressClickTarget = null;
       return false;
     }
     if (suppressClickTarget.kind === kind && suppressClickTarget.key === key) {
-      suppressClickTarget = null;
+      if (!suppressClickTarget.awaitPointerRelease) {
+        suppressClickTarget = null;
+      }
       return true;
     }
     return false;
@@ -35912,7 +35940,10 @@ const ART = {
     holdProgression.steps += 1;
     holdProgression.totalStones += res.cost || 0;
     holdProgression.itemName = res.itemName || holdProgression.itemName;
-    armSuppressClick(holdProgression.kind, holdProgression.key);
+    armSuppressClick(holdProgression.kind, holdProgression.key, {
+      awaitPointerRelease: holdProgression.inputType === "pointer",
+      pointerId: holdProgression.pointerId
+    });
 
     if (holdProgression.kind === "enhance") {
       holdProgression.endLvl = res.newLvl;
@@ -35960,8 +35991,8 @@ const ART = {
     if (!cfg || !game || !drawerOpen || cutscene.active) return false;
     const bdEl = document.getElementById("modal-backdrop");
     if (bdEl && bdEl.classList.contains("open")) return false;
-    suppressClickTarget = null;
     if (holdProgression.active) stopHoldProgression("ui_closed");
+    clearSuppressClick();
 
     const kind = cfg.kind;
     const key = cfg.key;
@@ -36003,7 +36034,10 @@ const ART = {
       holdProgression.startTimer = null;
       if (!holdProgression.active) return;
       holdProgression.didRepeat = true;
-      armSuppressClick(holdProgression.kind, holdProgression.key);
+      armSuppressClick(holdProgression.kind, holdProgression.key, {
+        awaitPointerRelease: holdProgression.inputType === "pointer",
+        pointerId: holdProgression.pointerId
+      });
       const keepGoing = runHoldStep();
       if (keepGoing && holdProgression.active) {
         holdProgression.repeatTimer = setInterval(() => {
@@ -36047,8 +36081,13 @@ const ART = {
       itemName: holdProgression.itemName,
       reason
     };
+    const snapPointerId = holdProgression.pointerId;
     if (snap.didRepeat) {
-      armSuppressClick(snap.kind, snap.key);
+      const awaitRelease = snap.inputType === "pointer" && reason !== "released" && reason !== "pointer_cancel";
+      armSuppressClick(snap.kind, snap.key, {
+        awaitPointerRelease: awaitRelease,
+        pointerId: snapPointerId
+      });
     }
     holdProgression.active = false;
     holdProgression.kind = null;
@@ -36882,6 +36921,7 @@ const ART = {
     // 4. Drawer open: trap Tab/Shift+Tab, allow Escape & alchemy Space; block all background global shortcuts
     if (drawerOpen) {
       if (ev.code === "Tab") {
+        if (holdProgression.active) stopHoldProgression("ui_closed");
         trapFocusInContainer(ev, document.getElementById("jade-panel"));
         return;
       }
@@ -37113,6 +37153,7 @@ const ART = {
 
   document.addEventListener("pointerdown", (ev) => {
     Sound.ensure();
+    if (ev.button === 0) clearSuppressClick();
     pointer.x = ev.clientX; pointer.y = ev.clientY;
     if (cutscene.active) return;
     if (ev.button === 0 && drawerOpen) {
@@ -37197,10 +37238,11 @@ const ART = {
     }
   });
 
-  window.addEventListener("pointerup", () => {
+  window.addEventListener("pointerup", (ev) => {
     if (holdProgression.active && holdProgression.inputType === "pointer") {
       stopHoldProgression("released");
     }
+    releaseSuppressClickForPointer(ev && ev.pointerId != null ? ev.pointerId : null, false);
     photoMode.dragging = false;
     if (pointer.down && pointer.worldActive && pointer.holdTime > 0.25) {
       releaseChargedSwordVolley();
@@ -37208,10 +37250,11 @@ const ART = {
     pointer.down = false; pointer.holdTime = 0; pointer.worldActive = false;
   });
 
-  window.addEventListener("pointercancel", () => {
+  window.addEventListener("pointercancel", (ev) => {
     if (holdProgression.active && holdProgression.inputType === "pointer") {
       stopHoldProgression("pointer_cancel");
     }
+    releaseSuppressClickForPointer(ev && ev.pointerId != null ? ev.pointerId : null, true);
   });
 
   document.addEventListener("click", (ev) => {

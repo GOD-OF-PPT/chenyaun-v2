@@ -78,6 +78,7 @@
     // 4. Drawer open: trap Tab/Shift+Tab, allow Escape & alchemy Space; block all background global shortcuts
     if (drawerOpen) {
       if (ev.code === "Tab") {
+        if (holdProgression.active) stopHoldProgression("ui_closed");
         trapFocusInContainer(ev, document.getElementById("jade-panel"));
         return;
       }
@@ -309,6 +310,7 @@
 
   document.addEventListener("pointerdown", (ev) => {
     Sound.ensure();
+    if (ev.button === 0) clearSuppressClick();
     pointer.x = ev.clientX; pointer.y = ev.clientY;
     if (cutscene.active) return;
     if (ev.button === 0 && drawerOpen) {
@@ -393,10 +395,11 @@
     }
   });
 
-  window.addEventListener("pointerup", () => {
+  window.addEventListener("pointerup", (ev) => {
     if (holdProgression.active && holdProgression.inputType === "pointer") {
       stopHoldProgression("released");
     }
+    releaseSuppressClickForPointer(ev && ev.pointerId != null ? ev.pointerId : null, false);
     photoMode.dragging = false;
     if (pointer.down && pointer.worldActive && pointer.holdTime > 0.25) {
       releaseChargedSwordVolley();
@@ -404,10 +407,11 @@
     pointer.down = false; pointer.holdTime = 0; pointer.worldActive = false;
   });
 
-  window.addEventListener("pointercancel", () => {
+  window.addEventListener("pointercancel", (ev) => {
     if (holdProgression.active && holdProgression.inputType === "pointer") {
       stopHoldProgression("pointer_cancel");
     }
+    releaseSuppressClickForPointer(ev && ev.pointerId != null ? ev.pointerId : null, true);
   });
 
   document.addEventListener("click", (ev) => {
