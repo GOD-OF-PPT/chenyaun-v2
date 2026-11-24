@@ -235,6 +235,7 @@
         <span>太虚仙法秘匣 · 高阶神通</span>
         <button type="button" class="btn-ghost" style="padding:1px 8px;font-size:10.5px;" data-action="toggle-arcana-vault">收起 ▾</button>
       </div>
+      <div class="arcana-group-lbl" data-arcana-group="combat_arts">⚔ 战技神通 · 元婴/化神</div>
       <div id="v24-genesis-dock">
         <button type="button" id="btn-sanqing-clones" class="v24-gen-btn" data-action="cast-sanqing-clones" data-arcana-act="sanqing" data-tip="一气化三清 · 身外法身三影同击 (4键 · 元婴期解封 / 二段按4移形归元爆)|凝练【玉清青莲法身(80ms)】与【上清紫电法身(160ms)】完全同步复刻一切普攻、三器混编、六象特技、空连与易剑斩！存续中再按 4 键瞬发【移形换位·三清归元十字斩】！">
           <img id="img-sanqing-ico" alt="一气三清" />
@@ -261,8 +262,9 @@
           <span class="v22-key-badge">6</span>
         </button>
       </div>
+      <div class="arcana-group-lbl" data-arcana-group="celestial_coop">🌐 天时与联机 · 📜 绘卷工具</div>
       <div id="v23-epoch-dock">
-        <button type="button" id="btn-coop-2p" class="v23-ep-btn" data-action="toggle-coop-2p" data-tip="太虚同游 · 本地双人同屏共斗 (]键开启 · [键换2P伙伴)|开启 1P+2P 同屏双剑联机（2P支持 IJKL/方向键/小键盘/手柄 + 智能协战兜底）：双人拉线激活【同心剑网切割线】、破势夹击触发【2.5x 双人同步处决】、力竭触发【渡气化劫瞬身救援】！">
+        <button type="button" id="btn-coop-2p" class="v23-ep-btn" data-action="toggle-coop-2p" data-arcana-act="coop_2p" data-tip="太虚同游 · 本地双人同屏共斗 (]键开启 · [键换2P伙伴)|开启 1P+2P 同屏双剑联机（2P支持 IJKL/方向键/小键盘/手柄 + 智能协战兜底）：双人拉线激活【同心剑网切割线】、破势夹击触发【2.5x 双人同步处决】、力竭触发【渡气化劫瞬身救援】！">
           <img id="img-coop-2p-ico" alt="双人同游" />
           <div style="display:flex;flex-direction:column;gap:1px;">
             <strong id="lbl-coop-2p-title" style="font-family:var(--font-serif);font-size:11px;color:#80ffea;">双人同游</strong>
@@ -270,7 +272,7 @@
           </div>
           <span class="v22-key-badge">]</span>
         </button>
-        <button type="button" id="btn-celestial-time" class="v23-ep-btn" data-action="cycle-celestial-time" data-tip="太虚天时 · 四相昼夜流转 (\键切换晨曦/烈阳/血暮/星河)|实时流转或一键切换四相天光与倒影法则：【晨曦紫气】正道42%莲盾、每秒回血4%/回元5%、仙葫+25%、减伤+4；【烈阳当空】常驻攻击池+10%、法天元神+25%；【残阳血暮】常驻攻击池魔心+22%/其余+12%、暴伤+16%、重击回2%最大气血；【极夜星河】二十八星宿翻倍(×2.0) + 首领月华夜煞与必掉星魄！">
+        <button type="button" id="btn-celestial-time" class="v23-ep-btn" data-action="cycle-celestial-time" data-arcana-act="celestial_time" data-tip="太虚天时 · 四相昼夜流转 (\键切换晨曦/烈阳/血暮/星河)|实时流转或一键切换四相天光与倒影法则：【晨曦紫气】正道42%莲盾、每秒回血4%/回元5%、仙葫+25%、减伤+4；【烈阳当空】常驻攻击池+10%、法天元神+25%；【残阳血暮】常驻攻击池魔心+22%/其余+12%、暴伤+16%、重击回2%最大气血；【极夜星河】二十八星宿翻倍(×2.0) + 首领月华夜煞与必掉星魄！">
           <img id="img-celestial-ico" alt="四相天时" />
           <div style="display:flex;flex-direction:column;gap:1px;">
             <strong id="lbl-celestial-title" style="font-family:var(--font-serif);font-size:11px;color:#ffe89e;">晨曦紫气</strong>
@@ -287,6 +289,7 @@
           <span class="v22-key-badge">画</span>
         </button>
       </div>
+      <div class="arcana-group-lbl" data-arcana-group="tactical_arts">⚔ 战技神通 · 金丹/元婴</div>
       <div id="v22-tactical-dock">
         <button type="button" id="btn-astral-form" class="v22-tac-btn" data-arena-skill="astral" data-arcana-act="astral" data-tip="法天象地 · 十丈元神真身 (O键 · 元婴期解封 / 满元神或SSS激发)|依正魔道心化为【太清金阙剑仙真身】或【九幽修罗魔剑真身】：全程霸体免控，施展裂穹巨剑与星河剑指；迎击烛龙/首领直接触发【双巨神跨屏角力】瞬碎护甲！">
           <img id="img-astral-ico" alt="法天象地" />
@@ -531,8 +534,8 @@
           <button type="button" class="dojo-pill-btn" id="btn-ghost-play" data-dojo-act="toggle-ghost">残影陪练</button>
           <button type="button" class="dojo-pill-btn" data-dojo-act="fill-intent">满剑意试奥义</button>
           <button type="button" class="dojo-pill-btn" data-dojo-act="toggle-recap">伤害复盘</button>
-          <button type="button" class="dojo-pill-btn" data-dojo-act="open-sequencer">自创剑谱</button>
-          <button type="button" class="dojo-pill-btn" data-dojo-act="toggle-coop-2p">双人同游</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="open-sequencer" data-arcana-act="sequencer">自创剑谱</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="toggle-coop-2p" data-arcana-act="coop_2p">双人同游</button>
         </div>
       </div>
       <div class="dojo-group-row">

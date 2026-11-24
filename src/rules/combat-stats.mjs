@@ -4,6 +4,7 @@ import { COMBAT_RULE_PARAMS, SINGLE_HIT_CAP_RATIO, PERM_GROWTH_CAPS } from "../c
 import { REALM_ORDER, REALMS, CELESTIAL_OMENS } from "../config/realms-items.mjs";
 import { RELICS } from "../config/progression-data.mjs";
 import { getGearTotals, getActiveSetBonus, hasDestinyFruit, getSanctumBonuses } from "./gear-rules.mjs";
+import { computeEndgameMasteryResonance } from "./campaign-q6.mjs";
 
 export function rankOf(r) {
   const idx = REALM_ORDER.indexOf(r);
@@ -317,6 +318,11 @@ export function computeCombatStatLedger(g, env = null) {
     rawPassivePct += 0.16;
     addEntry("pet_wrath_passive", "灵宠技 · 天威狂怒", "pet", "passive_pct", 0.16, 0.16, "灵宠助战增益期间", true);
   }
+  const masteryRes = computeEndgameMasteryResonance(gSafe);
+  if (masteryRes.passiveAtkPct > 0) {
+    rawPassivePct += masteryRes.passiveAtkPct;
+    addEntry("endgame_mastery_atk", `诸天道果共鸣 (${masteryRes.activeCount}/${masteryRes.total})`, "mastery", "passive_pct", masteryRes.passiveAtkPct, 0.15, "终局六柱试炼联动常驻", true);
+  }
   const cappedPassivePct = softCapPct(rawPassivePct, P.passiveSoftCapKnee, P.passiveSoftCapMax);
   const passiveRatio = rawPassivePct > 0 ? (cappedPassivePct / rawPassivePct) : 1;
   entries.forEach(ent => {
@@ -354,7 +360,7 @@ export function computeCombatStatLedger(g, env = null) {
   const karmaDr = safeKarmaDrBonus + (ks.mode === "righteous" ? 12 : 0);
   const celDrBonus = celPh.id === "dawn" ? P.celestialPhases.dawn.dr : 0;
   const dmgReduceBase = drGear + drTurtle + drPetWard + drMindStill + drMindClear + drRelicSeal + drGuardArray + drPhoenix;
-  const finalDmgReduce = dmgReduceBase + drPosture + karmaDr + starB.dr + celDrBonus;
+  const finalDmgReduce = dmgReduceBase + drPosture + karmaDr + starB.dr + celDrBonus + masteryRes.drBonus;
   if (drGear > 0) addEntry("gear_dr", "护身仙衣/套装减伤", "gear", "dr", drGear, null, "装备及淬火 (+8%/阶)", true);
   if (drTurtle + drPetWard > 0) addEntry("pet_dr", "灵宠护体减伤", "pet", "dr", drTurtle + drPetWard, null, "玄水灵龟/灵宠护盾技", true);
   if (drMindStill + drMindClear > 0) addEntry("mind_dr", lo.mind === "sword_still" ? "心法 · 止水剑心" : "心法 · 清虚符心", "skill", "dr", drMindStill + drMindClear, null, "装备于心法槽时生效", true);
@@ -365,6 +371,7 @@ export function computeCombatStatLedger(g, env = null) {
   if (karmaDr > 0) addEntry("karma_dr", "道心/正道减伤", "karma", "dr", karmaDr, null, "正道 ≥+25 常驻 +12", true);
   if (starB.dr > 0) addEntry("star_dr", "周天星图减伤", "star", "dr", starB.dr, null, "星图节点加成", true);
   if (celDrBonus > 0) addEntry("cel_dawn_dr", "天时 · 晨曦清露", "celestial", "dr", celDrBonus, P.celestialPhases.dawn.dr, "晨曦天时常驻", true);
+  if (masteryRes.drBonus > 0) addEntry("endgame_mastery_dr", `诸天道果减伤 (${masteryRes.activeCount}/${masteryRes.total})`, "mastery", "dr", masteryRes.drBonus, 12, "终局六柱试炼联动常驻", true);
   const drMult = Math.max(0.35, 100 / (100 + Math.max(0, finalDmgReduce || 0)));
 
   // Crit / CritMult / Haste / Speed
@@ -390,7 +397,7 @@ export function computeCombatStatLedger(g, env = null) {
   const schoolB = getSchoolSpecBonus(gSafe);
   const finalAtk = Math.max(8, Math.round(baseAtk * (1 + cappedPassivePct) * activeMult));
   const finalMaxMp = maxMpBase + starB.mp;
-  const finalCrit = Math.min(P.critCap, critCore + pineCrit + gourdCrit + starB.crit + daoB.critBonus);
+  const finalCrit = Math.min(P.critCap, critCore + pineCrit + gourdCrit + starB.crit + daoB.critBonus + masteryRes.critBonus);
   const finalCritMult = Math.min(P.critMultCap, 1.48 + styleSpec.critDmg * 0.75 + starB.critMult + celCritMult + climCritMult + perkCritMult + (schoolB.critMultBonus || 0) + (hasLaw(gSafe, "crit_lotus") ? P.laws.crit_lotus.critMult : 0) + pineMult + ((setB && setB.critMult) || 0));
   const finalAtkHaste = Math.max(0.70, Math.min(1.85, 1 + gt.spd + starB.spd + styleSpec.haste * 0.7 + postureHasteBonus + gourdHaste + climHaste + perkHaste + (petWrathBuffActive ? 0.15 : 0) + (schoolB.hasteBonus || 0) + (refArena && refArena.domain ? 0.24 : 0) + ((refArena && (refArena.reversedDomainTimer || 0) > 0) ? 0.20 : 0)));
   const finalSpeed = speedBase * postureSpdMult * (1 + gourdHaste * 0.7 + starB.spd);
@@ -406,6 +413,7 @@ export function computeCombatStatLedger(g, env = null) {
   if (starB.crit > 0) addEntry("star_crit", "周天星图暴击", "star", "crit", starB.crit, P.critCap, "已点亮星节点加成", true);
   if (lowHpBoonCrit > 0) addEntry("boon_blood_intent", "词条 · 血战剑心", "boon", "crit", lowHpBoonCrit, P.critCap, "气血 ≤55% 时触发", true);
   if (gourdCrit > 0) addEntry("gourd_crimson_vine", "仙葫 · 赤渊龙血藤", "boon", "crit", gourdCrit, P.critCap, "饮葫后 5 秒 +18%", true);
+  if (masteryRes.critBonus > 0) addEntry("endgame_mastery_crit", "诸天道果共鸣暴击 (≥4柱)", "mastery", "crit", masteryRes.critBonus, P.critCap, "激活≥4道诸天试炼共鸣", true);
 
   addEntry("base_crit_mult", "基础暴击倍率", "realm", "crit_mult", 1.48, P.critMultCap, "角色基础 1.48×", true);
   if (styleSpec.critDmg > 0) addEntry("style_crit_mult", "评价 · 剑意评分暴伤", "style", "crit_mult", styleSpec.critDmg * 0.75, P.critMultCap, `当前评分 ${styleSpec.rank || ""}`, true);

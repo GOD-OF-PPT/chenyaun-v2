@@ -43,6 +43,7 @@ export const ESM_MODULE_ORDER = [
   "src/config/realms-items.mjs",
   "src/config/progression-data.mjs",
   "src/rules/gear-rules.mjs",
+  "src/rules/campaign-q6.mjs",
   "src/rules/combat-stats.mjs",
   "src/rules/economy-rules.mjs",
   "src/rules/scoring-rules.mjs",

@@ -3896,6 +3896,77 @@
     flex-wrap: wrap;
     margin-top: 2px;
   }
+  /* Q6 (F34-F36): Semantic Arcana Grouping, Volume Briefs & Mastery Resonance */
+  .arcana-group-lbl {
+    width: 100%;
+    font-size: 9.8px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    color: var(--gold);
+    opacity: 0.88;
+    padding: 2px 4px 0;
+    text-align: left;
+  }
+  .q6-vol-brief-box {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: rgba(8, 22, 28, 0.78);
+    border: 1px solid rgba(112, 255, 230, 0.24);
+    font-size: var(--fs-xs);
+    color: #cfe8e2;
+    line-height: 1.4;
+  }
+  .q6-vol-brief-box strong { color: #ffe28a; }
+  .q6-mastery-strip {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: linear-gradient(150deg, rgba(10, 30, 38, 0.90), rgba(18, 22, 42, 0.88));
+    border: 1px solid rgba(112, 255, 230, 0.42);
+  }
+  .q6-mastery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .q6-mastery-pill {
+    padding: 5px 7px;
+    border-radius: 7px;
+    background: rgba(6, 16, 22, 0.88);
+    border: 1px solid rgba(180, 212, 206, 0.22);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 10px;
+    color: #b8d4ce;
+  }
+  .q6-mastery-pill.lit {
+    border-color: rgba(112, 255, 230, 0.62);
+    background: rgba(14, 42, 46, 0.92);
+    color: #e6fffb;
+  }
+  .q6-mode-group-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .q6-mode-group-card {
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: rgba(8, 20, 26, 0.86);
+    border: 1px solid rgba(216, 179, 106, 0.28);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 10px;
+    color: #b8d4ce;
+  }
+
 </style>
 </head>
 <body>
@@ -4136,6 +4207,7 @@
         <span>太虚仙法秘匣 · 高阶神通</span>
         <button type="button" class="btn-ghost" style="padding:1px 8px;font-size:10.5px;" data-action="toggle-arcana-vault">收起 ▾</button>
       </div>
+      <div class="arcana-group-lbl" data-arcana-group="combat_arts">⚔ 战技神通 · 元婴/化神</div>
       <div id="v24-genesis-dock">
         <button type="button" id="btn-sanqing-clones" class="v24-gen-btn" data-action="cast-sanqing-clones" data-arcana-act="sanqing" data-tip="一气化三清 · 身外法身三影同击 (4键 · 元婴期解封 / 二段按4移形归元爆)|凝练【玉清青莲法身(80ms)】与【上清紫电法身(160ms)】完全同步复刻一切普攻、三器混编、六象特技、空连与易剑斩！存续中再按 4 键瞬发【移形换位·三清归元十字斩】！">
           <img id="img-sanqing-ico" alt="一气三清" />
@@ -4162,8 +4234,9 @@
           <span class="v22-key-badge">6</span>
         </button>
       </div>
+      <div class="arcana-group-lbl" data-arcana-group="celestial_coop">🌐 天时与联机 · 📜 绘卷工具</div>
       <div id="v23-epoch-dock">
-        <button type="button" id="btn-coop-2p" class="v23-ep-btn" data-action="toggle-coop-2p" data-tip="太虚同游 · 本地双人同屏共斗 (]键开启 · [键换2P伙伴)|开启 1P+2P 同屏双剑联机（2P支持 IJKL/方向键/小键盘/手柄 + 智能协战兜底）：双人拉线激活【同心剑网切割线】、破势夹击触发【2.5x 双人同步处决】、力竭触发【渡气化劫瞬身救援】！">
+        <button type="button" id="btn-coop-2p" class="v23-ep-btn" data-action="toggle-coop-2p" data-arcana-act="coop_2p" data-tip="太虚同游 · 本地双人同屏共斗 (]键开启 · [键换2P伙伴)|开启 1P+2P 同屏双剑联机（2P支持 IJKL/方向键/小键盘/手柄 + 智能协战兜底）：双人拉线激活【同心剑网切割线】、破势夹击触发【2.5x 双人同步处决】、力竭触发【渡气化劫瞬身救援】！">
           <img id="img-coop-2p-ico" alt="双人同游" />
           <div style="display:flex;flex-direction:column;gap:1px;">
             <strong id="lbl-coop-2p-title" style="font-family:var(--font-serif);font-size:11px;color:#80ffea;">双人同游</strong>
@@ -4171,7 +4244,7 @@
           </div>
           <span class="v22-key-badge">]</span>
         </button>
-        <button type="button" id="btn-celestial-time" class="v23-ep-btn" data-action="cycle-celestial-time" data-tip="太虚天时 · 四相昼夜流转 (\键切换晨曦/烈阳/血暮/星河)|实时流转或一键切换四相天光与倒影法则：【晨曦紫气】正道42%莲盾、每秒回血4%/回元5%、仙葫+25%、减伤+4；【烈阳当空】常驻攻击池+10%、法天元神+25%；【残阳血暮】常驻攻击池魔心+22%/其余+12%、暴伤+16%、重击回2%最大气血；【极夜星河】二十八星宿翻倍(×2.0) + 首领月华夜煞与必掉星魄！">
+        <button type="button" id="btn-celestial-time" class="v23-ep-btn" data-action="cycle-celestial-time" data-arcana-act="celestial_time" data-tip="太虚天时 · 四相昼夜流转 (\键切换晨曦/烈阳/血暮/星河)|实时流转或一键切换四相天光与倒影法则：【晨曦紫气】正道42%莲盾、每秒回血4%/回元5%、仙葫+25%、减伤+4；【烈阳当空】常驻攻击池+10%、法天元神+25%；【残阳血暮】常驻攻击池魔心+22%/其余+12%、暴伤+16%、重击回2%最大气血；【极夜星河】二十八星宿翻倍(×2.0) + 首领月华夜煞与必掉星魄！">
           <img id="img-celestial-ico" alt="四相天时" />
           <div style="display:flex;flex-direction:column;gap:1px;">
             <strong id="lbl-celestial-title" style="font-family:var(--font-serif);font-size:11px;color:#ffe89e;">晨曦紫气</strong>
@@ -4188,6 +4261,7 @@
           <span class="v22-key-badge">画</span>
         </button>
       </div>
+      <div class="arcana-group-lbl" data-arcana-group="tactical_arts">⚔ 战技神通 · 金丹/元婴</div>
       <div id="v22-tactical-dock">
         <button type="button" id="btn-astral-form" class="v22-tac-btn" data-arena-skill="astral" data-arcana-act="astral" data-tip="法天象地 · 十丈元神真身 (O键 · 元婴期解封 / 满元神或SSS激发)|依正魔道心化为【太清金阙剑仙真身】或【九幽修罗魔剑真身】：全程霸体免控，施展裂穹巨剑与星河剑指；迎击烛龙/首领直接触发【双巨神跨屏角力】瞬碎护甲！">
           <img id="img-astral-ico" alt="法天象地" />
@@ -4432,8 +4506,8 @@
           <button type="button" class="dojo-pill-btn" id="btn-ghost-play" data-dojo-act="toggle-ghost">残影陪练</button>
           <button type="button" class="dojo-pill-btn" data-dojo-act="fill-intent">满剑意试奥义</button>
           <button type="button" class="dojo-pill-btn" data-dojo-act="toggle-recap">伤害复盘</button>
-          <button type="button" class="dojo-pill-btn" data-dojo-act="open-sequencer">自创剑谱</button>
-          <button type="button" class="dojo-pill-btn" data-dojo-act="toggle-coop-2p">双人同游</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="open-sequencer" data-arcana-act="sequencer">自创剑谱</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="toggle-coop-2p" data-arcana-act="coop_2p">双人同游</button>
         </div>
       </div>
       <div class="dojo-group-row">
@@ -5765,7 +5839,7 @@ const ART = {
     slash: 0, recall: 0, dash: 0, meditate: 0, pill: 0, hub: 0, photo: 0, telemetry: 0,
     stance: 1, jump: 1, ult: 1, ally: 1, pet: 1,
     posture: 2, soul: 2, swordBlink: 2, finisher: 2, tagSwitch: 2, weapon_form: 2,
-    mount: 3, qimen: 3, sequencer: 3,
+    mount: 3, qimen: 3, sequencer: 3, coop_2p: 3, celestial_time: 3,
     sanqing: 4, astral: 4,
     shanhe: 5, warship: 5
   };
@@ -6106,6 +6180,369 @@ const ART = {
     return item;
   }
 
+  // --- [module] src/rules/campaign-q6.mjs ---
+  // Pure Q6 (F34-F36) campaign guide, Vol 5 resonance, high-tier mode registry, and cross-system synergy rules.
+  const VOLUME_CAMPAIGN_GUIDE = [
+    {
+      volIndex: 1,
+      volLabel: "第一卷",
+      title: "山雨初鸣 · 青岚破庙",
+      stageIdx: 0,
+      realmSpan: "凡人 → 炼气",
+      goalSummary: "破庙拔剑救下沈清禾，整备丹药神兵，斩破【雾隐狼王】并完成首次紫霄雷劫引气入道。",
+      enemyExam: {
+        bossId: "wolf",
+        bossName: "雾隐狼王",
+        telegraph: "金光直线疾冲（可识破）与红光血月三连爪（不可硬拼）",
+        counter: "金光临身按【空格一闪】识破弹反；红光扇爪侧闪触发凝时",
+        punishWindow: "弹反破势或扑击收招僵直期接四段剑舞＋右键爆剑"
+      },
+      growthPayoff: "解锁听雨洞府、炼气境界、三才剑阵(Y)/御空(Z)/剑域(E)与灵宠契约。",
+      companionIds: ["shen"],
+      companionPrompt: "破庙初逢沈清禾，择青莲灵契或惊鸿剑诀并结下药庐之约。",
+      optionalRouteNote: "D01 基线：洞府演武与灵草采炼为推荐整备，不设炼丹硬门槛。"
+    },
+    {
+      volIndex: 2,
+      volLabel: "第二卷",
+      title: "洞府开炉 · 青云外门",
+      stageIdx: 1,
+      realmSpan: "炼气 → 筑基",
+      goalSummary: "于青云外门五层分支星图择路推进，破除失控【守山石卫】护山金阵，筑基铸道。",
+      enemyExam: {
+        bossId: "warden",
+        bossName: "守山石卫",
+        telegraph: "琥珀蓄力重锤震地（椭圆危区）与下段地脉裂波",
+        counter: "重劈/爆剑/一闪削碎护山金盾；下段裂波按【Z 键御空】踏剑跃破",
+        punishWindow: "重锤砸地后的长收招窗口与破盾失衡期倾泻剑域爆发"
+      },
+      growthPayoff: "解封双剑意姿态(`)、镇妖魂印(C)、道侣瞬切(V)与护山大阵守卫战。",
+      companionIds: ["lu"],
+      companionPrompt: "拜会传功执事陆玄松《执事问道》，开启山门钟声助阵与后续传功线。",
+      optionalRouteNote: "D01 基线：本命灵宠、八卦丹剑与锁妖古塔为推荐成长路线，筑基丹稳渡或无丹强渡皆可。"
+    },
+    {
+      volIndex: 3,
+      volLabel: "第三卷",
+      title: "寒潭镜心 · 照影问剑",
+      stageIdx: 2,
+      realmSpan: "筑基 → 金丹",
+      goalSummary: "踏破照影寒潭，破解【寒潭玄蛇】极寒冰域与连环霜弹，凝结金丹并启星海之门。",
+      enemyExam: {
+        bossId: "serpent",
+        bossName: "寒潭玄蛇",
+        telegraph: "幽蓝吐息扇形霜弹齐射与落点极寒霜池（半血狂化增频）",
+        counter: "切【Y 键剑轮阵】斩碎霜弹弹幕；斜向疾闪脱离霜池减速区",
+        punishWindow: "吐息收势回盘瞬间贴身叠印，配合【C 键魂印】或爆剑击空架势"
+      },
+      growthPayoff: "解封金丹期九霄云海空战、周天二十八星图(N)、山海灵骑(J)、奇门阵盘(U)与天时/双人同游。",
+      companionIds: ["shen", "pei", "yan"],
+      companionPrompt: "重逢沈清禾、山门论剑裴照、初识守碑人砚尘，三条故人线在此汇聚。",
+      optionalRouteNote: "D01 基线：护山大阵与魂印收集可显著降低寒潭压力，不构成主线硬锁。"
+    },
+    {
+      volIndex: 4,
+      volLabel: "第四卷",
+      title: "古冢剑魄 · 铸器启星",
+      stageIdx: 3,
+      realmSpan: "金丹 → 元婴",
+      goalSummary: "深入古修剑冢铸炼本命法宝，识破【古境剑傀】铜镜反震并碎丹成婴。",
+      enemyExam: {
+        bossId: "puppet",
+        bossName: "古境剑傀",
+        telegraph: "铜镜反震架势（反弹直劈）与四向十字剑波危招",
+        counter: "见铜镜浮空改用【空格一闪】或【右键爆剑】正面碎镜反噬；斜角躲十字剑波",
+        punishWindow: "碎镜反震触发的长时间破防硬直，接六象特技与法宝剑域"
+      },
+      growthPayoff: "解封元婴期一气化三清(4)、法天象地(O)、灵脉远征(8)、太虚登仙台(L)与万剑冢七阵。",
+      companionIds: ["pei", "lu"],
+      companionPrompt: "与裴照古境重逢采月华莲、随陆玄松传功堂授业，厚积红尘道韵。",
+      optionalRouteNote: "D01 基线：九霄云海空战首破可获【破云证道印】永久增益，属推荐进阶试炼。"
+    },
+    {
+      volIndex: 5,
+      volLabel: "第五卷",
+      title: "法则共鸣 · 元神试剑",
+      stageIdx: 4,
+      realmSpan: "元婴 → 化神",
+      goalSummary: "聚拢四门大道法则或将本命法宝淬炼至 ★3，借诸天试炼共鸣磨砺元神，破境化神（D01/D04 保守基线，不增硬锁）。",
+      enemyExam: {
+        bossId: "trial_gate",
+        bossName: "天门道影 · 先遣试剑",
+        telegraph: "九霄落雷锁点圈（精准圈定脚下）与护山金阵压制",
+        counter: "落雷红圈缩紧瞬间一闪脱出并反击；联动三清/法天象地破除金阵",
+        punishWindow: "天雷落空与金阵崩裂后的 3 秒元神破势窗口"
+      },
+      growthPayoff: "参悟法则羁绊、激活诸天六柱道果共鸣，化神后解封山河社稷图(5)、凌霄仙舟(6)与天道劫印。",
+      companionIds: ["shen", "yan"],
+      companionPrompt: "赴听雨洞府立《一诺千山》药阵盟约，于照影古镜完成《照见本心》本心之问。",
+      optionalRouteNote: "D01/D04 保守基线：化神丹稳渡与无丹逆天强渡皆可晋升化神；不强迫清空全部侧边模式。"
+    },
+    {
+      volIndex: 6,
+      volLabel: "第六卷",
+      title: "九霄天门 · 剑开天门",
+      stageIdx: 4,
+      realmSpan: "化神 → 白日飞升",
+      goalSummary: "整备鸿蒙神装与故人同心盟契，于九霄星盘亲手斩碎【天门道影】，引动终极飞升天劫择定三大结局。",
+      enemyExam: {
+        bossId: "trial_gate",
+        bossName: "天门道影",
+        telegraph: "九霄天雷点名、暗金夺命投技（擒）与全屏旋空妖光",
+        counter: "【擒】字亮起迎击拼刀/易剑/魂印反制；落雷与旋空光以一闪凝时穿波",
+        punishWindow: "拼刀胜出与破阵失衡期，全开剑域＋道侣合璧＋化神神通终结"
+      },
+      growthPayoff: "白日飞升铭刻【九世轮回殿】，解锁劫火周目、轮回先天命格与外显剑意幻化。",
+      companionIds: ["pei", "lu", "yan"],
+      companionPrompt: "与裴照云台相约、陆玄松山门送别、砚尘天门赠砂，四位故人齐证终局。",
+      optionalRouteNote: "D01/D04 保守基线：天道劫印与造化种子工坊为终局高难挑战，不阻挡正常飞升。"
+    }
+  ];
+
+  const VOL5_RESONANCE_PILLARS = [
+    {
+      id: "cloud_sea",
+      name: "九霄云海",
+      short: "破云印",
+      sysId: "cloud_sea_trial",
+      minRealm: "golden",
+      actionId: "start_cloud_sea",
+      summary: "破开巡天雷鹏防线，激活远征/登仙台 +15% 收益",
+      check: (g) => {
+        const active = Boolean(g && g.cloudSeaCleared);
+        return { active, progressText: active ? "已破阵 ✓" : "待破阵" };
+      }
+    },
+    {
+      id: "star_chart",
+      name: "周天星图",
+      short: "四象星魂",
+      sysId: "star_chart",
+      minRealm: "golden",
+      actionId: "open_star_chart",
+      summary: "至少点亮 4 枚星宿激活首座四象星魂",
+      check: (g) => {
+        const cnt = Array.isArray(g && g.litStars) ? g.litStars.length : 0;
+        return { active: cnt >= 4, progressText: `${cnt}/4 宿` };
+      }
+    },
+    {
+      id: "vein_expedition",
+      name: "灵脉远征",
+      short: "驻防雷援",
+      sysId: "vein_expedition",
+      minRealm: "nascent",
+      actionId: "open_expedition",
+      summary: "委派至少 1 位已结缘故人驻防九州灵脉",
+      check: (g) => {
+        const asgn = (g && g.expeditions && g.expeditions.assignments && typeof g.expeditions.assignments === "object")
+          ? Object.values(g.expeditions.assignments).filter(Boolean).length
+          : 0;
+        return { active: asgn >= 1, progressText: `${asgn}/5 脉` };
+      }
+    },
+    {
+      id: "celestial_spire",
+      name: "太虚登仙台",
+      short: "九重奇物",
+      sysId: "celestial_spire",
+      minRealm: "nascent",
+      actionId: "open_spire",
+      summary: "于登仙台正式登临至少第 3 重天铭刻奇物",
+      check: (g) => {
+        const fl = Math.max(0, Math.floor(num(g && g.bestSpireFloor, 0)));
+        return { active: fl >= 3, progressText: `${fl}/3 重` };
+      }
+    },
+    {
+      id: "sword_tomb_rush",
+      name: "万剑冢七阵",
+      short: "剑冢评级",
+      sysId: "sword_tomb_rush",
+      minRealm: "nascent",
+      actionId: "open_boss_rush",
+      summary: "完整通关万剑冢七阵取得正式评级",
+      check: (g) => {
+        const grade = (g && typeof g.rushBestGrade === "string") ? g.rushBestGrade.trim() : "";
+        const active = Boolean((grade && grade !== "未挑战") || (g && g.taixuTrailUnlocked));
+        return { active, progressText: active ? (grade || "已证剑尊") : "待通七阵" };
+      }
+    },
+    {
+      id: "sect_defense",
+      name: "护山大阵",
+      short: "护宗功勋",
+      sysId: "sect_defense",
+      minRealm: "foundation",
+      actionId: "start_sect_defense",
+      summary: "击退三波百鬼夜行取得护宗功勋",
+      check: (g) => {
+        const m = Math.max(0, Math.floor(num(g && g.sectMerits, 0)));
+        return { active: m >= 1, progressText: m >= 1 ? `功勋 ×${m}` : "待守阵" };
+      }
+    }
+  ];
+
+  const HIGH_TIER_MODE_REGISTRY = [
+    {
+      groupId: "mainline_embedded",
+      groupTitle: "主线内嵌 · 随境核心成长",
+      badge: "主线常驻",
+      desc: "直接嵌入六卷战斗与洞府循环的核心能力与养成支柱。",
+      items: [
+        { id: "spirit_pet",    name: "本命灵宠",     minRealm: "qi",         kind: "eco",    synergy: "随行协同＋Lv.3/5 择技化形" },
+        { id: "bagua_alchemy", name: "八卦丹剑微操", minRealm: "qi",         kind: "eco",    synergy: "控火成丹与神兵淬火（D01 可选强化）" },
+        { id: "dual_stance",   name: "双剑意姿态",   minRealm: "foundation", kind: "eco",    synergy: "` 键疾剑/玄重瞬切与易剑斩" },
+        { id: "soul_seal",     name: "镇妖魂印",     minRealm: "foundation", kind: "eco",    synergy: "C 键化妖取消后摇＋五行联动" },
+        { id: "tag_team",      name: "道侣瞬切换人", minRealm: "foundation", kind: "eco",    synergy: "V 键净厄换人＋双人同心合璧" },
+        { id: "star_chart",    name: "太虚周天星图", minRealm: "golden",     kind: "eco",    synergy: "N 键二十八星宿（极夜星河 ×2.0）" }
+      ]
+    },
+    {
+      groupId: "endgame_trials",
+      groupTitle: "终局试炼 · 跨系统共鸣挑战",
+      badge: "试炼共鸣",
+      desc: "驱动诸天六柱道果共鸣与高阶资源循环的专项试炼模式。",
+      items: [
+        { id: "demon_tower",     name: "太虚锁妖古塔",   minRealm: "qi",         kind: "eco", synergy: "无尽冲层检验构筑与灵石产出" },
+        { id: "sect_defense",    name: "护山大阵守卫",   minRealm: "foundation", kind: "eco", synergy: "三波护宗战→星魂点与诸天共鸣" },
+        { id: "cloud_sea_trial", name: "九霄云海空战",   minRealm: "golden",     kind: "eco", synergy: "破云证道印→远征与登仙台 +15%" },
+        { id: "vein_expedition", name: "九州灵脉远征",   minRealm: "nascent",    kind: "eco", synergy: "8 键驻防（通关+15%/三星+30% 秘境共鸣）" },
+        { id: "celestial_spire", name: "太虚登仙台",     minRealm: "nascent",    kind: "eco", synergy: "L 键九重肉鸽奇物（吃破云印 +15%）" },
+        { id: "sword_tomb_rush", name: "万剑冢七阵连战", minRealm: "nascent",    kind: "eco", synergy: "七阵强化首领＋心魔镜像＋太古烛龙" },
+        { id: "heavenly_pacts",  name: "天道劫印契约",   minRealm: "spirit",     kind: "eco", synergy: "五道巅峰劫印换取爆率与仙榜倍率" }
+      ]
+    },
+    {
+      groupId: "dojo_tools",
+      groupTitle: "演武与工具 · 沙盒/同游/构筑",
+      badge: "工具演武",
+      desc: "不污染正式主线难度的自定义试剑、联机同游、天时调度与连招编排。",
+      items: [
+        { id: "celestial_time", name: "太虚四相天时 (\\)",  minRealm: "golden", kind: "action", synergy: "金丹解封手动切换，星夜令星图 ×2.0" },
+        { id: "coop_2p",        name: "双人同屏同游 (]/[)", minRealm: "golden", kind: "action", synergy: "金丹解封 2P 协战（按故人结缘扩展名单）" },
+        { id: "sequencer",      name: "自创剑谱连招 (7)",   minRealm: "golden", kind: "action", synergy: "金丹解封三器混编自定义连招序" },
+        { id: "seed_workshop",  name: "造化种子工坊",       minRealm: "spirit", kind: "eco",    synergy: "CY22 双王种子码试剑（临时奇物离场还原）" }
+      ]
+    }
+  ];
+
+  const EXPEDITION_NODE_STAGE_MAP = {
+    qinglan_vein:  { stageIdx: 0, stageName: "青岚破庙" },
+    qingyun_peak:  { stageIdx: 1, stageName: "青云外门" },
+    zhaoying_lake: { stageIdx: 2, stageName: "照影寒潭" },
+    suoyao_altar:  { stageIdx: 3, stageName: "古修剑冢" },
+    jiuxiao_sky:   { stageIdx: 4, stageName: "九霄天门" }
+  };
+
+  function getExpeditionNodeStageSynergy(g, nodeId) {
+    const mapped = (nodeId && hasOwn(EXPEDITION_NODE_STAGE_MAP, nodeId))
+      ? EXPEDITION_NODE_STAGE_MAP[nodeId]
+      : null;
+    if (!mapped) {
+      return { mult: 1.0, tier: "base", label: "基础产出", stageIdx: -1, stageName: "", stars: 0 };
+    }
+    const idx = mapped.stageIdx;
+    const rawStars = (g && Array.isArray(g.stageStars)) ? num(g.stageStars[idx], 0) : 0;
+    const stars = Math.max(0, Math.min(3, Math.floor(rawStars)));
+    const bossDefeated = Boolean(g && g.defeatedStageBosses && g.defeatedStageBosses[idx]);
+    if (stars >= 3) {
+      return { mult: 1.30, tier: "full_star", label: `${mapped.stageName}三星共鸣 +30%`, stageIdx: idx, stageName: mapped.stageName, stars };
+    }
+    if (stars >= 1 || bossDefeated) {
+      return { mult: 1.15, tier: "cleared", label: `${mapped.stageName}通关共鸣 +15%`, stageIdx: idx, stageName: mapped.stageName, stars };
+    }
+    return { mult: 1.0, tier: "base", label: `未破${mapped.stageName} · 基础产出`, stageIdx: idx, stageName: mapped.stageName, stars: 0 };
+  }
+
+  function getSpireCloudSeaYieldMult(g) {
+    return Boolean(g && g.cloudSeaCleared) ? 1.15 : 1.0;
+  }
+
+  function computeEndgameMasteryResonance(g) {
+    const gSafe = (g && typeof g === "object") ? g : {};
+    const pillars = VOL5_RESONANCE_PILLARS.map((p) => {
+      const res = p.check(gSafe);
+      return {
+        id: p.id,
+        name: p.name,
+        short: p.short,
+        sysId: p.sysId,
+        minRealm: p.minRealm,
+        actionId: p.actionId,
+        summary: p.summary,
+        active: Boolean(res && res.active),
+        progressText: (res && res.progressText) || ""
+      };
+    });
+    const activeCount = pillars.filter(p => p.active).length;
+    const passiveAtkPct = activeCount > 0 ? Number((activeCount * 0.025).toFixed(4)) : 0;
+    const drBonus = activeCount > 0 ? activeCount * 2 : 0;
+    const critBonus = activeCount >= 4 ? 0.03 : 0;
+    const tierLabel = activeCount >= 6
+      ? "六合圆满 · 诸天共鸣"
+      : activeCount >= 4
+        ? "四象贯通 · 道果初鸣"
+        : activeCount >= 1
+          ? `初启共鸣 (${activeCount}/6)`
+          : "未启共鸣 (0/6)";
+    return {
+      activeCount,
+      total: pillars.length,
+      passiveAtkPct,
+      drBonus,
+      critBonus,
+      tierLabel,
+      pillars
+    };
+  }
+
+  function buildVol5ResonanceSnapshot(g) {
+    const gSafe = (g && typeof g === "object") ? g : { realm: "mortal" };
+    const realm = (typeof gSafe.realm === "string" && hasOwn(REALMS, gSafe.realm)) ? gSafe.realm : "mortal";
+    const realmRank = Math.max(0, REALM_ORDER.indexOf(realm));
+    const rSpec = REALMS[realm] || REALMS.mortal;
+    const lawCount = Array.isArray(gSafe.laws) ? gSafe.laws.length : 0;
+    const relicId = gSafe.loadout && gSafe.loadout.relic;
+    const rawStars = (relicId && hasOwn(RELICS, relicId) && gSafe.relicStars && hasOwn(gSafe.relicStars, relicId))
+      ? gSafe.relicStars[relicId]
+      : (relicId && hasOwn(RELICS, relicId) ? 1 : 0);
+    const relicStars = Math.max(0, Math.min(5, Math.floor(num(rawStars, 0))));
+    const s5LawsDone = lawCount >= 4 || relicStars >= 3;
+    const xp = Math.max(0, Math.floor(num(gSafe.xp, 0)));
+    const xpCap = Math.max(0, Math.floor(num(rSpec.xpCap, 0)));
+    const xpReady = xpCap > 0 ? xp >= xpCap : true;
+    const bossGateCleared = Boolean(gSafe.defeatedStageBosses && gSafe.defeatedStageBosses[3]);
+    const spiritPillCount = Math.max(0, Math.floor(num(gSafe.inventory && gSafe.inventory.spirit_seal_pill, 0)));
+    const choices = (gSafe.choices && typeof gSafe.choices === "object") ? gSafe.choices : {};
+    const resonance = computeEndgameMasteryResonance(gSafe);
+    return {
+      realm,
+      realmName: rSpec.name,
+      realmRank,
+      isNascent: realm === "nascent",
+      isSpiritOrAbove: realmRank >= 5,
+      lawCount,
+      lawNeed: 4,
+      relicStars,
+      relicNeed: 3,
+      s5LawsDone,
+      xp,
+      xpCap,
+      xpReady,
+      bossGateStageIdx: 3,
+      bossGateCleared,
+      spiritPillCount,
+      dualBreakthroughNote: "D01/D04 保守基线：化神丹稳渡（护脉丹障＋延寿）与无丹逆天强渡（一闪弹雷）皆为合法破境路线，绝不以炼丹或侧边试炼硬锁主线。",
+      companionStatus: [
+        { id: "shen", storyId: "shen_pact", name: "沈清禾 · 《一诺千山》", done: Boolean(choices.shen_pact) },
+        { id: "yan", storyId: "yan_mirror", name: "砚尘 · 《照见本心》", done: Boolean(choices.yan_mirror) }
+      ],
+      resonance,
+      readyForSpiritTribulation: realm === "nascent" && bossGateCleared && xpReady
+    };
+  }
+
   // --- [module] src/rules/combat-stats.mjs ---
   // Pure combat stat ledger, single-hit cap, school specialization, and Dao bonus rules.
   function rankOf(r) {
@@ -6420,6 +6857,11 @@ const ART = {
       rawPassivePct += 0.16;
       addEntry("pet_wrath_passive", "灵宠技 · 天威狂怒", "pet", "passive_pct", 0.16, 0.16, "灵宠助战增益期间", true);
     }
+    const masteryRes = computeEndgameMasteryResonance(gSafe);
+    if (masteryRes.passiveAtkPct > 0) {
+      rawPassivePct += masteryRes.passiveAtkPct;
+      addEntry("endgame_mastery_atk", `诸天道果共鸣 (${masteryRes.activeCount}/${masteryRes.total})`, "mastery", "passive_pct", masteryRes.passiveAtkPct, 0.15, "终局六柱试炼联动常驻", true);
+    }
     const cappedPassivePct = softCapPct(rawPassivePct, P.passiveSoftCapKnee, P.passiveSoftCapMax);
     const passiveRatio = rawPassivePct > 0 ? (cappedPassivePct / rawPassivePct) : 1;
     entries.forEach(ent => {
@@ -6457,7 +6899,7 @@ const ART = {
     const karmaDr = safeKarmaDrBonus + (ks.mode === "righteous" ? 12 : 0);
     const celDrBonus = celPh.id === "dawn" ? P.celestialPhases.dawn.dr : 0;
     const dmgReduceBase = drGear + drTurtle + drPetWard + drMindStill + drMindClear + drRelicSeal + drGuardArray + drPhoenix;
-    const finalDmgReduce = dmgReduceBase + drPosture + karmaDr + starB.dr + celDrBonus;
+    const finalDmgReduce = dmgReduceBase + drPosture + karmaDr + starB.dr + celDrBonus + masteryRes.drBonus;
     if (drGear > 0) addEntry("gear_dr", "护身仙衣/套装减伤", "gear", "dr", drGear, null, "装备及淬火 (+8%/阶)", true);
     if (drTurtle + drPetWard > 0) addEntry("pet_dr", "灵宠护体减伤", "pet", "dr", drTurtle + drPetWard, null, "玄水灵龟/灵宠护盾技", true);
     if (drMindStill + drMindClear > 0) addEntry("mind_dr", lo.mind === "sword_still" ? "心法 · 止水剑心" : "心法 · 清虚符心", "skill", "dr", drMindStill + drMindClear, null, "装备于心法槽时生效", true);
@@ -6468,6 +6910,7 @@ const ART = {
     if (karmaDr > 0) addEntry("karma_dr", "道心/正道减伤", "karma", "dr", karmaDr, null, "正道 ≥+25 常驻 +12", true);
     if (starB.dr > 0) addEntry("star_dr", "周天星图减伤", "star", "dr", starB.dr, null, "星图节点加成", true);
     if (celDrBonus > 0) addEntry("cel_dawn_dr", "天时 · 晨曦清露", "celestial", "dr", celDrBonus, P.celestialPhases.dawn.dr, "晨曦天时常驻", true);
+    if (masteryRes.drBonus > 0) addEntry("endgame_mastery_dr", `诸天道果减伤 (${masteryRes.activeCount}/${masteryRes.total})`, "mastery", "dr", masteryRes.drBonus, 12, "终局六柱试炼联动常驻", true);
     const drMult = Math.max(0.35, 100 / (100 + Math.max(0, finalDmgReduce || 0)));
 
     // Crit / CritMult / Haste / Speed
@@ -6493,7 +6936,7 @@ const ART = {
     const schoolB = getSchoolSpecBonus(gSafe);
     const finalAtk = Math.max(8, Math.round(baseAtk * (1 + cappedPassivePct) * activeMult));
     const finalMaxMp = maxMpBase + starB.mp;
-    const finalCrit = Math.min(P.critCap, critCore + pineCrit + gourdCrit + starB.crit + daoB.critBonus);
+    const finalCrit = Math.min(P.critCap, critCore + pineCrit + gourdCrit + starB.crit + daoB.critBonus + masteryRes.critBonus);
     const finalCritMult = Math.min(P.critMultCap, 1.48 + styleSpec.critDmg * 0.75 + starB.critMult + celCritMult + climCritMult + perkCritMult + (schoolB.critMultBonus || 0) + (hasLaw(gSafe, "crit_lotus") ? P.laws.crit_lotus.critMult : 0) + pineMult + ((setB && setB.critMult) || 0));
     const finalAtkHaste = Math.max(0.70, Math.min(1.85, 1 + gt.spd + starB.spd + styleSpec.haste * 0.7 + postureHasteBonus + gourdHaste + climHaste + perkHaste + (petWrathBuffActive ? 0.15 : 0) + (schoolB.hasteBonus || 0) + (refArena && refArena.domain ? 0.24 : 0) + ((refArena && (refArena.reversedDomainTimer || 0) > 0) ? 0.20 : 0)));
     const finalSpeed = speedBase * postureSpdMult * (1 + gourdHaste * 0.7 + starB.spd);
@@ -6509,6 +6952,7 @@ const ART = {
     if (starB.crit > 0) addEntry("star_crit", "周天星图暴击", "star", "crit", starB.crit, P.critCap, "已点亮星节点加成", true);
     if (lowHpBoonCrit > 0) addEntry("boon_blood_intent", "词条 · 血战剑心", "boon", "crit", lowHpBoonCrit, P.critCap, "气血 ≤55% 时触发", true);
     if (gourdCrit > 0) addEntry("gourd_crimson_vine", "仙葫 · 赤渊龙血藤", "boon", "crit", gourdCrit, P.critCap, "饮葫后 5 秒 +18%", true);
+    if (masteryRes.critBonus > 0) addEntry("endgame_mastery_crit", "诸天道果共鸣暴击 (≥4柱)", "mastery", "crit", masteryRes.critBonus, P.critCap, "激活≥4道诸天试炼共鸣", true);
 
     addEntry("base_crit_mult", "基础暴击倍率", "realm", "crit_mult", 1.48, P.critMultCap, "角色基础 1.48×", true);
     if (styleSpec.critDmg > 0) addEntry("style_crit_mult", "评价 · 剑意评分暴伤", "style", "crit_mult", styleSpec.critDmg * 0.75, P.critMultCap, `当前评分 ${styleSpec.rank || ""}`, true);
@@ -8911,6 +9355,11 @@ const ART = {
       { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "五境残片尽除，照影石碑终于补全最后一句。道友，你从山雨破庙走来，今日亲手替九州重开了天门。" },
       { art: "char_shen", role: "青云药庐 · 悬壶医修", speaker: "沈清禾", text: "天门既现，听雨洞府的灯火永远为你长明——无论你择定何种飞升道果，此番红尘故人皆在云海遥祝！" },
       { art: "char_player", role: "问道剑主", speaker: "顾长青", text: "尘缘未负，仙门在前。且去引动最终飞升天劫，证我万古大道！", finalBtnLabel: "合卷问仙 ▸" }
+    ],
+    enter_vol5_resonance: [
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "碎丹成婴之后，单靠蛮力已难撼九霄天障。第五卷【法则共鸣 · 元神试剑】重在以万法印心、淬炼本命法宝，亦可在云海、星图与登仙台试剑磨砺元神。" },
+      { art: "char_shen", role: "青云药庐 · 悬壶医修", speaker: "沈清禾", text: "若备有【化神丹】可稳渡化神天劫，若欲效古剑修无丹逆天强渡，听雨洞府与我皆会为你护法——切莫被丹炉所困，只需守住本心剑意！" },
+      { art: "char_player", role: "元婴剑修", speaker: "顾长青", text: "四法通明或器成三星，再破化神天劫、直登九霄天门——第五卷元神之道，便从今日启程！", finalBtnLabel: "观览共鸣 ▸" }
     ]
   };
 
@@ -8928,6 +9377,10 @@ const ART = {
       { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "见铜镜浮空时，仍以【空格一闪】或【右键爆剑】正面碎镜，破其金身方可夺月华莲证婴！" },
       { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "有劳砚尘前辈再度相告，今日便斩此剑傀以正古冢！" }
     ],
+    enter_terrace_vol5: [
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "你以元婴之身先临九霄星盘，恰合第五卷【元神试剑】之旨！先探【天门道影】虚实、积攒修为与法则共鸣，待渡过化神天劫后再行最终飞升！" },
+      { art: "char_player", role: "元婴剑修", speaker: "顾长青", text: "正合我意！先以元婴剑心试探天门道影，再破化神重开仙门！" }
+    ],
     enter_terrace_met: [
       { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "从照影残碑走到九霄星盘，你一路清除四方残影，终于站到了【天门道影】正前。" },
       { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "此门之后再无借力之处，唯凭你这一路炼出的剑心破局——拔剑吧，道友！" },
@@ -8936,18 +9389,45 @@ const ART = {
     enter_terrace_after_gate: [
       { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "星盘已启，【天门道影】就在云海尽头。石阶前该叮嘱的话老朽已尽数言明——此去莫回头，亮剑吧！" },
       { art: "char_player", role: "问道剑修", speaker: "顾长青", text: "承前辈吉言，今日一剑斩道影，亲手写完碑卷最后一页！" }
+    ],
+    clear_stage1_bonded: [
+      { art: "enemy_warden", role: "镇山金卫 · 守山石卫", speaker: "守山石卫", text: "轰……青云钟声与剑意同鸣，石心浊影尽散！小友道基已成！" },
+      { art: "char_lu", role: "青云山门 · 传功执事", speaker: "陆玄松", text: "好一记破阵剑！你既已谙熟山门天时筹备之道，此去【照影寒潭】应对玄蛇寒煞必能从容周旋。老夫已修书予剑阁裴照在潭畔相迎！" },
+      { art: "char_player", role: "炼气剑修", speaker: "顾长青", text: "多谢陆执事托付！渡劫筑基之后，便往照影寒潭与裴兄会合！", finalBtnLabel: "收剑合卷 ▸" }
+    ],
+    clear_stage2_bonded: [
+      { art: "enemy_serpent", role: "寒鳞妖尊 · 寒潭玄蛇", speaker: "寒潭玄蛇", text: "嘶……剑阁双锋合流，千年寒髓竟也压不住你们的剑意……" },
+      { art: "char_pei", role: "青云剑阁 · 同辈剑首", speaker: "裴照", text: "痛快！自山门论剑之后，我就知道寒潭困不住你！第三枚残片已破，地脉异动直指【古修剑冢】——凝结金丹后，我们剑冢寒池再见！" },
+      { art: "char_player", role: "筑基剑修", speaker: "顾长青", text: "一言为定！凝结金丹、铸成法宝，剑冢再并肩破阵！", finalBtnLabel: "收剑合卷 ▸" }
+    ],
+    clear_stage3_bonded: [
+      { art: "enemy_puppet", role: "镜阵剑祖 · 古境剑傀", speaker: "古境剑傀", text: "铮……碑前赤诚未改，铜镜残片既碎，旧剑甘愿归鞘……" },
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "好孩子，四方残片俱已斩尽。你当年留在照影碑上的初心，如今已足够支撑碎丹成婴、踏入第五卷【法则共鸣】与九霄天门之约。" },
+      { art: "char_player", role: "金丹剑修", speaker: "顾长青", text: "不忘山雨来处，亦敢叩问九霄！碎丹成婴，下一程共赴天门！", finalBtnLabel: "收剑合卷 ▸" }
+    ],
+    clear_stage4_bonded: [
+      { art: "enemy_trial_gate", role: "九霄守门者 · 天门道影", speaker: "天门道影", text: "轰隆——红尘同心之剑竟真能斩碎百年天障！九霄仙门，为汝敞开！" },
+      { art: "char_shen", role: "青云药庐 · 悬壶医修", speaker: "沈清禾", text: "从破庙雨夜到九霄星盘，药阵灯火一路伴你至此——今日天门重开，清禾与裴兄、陆执事、砚尘前辈皆在云下为你贺道！" },
+      { art: "char_yan", role: "照影古境 · 守碑老人", speaker: "砚尘", text: "照影碑终页已落墨。去吧，引动最终飞升天劫，亲手写下你的证道结局！" },
+      { art: "char_player", role: "问道剑主", speaker: "顾长青", text: "幸得诸位故人同行，此剑不负尘缘！且去渡劫飞升！", finalBtnLabel: "合卷问仙 ▸" }
     ]
   };
 
   function resolveCutsceneLines(key, g) {
     const ch = (g && g.choices) ? g.choices : {};
+    const aids = (g && g.aids) ? g.aids : {};
     if (key === "enter_sect" && ch.lu_intro) return CHAPTER_CUTSCENES_VARIANTS.enter_sect_met;
     if (key === "enter_secret" && ch.pei_meet) return CHAPTER_CUTSCENES_VARIANTS.enter_secret_met;
     if (key === "enter_sword_mound" && ch.yan_stone) return CHAPTER_CUTSCENES_VARIANTS.enter_sword_mound_met;
     if (key === "enter_terrace") {
+      if (g && g.realm === "nascent" && !ch.yan_gate) return CHAPTER_CUTSCENES_VARIANTS.enter_terrace_vol5;
       if (ch.yan_gate) return CHAPTER_CUTSCENES_VARIANTS.enter_terrace_after_gate;
       if (ch.yan_stone || ch.yan_mirror) return CHAPTER_CUTSCENES_VARIANTS.enter_terrace_met;
     }
+    if (key === "clear_stage1" && (ch.lu_intro || aids.lu)) return CHAPTER_CUTSCENES_VARIANTS.clear_stage1_bonded;
+    if (key === "clear_stage2" && (ch.pei_meet || aids.pei)) return CHAPTER_CUTSCENES_VARIANTS.clear_stage2_bonded;
+    if (key === "clear_stage3" && (ch.yan_stone || ch.yan_mirror || aids.yan)) return CHAPTER_CUTSCENES_VARIANTS.clear_stage3_bonded;
+    if (key === "clear_stage4" && countBondedAllies(g) >= 2) return CHAPTER_CUTSCENES_VARIANTS.clear_stage4_bonded;
     return CHAPTER_CUTSCENES[key] || null;
   }
 
@@ -11193,6 +11673,9 @@ const ART = {
     if (!Array.isArray(game.litStars)) game.litStars = [];
     const freePts = getAvailableStarPoints(game);
     const sb = getStarChartBonuses(game);
+    const celPh = getCurrentCelestialPhase();
+    const isStarNight = celPh.id === "star_night";
+    const celUnlocked = isActionUnlockedByRealm(game, "celestial_time");
 
     openModal(`
       <div class="drawer-mural-banner" style="height:104px;">
@@ -11212,6 +11695,14 @@ const ART = {
           <span style="color:var(--text-sub);margin-left:8px;">星盘总加成：攻+${sb.atk} · 血+${sb.hp} · 减伤+${sb.dr} · 暴+${Math.round(sb.crit * 100)}% · 暴伤+${Math.round(sb.critMult * 100)}%</span>
         </div>
         <button type="button" class="btn-gold" style="padding:4px 12px;font-size:11.5px;" data-action="buy-star-point">✨ 凝炼星魂 +1 (60灵石)</button>
+      </div>
+
+      <div id="star-chart-celestial-banner" class="jade-card" style="flex-direction:row;justify-content:space-between;align-items:center;padding:7px 11px;flex-wrap:wrap;gap:8px;border-color:${isStarNight ? "rgba(168,184,255,0.72)" : "rgba(216,179,106,0.34)"};">
+        <div style="font-size:11px;color:#dff7f2;">
+          当前太虚天时：<strong style="color:${celPh.color};">${escapeHtml(celPh.short)}</strong>
+          <span class="tag-chip ${isStarNight ? "mythic" : ""}" style="margin-left:6px;">${isStarNight ? "★ 极夜星河联动生效 · 全部星宿被动 ×2.0！" : "切换至【极夜星河】可令全部星宿被动翻倍 (×2.0)"}</span>
+        </div>
+        <button type="button" id="btn-star-chart-cycle-celestial" class="${celUnlocked ? "btn-jade" : "btn-ghost eco-locked-btn"}" style="padding:3px 10px;font-size:11px;" data-action="cycle-celestial-time-in-modal">${celUnlocked ? "☯ 流转天时 (\\)" : "🔒 需金丹期解封天时"}</button>
       </div>
 
       <div class="star-quad-grid">
@@ -11701,7 +12192,7 @@ const ART = {
         <div class="drawer-mural-overlay">
           <div>
             <span class="cinnabar-seal">终局巅峰试炼</span>
-            <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">万剑冢 · 踏天六阵连战 & 心魔镜像论剑</h2>
+            <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">万剑冢 · 踏天七阵连战 & 心魔镜像论剑</h2>
           </div>
           <button type="button" class="btn-ghost" data-modal-close="1">返回道场 ✕</button>
         </div>
@@ -11719,7 +12210,7 @@ const ART = {
 
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:12px;color:var(--gold-bright);">☯ 自选【问道劫律】试炼词缀（当前积分倍率 ×${affMult.toFixed(2)}）：</strong>
-        <span style="font-size:11px;color:var(--jade);">${metaState.bestRushGrade ? `历史最高评级：${escapeHtml(metaState.bestRushGrade)} (${num(metaState.bestRushTime).toFixed(1)}s)` : "通关第6阵解锁【太虚劫光】飞剑幻化"}</span>
+        <span style="font-size:11px;color:var(--jade);">${metaState.bestRushGrade ? `历史最高评级：${escapeHtml(metaState.bestRushGrade)} (${num(metaState.bestRushTime).toFixed(1)}s)` : "完整通关七阵解锁【太虚劫光】飞剑幻化"}</span>
       </div>
 
       <div class="rush-affix-grid">
@@ -11759,6 +12250,7 @@ const ART = {
   function startBossRushGauntlet(startBout = 1) {
     if (!game) return;
     if (!guardEcosystemAccess("sword_tomb_rush")) return;
+    restoreCustomSeedTempCurio();
     resetStageTransitionState();
     closeModal();
     closeDrawer();
@@ -12391,6 +12883,7 @@ const ART = {
   function startSectDefenseSiege() {
     if (!game) return;
     if (!guardEcosystemAccess("sect_defense")) return;
+    restoreCustomSeedTempCurio();
     resetStageTransitionState();
     closeModal();
     closeDrawer();
@@ -12432,12 +12925,51 @@ const ART = {
       name: `听雨灵脉大阵中枢 · Lv.${getSanctumLevel(game, "guard_array")}`, badge: "守护灵脉免遭三波百鬼夜行攻破！",
       x: corePos.x, y: corePos.y, r: 46, progress: 0
     });
-    // Summon companions automatically to defend the sect together!
+    // Summon companions automatically for free to defend the sect together!
+    arena.player.allyCd = 0;
+    const prevMp = game.mp;
+    game.mp = Math.max(game.mp || 0, 24);
     summonAllyCoop();
+    game.mp = prevMp;
+    arena.player.allyCd = 0;
     spawnSectDefenseWave(1);
     showBossCutIn("prop_guardian_sword_pylon", "护山大阵 · 百鬼夜行守卫战", `协同 ${towers.length} 座【护山剑阵灵塔】与道侣抵御三波立体妖潮，赢取鸿蒙星魄与护宗功勋！`);
     updateBossBannerAndRecallOrb();
     updateHud();
+  }
+
+  function openSectDefenseResultModal(summary) {
+    if (!game || !summary) return;
+    const isWin = !!summary.victory;
+    const corePct = summary.maxCoreHp > 0 ? Math.max(0, Math.round((summary.coreHp / summary.maxCoreHp) * 100)) : 0;
+    openModal(`
+      <div class="drawer-mural-banner" style="height:88px;">
+        <img src="${ART.arena_sanctum_hub}" alt="护山大阵战报" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">${isWin ? "护宗大捷" : "结界重整"}</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:${isWin ? "var(--gold-bright)" : "#ffb4ae"};margin-top:3px;">${isWin ? "🛡 护山大阵守卫战 · 三波妖潮全歼！" : "⚠ 护山灵脉受创 · 洞府结界已重整"}</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-modal-close="1">返回洞府 ✕</button>
+        </div>
+      </div>
+      <div class="jade-card" style="gap:6px;padding:10px 12px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11.5px;">
+          <span class="tag-chip ${isWin ? "mythic" : ""}">抵御波次：${summary.wavesCleared}/${summary.maxWaves}</span>
+          <span class="tag-chip done">灵脉余量：${Math.max(0, Math.round(summary.coreHp))}/${Math.round(summary.maxCoreHp)} (${corePct}%)</span>
+          ${isWin ? `<span class="tag-chip mythic">护宗功勋：×${num(game.sectMerits, 1)}</span>` : ""}
+        </div>
+        <div style="font-size:12px;color:#dff7f2;line-height:1.55;">
+          ${isWin
+            ? `已获赐 <b>鸿蒙星魄 +${summary.starPtsGained}</b>、<b>灵石 +${summary.stonesGained}</b>${summary.atkGranted > 0 ? `、<b>永久剑攻 +${summary.atkGranted}</b>` : "（本境永久剑攻已达上限）"}，并点亮【诸天道果共鸣 · 护山大阵】柱！`
+            : "灵脉受损后听雨洞府已自动恢复安全休整状态，可升级【护山大阵】增筑北护山剑塔或整备丹药神兵后再战！"}
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="btn-jade" data-action="start-sect-defense">🛡 再启护山守卫战</button>
+        <button type="button" class="btn-gold" data-modal-close="1">留守听雨洞府 ▸</button>
+      </div>
+    `, true, { kind: "sect_defense_result", tier: "info" });
   }
 
   function spawnSectDefenseWave(waveNum) {
@@ -12487,10 +13019,12 @@ const ART = {
       }
     }
     if (sd.coreHp <= 0) {
+      const failSummary = { victory: false, wavesCleared: Math.max(0, sd.wave - 1), maxWaves: sd.maxWaves, coreHp: 0, maxCoreHp: sd.maxCoreHp, stonesGained: 0, starPtsGained: 0, atkGranted: 0 };
       sd.active = false;
       arena.sectDefense = null;
       showToast("⚠ 护山灵脉受损！已自动重整洞府结界，可随时再战！");
       enterSanctumHub();
+      openSectDefenseResultModal(failSummary);
       return;
     }
 
@@ -12499,11 +13033,16 @@ const ART = {
         sd.wave += 1;
         arena.waveTransitioning = true;
         Sound.fanfare();
+        const sdEpoch = arena.stageEpoch;
         setTimeout(() => {
+          if (!game || arena.stageEpoch !== sdEpoch || !arena.sectDefense || !arena.sectDefense.active) return;
           arena.waveTransitioning = false;
-          if (arena.sectDefense && arena.sectDefense.active) spawnSectDefenseWave(sd.wave);
+          spawnSectDefenseWave(sd.wave);
         }, 520);
       } else {
+        const winCoreHp = sd.coreHp;
+        const winMaxCoreHp = sd.maxCoreHp;
+        const winMaxWaves = sd.maxWaves;
         sd.active = false;
         arena.sectDefense = null;
         game.bonusStarPts = (game.bonusStarPts || 0) + 2;
@@ -12516,6 +13055,16 @@ const ART = {
           ? `🏆 护山大阵大捷！获赐【鸿蒙星魄×2（星魂点+2）】、剑攻永久+${sdAtkRes.grantedAtk}${sdAtkRes.atkCapped ? `（已达本境上限 ${game.atkFlatBonus}/${sdAtkRes.caps.atkFlatBonus}）` : ""} 与 260 灵石！`
           : `🏆 护山大阵大捷！获赐【鸿蒙星魄×2（星魂点+2）】与 260 灵石（本境永久剑攻已达上限 ${game.atkFlatBonus}/${sdAtkRes.caps.atkFlatBonus}）！`);
         enterSanctumHub();
+        openSectDefenseResultModal({
+          victory: true,
+          wavesCleared: winMaxWaves,
+          maxWaves: winMaxWaves,
+          coreHp: winCoreHp,
+          maxCoreHp: winMaxCoreHp,
+          stonesGained: 260,
+          starPtsGained: 2,
+          atkGranted: sdAtkRes.grantedAtk
+        });
       }
     }
   }
@@ -12816,6 +13365,7 @@ const ART = {
   function startCloudSeaAerialStage() {
     if (!game) return;
     if (!guardEcosystemAccess("cloud_sea_trial")) return;
+    restoreCustomSeedTempCurio();
     resetStageTransitionState();
     closeModal();
     closeDrawer();
@@ -13164,16 +13714,17 @@ const ART = {
           if (Array.isArray(game.journal)) game.journal.unshift(`金丹御剑破开九霄云海防线，获【破云证道印】(+${cloudAtkGranted}攻 · 远征/登仙台收益+15%)！`);
         }
         arena.swordIntent = 100; arena.bondSynergy = 100; arena.astralEnergy = 100;
-        spawnGearDrop(w * 0.52, h * 0.52, 3);
         Sound.fanfare();
         triggerRadialChromaticBurst(1.35, "#ffe28a", w * 0.5, h * 0.5);
         if (!sandboxMode) saveMeta();
-        saveGame();
         const descendStage = rankOf(game.realm) >= 4 ? 4 : 3;
         initArenaStage(descendStage, false);
+        const cloudGear = rollGearItem(descendStage, 3);
+        acquireGearItem(cloudGear);
+        saveGame();
         showToast(firstClear
-          ? `☁ 九霄云海首破功成！获【破云证道印】(常驻攻+${cloudAtkGranted} · 星魂+1 · 远征/登仙台收益+15% · 灵石+180)！`
-          : `☁ 九霄云海破阵功成！已御剑俯冲降临【${STAGES[descendStage].name}】（剑意全满+180灵石）！`);
+          ? `☁ 九霄云海首破功成！获【破云证道印】(常驻攻+${cloudAtkGranted} · 星魂+1 · 远征/登仙台收益+15% · 灵石+180 · 仙品【${cloudGear.name}】)！`
+          : `☁ 九霄云海破阵功成！已御剑俯冲降临【${STAGES[descendStage].name}】（剑意全满+180灵石 · 仙品【${cloudGear.name}】）！`);
       }
     }
   }
@@ -13208,7 +13759,10 @@ const ART = {
 
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
         <span style="font-size:11.5px;color:#b8dcd5;">连续闯荡随机生成的九重天宫秘境（妖王房/灵脉房/混沌赌局/天工秘宝），每重天三选一叠加 <b style="color:#ffe28a;">16 种跨系统天道法则奇物</b>！</span>
-        <span class="tag-chip mythic">登仙榜最高：第 ${bestFl}/9 重天 · 已叠奇物 ${curEntries.reduce((s, [cid]) => s + getCurioStacks(game, cid), 0)} 层</span>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <span id="spire-cloud-sea-chip" class="tag-chip ${game.cloudSeaCleared ? "mythic" : ""}">${game.cloudSeaCleared ? "☁ 破云证道印 · 登仙台灵石 +15%" : "☁ 破云印未启（先破九霄云海 +15%）"}</span>
+          <span class="tag-chip mythic">登仙榜最高：第 ${bestFl}/9 重天 · 已叠奇物 ${curEntries.reduce((s, [cid]) => s + getCurioStacks(game, cid), 0)} 层</span>
+        </div>
       </div>
 
       <div class="spire-room-grid">
@@ -13250,6 +13804,7 @@ const ART = {
   function startCelestialSpireRun(startFloor = 1) {
     if (!game) return;
     if (!guardEcosystemAccess("celestial_spire")) return;
+    restoreCustomSeedTempCurio();
     resetStageTransitionState();
     closeModal();
     closeDrawer();
@@ -13481,9 +14036,11 @@ const ART = {
     }
     if (!game.spireCurios) game.spireCurios = {};
     const maxLv = PERM_GROWTH_CAPS.spireCurioMaxStack;
+    const cloudMult = getSpireCloudSeaYieldMult(game);
     const spec = SPIRE_CURIOS.find(x => x.id === curioId);
+    const allCappedStones = Math.round(120 * cloudMult);
     if (curioId === "__all_capped__") {
-      game.stones += 120;
+      game.stones += allCappedStones;
     } else if (spec) {
       const prev = getCurioStacks(game, curioId);
       const step = Math.max(1, Math.floor(num(gainLv, 1)));
@@ -13493,7 +14050,8 @@ const ART = {
       PERM_GROWTH_CAPS.curioStoneAlchemyFloorStoneCap,
       getCurioStacks(game, "curio_stone_alchemy") * PERM_GROWTH_CAPS.curioStoneAlchemyFloorStonePerLv
     );
-    game.stones += 75 + stoneBonus;
+    const floorStones = Math.round((75 + stoneBonus) * cloudMult);
+    game.stones += floorStones;
     syncFlyingSwords();
     Sound.fanfare();
     closeModal();
@@ -13513,7 +14071,8 @@ const ART = {
       sp.active = false;
       arena.celestialSpire = null;
       game.bonusStarPts = (game.bonusStarPts || 0) + 3;
-      game.stones += 420;
+      const clearStones = Math.round(420 * cloudMult);
+      game.stones += clearStones;
       saveGame(); updateHud();
       openModal(`
         <div class="drawer-mural-banner" style="height:94px;">
@@ -13530,7 +14089,7 @@ const ART = {
           <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
             <span class="tag-chip mythic">制霸层数：9 / 9 重天</span>
             <span class="tag-chip done">奇物总层数：${Object.values(game.spireCurios || {}).reduce((a, b) => a + Math.min(maxLv, num(b, 0)), 0)} 层</span>
-            <span class="tag-chip">赏赐：420 灵石 + 周天星魂点 +3</span>
+            <span class="tag-chip">赏赐：${clearStones} 灵石${cloudMult > 1 ? "（含破云印+15%）" : ""} + 周天星魂点 +3</span>
           </div>
           <div style="font-size:12px;color:#9effec;">本局参悟的全部【太古天道奇物】已永久铭刻入本世命盘（单项上限 Lv.${maxLv}），可携奇物神威继续征战太古烛龙与九霄云海！</div>
           <div style="display:flex;justify-content:center;gap:10px;">
@@ -13544,8 +14103,8 @@ const ART = {
 
     sp.floor += 1;
     showToast(curioId === "__all_capped__"
-      ? `☯ 奇物皆已圆满 · 获赐 120 灵石，踏入第 ${sp.floor}/9 重天！`
-      : `☯ 已铭刻奇物【${spec ? spec.name : curioId} Lv.${getCurioStacks(game, curioId)}/${maxLv}】· 踏入第 ${sp.floor}/9 重天！`);
+      ? `☯ 奇物皆已圆满 · 获赐 ${allCappedStones + floorStones} 灵石${cloudMult > 1 ? "（破云印+15%）" : ""}，踏入第 ${sp.floor}/9 重天！`
+      : `☯ 已铭刻奇物【${spec ? spec.name : curioId} Lv.${getCurioStacks(game, curioId)}/${maxLv}】· 灵石 +${floorStones}${cloudMult > 1 ? "（破云印+15%）" : ""} · 踏入第 ${sp.floor}/9 重天！`);
     spawnCelestialSpireFloor();
     saveGame();
   }
@@ -14381,8 +14940,61 @@ const ART = {
     return arena.enemies[arena.enemies.length - 1];
   }
 
+  let activeCustomSeedTempCurio = null;
+
+  function getActiveCustomSeedTempCurio() {
+    return activeCustomSeedTempCurio ? Object.assign({}, activeCustomSeedTempCurio) : null;
+  }
+
+  function restoreCustomSeedTempCurio() {
+    const rec = activeCustomSeedTempCurio;
+    activeCustomSeedTempCurio = null;
+    if (!rec || !game || !game.spireCurios || !rec.cid) return false;
+    if (rec.hadKey) {
+      game.spireCurios[rec.cid] = rec.prevLv;
+    } else {
+      delete game.spireCurios[rec.cid];
+    }
+    syncFlyingSwords();
+    return true;
+  }
+
+  function openCustomSeedVictoryModal(summary) {
+    if (!game || !summary) return;
+    const bossList = Array.isArray(summary.bosses) && summary.bosses.length ? summary.bosses.join(" + ") : "造化双王";
+    const elapsedTxt = `${num(summary.elapsedSec, 0).toFixed(1)}s`;
+    openModal(`
+      <div class="drawer-mural-banner" style="height:88px;">
+        <img src="${ART.arena_wanjian_tomb}" alt="造化试剑凯旋" />
+        <div class="drawer-mural-overlay">
+          <div>
+            <span class="cinnabar-seal">造化工坊 · 试剑圆满</span>
+            <h2 style="font-family:var(--font-serif);font-size:20px;color:var(--gold-bright);margin-top:3px;">⚔ 太虚造化试剑大捷！</h2>
+          </div>
+          <button type="button" class="btn-ghost" data-modal-close="1">收卷 ✕</button>
+        </div>
+      </div>
+      <div class="jade-card" style="gap:6px;padding:10px 12px;">
+        <div style="display:flex;gap:7px;flex-wrap:wrap;font-size:11.5px;">
+          <span class="tag-chip mythic">论剑码：${escapeHtml(summary.seed || "")}</span>
+          <span class="tag-chip done">耗时：${escapeHtml(elapsedTxt)}</span>
+          <span class="tag-chip">已破首领：${escapeHtml(bossList)}</span>
+        </div>
+        <div style="font-size:11.5px;color:#b8dcd5;line-height:1.5;">
+          ${summary.tempCurioRestored ? "✓ 工坊测试奇物 Lv.2 已安全还原，绝不污染正式档奇物进度。" : "本次试剑为独立构筑演武，未改写正式主线与奇物进度。"}
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
+        <button type="button" id="btn-ws-victory-replay" class="btn-gold" data-action="ws-replay-seed" data-ws-seed="${escapeHtml(summary.seed || "")}">🔁 再战此种子</button>
+        <button type="button" id="btn-ws-victory-workshop" class="btn-jade" data-action="open-workshop">🛠 返回造化工坊</button>
+        <button type="button" id="btn-ws-victory-sanctum" class="btn-ghost" data-action="enter-sanctum">🏠 返回听雨洞府</button>
+      </div>
+    `, true, { kind: "custom_seed_victory", tier: "info" });
+  }
+
   function launchCustomSeedEncounter(seedOverride = null) {
     if (!game) return false;
+    restoreCustomSeedTempCurio();
     if (seedOverride) {
       const parsed = decodeWorkshopSeed(seedOverride);
       if (parsed) safeAssignPlain(workshopState, parsed);
@@ -14405,22 +15017,28 @@ const ART = {
     arena.waveTransitioning = false;
     arena.defeatRevivesUsed = 0;
     arena.defeatPending = null;
+    resetEncounterTelemetry();
     arena.nearbyProp = null;
     renderPropInteractHud();
-    arena.customSeedRun = { active: true, seed: activeSeed };
-    const dojoBar = document.getElementById("dojo-control-bar");
-    if (dojoBar) dojoBar.classList.remove("active");
 
     // Apply selected affixes
     arena.rushAffixes = [];
     RUSH_AFFIX_SPECS.forEach((af, idx) => {
       if ((workshopState.affixes & (1 << idx)) !== 0) arena.rushAffixes.push(af.id);
     });
-    // Grant selected starter Curio Lv.2 for build testing!
+    // Grant selected starter Curio Lv.2 strictly for this build-test encounter (restored on exit & omitted from formal saves!)
+    let tempCurioRestore = null;
     if (workshopState.curioIdx > 0 && SPIRE_CURIOS[workshopState.curioIdx - 1]) {
       if (!game.spireCurios) game.spireCurios = {};
       const cid = SPIRE_CURIOS[workshopState.curioIdx - 1].id;
-      game.spireCurios[cid] = Math.min(PERM_GROWTH_CAPS.spireCurioMaxStack, Math.max(getCurioStacks(game, cid), 2));
+      const hadKey = hasOwn(game.spireCurios, cid);
+      const prevLv = hadKey ? game.spireCurios[cid] : 0;
+      const nextLv = Math.min(PERM_GROWTH_CAPS.spireCurioMaxStack, Math.max(getCurioStacks(game, cid), 2));
+      if (!hadKey || nextLv !== prevLv) {
+        tempCurioRestore = { cid, hadKey, prevLv };
+        activeCustomSeedTempCurio = tempCurioRestore;
+        game.spireCurios[cid] = nextLv;
+      }
     }
 
     arena.enemies = [];
@@ -14447,10 +15065,24 @@ const ART = {
       }
     }
 
-    spawnWorkshopBossBySpecIdx(workshopState.boss1, w * 0.68, h * 0.46, 1.5);
+    const spawnedBossNames = [];
+    const b1 = spawnWorkshopBossBySpecIdx(workshopState.boss1, w * 0.68, h * 0.46, 1.5);
+    if (b1 && b1.name) spawnedBossNames.push(b1.name);
     if (workshopState.boss2 !== 7) {
-      spawnWorkshopBossBySpecIdx(workshopState.boss2, w * 0.58, h * 0.62, 1.35);
+      const b2 = spawnWorkshopBossBySpecIdx(workshopState.boss2, w * 0.58, h * 0.62, 1.35);
+      if (b2 && b2.name) spawnedBossNames.push(b2.name);
     }
+
+    arena.customSeedRun = {
+      active: true,
+      seed: activeSeed,
+      startedAt: Date.now(),
+      elapsedSec: 0,
+      bosses: spawnedBossNames,
+      tempCurioRestore
+    };
+    const dojoBar = document.getElementById("dojo-control-bar");
+    if (dojoBar) dojoBar.classList.remove("active");
 
     const st = getCombatStats(game);
     game.hp = st.maxHp; game.mp = st.maxMp;
@@ -14543,11 +15175,20 @@ const ART = {
   }
 
   function cycleCelestialTimePhase() {
+    if (!game) return null;
+    if (!guardActionRealm("celestial_time")) return null;
     return setCelestialTimePhase(celestialState.idx + 1, false);
   }
 
   // 2. Local 2-Player Same-Screen Co-Op (`太虚同游 · 1P+2P同屏双剑联机 + 同心剑网切割线 + 2.5x同步处决 + 渡气救援`)
   const COOP_PARTNER_ORDER = ["shen", "pei", "lu", "yan"];
+
+  function getUnlockedCoop2PRoster(g = game) {
+    if (!g) return ["shen"];
+    if (sandboxMode || g.unlockAllArcana) return COOP_PARTNER_ORDER.slice();
+    const bonded = COOP_PARTNER_ORDER.filter(id => getCompanionBondTier(g, id) >= 1 || Boolean(g.aids && g.aids[id]));
+    return bonded.length > 0 ? bonded : ["shen"];
+  }
 
   function ensureCoop2PState() {
     if (!arena.coop2P) {
@@ -14579,13 +15220,15 @@ const ART = {
   function toggleLocalCoop2P(forceState = null, partnerOverride = null) {
     if (!game) return false;
     const c2 = ensureCoop2PState();
-    const st = getCombatStats(game);
-    if (partnerOverride && PLAYABLE_COMPANIONS[partnerOverride] && partnerOverride !== "player") {
-      c2.partnerId = partnerOverride;
-    } else if (c2.partnerId === (arena.playableCharId || "player")) {
-      c2.partnerId = COOP_PARTNER_ORDER.find(id => id !== arena.playableCharId) || "shen";
-    }
     const nextOn = forceState !== null ? !!forceState : !c2.active;
+    if (nextOn && !guardActionRealm("coop_2p")) return false;
+    const roster = getUnlockedCoop2PRoster(game);
+    const st = getCombatStats(game);
+    if (partnerOverride && PLAYABLE_COMPANIONS[partnerOverride] && partnerOverride !== "player" && roster.includes(partnerOverride)) {
+      c2.partnerId = partnerOverride;
+    } else if (!roster.includes(c2.partnerId) || c2.partnerId === (arena.playableCharId || "player")) {
+      c2.partnerId = roster.find(id => id !== (arena.playableCharId || "player")) || roster[0] || "shen";
+    }
     c2.active = nextOn;
     if (nextOn) {
       const sp = PLAYABLE_COMPANIONS[c2.partnerId] || PLAYABLE_COMPANIONS.shen;
@@ -14600,7 +15243,7 @@ const ART = {
       Sound.fanfare();
       spawnDistortionRing(c2.x, c2.y, 170, sp.color);
       addFloat(`👥 太虚同游开启 · 2P【${sp.name}】同屏参战！`, c2.x, c2.y - 58, sp.color, 19, true);
-      showToast(`👥 已开启【本地双人同屏共斗】！2P【${sp.name}】支持 IJKL/方向键/小键盘移动，P/;/小键盘0出招（松手自动智能拉剑网协战），按 [ 键切换 2P 角色！`);
+      showToast(`👥 已开启【本地双人同屏共斗】！2P【${sp.name}】支持 IJKL/方向键/小键盘移动，P/;/小键盘0出招（松手自动智能拉剑网协战），按 [ 键切换已结缘 2P 伙伴（共 ${roster.length} 位）！`);
     } else {
       showToast("已切回单人操控模式（按 ] 键可随时重开 1P+2P 双人同屏共斗）");
     }
@@ -14610,17 +15253,22 @@ const ART = {
   }
 
   function cycleCoop2PPartner() {
-    if (!game) return;
+    if (!game) return false;
+    if (!guardActionRealm("coop_2p")) return false;
     const c2 = ensureCoop2PState();
-    const curIdx = COOP_PARTNER_ORDER.indexOf(c2.partnerId);
-    let nextId = COOP_PARTNER_ORDER[(curIdx + 1) % COOP_PARTNER_ORDER.length];
-    if (nextId === (arena.playableCharId || "player")) {
-      nextId = COOP_PARTNER_ORDER[(curIdx + 2) % COOP_PARTNER_ORDER.length];
-    }
+    const roster = getUnlockedCoop2PRoster(game);
+    const eligible = roster.filter(id => id !== (arena.playableCharId || "player"));
+    const pool = eligible.length > 0 ? eligible : roster;
+    const curIdx = pool.indexOf(c2.partnerId);
+    const nextId = pool[(curIdx + 1) % pool.length] || pool[0] || "shen";
     c2.partnerId = nextId;
     if (!c2.active) {
-      toggleLocalCoop2P(true, nextId);
-      return;
+      return toggleLocalCoop2P(true, nextId);
+    }
+    if (pool.length <= 1) {
+      showToast(`👥 当前 2P 可选已结缘伙伴仅【${(PLAYABLE_COMPANIONS[nextId] || PLAYABLE_COMPANIONS.shen).name}】1 位，结识更多红尘故人即可切换！`);
+      syncV23EpochDock();
+      return true;
     }
     const sp = PLAYABLE_COMPANIONS[nextId];
     c2.hp = c2.maxHp;
@@ -14629,6 +15277,7 @@ const ART = {
     spawnDistortionRing(c2.x, c2.y, 150, sp.color);
     addFloat(`👥 2P 换将 · 【${sp.name}】接剑入阵！`, c2.x, c2.y - 54, sp.color, 18, true);
     syncV23EpochDock();
+    return true;
   }
 
   function triggerCoop2PAttack(isHeavy = false) {
@@ -16102,10 +16751,11 @@ const ART = {
       <div class="jade-card" style="flex-direction:row;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
         <div>
           <strong style="font-size:13px;color:#80ffea;">驻防队伍：${activeCnt} / 5 处灵脉 · 待领军资：<span style="color:#ffe28a;">${num(ex.bankedStones)} / ${EXPEDITION_BANKED_STONES_CAP} 灵石</span> + <span style="color:#d69eff;">${num(ex.bankedStars)} / ${EXPEDITION_BANKED_STARS_CAP} 鸿蒙星魄</span>${vaultFull ? ` <span class="tag-chip done" style="font-size:9.5px;">已满仓</span>` : ""}${game.cloudSeaCleared ? ` <span class="tag-chip mythic" style="font-size:9.5px;">☁ 破云印 +15%</span>` : ""}</strong>
-          <div style="font-size:10.5px;color:var(--text-sub);">仅在非洞府秘境战斗中累积产出（仓库上限 ${EXPEDITION_BANKED_STONES_CAP} 灵石 / ${EXPEDITION_BANKED_STARS_CAP} 星魄）；仅可派遣已结缘故人，每位故人限驻守 1 处灵脉，并在战中每 8.5 秒降下【仙门护道雷援】。</div>
+          <div style="font-size:10.5px;color:var(--text-sub);">仅在非洞府秘境战斗中累积产出（仓库上限 ${EXPEDITION_BANKED_STONES_CAP} 灵石 / ${EXPEDITION_BANKED_STARS_CAP} 星魄）；对应秘境通关 +15%、三星 +30% 灵脉共鸣（不锁节点），每 8.5 秒降下【仙门护道雷援】。</div>
         </div>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button type="button" id="btn-claim-expedition" class="btn-gold" style="padding:6px 13px;font-size:11.5px;" data-action="claim-expedition" ${vaultEmpty ? "disabled" : ""}>🎁 一键征收远征军资</button>
+          <button type="button" id="btn-exp-goto-starchart" class="btn-ghost" style="padding:6px 11px;font-size:11.5px;border-color:rgba(214,158,255,0.55);color:#e8c8ff;" data-action="open-star-chart">🌟 周天星图</button>
           <button type="button" class="btn-jade" style="padding:6px 12px;font-size:11.5px;" data-action="cast-warship-from-modal">⛵ 呼叫仙舟轰炸</button>
         </div>
       </div>
@@ -16113,12 +16763,16 @@ const ART = {
       <div class="expedition-grid">
         ${EXPEDITION_NODES.map(nd => {
           const curHero = (ex.assignments && ex.assignments[nd.id]) || "";
+          const syn = getExpeditionNodeStageSynergy(game, nd.id);
           return `<div class="expedition-node-card">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
               <div style="display:flex;align-items:center;gap:7px;">
                 <img src="${ART[nd.art]}" alt="${nd.name}" style="width:34px;height:34px;border-radius:7px;object-fit:cover;" />
                 <div>
-                  <strong style="font-size:12px;color:var(--gold-bright);">${nd.name}</strong>
+                  <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                    <strong style="font-size:12px;color:var(--gold-bright);">${nd.name}</strong>
+                    <span class="tag-chip ${syn.tier === "full_star" ? "mythic" : syn.tier === "cleared" ? "done" : ""}" style="font-size:9px;" data-exp-synergy="${nd.id}">${escapeHtml(syn.label)}</span>
+                  </div>
                   <div style="font-size:9.8px;color:#9effec;">${nd.desc}</div>
                 </div>
               </div>
@@ -16520,7 +17174,7 @@ const ART = {
         ex.tickTimer = curTick - dt;
         if (ex.tickTimer <= 0) {
           ex.tickTimer = 8.5;
-          const tickStones = activeNodes.reduce((s, n) => s + Math.round(n.stoneRate * 0.35), 0);
+          const tickStones = activeNodes.reduce((s, n) => s + Math.round(n.stoneRate * 0.35 * getExpeditionNodeStageSynergy(game, n.id).mult), 0);
           ex.bankedStones = Math.min(EXPEDITION_BANKED_STONES_CAP, (ex.bankedStones || 0) + tickStones);
           if (Math.random() < 0.25) {
             ex.bankedStars = Math.min(EXPEDITION_BANKED_STARS_CAP, (ex.bankedStars || 0) + 1);
@@ -16726,7 +17380,8 @@ const ART = {
     posture: "双剑意姿态 (`)", soul: "镇妖魂印 (C)", swordBlink: "缩地瞬身 (F)", finisher: "流派奥义 (X)",
     tagSwitch: "道侣瞬切 (V)", weapon_form: "太虚剑匣 (1/2/3)",
     astral: "法天象地 (O)", mount: "山海灵骑 (J)", qimen: "奇门八门阵 (U)",
-    sanqing: "一气化三清 (4)", shanhe: "山河社稷图 (5)", warship: "凌霄仙舟 (6)", sequencer: "自创剑谱 (7)"
+    sanqing: "一气化三清 (4)", shanhe: "山河社稷图 (5)", warship: "凌霄仙舟 (6)", sequencer: "自创剑谱 (7)",
+    coop_2p: "双人同游 (]/ [)", celestial_time: "太虚天时 (\\)"
   };
 
   // S11+G7: Once-per-unlock crisp 2-line "新神通" tutorial cards
@@ -18434,8 +19089,11 @@ const ART = {
     arena.celestialSpire = null;
     arena.sectDefense = null;
     arena.cloudFlight = null;
+    restoreCustomSeedTempCurio();
     arena.customSeedRun = null;
     arena.bladeClash = null;
+    if (arena.coop2P) arena.coop2P.active = false;
+    syncV23EpochDock();
 
     if (preSandboxSnapshot && preSandboxSnapshot.meta) {
       Object.keys(metaState).forEach(k => { if (!(k in preSandboxSnapshot.meta)) delete metaState[k]; });
@@ -18893,8 +19551,18 @@ const ART = {
     }
 
     const nextRev = Math.max(Math.max(0, Math.floor(num(loadedSaveRev, 0))), Math.max(0, Math.floor(num(externalMaxRev, 0)))) + 1;
+    let gameForSave = game;
+    if (activeCustomSeedTempCurio && game && game.spireCurios && activeCustomSeedTempCurio.cid) {
+      const cleanCurios = Object.assign({}, game.spireCurios);
+      if (activeCustomSeedTempCurio.hadKey) {
+        cleanCurios[activeCustomSeedTempCurio.cid] = activeCustomSeedTempCurio.prevLv;
+      } else {
+        delete cleanCurios[activeCustomSeedTempCurio.cid];
+      }
+      gameForSave = Object.assign({}, game, { spireCurios: cleanCurios });
+    }
     const payloadObj = {
-      game,
+      game: gameForSave,
       stageIdx: arena.stageIdx,
       stanceIdx: arena.stanceIdx,
       towerMode: !!arena.towerMode,
@@ -21211,6 +21879,18 @@ const ART = {
       ? endingMap[ed.id]
       : "。九霄天门既开，静候择定本世最终证道之途。";
 
+    const companionEchoLines = {
+      shen: "沈清禾悬壶青云药庐，听雨洞府檐下灯火岁岁长明。",
+      pei:  "裴照执剑镇守青云剑阁，仍常于云海试剑忆及当年并肩破阵。",
+      lu:   "陆玄松于传功堂立碑记你问道始末，青云后辈皆诵其名。",
+      yan:  "砚尘阖卷收笔，将你自破庙至九霄的剑痕永铭照影古碑。"
+    };
+    const companionEpilogues = bondedIds.map(id => ({
+      id,
+      name: NPC_META[id].name,
+      line: companionEchoLines[id] || `${NPC_META[id].name}与你共证红尘剑缘。`
+    }));
+
     return {
       mode: ks.mode,
       seal: base.seal,
@@ -21220,7 +21900,8 @@ const ART = {
       epilogue: `${karmaClause}${journeyClause}${allyClause}${petClause}${endClause}`,
       clearedStages: clearedIdxs.length,
       totalStars,
-      bondedNames
+      bondedNames,
+      companionEpilogues
     };
   }
 
@@ -21379,6 +22060,53 @@ const ART = {
     else if (actionId === "open_workshop") openCustomWorkshopModal();
   }
 
+  function renderMasteryResonanceCardHtml(g) {
+    const mr = computeEndgameMasteryResonance(g);
+    const atkPctTxt = mr.passiveAtkPct > 0 ? `+${(mr.passiveAtkPct * 100).toFixed(1)}% 常驻攻击池` : "+0%";
+    const drTxt = mr.drBonus > 0 ? `+${mr.drBonus} 护体减伤` : "+0";
+    const critTxt = mr.critBonus > 0 ? ` · +${Math.round(mr.critBonus * 100)}% 暴击` : "";
+    return `
+      <div class="q6-mastery-strip" data-mastery-active="${mr.activeCount}">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
+          <strong style="font-size:12px;color:#80ffea;">☯ 诸天道果共鸣 · ${escapeHtml(mr.tierLabel)}</strong>
+          <span class="tag-chip ${mr.activeCount >= 4 ? "mythic" : mr.activeCount > 0 ? "done" : ""}" style="font-size:10px;">当前联动：${atkPctTxt} · ${drTxt}${critTxt}</span>
+        </div>
+        <div class="q6-mastery-grid">
+          ${mr.pillars.map(p => `
+            <div class="q6-mastery-pill ${p.active ? "lit" : ""}" data-mastery-pillar="${escapeHtml(p.id)}">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+                <strong style="color:${p.active ? "#ffe28a" : "#9db8b2"};">${p.active ? "✦ " : "○ "}${escapeHtml(p.name)}</strong>
+                <span style="font-size:9.2px;color:${p.active ? "#70ffe6" : "#8ea9a4"};">${escapeHtml(p.progressText)}</span>
+              </div>
+              <span style="font-size:9.2px;color:#9cc2ba;">${escapeHtml(p.short)}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderHighTierModeGroupStripHtml(g) {
+    return `
+      <div class="q6-mode-group-strip" data-high-tier-groups="3">
+        ${HIGH_TIER_MODE_REGISTRY.map(grp => {
+          const unlockedCnt = grp.items.filter(it => it.kind === "action"
+            ? isActionUnlockedByRealm(g, it.id)
+            : isEcosystemSystemUnlocked(g, it.id)).length;
+          return `
+            <div class="q6-mode-group-card" data-mode-group="${escapeHtml(grp.groupId)}">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+                <strong style="color:#ffe28a;font-size:11px;">${escapeHtml(grp.groupTitle.split(" · ")[0])}</strong>
+                <span class="tag-chip ${unlockedCnt === grp.items.length ? "done" : ""}" style="font-size:9px;">${unlockedCnt}/${grp.items.length}</span>
+              </div>
+              <span style="font-size:9.5px;color:#a8cac3;line-height:1.3;">${escapeHtml(grp.desc)}</span>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }
+
   function openAscensionRoadmapModal() {
     if (!game) return;
     closeDrawer();
@@ -21409,6 +22137,9 @@ const ART = {
         </div>
         <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;border-color:rgba(248,220,144,0.52);color:#ffe8a3;" data-action="open-hall-of-lives">🏛 历世道果殿堂</button>
       </div>
+
+      ${renderHighTierModeGroupStripHtml(game)}
+      ${renderMasteryResonanceCardHtml(game)}
 
       <div style="display:flex;flex-direction:column;gap:7px;max-height:64vh;overflow-y:auto;padding-right:2px;">
         ${SYSTEM_ECOSYSTEM_LADDER.map(tier => {
@@ -21770,6 +22501,19 @@ const ART = {
                 }).join("")}
               </div>
             ` : "";
+            const volGuide = VOLUME_CAMPAIGN_GUIDE.find(v => v.volIndex === ch.index) || null;
+            const volBriefHtml = volGuide ? `
+              <div class="q6-vol-brief-box" data-vol-brief="${ch.index}">
+                <div><strong>⚔ 敌招考题（${escapeHtml(volGuide.enemyExam.bossName)}）：</strong>${escapeHtml(volGuide.enemyExam.telegraph)} → ${escapeHtml(volGuide.enemyExam.counter)}</div>
+                <div><strong>✦ 成长收益：</strong>${escapeHtml(volGuide.growthPayoff)}</div>
+                <div style="color:var(--text-sub);">${escapeHtml(volGuide.optionalRouteNote)}</div>
+              </div>
+            ` : "";
+            const vol5Cta = ch.index === 5 ? `
+              <div style="display:flex;justify-content:flex-end;">
+                <button type="button" class="btn-secondary btn-jade" style="padding:3px 10px;font-size:var(--fs-xs);" data-action="open-vol5-resonance">✦ 展开第五卷 · 法则共鸣与元神试剑总览 ▸</button>
+              </div>
+            ` : "";
             return `
             <div class="jade-card" style="gap:6px;">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -21780,6 +22524,8 @@ const ART = {
                 <span style="font-size:var(--fs-xs);color:var(--text-sub);">${ch.steps.filter(s => s.check(game)).length}/${ch.steps.length} 已达成</span>
               </div>
               <p style="font-size:var(--fs-xs);color:var(--text-sub);line-height:1.45;margin:0;">${escapeHtml(ch.desc)}</p>
+              ${volBriefHtml}
+              ${vol5Cta}
               ${ch.steps.map(s => {
                 const ok = s.check(game);
                 const claimed = game.claimedStepIds.includes(s.id);
@@ -21949,6 +22695,8 @@ const ART = {
               <span class="tag-chip mythic">完成度 ${pct}%</span>
             </div>
           </div>
+          ${renderMasteryResonanceCardHtml(game)}
+          ${renderHighTierModeGroupStripHtml(game)}
           <div style="padding:8px 10px;border-radius:10px;background:rgba(28,12,18,0.68);border:1px solid rgba(255,120,110,0.35);display:flex;flex-direction:column;gap:6px;${pactsOk ? "" : "opacity:0.78;"}">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
               <strong style="font-size:var(--fs-sm);color:#ffb3ae;">🔥 天道劫印 · 巅峰难度契约（已启 ${getActivePactCount(game)}/5 劫${pactsOk ? "" : ` · 🔒${pactMinName}期解封`}）</strong>
@@ -22014,6 +22762,88 @@ const ART = {
         <span style="font-size:var(--fs-xs);color:var(--jade);">当前境界：${REALMS[game.realm].name}</span>
       </div>
     `, true, { tier: "info" });
+  }
+
+  function openVol5ResonanceModal() {
+    if (!game) return false;
+    closeDrawer();
+    const snap = buildVol5ResonanceSnapshot(game);
+    const guide = VOLUME_CAMPAIGN_GUIDE.find(v => v.volIndex === 5) || VOLUME_CAMPAIGN_GUIDE[4];
+    return openModal(`
+      <div class="modal-header">
+        <div class="drawer-mural-banner" style="height:94px;width:100%;">
+          <img src="${ART.arena_terrace}" alt="第五卷 · 法则共鸣" />
+          <div class="drawer-mural-overlay">
+            <div>
+              ${renderSemanticTag("main", "第五卷 · 元神试剑")}
+              <h2 style="font-family:var(--font-serif);font-size:var(--fs-xl);color:var(--gold-bright);margin-top:3px;">法则共鸣 · 元婴破虚化神总览</h2>
+            </div>
+            <button type="button" class="btn-tertiary btn-ghost" data-modal-close="1">收卷 ✕</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body" id="vol5-resonance-modal-body">
+        <div class="jade-card" style="gap:6px;padding:9px 11px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <strong style="font-family:var(--font-serif);font-size:14px;color:var(--gold-bright);">📜 第五卷叙事与核心目标（D01/D04 保守基线）</strong>
+            <span class="tag-chip ${snap.s5LawsDone ? "done" : "mythic"}">${snap.s5LawsDone ? "✓ 万法共鸣已达标" : "待聚四法或法宝★3"}</span>
+          </div>
+          <p style="font-size:12px;color:var(--text-main);line-height:1.55;margin:0;">${escapeHtml(guide.goalSummary)}</p>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;font-size:11.5px;">
+            <div class="visual-tile ${snap.s5LawsDone ? "equipped" : ""}" style="padding:7px 9px;justify-content:space-between;">
+              <span>大道法则 / 法宝淬星</span>
+              <strong style="color:#ffe28a;">法则 ${snap.lawCount}/${snap.lawNeed} 或 法宝 ★${snap.relicStars}/${snap.relicNeed}</strong>
+            </div>
+            <div class="visual-tile ${snap.isSpiritOrAbove || snap.readyForSpiritTribulation ? "equipped" : ""}" style="padding:7px 9px;justify-content:space-between;">
+              <span>化神天劫进度</span>
+              <strong style="color:#70ffe6;">${snap.isSpiritOrAbove ? "已证化神+" : snap.xpReady ? `修为圆满 (${snap.xp}/${snap.xpCap})` : `修为 ${snap.xp}/${snap.xpCap}`}</strong>
+            </div>
+          </div>
+          <div id="vol5-d01-dual-note" style="font-size:11px;color:#ffd8a8;background:rgba(44,26,12,0.52);border:1px solid rgba(255,196,102,0.34);border-radius:8px;padding:6px 9px;line-height:1.45;">
+            ☯ <b>双轨破境说明（化神丹持有 ×${snap.spiritPillCount}）</b>：${escapeHtml(snap.dualBreakthroughNote)}
+          </div>
+        </div>
+
+        ${renderMasteryResonanceCardHtml(game)}
+
+        <div class="jade-card" style="gap:6px;padding:9px 11px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
+            <strong style="font-size:12.5px;color:#f4c4ff;">♥ 第五卷故人终章前奏（可选加分，不硬锁主线）</strong>
+            <button type="button" class="btn-ghost" style="padding:2px 8px;font-size:10.5px;" data-route-goal="drawer_story">前往【故人】抽屉 ▸</button>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${snap.companionStatus.map(cs => `
+              <span class="tag-chip ${cs.done ? "done" : ""}">${cs.done ? "✓ " : "○ "}${escapeHtml(cs.name)}</span>
+            `).join("")}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="flex-wrap:wrap;gap:6px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button type="button" class="btn-primary btn-gold" style="padding:5px 12px;font-size:11.5px;" data-route-goal="stage_4">⚔ 前往九霄天门试剑</button>
+          <button type="button" class="btn-secondary btn-jade" style="padding:5px 12px;font-size:11.5px;" data-route-goal="tribulate">⚡ 前往渡劫化神</button>
+          <button type="button" class="btn-tertiary btn-ghost" style="padding:5px 10px;font-size:11px;" data-action="open-ascension-roadmap">📊 问道阶梯</button>
+          <button type="button" class="btn-tertiary btn-ghost" style="padding:5px 10px;font-size:11px;" data-action="open-star-chart">🌟 周天星图</button>
+          <button type="button" class="btn-tertiary btn-ghost" style="padding:5px 10px;font-size:11px;" data-action="open-world-map">🗺 九州舆图</button>
+        </div>
+      </div>
+    `, true, { kind: "vol5_resonance", tier: "info" });
+  }
+
+  function openVol5ResonanceFlow() {
+    if (!game) return false;
+    const canPlayIntro = Boolean(
+      rankOf(game.realm) >= 4
+      && !(game.seenCutscenes && game.seenCutscenes.enter_vol5_resonance)
+      && !arena.enemies.some(e => e.hp > 0 && !e.isDummy && !e.isTreasure)
+      && !arena.tribulation
+      && !arena.defeatPending
+    );
+    if (canPlayIntro) {
+      playCutscene("enter_vol5_resonance", () => { openVol5ResonanceModal(); });
+      return true;
+    }
+    return openVol5ResonanceModal();
   }
 
   function renderQuestTrackerHud() {
@@ -22560,6 +23390,7 @@ const ART = {
     arena.cloudFlight = null;
     arena.sectDefense = null;
     arena.celestialSpire = null;
+    restoreCustomSeedTempCurio();
     arena.customSeedRun = null;
     arena.bladeClash = null;
     arena.calmT = COMBAT_CALM_GRACE_SEC;
@@ -22744,6 +23575,7 @@ const ART = {
     arena.sectDefense = null;
     arena.cloudFlight = null;
     arena.celestialSpire = null;
+    restoreCustomSeedTempCurio();
     arena.customSeedRun = null;
     arena.bladeClash = null;
     arena.calmT = 0;
@@ -23214,7 +24046,15 @@ const ART = {
       return;
     }
     const act = CAMPAIGN_ACTS[stageIdx] || CAMPAIGN_ACTS[0];
-    const meta = VOLUME_RECAP_META[stageIdx] || VOLUME_RECAP_META[0];
+    const isVol5NascentTrial = stageIdx === 4 && game.realm === "nascent";
+    const meta = isVol5NascentTrial
+      ? {
+          stageIdx: 4,
+          volEndLabel: "第五卷 · 元神试剑",
+          title: "法则共鸣 · 元神试剑圆满",
+          chronicle: "你以元婴剑心先登九霄星盘，一剑震退【天门道影】试剑分神！万法共鸣渐趋圆满，只需修为圆融并渡过化神天劫，便可于第六卷真正叩开九霄天门、白日飞升。"
+        }
+      : (VOLUME_RECAP_META[stageIdx] || VOLUME_RECAP_META[0]);
     const earned = Math.max(1, Math.min(3, Math.floor(num(payload && payload.earned, 1))));
     const prevStars = Math.max(0, Math.min(3, Math.floor(num(payload && payload.prevStars, 0))));
     const bestStars = Math.max(prevStars, earned);
@@ -23226,6 +24066,13 @@ const ART = {
     const bestIcons = `${"★".repeat(bestStars)}${"☆".repeat(3 - bestStars)}`;
     const realmName = (REALMS[game.realm] && REALMS[game.realm].name) || "凡人";
     const nextObjective = computeVolumeEndNextObjective(stageIdx, game);
+    const ksRecap = getKarmaState(game);
+    const bondedRecapIds = getBondedCompanionIds(game);
+    const bondedRecapNames = bondedRecapIds.map(id => NPC_META[id].name);
+    const volEchoGuide = VOLUME_CAMPAIGN_GUIDE.find(v => v.volIndex === (isVol5NascentTrial ? 5 : (stageIdx === 4 ? 6 : stageIdx + 1))) || VOLUME_CAMPAIGN_GUIDE[0];
+    const companionEchoText = bondedRecapNames.length > 0
+      ? `同心故人（${bondedRecapNames.join("、")}）回应此战 · 当前道心【${ksRecap.label}】 · ${volEchoGuide.companionPrompt}`
+      : `独行问道 · 当前道心【${ksRecap.label}】 · ${volEchoGuide.companionPrompt}`;
 
     const onDismissFn = typeof onDismiss === "function" ? onDismiss : null;
     const recapArgs = { stageIdx, payload, onDismiss: onDismissFn, stageEpoch: arena.stageEpoch };
@@ -23250,6 +24097,11 @@ const ART = {
           <span style="font-size:11px;color:var(--jade);">${escapeHtml(game.name)} · ${escapeHtml(realmName)}期 · 九州星辉 ${totalStars}/15 ★</span>
         </div>
         <p style="font-size:12.5px;color:var(--text-main);line-height:1.6;margin:0;">${escapeHtml(meta.chronicle)}</p>
+      </div>
+
+      <div id="volume-recap-companion-echo" class="jade-card" style="gap:4px;padding:8px 12px;border-color:rgba(244,196,255,0.42);">
+        <strong style="font-family:var(--font-serif);font-size:12.5px;color:#f4c4ff;">♥ 红尘故人与道心回响</strong>
+        <p style="font-size:11.5px;color:#e6daf5;line-height:1.5;margin:0;">${escapeHtml(companionEchoText)}</p>
       </div>
 
       <div class="jade-card" style="gap:7px;padding:10px 12px;">
@@ -25202,6 +26054,12 @@ const ART = {
           ? `<span>① <b>破境丹稳渡</b>：3 重天雷 + 3 层护脉丹障 + 延寿 +10 载，弹反 ≥1 次或护脉丹障存留即成【天道一品】；② <b>无丹强渡</b>：5 重强化天雷，需 <b>空格一闪弹反 ≥2 次</b> 方成【天道一品】，功成另赐灵石。</span>`
           : `<span><b>凡人引气初劫（无需破境丹）</b>：3 重紫霄天雷；落雷瞬间按 <b>空格一闪弹反 ≥1 次</b> → 铸就【天道一品】（全属性倍率 +14%）；零弹反稳过 → 【地道上品】（全属性倍率 +9%）。炼气期后将开启「破境丹稳渡 vs 无丹强渡」双路线。</span>`}
       </div>
+      ${game.realm === "nascent" ? `
+        <div id="trib-vol5-bridge-note" class="trib-rule-box" style="border-color:rgba(112,255,230,0.48);color:#d6f9f2;">
+          <strong style="color:#80ffea;">✦ 第五卷 → 第六卷过渡指引：</strong>
+          <span>化神丹稳渡与无丹逆天强渡皆可破境化神（D01 不硬锁炼丹）；证道化神后将立即解封第六卷【山河社稷图 (5)】【凌霄仙舟 (6)】【天道劫印】【造化工坊】，直指【九霄天门】终极飞升！</span>
+        </div>
+      ` : ""}
       ${pathBody}
     `, true);
   }
@@ -25577,6 +26435,17 @@ const ART = {
             </div>
             <div style="font-size:var(--fs-sm);color:var(--text-main);">产出与机缘：${escapeHtml(sel.drop)}</div>
             <div style="font-size:var(--fs-xs);color:var(--text-sub);">解锁/路径：${escapeHtml(sel.reqText || sel.sub)}${sel.isMainTarget && navSnap.nextMainline && navSnap.nextMainline.stepText ? ` ｜ 当前主线：${escapeHtml(navSnap.nextMainline.stepText)}` : ""}</div>
+            ${(() => {
+              const guide = sel.chapterIdx ? VOLUME_CAMPAIGN_GUIDE.find(v => v.volIndex === sel.chapterIdx) : null;
+              if (!guide) return "";
+              const vol5Extra = sel.id === "ch5_resonance"
+                ? (() => {
+                    const snap5 = buildVol5ResonanceSnapshot(game);
+                    return ` ｜ 实时进度：法则 ${snap5.lawCount}/${snap5.lawNeed} · 法宝★${snap5.relicStars}/${snap5.relicNeed} · 诸天共鸣 ${snap5.resonance.activeCount}/6`;
+                  })()
+                : "";
+              return `<div id="world-map-vol-brief" style="font-size:var(--fs-xs);color:#9effec;line-height:1.4;">⚔ 考题（${escapeHtml(guide.enemyExam.bossName)}）：${escapeHtml(guide.enemyExam.counter)} ｜ 收益：${escapeHtml(guide.growthPayoff)}${escapeHtml(vol5Extra)}</div>`;
+            })()}
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
             <button type="button" id="btn-map-enter-node" class="${sel.unlocked ? "btn-primary btn-gold" : "btn-tertiary btn-ghost is-locked"}" data-map-enter="${escapeHtml(sel.id)}" ${sel.unlocked ? "" : "disabled"}>${escapeHtml(enterBtnLabel)}</button>
@@ -26320,8 +27189,25 @@ const ART = {
             spawnBossRushBout();
           }, 750);
         }
-      } else if ((arena.sectDefense && arena.sectDefense.active) || (arena.customSeedRun && arena.customSeedRun.active)) {
-        // Handled by sect defense / custom seed encounter logic
+      } else if (arena.sectDefense && arena.sectDefense.active) {
+        // Handled by stepSectDefenseSiege
+      } else if (arena.customSeedRun && arena.customSeedRun.active) {
+        arena.waveTransitioning = true;
+        Sound.fanfare();
+        const csEpoch = arena.stageEpoch;
+        const csSeed = arena.customSeedRun.seed || "";
+        const csBosses = Array.isArray(arena.customSeedRun.bosses) ? arena.customSeedRun.bosses.slice() : [];
+        const csStartedAt = arena.customSeedRun.startedAt || Date.now();
+        setTimeout(() => {
+          if (!game || arena.stageEpoch !== csEpoch || !arena.customSeedRun || !arena.customSeedRun.active) return;
+          arena.waveTransitioning = false;
+          const elapsedSec = Math.max(0.1, (Date.now() - csStartedAt) / 1000);
+          arena.customSeedRun.elapsedSec = elapsedSec;
+          arena.customSeedRun.active = false;
+          const tempCurioRestored = restoreCustomSeedTempCurio();
+          updateHud();
+          openCustomSeedVictoryModal({ seed: csSeed, elapsedSec, bosses: csBosses, tempCurioRestored });
+        }, 420);
       } else if (arena.towerMode) {
         arena.waveTransitioning = true;
         const fl = game.towerFloor;
@@ -27921,6 +28807,9 @@ const ART = {
     }
     if (game.realm === "spirit" || (REALMS[game.realm].xpCap > 0 && game.xp >= REALMS[game.realm].xpCap)) {
       startLiveTribulation();
+    } else if (game.realm === "nascent") {
+      const cap = REALMS.nascent.xpCap;
+      showToast(`元婴期修为尚未圆满（${Math.floor(num(game.xp, 0))}/${cap}），请先周天吐纳或历练攒满修为，再引动化神天劫晋升化神期！`);
     } else {
       showToast("需晋升化神期方可叩开九霄仙门！");
     }
@@ -28636,9 +29525,65 @@ const ART = {
     const isPeril = !!e.perilous;
     const isGrab = !!e.grabWindup;
     const isLow = !!e.lowSweepWindup;
+    const tx = Number.isFinite(e.aimX) && (e.aimX !== 0 || e.aimY !== 0) ? e.aimX : (e.x + (e.facing || 1) * 180);
+    const ty = Number.isFinite(e.aimY) && (e.aimX !== 0 || e.aimY !== 0) ? e.aimY : e.y;
+    const aimAng = Math.atan2(ty - e.y, tx - e.x);
+
+    if (e.id === "serpent" && !isGrab && !isLow) {
+      if (isPeril) {
+        return {
+          kind: "frost_barrage",
+          shape: "cone",
+          ang: aimAng,
+          spread: 0.50,
+          len: e.isBoss ? 250 : 210,
+          originYOff: 10,
+          frostPoolR: e.partSevered ? 0 : 92,
+          aimX: tx,
+          aimY: ty,
+          moveName: "幽潭寒煞弹"
+        };
+      }
+      if (e.attackType === "shot") {
+        return {
+          kind: "shot_fan",
+          shape: "cone",
+          ang: aimAng,
+          spread: e.enraged ? 0.44 : 0.26,
+          len: 225,
+          originYOff: 10,
+          frostPoolR: 0,
+          aimX: tx,
+          aimY: ty,
+          moveName: "寒霜妖弹"
+        };
+      }
+    }
+    if (e.id === "puppet" && isPeril && !isGrab && !isLow) {
+      return {
+        kind: "cross_crescent",
+        shape: "cross",
+        ang: aimAng,
+        len: e.isBoss ? 220 : 180,
+        halfW: 18,
+        arms: e.partSevered ? 2 : 4,
+        originYOff: 10,
+        moveName: "十字剑波"
+      };
+    }
+    if (e.id === "trial_gate" && isPeril && !isGrab && !isLow) {
+      return {
+        kind: "sky_bolt",
+        shape: "target_ellipse",
+        x: tx,
+        y: ty,
+        r: 76,
+        ellY: 0.56,
+        originYOff: 0,
+        moveName: "九霄天雷"
+      };
+    }
     if (e.attackType === "charge" && !isPeril && !isGrab && !isLow) {
-      const tx = Number.isFinite(e.aimX) && (e.aimX !== 0 || e.aimY !== 0) ? e.aimX : (e.x + (e.facing || 1) * 180);
-      const ty = Number.isFinite(e.aimY) && (e.aimX !== 0 || e.aimY !== 0) ? e.aimY : e.y;
       return {
         kind: "charge",
         shape: "rect",
@@ -28646,7 +29591,8 @@ const ART = {
         halfW: e.isBoss ? 24 : 18,
         dur: e.enraged ? 0.26 : 0.30,
         originYOff: 12,
-        ang: Math.atan2(ty - e.y, tx - e.x)
+        ang: aimAng,
+        moveName: e.id === "shadow" ? "噬影疾冲" : "疾冲扑咬"
       };
     }
     return {
@@ -28654,7 +29600,8 @@ const ART = {
       shape: "ellipse",
       r: isPeril ? (e.r + 92) : (e.r + 74),
       ellY: 0.56,
-      originYOff: 14
+      originYOff: 14,
+      moveName: e.id === "sentinel" ? "雷戟镇岳劈" : (isPeril ? "陨岳重击" : "重劈震地")
     };
   }
 
@@ -29169,31 +30116,61 @@ const ART = {
     const fCtx = farC.getContext("2d");
     const mCtx = midC.getContext("2d");
     const nCtx = fgC.getContext("2d");
-    const isSanctum = modeKey === "sanctum";
 
-    // Far Layer: Atmospheric ink-wash mountain ridge & mist haze
+    const BIOME_STYLES = {
+      sanctum: {
+        farTop: "rgba(18, 42, 46, 0.34)", farMid: "rgba(38, 86, 84, 0.12)", ridge: "rgba(14, 34, 38, 0.24)",
+        spots: [[0.24, 0.44, 140, "rgba(255, 224, 146, 0.13)"], [0.76, 0.46, 140, "rgba(255, 224, 146, 0.13)"], [0.50, 0.32, 165, "rgba(112, 255, 230, 0.09)"]],
+        fgFill: "rgba(8, 24, 26, 0.46)", fgStroke: "rgba(74, 168, 152, 0.24)", motif: "bamboo"
+      },
+      vol1: {
+        farTop: "rgba(10, 24, 30, 0.42)", farMid: "rgba(32, 68, 76, 0.14)", ridge: "rgba(8, 20, 26, 0.30)",
+        spots: [[0.20, 0.40, 145, "rgba(255, 198, 108, 0.11)"], [0.80, 0.42, 135, "rgba(128, 228, 240, 0.09)"], [0.52, 0.62, 220, "rgba(148, 224, 236, 0.07)"]],
+        fgFill: "rgba(5, 14, 18, 0.56)", fgStroke: "rgba(92, 152, 162, 0.22)", motif: "bamboo"
+      },
+      vol2: {
+        farTop: "rgba(14, 40, 36, 0.38)", farMid: "rgba(52, 114, 98, 0.14)", ridge: "rgba(10, 32, 28, 0.28)",
+        spots: [[0.22, 0.36, 155, "rgba(160, 246, 212, 0.10)"], [0.78, 0.38, 150, "rgba(255, 226, 152, 0.11)"], [0.50, 0.58, 200, "rgba(112, 255, 224, 0.06)"]],
+        fgFill: "rgba(7, 24, 20, 0.50)", fgStroke: "rgba(96, 188, 152, 0.26)", motif: "pine"
+      },
+      vol3: {
+        farTop: "rgba(8, 28, 44, 0.44)", farMid: "rgba(58, 148, 182, 0.15)", ridge: "rgba(6, 22, 36, 0.30)",
+        spots: [[0.26, 0.44, 160, "rgba(128, 236, 255, 0.12)"], [0.74, 0.48, 155, "rgba(148, 226, 255, 0.11)"], [0.50, 0.66, 230, "rgba(112, 255, 236, 0.08)"]],
+        fgFill: "rgba(5, 18, 28, 0.52)", fgStroke: "rgba(136, 234, 255, 0.28)", motif: "frost"
+      },
+      vol4: {
+        farTop: "rgba(28, 20, 34, 0.44)", farMid: "rgba(132, 96, 62, 0.14)", ridge: "rgba(22, 16, 28, 0.32)",
+        spots: [[0.20, 0.42, 150, "rgba(224, 178, 108, 0.10)"], [0.80, 0.42, 150, "rgba(186, 134, 255, 0.10)"], [0.50, 0.60, 210, "rgba(255, 210, 138, 0.06)"]],
+        fgFill: "rgba(14, 10, 18, 0.54)", fgStroke: "rgba(216, 179, 106, 0.26)", motif: "swords"
+      },
+      vol5: {
+        farTop: "rgba(22, 18, 42, 0.40)", farMid: "rgba(246, 206, 118, 0.14)", ridge: "rgba(28, 24, 48, 0.26)",
+        spots: [[0.24, 0.34, 170, "rgba(255, 232, 152, 0.13)"], [0.76, 0.34, 170, "rgba(196, 164, 255, 0.11)"], [0.50, 0.50, 240, "rgba(255, 242, 188, 0.08)"]],
+        fgFill: "rgba(14, 12, 26, 0.48)", fgStroke: "rgba(255, 224, 136, 0.28)", motif: "eaves"
+      }
+    };
+    const stBiome = BIOME_STYLES[modeKey] || BIOME_STYLES.vol1;
+
+    // Far Layer: Atmospheric ink-wash mountain ridge & biome mist haze
     const farGrad = fCtx.createLinearGradient(0, 0, 0, h * 0.42);
-    farGrad.addColorStop(0, isSanctum ? "rgba(18, 42, 46, 0.34)" : "rgba(10, 24, 30, 0.42)");
-    farGrad.addColorStop(0.65, isSanctum ? "rgba(38, 86, 84, 0.12)" : "rgba(32, 68, 76, 0.14)");
+    farGrad.addColorStop(0, stBiome.farTop);
+    farGrad.addColorStop(0.65, stBiome.farMid);
     farGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
     fCtx.fillStyle = farGrad;
     fCtx.fillRect(0, 0, w, h * 0.44);
-    fCtx.fillStyle = isSanctum ? "rgba(14, 34, 38, 0.24)" : "rgba(8, 20, 26, 0.30)";
+    fCtx.fillStyle = stBiome.ridge;
     fCtx.beginPath();
     fCtx.moveTo(0, h * 0.24);
-    fCtx.quadraticCurveTo(w * 0.18, h * 0.11, w * 0.38, h * 0.20);
-    fCtx.quadraticCurveTo(w * 0.62, h * 0.08, w * 0.84, h * 0.19);
+    fCtx.quadraticCurveTo(w * 0.18, h * (modeKey === "vol2" || modeKey === "vol5" ? 0.09 : 0.11), w * 0.38, h * 0.20);
+    fCtx.quadraticCurveTo(w * 0.62, h * (modeKey === "vol4" ? 0.12 : 0.08), w * 0.84, h * 0.19);
     fCtx.lineTo(w, h * 0.14);
     fCtx.lineTo(w, 0);
     fCtx.lineTo(0, 0);
     fCtx.closePath();
     fCtx.fill();
 
-    // Mid Layer: Wet bluestone rain sheen (Vol 1) or warm courtyard lantern pools (Sanctum)
-    const lanternSpots = isSanctum
-      ? [[0.24, 0.44, 140, "rgba(255, 224, 146, 0.13)"], [0.76, 0.46, 140, "rgba(255, 224, 146, 0.13)"], [0.50, 0.32, 165, "rgba(112, 255, 230, 0.09)"]]
-      : [[0.20, 0.40, 145, "rgba(255, 198, 108, 0.11)"], [0.80, 0.42, 135, "rgba(128, 228, 240, 0.09)"], [0.52, 0.62, 220, "rgba(148, 224, 236, 0.07)"]];
-    for (const [rx, ry, rad, col] of lanternSpots) {
+    // Mid Layer: Biome atmospheric pools (rain sheen / jade mist / frost glow / bronze haze / celestial cloud gold)
+    for (const [rx, ry, rad, col] of stBiome.spots) {
       const g = mCtx.createRadialGradient(w * rx, h * ry, 6, w * rx, h * ry, rad);
       g.addColorStop(0, col);
       g.addColorStop(1, "rgba(0, 0, 0, 0)");
@@ -29203,11 +30180,10 @@ const ART = {
       mCtx.fill();
     }
 
-    // Near Foreground Layer: Corner bamboo fronds / temple eave silhouettes strictly clamped to outer 10-11% bottom corners!
+    // Near Foreground Layer: Biome silhouettes strictly clamped to outer 10-11% bottom corners (fgMarginPct <= 0.11, never occludes danger telegraphs!)
     const marginW = w * 0.108;
     const cornerTop = h * 0.77;
-    nCtx.fillStyle = isSanctum ? "rgba(8, 24, 26, 0.46)" : "rgba(5, 14, 18, 0.56)";
-    // Bottom-left silhouette cluster
+    nCtx.fillStyle = stBiome.fgFill;
     nCtx.beginPath();
     nCtx.moveTo(0, h);
     nCtx.lineTo(0, cornerTop);
@@ -29215,7 +30191,6 @@ const ART = {
     nCtx.lineTo(marginW, h);
     nCtx.closePath();
     nCtx.fill();
-    // Bottom-right silhouette cluster
     nCtx.beginPath();
     nCtx.moveTo(w, h);
     nCtx.lineTo(w, cornerTop + 8);
@@ -29223,18 +30198,46 @@ const ART = {
     nCtx.lineTo(w - marginW, h);
     nCtx.closePath();
     nCtx.fill();
-    // Delicate bamboo leaf strokes inside outer 10.5% corners
-    nCtx.strokeStyle = isSanctum ? "rgba(74, 168, 152, 0.24)" : "rgba(92, 152, 162, 0.22)";
+
+    nCtx.strokeStyle = stBiome.fgStroke;
     nCtx.lineWidth = 2.0;
-    for (let b = 0; b < 3; b++) {
-      nCtx.beginPath();
-      nCtx.moveTo(10 + b * 24, h);
-      nCtx.quadraticCurveTo(22 + b * 28, h - 54 - b * 14, 48 + b * 26, h - 88 - b * 10);
-      nCtx.stroke();
-      nCtx.beginPath();
-      nCtx.moveTo(w - 10 - b * 24, h);
-      nCtx.quadraticCurveTo(w - 22 - b * 28, h - 50 - b * 14, w - 48 - b * 26, h - 84 - b * 10);
-      nCtx.stroke();
+    if (stBiome.motif === "swords") {
+      // Vol 4 Ancient Sword Mound: slanted broken sword hilts inside outer 10.5% corners
+      for (let b = 0; b < 3; b++) {
+        const lx = 18 + b * 28;
+        const rx = w - 18 - b * 28;
+        nCtx.beginPath(); nCtx.moveTo(lx, h); nCtx.lineTo(lx + 18, h - 78 - b * 10); nCtx.stroke();
+        nCtx.beginPath(); nCtx.moveTo(lx + 6, h - 54 - b * 8); nCtx.lineTo(lx + 24, h - 48 - b * 8); nCtx.stroke();
+        nCtx.beginPath(); nCtx.moveTo(rx, h); nCtx.lineTo(rx - 18, h - 74 - b * 10); nCtx.stroke();
+        nCtx.beginPath(); nCtx.moveTo(rx - 6, h - 52 - b * 8); nCtx.lineTo(rx - 24, h - 46 - b * 8); nCtx.stroke();
+      }
+    } else if (stBiome.motif === "frost") {
+      // Vol 3 Cold Pond: crystalline frost spires in outer corners
+      for (let b = 0; b < 3; b++) {
+        const lx = 14 + b * 26;
+        const rx = w - 14 - b * 26;
+        nCtx.beginPath(); nCtx.moveTo(lx, h); nCtx.lineTo(lx + 12, h - 72 - b * 12); nCtx.lineTo(lx + 24, h); nCtx.stroke();
+        nCtx.beginPath(); nCtx.moveTo(rx, h); nCtx.lineTo(rx - 12, h - 68 - b * 12); nCtx.lineTo(rx - 24, h); nCtx.stroke();
+      }
+    } else if (stBiome.motif === "eaves") {
+      // Vol 5 Nine-Heavens Gate: upturned celestial pavilion eaves
+      for (let b = 0; b < 2; b++) {
+        const yOff = h - 34 - b * 28;
+        nCtx.beginPath(); nCtx.moveTo(0, yOff + 14); nCtx.quadraticCurveTo(marginW * 0.55, yOff + 8, marginW * 0.92, yOff - 10); nCtx.stroke();
+        nCtx.beginPath(); nCtx.moveTo(w, yOff + 14); nCtx.quadraticCurveTo(w - marginW * 0.55, yOff + 8, w - marginW * 0.92, yOff - 10); nCtx.stroke();
+      }
+    } else {
+      // Sanctum / Vol 1 bamboo fronds / Vol 2 Qingyun pine boughs
+      for (let b = 0; b < 3; b++) {
+        nCtx.beginPath();
+        nCtx.moveTo(10 + b * 24, h);
+        nCtx.quadraticCurveTo(22 + b * 28, h - 54 - b * 14, 48 + b * 26, h - 88 - b * 10);
+        nCtx.stroke();
+        nCtx.beginPath();
+        nCtx.moveTo(w - 10 - b * 24, h);
+        nCtx.quadraticCurveTo(w - 22 - b * 28, h - 50 - b * 14, w - 48 - b * 26, h - 84 - b * 10);
+        nCtx.stroke();
+      }
     }
 
     _sceneLayerCache.key = modeKey;
@@ -29253,7 +30256,8 @@ const ART = {
     const rm = isReducedMotionActive();
     const degLvl = getEffectivePerfDegradeLevel();
     const layersOn = Boolean(a11ySettings && a11ySettings.enhancedVisualLayers) && degLvl < 2;
-    const isDepthScene = Boolean(arena.sanctumMode || (!arena.towerMode && arena.stageIdx === 0));
+    const isDepthScene = Boolean(arena.sanctumMode || (!arena.towerMode && arena.stageIdx >= 0 && arena.stageIdx < STAGES.length));
+    const depthModeKey = arena.sanctumMode ? "sanctum" : `vol${Math.max(1, Math.min(STAGES.length, (arena.stageIdx || 0) + 1))}`;
 
     const bgEl = document.getElementById("stage-bg-img");
     const effZoom = photoMode.active ? photoMode.zoom : (rm ? 1.0 : (arena.camZoom || 1));
@@ -29264,6 +30268,7 @@ const ART = {
     visualLayersRuntime.enabled = Boolean(a11ySettings && a11ySettings.enhancedVisualLayers);
     visualLayersRuntime.reducedMotion = rm;
     visualLayersRuntime.stageMode = arena.sanctumMode ? "sanctum" : `stage_${arena.stageIdx}`;
+    visualLayersRuntime.biomeKey = depthModeKey;
     visualLayersRuntime.bgParallaxX = Number(bgPx.toFixed(2));
     visualLayersRuntime.bgParallaxY = Number(bgPy.toFixed(2));
     visualLayersRuntime.fgOffsetX = rm ? 0 : Number(Math.max(-18, Math.min(18, bgPx * -1.25)).toFixed(2));
@@ -29312,10 +30317,10 @@ const ART = {
       ctx.translate((Math.random() - 0.5) * effShake, (Math.random() - 0.5) * effShake);
     }
 
-    // F25 Vol 1 & Sanctum Offscreen-Cached Far & Mid Depth Layers
+    // F25 + F34 All 5 Campaign Biomes & Sanctum Offscreen-Cached Far & Mid Depth Layers
     let depthCache = null;
     if (layersOn && isDepthScene) {
-      depthCache = getOrBuildSceneDepthLayers(arena.sanctumMode ? "sanctum" : "vol1", w, h);
+      depthCache = getOrBuildSceneDepthLayers(depthModeKey, w, h);
       ctx.drawImage(depthCache.far, bgPx * 0.65, bgPy * 0.65);
       ctx.drawImage(depthCache.mid, bgPx * 0.25, bgPy * 0.25);
     }
@@ -29681,6 +30686,59 @@ const ART = {
           ctx.strokeRect(0, -atkSpec.halfW, atkSpec.len, atkSpec.halfW * 2);
           ctx.fillStyle = "rgba(255, 244, 180, 0.45)";
           ctx.fillRect(0, -atkSpec.halfW, atkSpec.len * prog, atkSpec.halfW * 2);
+        } else if (atkSpec.shape === "cone") {
+          ctx.translate(e.x, e.y + atkSpec.originYOff);
+          ctx.fillStyle = isPeril ? `rgba(96, 224, 255, ${0.16 + prog * 0.24})` : mainFill;
+          ctx.strokeStyle = isPeril ? "#80ecff" : mainStroke;
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.arc(0, 0, atkSpec.len, atkSpec.ang - atkSpec.spread, atkSpec.ang + atkSpec.spread);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.arc(0, 0, atkSpec.len * prog, atkSpec.ang - atkSpec.spread, atkSpec.ang + atkSpec.spread);
+          ctx.closePath();
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 1.6;
+          ctx.stroke();
+          if (atkSpec.frostPoolR > 0 && Number.isFinite(atkSpec.aimX) && Number.isFinite(atkSpec.aimY)) {
+            ctx.restore();
+            ctx.save();
+            ctx.translate(atkSpec.aimX, atkSpec.aimY);
+            ctx.scale(1, 0.56);
+            ctx.fillStyle = `rgba(112, 236, 255, ${0.14 + prog * 0.22})`;
+            ctx.strokeStyle = "#80ecff";
+            ctx.lineWidth = 2.6;
+            ctx.beginPath(); ctx.arc(0, 0, atkSpec.frostPoolR, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          }
+        } else if (atkSpec.shape === "cross") {
+          ctx.translate(e.x, e.y + atkSpec.originYOff);
+          ctx.fillStyle = mainFill;
+          ctx.strokeStyle = "#ff7875";
+          ctx.lineWidth = 2.2;
+          const armCount = atkSpec.arms || 4;
+          for (let q = 0; q < armCount; q++) {
+            ctx.save();
+            ctx.rotate(atkSpec.ang + (q * Math.PI) / 2);
+            ctx.fillRect(0, -atkSpec.halfW, atkSpec.len, atkSpec.halfW * 2);
+            ctx.strokeRect(0, -atkSpec.halfW, atkSpec.len, atkSpec.halfW * 2);
+            ctx.fillStyle = "rgba(255, 224, 210, 0.42)";
+            ctx.fillRect(0, -atkSpec.halfW, atkSpec.len * prog, atkSpec.halfW * 2);
+            ctx.restore();
+          }
+        } else if (atkSpec.shape === "target_ellipse") {
+          ctx.translate(atkSpec.x, atkSpec.y);
+          ctx.scale(1, atkSpec.ellY);
+          ctx.fillStyle = `rgba(214, 158, 255, ${0.18 + prog * 0.30})`;
+          ctx.strokeStyle = "#ff5e57";
+          ctx.lineWidth = 3.2;
+          ctx.beginPath(); ctx.arc(0, 0, atkSpec.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.strokeStyle = "#ffe28a";
+          ctx.lineWidth = 2.2;
+          ctx.beginPath(); ctx.arc(0, 0, atkSpec.r * prog, 0, Math.PI * 2); ctx.stroke();
         } else {
           const maxR = atkSpec.r;
           ctx.translate(e.x, e.y + atkSpec.originYOff);
@@ -30296,14 +31354,25 @@ const ART = {
           const eFacing = e.facing !== undefined ? e.facing : (e.x > arena.player.x ? -1 : 1);
           const eFlip = eFacing < 0;
           const eSize = e.isBoss ? 132 : e.isTreasure ? 58 : 90;
-          const eFootY = e.y + e.r * 0.68 - liftZ + (e.id === "warden" && e.state === "windup" ? -7 : 0);
-          const eRot = (e.state === "recover" && e.id === "warden") ? (eFacing * 0.08) : (e.state === "lunge" && e.id === "wolf" ? eFacing * 0.10 : 0);
+          const eFootY = e.y + e.r * 0.68 - liftZ + ((e.id === "warden" || e.id === "sentinel" || e.id === "trial_gate") && e.state === "windup" ? -7 : 0);
+          const eRot = (e.state === "recover" && (e.id === "warden" || e.id === "sentinel")) ? (eFacing * 0.08)
+            : (e.state === "lunge" && (e.id === "wolf" || e.id === "shadow")) ? (eFacing * 0.10)
+            : (e.state === "windup" && e.id === "serpent") ? (Math.sin(nowSec * 12) * 0.07)
+            : (e.state === "windup" && e.id === "puppet") ? (-eFacing * 0.09) : 0;
           drawSprite(e.art, e.x, eFootY, eSize, eFlip, e.hitFlash > 0, 1.0, e.sx, e.sy, eRot, true);
-          // Distinct readable cues for Wolf (muzzle glint) vs Warden (amber hammer sparks) vs Recover (stagger aura)
+          // Distinct readable windup & recovery cues across all Vol 1-6 archetypes
           if (e.state === "windup" && e.id === "wolf") {
             drawPointLight(e.x + eFacing * (e.isBoss ? 34 : 22), e.y - 16 - liftZ, e.isBoss ? 36 : 24, e.perilous ? "rgba(255, 82, 82, 0.72)" : "rgba(255, 226, 122, 0.68)");
-          } else if (e.state === "windup" && e.id === "warden") {
-            drawPointLight(e.x, e.y - (e.isBoss ? 54 : 38) - liftZ, e.isBoss ? 52 : 34, "rgba(255, 184, 72, 0.58)");
+          } else if (e.state === "windup" && (e.id === "warden" || e.id === "sentinel")) {
+            drawPointLight(e.x, e.y - (e.isBoss ? 54 : 38) - liftZ, e.isBoss ? 52 : 34, e.id === "sentinel" ? "rgba(214, 158, 255, 0.62)" : "rgba(255, 184, 72, 0.58)");
+          } else if (e.state === "windup" && e.id === "serpent") {
+            drawPointLight(e.x + eFacing * 28, e.y - 24 - liftZ, e.isBoss ? 44 : 28, "rgba(112, 236, 255, 0.70)");
+          } else if (e.state === "windup" && e.id === "puppet") {
+            drawPointLight(e.x + eFacing * 20, e.y - 22 - liftZ, e.isBoss ? 42 : 28, e.mirrorTimer > 0 ? "rgba(255, 214, 102, 0.72)" : "rgba(255, 118, 118, 0.70)");
+          } else if (e.state === "windup" && e.id === "trial_gate") {
+            drawPointLight(e.x, e.y - 62 - liftZ, 58, "rgba(214, 158, 255, 0.74)");
+          } else if (e.state === "windup" && e.id === "shadow") {
+            drawPointLight(e.x + eFacing * 24, e.y - 18 - liftZ, 30, "rgba(186, 120, 255, 0.68)");
           } else if (e.state === "recover") {
             ctx.save();
             ctx.strokeStyle = "rgba(112, 255, 230, 0.68)";
@@ -31819,7 +32888,7 @@ const ART = {
         ? (arcWrap && arcWrap.classList.contains("open") ? "收起秘匣" : "太虚秘匣")
         : "太虚秘匣 · 金丹启";
     }
-    document.querySelectorAll("#arcana-vault-drawer [data-arcana-act]").forEach(btn => {
+    document.querySelectorAll("#arcana-vault-drawer [data-arcana-act], #dojo-control-bar [data-arcana-act]").forEach(btn => {
       const actKey = btn.getAttribute("data-arcana-act");
       const ok = isActionUnlockedByRealm(game, actKey);
       btn.classList.toggle("eco-locked-btn", !ok);
@@ -34475,9 +35544,11 @@ const ART = {
     }
 
     keysDown[ev.code] = true;
-    if (ev.code === "BracketRight" && game) { ev.preventDefault(); toggleLocalCoop2P(); return; }
-    if (ev.code === "BracketLeft" && game) { ev.preventDefault(); cycleCoop2PPartner(); return; }
-    if (ev.code === "Backslash" && game) { ev.preventDefault(); cycleCelestialTimePhase(); return; }
+    const welcomeEl = document.getElementById("welcome-screen");
+    const welcomeHidden = !welcomeEl || welcomeEl.style.display === "none";
+    if (ev.code === "BracketRight" && game && !arena.paused && welcomeHidden) { ev.preventDefault(); toggleLocalCoop2P(); return; }
+    if (ev.code === "BracketLeft" && game && !arena.paused && welcomeHidden) { ev.preventDefault(); cycleCoop2PPartner(); return; }
+    if (ev.code === "Backslash" && game && !arena.paused && welcomeHidden) { ev.preventDefault(); cycleCelestialTimePhase(); return; }
     if (arena.coop2P && arena.coop2P.active && !arena.paused && ["Semicolon", "Quote", "Numpad0", "Numpad1", "Numpad2"].includes(ev.code)) {
       ev.preventDefault();
       arena.coop2P.manualIdleT = 0;
@@ -34557,6 +35628,7 @@ const ART = {
       else if (confirmCombatHotkeyArm("Digit7", "连招编排")) openComboSequencerModal();
     } else if (ev.code === "Digit8" && game) {
       if (document.getElementById("modal-backdrop").classList.contains("open")) closeModal();
+      else if (!isEcosystemSystemUnlocked(game, "vein_expedition")) guardEcosystemAccess("vein_expedition");
       else if (confirmCombatHotkeyArm("Digit8", "宗门远征")) openExpeditionSandboxModal();
     } else if (ev.code === "KeyN") {
       if (document.getElementById("modal-backdrop").classList.contains("open")) closeModal();
@@ -36001,6 +37073,18 @@ const ART = {
       cycleCelestialTimePhase();
       return;
     }
+    if (t.getAttribute("data-action") === "cycle-celestial-time-in-modal") {
+      if (cycleCelestialTimePhase()) openStarChartModal();
+      return;
+    }
+    if (t.getAttribute("data-action") === "open-vol5-resonance") {
+      openVol5ResonanceFlow();
+      return;
+    }
+    if (t.getAttribute("data-action") === "ws-replay-seed") {
+      launchCustomSeedEncounter(t.getAttribute("data-ws-seed") || null);
+      return;
+    }
     if (t.id === "btn-comic-scroll" || t.getAttribute("data-action") === "open-comic-scroll") {
       openComicBattleScrollModal();
       return;
@@ -36864,7 +37948,7 @@ const ART = {
       if (nd.kind === "hub") { focusBattlefield(); enterSanctumHub(); }
       else if (nd.kind === "boss_rush") openBossRushModal();
       else if (nd.kind === "tower") { focusBattlefield(); initArenaStage(3, true); }
-      else if (nd.kind === "chapter5_marker") { routeToGoalTarget(nd.routeKey || "stage_4"); }
+      else if (nd.kind === "chapter5_marker") { openVol5ResonanceFlow(); }
       else { focusBattlefield(); initArenaStage(nd.stageIdx, false); }
       saveGame();
       return;
@@ -37952,7 +39036,39 @@ const ART = {
       computeBatchEnhancePreview,
       computeCompetitionScore,
       getScoreGrade,
-      applySingleHitCap
+      applySingleHitCap,
+      getExpeditionNodeStageSynergy,
+      getSpireCloudSeaYieldMult,
+      computeEndgameMasteryResonance,
+      buildVol5ResonanceSnapshot
+    },
+    q6: {
+      VOLUME_CAMPAIGN_GUIDE,
+      VOL5_RESONANCE_PILLARS,
+      HIGH_TIER_MODE_REGISTRY,
+      EXPEDITION_NODE_STAGE_MAP,
+      getExpeditionNodeStageSynergy,
+      getSpireCloudSeaYieldMult,
+      computeEndgameMasteryResonance,
+      buildVol5ResonanceSnapshot,
+      openVol5ResonanceModal,
+      openVol5ResonanceFlow,
+      getUnlockedCoop2PRoster,
+      getActiveCustomSeedTempCurio,
+      restoreCustomSeedTempCurio,
+      openCustomSeedVictoryModal,
+      openSectDefenseResultModal,
+      getVisualLayersState,
+      getEnemyAttackSpec,
+      resolveCutsceneLines,
+      getKarmaEndingEpilogue,
+      renderArenaCanvas,
+      openVolumeEndRecapModal,
+      triggerAscendGateAction,
+      stepCloudSeaFlight,
+      stepSectDefenseSiege,
+      startCelestialSpireRun,
+      selectSpireCurioAndAdvance
     },
     persistence: {
       STORAGE_KEY,
