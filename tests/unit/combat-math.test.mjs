@@ -30,6 +30,12 @@ test("applySingleHitCap enforces 45% maxHp cap, uncapped override, DR floor 0.35
   // Pact multiplier & ward multiplier combine cleanly before cap
   const warded = applySingleHitCap(100, 1000, 0, { pactEnemyMult: 1.25, wardMult: 0.86, uncapped: true });
   assert.equal(warded, Math.round(100 * 1.25 * 0.86));
+
+  // Defensive non-finite / invalid coercion guards (Infinity, strings, NaN multipliers)
+  assert.equal(applySingleHitCap(Number.POSITIVE_INFINITY, 200, 0, { uncapped: true }), 0);
+  assert.equal(applySingleHitCap(Number.NEGATIVE_INFINITY, 200, 0, { uncapped: true }), 0);
+  assert.equal(applySingleHitCap(50, 200, "abc", { uncapped: true }), 50);
+  assert.equal(applySingleHitCap(50, 200, 0, { pactEnemyMult: Number.NaN, wardMult: "bad", uncapped: true }), 50);
 });
 
 test("computeCombatStatLedger enforces DR floor >= 0.35, crit <= 0.78, critMult <= 2.35, haste in [0.70, 1.85], activeMult <= 1.95", () => {

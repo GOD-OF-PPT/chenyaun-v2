@@ -43,7 +43,7 @@ npm run test:regression
 npm run test:e2e
 ```
 
-- **纯规则单元测试（`npm run test:unit`）**：基于 Node 内置 `node:test` 运行 `tests/unit/*.test.mjs`（属性账本、战斗数学与 45% 单击上限、1,000 次种子装备滚落预算与保底、经济防套利与寿元阈值、存档封装与 CRDT 合并、构建与 VM 规则一致性）。
+- **纯规则单元测试（`npm run test:unit`）**：基于 Node 内置 `node:test` 运行 `tests/unit/*.test.mjs`（7 个测试文件覆盖属性账本、战斗数学与 45% 单击上限、1,000 次种子装备滚落预算与保底、经济防套利与寿元阈值、劫火与仙榜评分评级、存档封装与 CRDT 合并、构建/VM 规则一致性及负向构建校验）。
 - **回归套件（`npm run test:regression`）**：自动起停本地静态 HTTP 服务，在独立的 1440×900 浏览器上下文中运行 **M1–M4 + P1–P5 + R2–R7 + Q0–Q5 共 73 项回归测试**。默认在单条失败后继续执行全部套件并输出 `schemaVersion: 2` 汇总报告（及失败截图），要求 0 个控制台或页面运行时错误。
 - **黑盒 E2E 验收套件（`npm run test:e2e`）**：按 Tier 1–4 运行 **共 56 项端到端验收测试**（Tier 1 独立功能 31 项、Tier 2 边界与存档五场景 12 项、Tier 3 跨系统组合 10 项、Tier 4 玩家完整旅程 3 项），详见 [TEST_INFRA.md](TEST_INFRA.md) 与 [TEST_READY.md](TEST_READY.md)。
 - **无头数值与经济审计（Node VM）**：

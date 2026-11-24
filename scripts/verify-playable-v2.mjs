@@ -10159,6 +10159,12 @@ try {
         }
         const dbg = window.__CHENYUAN_DEBUG__;
         const artSummary = window.__CHENYUAN_V25__.getArtDecodeSummary();
+        const noticeState = dbg && dbg.telemetry ? dbg.telemetry.getNoticeState() : null;
+        const framePerf = dbg && dbg.telemetry ? dbg.telemetry.getFramePerfSnapshot() : null;
+        const perfStats = dbg && dbg.telemetry ? dbg.telemetry.getPerfStats() : null;
+        const pendingRewards = dbg && dbg.telemetry ? dbg.telemetry.getPendingRewards() : null;
+        const pauseTokens = dbg && dbg.telemetry ? dbg.telemetry.getPauseTokens() : null;
+        const encounterTel = dbg && dbg.telemetry ? dbg.telemetry.getEncounterTelemetry() : undefined;
         return {
           scriptCount: scripts.length,
           scriptAttrs,
@@ -10167,6 +10173,10 @@ try {
           debugVersion: dbg ? dbg.version : null,
           debugSameV25: Boolean(dbg && dbg.getNamespace("v25") === window.__CHENYUAN_V25__),
           debugSameV18: Boolean(dbg && dbg.getNamespace("v18") === window.__CHENYUAN_V18__),
+          debugProtoNull: Boolean(dbg && dbg.getNamespace("constructor") === null && dbg.getNamespace("__proto__") === null && dbg.getNamespace("toString") === null),
+          debugNoticeOk: Boolean(noticeState && noticeState.inbox && Array.isArray(noticeState.inbox.items) && Array.isArray(noticeState.pendingUnlockCards)),
+          debugPerfOk: Boolean(framePerf && perfStats && Number.isFinite(framePerf.p50Ms) && Number.isFinite(framePerf.maxFrameMs) && Number.isFinite(framePerf.totalFrames) && framePerf.totalFrames === perfStats.totalFrames),
+          debugTelemetryArraysOk: Boolean(Array.isArray(pendingRewards) && Array.isArray(pauseTokens) && (encounterTel === null || typeof encounterTel === "object")),
           debugRuleKeys: dbg && dbg.rules ? Object.keys(dbg.rules) : [],
           debugPersistKeys: dbg && dbg.persistence ? Object.keys(dbg.persistence) : [],
           debugArtCount: dbg && dbg.art ? dbg.art.getCount() : 0,
@@ -10183,6 +10193,10 @@ try {
       assert.equal(contract.debugVersion, "q5-compat-1");
       assert.equal(contract.debugSameV25, true);
       assert.equal(contract.debugSameV18, true);
+      assert.equal(contract.debugProtoNull, true);
+      assert.equal(contract.debugNoticeOk, true);
+      assert.equal(contract.debugPerfOk, true);
+      assert.equal(contract.debugTelemetryArraysOk, true);
       assert.ok(contract.debugRuleKeys.includes("computeCombatStatLedger") && contract.debugRuleKeys.includes("applySingleHitCap"));
       assert.ok(contract.debugPersistKeys.includes("parseAndValidateSaveRaw") && contract.debugPersistKeys.includes("mergeMetaStates"));
       assert.equal(contract.debugArtCount, 115);

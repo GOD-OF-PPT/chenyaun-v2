@@ -58,8 +58,8 @@ function sha256Hex(buf) {
   return crypto.createHash("sha256").update(buf).digest("hex");
 }
 
-function readUtf8Strict(relPath) {
-  const absPath = path.join(REPO_ROOT, relPath);
+function readUtf8Strict(relPath, repoRoot = REPO_ROOT) {
+  const absPath = path.join(repoRoot, relPath);
   const buf = fs.readFileSync(absPath);
   if (buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) {
     throw new Error(`UTF-8 BOM is forbidden in source file: ${relPath}`);
@@ -121,8 +121,13 @@ export function transformEsmForIife(source, relPath) {
   if (/<\/script/i.test(text)) {
     throw new Error(`Forbidden "</script" sequence found in ${relPath}`);
   }
-  // Remove top-level single-line or multi-line `import ... from "...";` statements
-  text = text.replace(/^import[\s\S]*?from\s+["'][^"']+["'];?\s*\n?/gm, "");
+  // Remove top-level single-line or multi-line `import ... from "...";` statements (fail closed on aliased `as` imports)
+  text = text.replace(/^import\b([\s\S]*?)from\s+["'][^"']+["'];?\s*\n?/gm, (match, clause) => {
+    if (/\bas\b/.test(clause)) {
+      throw new Error(`Unsupported aliased import ("as") in ${relPath}: ${match.trim()}`);
+    }
+    return "";
+  });
   // Reject re-exports (`export { ... }` or `export default`) so assembled IIFE stays flat
   if (/^export\s+(?:default\b|\{|\*)/m.test(text)) {
     throw new Error(`Unsupported export form (default/braced/star) in ${relPath}; use named export const/let/function.`);
@@ -138,8 +143,8 @@ export function transformEsmForIife(source, relPath) {
     .join("\n");
 }
 
-function loadAndValidateArtIndex() {
-  const raw = readUtf8Strict(ART_INDEX_REL);
+function loadAndValidateArtIndex(repoRoot = REPO_ROOT) {
+  const raw = readUtf8Strict(ART_INDEX_REL, repoRoot);
   const index = JSON.parse(raw);
   if (!index || index.schemaVersion !== 1 || !Array.isArray(index.assets)) {
     throw new Error(`Invalid ${ART_INDEX_REL}: expected schemaVersion 1 and assets array`);
@@ -158,6 +163,7 @@ function loadAndValidateArtIndex() {
 
   const protectedSet = new Set(index.protectedRgbaKeys);
   const seenKeys = new Set();
+  const indexedAbsPaths = new Set();
   const artLines = ["const ART = {"];
   const verifiedAssets = [];
 
@@ -171,7 +177,8 @@ function loadAndValidateArtIndex() {
     }
     seenKeys.add(entry.key);
 
-    const absAsset = path.join(REPO_ROOT, entry.file);
+    const absAsset = path.resolve(repoRoot, entry.file);
+    indexedAbsPaths.add(absAsset);
     if (!fs.existsSync(absAsset)) {
       throw new Error(`Missing runtime asset file: ${entry.file}`);
     }
@@ -198,6 +205,34 @@ function loadAndValidateArtIndex() {
     const comma = i < index.assets.length - 1 ? "," : "";
     artLines.push(`  "${entry.key}": "data:${entry.mime};base64,${b64}"${comma}`);
     verifiedAssets.push({ ...entry, webp });
+  }
+
+  // Reject any unexpected subdirectory or unindexed/orphan file in src/assets/runtime/
+  const runtimeAssetsDir = path.join(repoRoot, "src/assets/runtime");
+  if (!fs.existsSync(runtimeAssetsDir)) {
+    throw new Error("Missing runtime assets directory: src/assets/runtime");
+  }
+  const unexpectedDirs = [];
+  const orphanFiles = [];
+  for (const dirent of fs.readdirSync(runtimeAssetsDir, { withFileTypes: true })) {
+    if (dirent.isDirectory()) {
+      unexpectedDirs.push(dirent.name);
+      continue;
+    }
+    if (!dirent.isFile()) {
+      orphanFiles.push(dirent.name);
+      continue;
+    }
+    const absEntry = path.resolve(runtimeAssetsDir, dirent.name);
+    if (!indexedAbsPaths.has(absEntry)) {
+      orphanFiles.push(dirent.name);
+    }
+  }
+  if (unexpectedDirs.length > 0) {
+    throw new Error(`Unexpected subdirectory in src/assets/runtime/: ${unexpectedDirs.sort().join(", ")}`);
+  }
+  if (orphanFiles.length > 0) {
+    throw new Error(`Unindexed/orphan file(s) in src/assets/runtime/ not listed in ${ART_INDEX_REL}: ${orphanFiles.sort().join(", ")}`);
   }
 
   artLines.push("};");
@@ -241,14 +276,20 @@ function validateBuiltHtml(html, expectedAssets, protectedRgbaKeys) {
       throw new Error("Forbidden external CSS url() found in built HTML");
     }
   }
-  // Check external <link href=...>, <script src=...>, media tags
-  const extLinkRe = /<link\b[^>]*\bhref\s*=\s*["']\s*(?:https?:|\/\/)/gi;
+  // Check external <link href=...>, <script src=...>, media tags (quoted or unquoted attributes)
+  const extLinkRe = /<link\b[^>]*\bhref\s*=\s*["']?\s*(?:https?:|\/\/)/gi;
   if (extLinkRe.test(headAndBody)) {
     throw new Error("Forbidden external <link href> found in built HTML");
   }
-  const extMediaRe = /<(?:script|img|audio|video|source|iframe|embed|object)\b[^>]*\b(?:src|data)\s*=\s*["']\s*(?:https?:|\/\/)/gi;
+  const extMediaRe = /<(?:script|img|audio|video|source|iframe|embed|object)\b[^>]*\b(?:src|data)\s*=\s*["']?\s*(?:https?:|\/\/)/gi;
   if (extMediaRe.test(headAndBody)) {
     throw new Error("Forbidden external media/script src/data URL found in built HTML");
+  }
+  // Check raw external http(s):// URLs inside <script> (allow only XML namespace http://www.w3.org/2000/svg)
+  const scriptUrls = scriptBody.match(/https?:\/\/[^\s"'`<>)]+/gi) || [];
+  const forbiddenScriptUrls = scriptUrls.filter((u) => u.toLowerCase() !== "http://www.w3.org/2000/svg");
+  if (forbiddenScriptUrls.length > 0) {
+    throw new Error(`Forbidden external URL(s) in <script>: ${forbiddenScriptUrls.slice(0, 3).join(", ")}`);
   }
 
   // 4. Re-parse const ART = { ... }; from built HTML and verify 100% SHA-256 & 5 protected RGBA
@@ -307,24 +348,27 @@ function validateBuiltHtml(html, expectedAssets, protectedRgbaKeys) {
   };
 }
 
-export function assemblePlayableHtml() {
-  const template = readUtf8Strict(TEMPLATE_REL);
-  const css = stripTrailingNewline(readUtf8Strict(STYLE_REL));
-  const body = stripTrailingNewline(readUtf8Strict(BODY_REL));
+export function assemblePlayableHtml(options = {}) {
+  const repoRoot = (options && typeof options.repoRoot === "string" && options.repoRoot)
+    ? options.repoRoot
+    : REPO_ROOT;
+  const template = readUtf8Strict(TEMPLATE_REL, repoRoot);
+  const css = stripTrailingNewline(readUtf8Strict(STYLE_REL, repoRoot));
+  const body = stripTrailingNewline(readUtf8Strict(BODY_REL, repoRoot));
 
   if (/<\/style/i.test(css)) {
     throw new Error(`Forbidden "</style" sequence found in ${STYLE_REL}`);
   }
 
-  const { index, verifiedAssets, artBlock } = loadAndValidateArtIndex();
+  const { index, verifiedAssets, artBlock } = loadAndValidateArtIndex(repoRoot);
 
-  const preamble = stripTrailingNewline(readUtf8Strict(RUNTIME_PREAMBLE_REL));
-  const mainRuntime = stripTrailingNewline(readUtf8Strict(RUNTIME_MAIN_REL));
-  const bootRuntime = stripTrailingNewline(readUtf8Strict(RUNTIME_BOOT_REL));
+  const preamble = stripTrailingNewline(readUtf8Strict(RUNTIME_PREAMBLE_REL, repoRoot));
+  const mainRuntime = stripTrailingNewline(readUtf8Strict(RUNTIME_MAIN_REL, repoRoot));
+  const bootRuntime = stripTrailingNewline(readUtf8Strict(RUNTIME_BOOT_REL, repoRoot));
 
-  const facadeAbs = path.join(REPO_ROOT, RUNTIME_DEBUG_FACADE_REL);
+  const facadeAbs = path.join(repoRoot, RUNTIME_DEBUG_FACADE_REL);
   const debugFacade = fs.existsSync(facadeAbs)
-    ? stripTrailingNewline(readUtf8Strict(RUNTIME_DEBUG_FACADE_REL))
+    ? stripTrailingNewline(readUtf8Strict(RUNTIME_DEBUG_FACADE_REL, repoRoot))
     : "";
 
   for (const [label, chunk] of [
@@ -339,7 +383,7 @@ export function assemblePlayableHtml() {
   }
 
   const inlinedModules = ESM_MODULE_ORDER.map((relPath) => {
-    const raw = readUtf8Strict(relPath);
+    const raw = readUtf8Strict(relPath, repoRoot);
     const bodyText = transformEsmForIife(raw, relPath);
     return `  // --- [module] ${relPath} ---\n${bodyText}`;
   });

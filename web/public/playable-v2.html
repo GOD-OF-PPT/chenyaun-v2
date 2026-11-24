@@ -6234,11 +6234,13 @@ const ART = {
   }
 
   function applySingleHitCap(rawDmg, maxHp, dmgReduce = 0, opts = {}) {
-    if (typeof rawDmg !== "number" || Number.isNaN(rawDmg) || rawDmg <= 0) return 0;
-    const pactEnemyMult = (opts && opts.pactEnemyMult != null) ? opts.pactEnemyMult : 1.0;
-    const wardMult = (opts && opts.wardMult != null) ? opts.wardMult : 1.0;
-    const drMult = Math.max(0.35, 100 / (100 + Math.max(0, dmgReduce || 0)));
-    let dmg = Math.max(4, Math.round(rawDmg * pactEnemyMult * drMult * wardMult));
+    if (typeof rawDmg !== "number" || !Number.isFinite(rawDmg) || rawDmg <= 0) return 0;
+    const pactEnemyMult = Math.max(0, num(opts && opts.pactEnemyMult, 1.0));
+    const wardMult = Math.max(0, num(opts && opts.wardMult, 1.0));
+    const safeDr = Math.max(0, num(dmgReduce, 0));
+    const drMult = Math.max(0.35, 100 / (100 + safeDr));
+    const scaled = rawDmg * pactEnemyMult * drMult * wardMult;
+    let dmg = Math.max(4, Number.isFinite(scaled) ? Math.round(scaled) : Number.MAX_SAFE_INTEGER);
     if (!(opts && opts.uncapped)) {
       const singleHitCap = Math.max(4, Math.round(Math.max(1, num(maxHp, 1)) * SINGLE_HIT_CAP_RATIO));
       dmg = Math.min(dmg, singleHitCap);
@@ -37932,7 +37934,9 @@ const ART = {
     },
     getNamespace: (ver) => {
       const key = String(ver || "").toLowerCase();
-      return window.__CHENYUAN_DEBUG__.namespaces[key] || null;
+      return hasOwn(window.__CHENYUAN_DEBUG__.namespaces, key)
+        ? window.__CHENYUAN_DEBUG__.namespaces[key]
+        : null;
     },
     getState: () => window.__CHENYUAN_V25__.getState(),
     rules: {
@@ -37968,11 +37972,16 @@ const ART = {
       getDecodeSummary: () => window.__CHENYUAN_V25__.getArtDecodeSummary()
     },
     telemetry: {
-      getNoticeState: () => window.__CHENYUAN_V25__.getNoticeState(),
+      getNoticeState: () => ({
+        inbox: window.__CHENYUAN_V25__.getCombatInbox(),
+        activeUnlockCardId: window.__CHENYUAN_V25__.getActiveUnlockCardId(),
+        pendingUnlockCards: window.__CHENYUAN_V25__.getPendingUnlockCardQueue()
+      }),
       getPendingRewards: () => window.__CHENYUAN_V25__.getPendingRewards(),
       getPauseTokens: () => window.__CHENYUAN_V25__.getPauseTokens(),
       getEncounterTelemetry: () => window.__CHENYUAN_V25__.getEncounterTelemetry(),
-      getFramePerfSnapshot: () => window.__CHENYUAN_V25__.getFramePerfSnapshot()
+      getFramePerfSnapshot: () => window.__CHENYUAN_V25__.getPerfStats(),
+      getPerfStats: () => window.__CHENYUAN_V25__.getPerfStats()
     }
   };
   window.addEventListener("load", () => {

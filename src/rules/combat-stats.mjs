@@ -131,11 +131,13 @@ export function getSchoolSpecBonus(g) {
 }
 
 export function applySingleHitCap(rawDmg, maxHp, dmgReduce = 0, opts = {}) {
-  if (typeof rawDmg !== "number" || Number.isNaN(rawDmg) || rawDmg <= 0) return 0;
-  const pactEnemyMult = (opts && opts.pactEnemyMult != null) ? opts.pactEnemyMult : 1.0;
-  const wardMult = (opts && opts.wardMult != null) ? opts.wardMult : 1.0;
-  const drMult = Math.max(0.35, 100 / (100 + Math.max(0, dmgReduce || 0)));
-  let dmg = Math.max(4, Math.round(rawDmg * pactEnemyMult * drMult * wardMult));
+  if (typeof rawDmg !== "number" || !Number.isFinite(rawDmg) || rawDmg <= 0) return 0;
+  const pactEnemyMult = Math.max(0, num(opts && opts.pactEnemyMult, 1.0));
+  const wardMult = Math.max(0, num(opts && opts.wardMult, 1.0));
+  const safeDr = Math.max(0, num(dmgReduce, 0));
+  const drMult = Math.max(0.35, 100 / (100 + safeDr));
+  const scaled = rawDmg * pactEnemyMult * drMult * wardMult;
+  let dmg = Math.max(4, Number.isFinite(scaled) ? Math.round(scaled) : Number.MAX_SAFE_INTEGER);
   if (!(opts && opts.uncapped)) {
     const singleHitCap = Math.max(4, Math.round(Math.max(1, num(maxHp, 1)) * SINGLE_HIT_CAP_RATIO));
     dmg = Math.min(dmg, singleHitCap);

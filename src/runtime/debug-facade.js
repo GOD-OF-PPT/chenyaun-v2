@@ -14,7 +14,9 @@
     },
     getNamespace: (ver) => {
       const key = String(ver || "").toLowerCase();
-      return window.__CHENYUAN_DEBUG__.namespaces[key] || null;
+      return hasOwn(window.__CHENYUAN_DEBUG__.namespaces, key)
+        ? window.__CHENYUAN_DEBUG__.namespaces[key]
+        : null;
     },
     getState: () => window.__CHENYUAN_V25__.getState(),
     rules: {
@@ -50,10 +52,15 @@
       getDecodeSummary: () => window.__CHENYUAN_V25__.getArtDecodeSummary()
     },
     telemetry: {
-      getNoticeState: () => window.__CHENYUAN_V25__.getNoticeState(),
+      getNoticeState: () => ({
+        inbox: window.__CHENYUAN_V25__.getCombatInbox(),
+        activeUnlockCardId: window.__CHENYUAN_V25__.getActiveUnlockCardId(),
+        pendingUnlockCards: window.__CHENYUAN_V25__.getPendingUnlockCardQueue()
+      }),
       getPendingRewards: () => window.__CHENYUAN_V25__.getPendingRewards(),
       getPauseTokens: () => window.__CHENYUAN_V25__.getPauseTokens(),
       getEncounterTelemetry: () => window.__CHENYUAN_V25__.getEncounterTelemetry(),
-      getFramePerfSnapshot: () => window.__CHENYUAN_V25__.getFramePerfSnapshot()
+      getFramePerfSnapshot: () => window.__CHENYUAN_V25__.getPerfStats(),
+      getPerfStats: () => window.__CHENYUAN_V25__.getPerfStats()
     }
   };

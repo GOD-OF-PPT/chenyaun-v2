@@ -21,7 +21,7 @@
   - 抽离 9 个原生 ESM 模块：`src/rules/utils.mjs`、`src/config/combat-params.mjs`、`src/config/realms-items.mjs`、`src/config/progression-data.mjs`、`src/rules/gear-rules.mjs`、`src/rules/combat-stats.mjs`、`src/rules/economy-rules.mjs`、`src/rules/scoring-rules.mjs`、`src/state/save-rules.mjs`。
   - 纯重构零数值/行为漂移：`eval-combat-matrix.mjs` 与 `audit-economy.mjs` 在相同种子下输出与重构前一致。
 - **F32 分层测试、兼容调试门面与 CI 接入**：
-  - 新增 `npm run test:unit`（`tests/unit/*.test.mjs`，6 个纯 Node `node:test` 文件覆盖属性账本、战斗数学、装备滚落/保底、经济/寿元、存档封装/CRDT 与构建/VM 一致性）。
+  - 新增 `npm run test:unit`（`tests/unit/*.test.mjs`，7 个纯 Node `node:test` 文件覆盖属性账本、战斗数学、装备滚落/保底、经济/寿元、评分与评级、存档封装/CRDT 与构建/VM 一致性及负向构建校验）。
   - 增补 `window.__CHENYUAN_DEBUG__`（`version: "q5-compat-1"`）兼容门面，完整保留 `window.__CHENYUAN_V18__`–`__CHENYUAN_V25__` 全部 382 项既有契约。
   - 在 `scripts/verify-playable-v2.mjs` 末尾增补 `Q5-1..Q5-3`（总回归套件 `70 → 73`，原有 70 项断言零删改），覆盖 382 键契约、`file://` 与 HTTP 一致性、旧档 D05 装备保护、`CY24SAVE` 云码、沙盒隔离以及 Node ESM 与 Chromium 实机规则交叉验证。
   - 在 `.github/workflows/e2e.yml` 增补 `npm run build:check` 与 `npm run test:unit`。
