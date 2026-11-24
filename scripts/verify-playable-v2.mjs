@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P5 + R2–R7 + Q0–Q4 · 共 70 项）
+ * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P5 + R2–R7 + Q0–Q5 · 共 73 项）
  *
  * 用法：
  *   node scripts/verify-playable-v2.mjs
@@ -10116,6 +10116,339 @@ try {
       assert.equal(tribFlow.ptJsonValid, true);
       assert.equal(tribFlow.leakedInMain, false, "Playtest telemetry must NEVER leak into STORAGE_KEY");
       assert.equal(tribFlow.leakedInMeta, false, "Playtest telemetry must NEVER leak into META_KEY");
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // ==================== Q5 (F30–F33): MODULAR SOURCE, STANDALONE BUILD, FILE:// PARITY & ESM CROSS-CHECK ====================
+  await runSuite("Q5-1", "Q5 F30/F32 模块化构建校验、382项V18–V25全量契约、__CHENYUAN_DEBUG__兼容门面与零外链", async () => {
+    const buildCheckOut = execFileSync(process.execPath, [path.join(REPO_ROOT, "scripts", "build-playable.mjs"), "--check"], {
+      cwd: REPO_ROOT,
+      encoding: "utf8"
+    });
+    assert.ok(buildCheckOut.includes("build-playable OK (--check)"), `build-playable --check failed: ${buildCheckOut}`);
+
+    const ctx = await newIsolatedContext(browser);
+    try {
+      const page = await ctx.newPage();
+      attachErrorListeners(page, "Q5-1");
+      const externalRequests = [];
+      page.on("request", (req) => {
+        const u = req.url();
+        if (!u.startsWith("http://127.0.0.1:") && !u.startsWith("data:") && !u.startsWith("blob:") && !u.startsWith("about:")) {
+          externalRequests.push(u);
+        }
+      });
+
+      await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
+      await page.waitForSelector("#btn-start-new");
+      await page.waitForFunction(() => window.__CHENYUAN_V25__.getArtDecodeSummary().decodedCount === 115, { timeout: 10000 });
+
+      const contract = await page.evaluate(() => {
+        const scripts = Array.from(document.querySelectorAll("script"));
+        const scriptAttrs = scripts.map((s) => Array.from(s.attributes).map((a) => a.name));
+        const nsNames = ["V18", "V19", "V20", "V21", "V22", "V23", "V24", "V25"];
+        const nsCounts = {};
+        let totalKeys = 0;
+        for (const n of nsNames) {
+          const obj = window[`__CHENYUAN_${n}__`];
+          const count = obj && typeof obj === "object" ? Object.keys(obj).length : -1;
+          nsCounts[n] = count;
+          if (count > 0) totalKeys += count;
+        }
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const artSummary = window.__CHENYUAN_V25__.getArtDecodeSummary();
+        return {
+          scriptCount: scripts.length,
+          scriptAttrs,
+          nsCounts,
+          totalKeys,
+          debugVersion: dbg ? dbg.version : null,
+          debugSameV25: Boolean(dbg && dbg.getNamespace("v25") === window.__CHENYUAN_V25__),
+          debugSameV18: Boolean(dbg && dbg.getNamespace("v18") === window.__CHENYUAN_V18__),
+          debugRuleKeys: dbg && dbg.rules ? Object.keys(dbg.rules) : [],
+          debugPersistKeys: dbg && dbg.persistence ? Object.keys(dbg.persistence) : [],
+          debugArtCount: dbg && dbg.art ? dbg.art.getCount() : 0,
+          artDecoded: artSummary.decodedCount,
+          artFailed: artSummary.failed
+        };
+      });
+
+      assert.equal(externalRequests.length, 0, `Expected 0 external network requests, got: ${externalRequests.join(", ")}`);
+      assert.equal(contract.scriptCount, 1, `Expected strictly 1 <script> tag, got ${contract.scriptCount}`);
+      assert.deepEqual(contract.scriptAttrs, [[]], `Expected bare <script> with 0 attributes, got ${JSON.stringify(contract.scriptAttrs)}`);
+      assert.deepEqual(contract.nsCounts, { V18: 5, V19: 8, V20: 8, V21: 11, V22: 12, V23: 14, V24: 11, V25: 313 });
+      assert.equal(contract.totalKeys, 382, `Expected 382 preserved V18-V25 keys, got ${contract.totalKeys}`);
+      assert.equal(contract.debugVersion, "q5-compat-1");
+      assert.equal(contract.debugSameV25, true);
+      assert.equal(contract.debugSameV18, true);
+      assert.ok(contract.debugRuleKeys.includes("computeCombatStatLedger") && contract.debugRuleKeys.includes("applySingleHitCap"));
+      assert.ok(contract.debugPersistKeys.includes("parseAndValidateSaveRaw") && contract.debugPersistKeys.includes("mergeMetaStates"));
+      assert.equal(contract.debugArtCount, 115);
+      assert.equal(contract.artDecoded, 115);
+      assert.deepEqual(contract.artFailed, []);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  await runSuite("Q5-2", "Q5 V12 file://直接打开与HTTP一致性、旧档迁移(D05装备不削弱)、CY24云码与沙盒隔离", async () => {
+    // 1. Direct file:// open in isolated 1440x900 Chromium context
+    const fileUrl = pathToFileURL(path.join(PUBLIC_DIR, "playable-v2.html")).href;
+    const fileCtx = await newIsolatedContext(browser);
+    try {
+      const filePage = await fileCtx.newPage();
+      attachErrorListeners(filePage, "Q5-2-file");
+      const fileExternalReqs = [];
+      filePage.on("request", (req) => {
+        const u = req.url();
+        if (!u.startsWith("file://") && !u.startsWith("data:") && !u.startsWith("blob:") && !u.startsWith("about:")) {
+          fileExternalReqs.push(u);
+        }
+      });
+
+      await filePage.goto(fileUrl, { waitUntil: "domcontentloaded" });
+      await filePage.waitForSelector("#btn-start-new");
+      await filePage.waitForFunction(() => window.__CHENYUAN_V25__.getArtDecodeSummary().decodedCount === 115, { timeout: 10000 });
+      await filePage.click("#btn-start-new");
+      await filePage.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+      await dismissOpeningScroll(filePage);
+      await filePage.waitForTimeout(160);
+
+      const fileCheck = await filePage.evaluate(() => {
+        const v25 = window.__CHENYUAN_V25__;
+        const st = v25.getState();
+        const beforeX = st.arena.player.x;
+        v25.stepArena(0.05);
+        return {
+          protocol: window.location.protocol,
+          artDecoded: v25.getArtDecodeSummary().decodedCount,
+          hasGame: Boolean(st.game),
+          realm: st.game ? st.game.realm : null,
+          debugVer: window.__CHENYUAN_DEBUG__ ? window.__CHENYUAN_DEBUG__.version : null,
+          playerAlive: Boolean(st.arena && st.arena.player && st.game.hp > 0),
+          beforeX
+        };
+      });
+
+      assert.equal(fileExternalReqs.length, 0, `file:// made external requests: ${fileExternalReqs.join(", ")}`);
+      assert.equal(fileCheck.protocol, "file:");
+      assert.equal(fileCheck.artDecoded, 115);
+      assert.equal(fileCheck.hasGame, true);
+      assert.equal(fileCheck.realm, "mortal");
+      assert.equal(fileCheck.debugVer, "q5-compat-1");
+      assert.equal(fileCheck.playerAlive, true);
+    } finally {
+      await fileCtx.close();
+    }
+
+    // 2. HTTP context: legacy eb0ea67/s4_npc migration + D05 over-budget gear non-mutation + CY24SAVE cloud code + sandbox isolation
+    const httpCtx = await newIsolatedContext(browser);
+    try {
+      const page = await httpCtx.newPage();
+      attachErrorListeners(page, "Q5-2-http");
+      await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
+      await page.waitForSelector("#btn-start-new");
+
+      // Inject legacy eb0ea67-style save with s4_npc step ID and D05 over-budget legacy common sword
+      await page.evaluate((sKey) => {
+        const legacyBundle = {
+          stageIdx: 2,
+          stanceIdx: 0,
+          towerMode: false,
+          sanctumMode: false,
+          game: {
+            version: 10,
+            name: "旧档剑客",
+            realm: "foundation",
+            stones: 320,
+            xp: 450,
+            claimedStepIds: ["s1_xp", "s4_npc"],
+            stageStars: { 0: 3, 1: 2 },
+            equippedGear: {
+              weapon: {
+                uid: "g_legacy_d05_op",
+                slot: "weapon",
+                rarity: 0,
+                lvl: 2,
+                name: "凡品·传世旧剑",
+                art: "icon_blade",
+                atk: 500,
+                hp: 0,
+                dr: 0,
+                crit: 0.35,
+                spd: 0,
+                bonusSword: 2,
+                sell: 20,
+                price: 50
+              },
+              armor: null,
+              ring: null
+            }
+          }
+        };
+        localStorage.setItem(sKey, JSON.stringify(legacyBundle));
+      }, STORAGE_KEY);
+
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.waitForSelector("#btn-continue-save");
+      await page.click("#btn-continue-save");
+      await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+      await page.waitForTimeout(160);
+
+      const httpCompat = await page.evaluate(() => {
+        const v25 = window.__CHENYUAN_V25__;
+        const v24 = window.__CHENYUAN_V24__;
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = v25.getState().game;
+        const wpn = g.equippedGear.weapon;
+        const migratedSteps = Array.isArray(g.claimedStepIds) ? g.claimedStepIds.slice() : [];
+        const d05Preserved = Boolean(wpn && wpn.atk === 500 && wpn.crit === 0.35 && wpn.bonusSword === 2);
+
+        // Cloud code export & round-trip import
+        const code = v24.exportFullCloudSaveCode();
+        const savedBeforeSandbox = { realm: g.realm, stones: g.stones, wpnAtk: wpn.atk };
+
+        // Sandbox isolation check
+        const enteredSandbox = v25.enterSandboxMode();
+        const sbGame = v25.getState().game;
+        sbGame.stones = 999999;
+        const exitedSandbox = v25.exitSandboxMode();
+        const afterSandboxStones = v25.getState().game.stones;
+
+        // Cloud code round-trip import after mutating stones
+        v25.getState().game.stones = 1;
+        const importOk = v24.importFullCloudSaveCode(code);
+        const afterImport = v25.getState().game;
+
+        return {
+          name: g.name,
+          realm: g.realm,
+          migratedSteps,
+          d05Preserved,
+          codePrefix: typeof code === "string" ? code.slice(0, 9) : "",
+          enteredSandbox,
+          exitedSandbox,
+          savedBeforeSandbox,
+          afterSandboxStones,
+          importOk: Boolean(importOk),
+          afterImportStones: afterImport.stones,
+          afterImportWpnAtk: afterImport.equippedGear.weapon.atk,
+          debugFacadeOk: Boolean(dbg && dbg.persistence && dbg.persistence.STORAGE_KEY === "chenyuan_wendao_v11_save")
+        };
+      });
+
+      assert.equal(httpCompat.name, "旧档剑客");
+      assert.equal(httpCompat.realm, "foundation");
+      assert.ok(httpCompat.migratedSteps.includes("s1_wolf") && httpCompat.migratedSteps.includes("s4_puppet"), `Legacy step IDs must migrate: ${JSON.stringify(httpCompat.migratedSteps)}`);
+      assert.equal(httpCompat.d05Preserved, true, "D05 invariant: legacy over-budget weapon stats must NOT be retroactively weakened");
+      assert.equal(httpCompat.codePrefix, "CY24SAVE-");
+      assert.equal(httpCompat.enteredSandbox, true);
+      assert.equal(httpCompat.exitedSandbox, true);
+      assert.equal(httpCompat.afterSandboxStones, httpCompat.savedBeforeSandbox.stones, "Sandbox mutations must NOT leak to formal save");
+      assert.equal(httpCompat.importOk, true);
+      assert.equal(httpCompat.afterImportStones, httpCompat.savedBeforeSandbox.stones);
+      assert.equal(httpCompat.afterImportWpnAtk, 500);
+      assert.equal(httpCompat.debugFacadeOk, true);
+    } finally {
+      await httpCtx.close();
+    }
+  });
+
+  await runSuite("Q5-3", "Q5 F31/F32 Node导入src/rules/*.mjs与1440×900 Chromium实机输出完全一致", async () => {
+    const [combatStatsMod, gearRulesMod, economyRulesMod, realmsItemsMod] = await Promise.all([
+      import(pathToFileURL(path.join(REPO_ROOT, "src", "rules", "combat-stats.mjs")).href),
+      import(pathToFileURL(path.join(REPO_ROOT, "src", "rules", "gear-rules.mjs")).href),
+      import(pathToFileURL(path.join(REPO_ROOT, "src", "rules", "economy-rules.mjs")).href),
+      import(pathToFileURL(path.join(REPO_ROOT, "src", "config", "realms-items.mjs")).href)
+    ]);
+
+    const { ctx, page } = await startCleanGamePage(browser, "Q5-3", true);
+    try {
+      const sampleGear = {
+        slot: "weapon",
+        rarity: 3,
+        lvl: 4,
+        atk: 46,
+        hp: 0,
+        dr: 0,
+        crit: 0.09,
+        spd: 0,
+        bonusSword: 1,
+        affix: "posture_crush"
+      };
+
+      const browserResult = await page.evaluate((gearArg) => {
+        const v25 = window.__CHENYUAN_V25__;
+        const dbg = window.__CHENYUAN_DEBUG__;
+        v25.enterSanctumHub({ skipSave: true });
+        const st = v25.getState();
+        const g = st.game;
+        g.realm = "foundation";
+        g.school = "sword";
+        g.stones = 640;
+        g.omenIndex = 4; // fair
+        g.laws = ["wealth_power", "crit_lotus"];
+        g.choices = { lu_intro: "listen", shen_return: "warm" };
+        g.inventory.herb = 1;
+        g.inventory.dew = 1;
+        g.inventory.core = 0;
+        g.equippedGear.weapon = Object.assign({}, gearArg);
+
+        const ledger = v25.computeCombatStatLedger(g);
+        const effAtk = dbg.rules.effectiveGearVal(gearArg, "atk");
+        const budget = v25.computeGearAffixBudget(gearArg);
+        const lifespan = v25.previewLifespanImpact(g, 18);
+        const recipeBd = dbg.rules.computeRecipeCostBreakdown(g, {
+          id: "foundation",
+          inputs: { herb: 2, dew: 3, core: 2 },
+          stones: 20,
+          months: 6
+        });
+        const celestialPhase = window.__CHENYUAN_V23__.getState().celestialPhase;
+        return {
+          gameSnap: JSON.parse(JSON.stringify(g)),
+          arenaSnap: {
+            comboCount: st.arena.comboCount || 0,
+            styleScore: st.arena.styleScore || 0,
+            reversedDomainTimer: st.arena.reversedDomainTimer || 0,
+            weaponPosture: st.arena.weaponPosture || "qinglian",
+            domain: Boolean(st.arena.domain),
+            bossRush: { active: Boolean(st.arena.bossRush && st.arena.bossRush.active) },
+            rushAffixes: [],
+            astralForm: { active: Boolean(st.arena.astralForm && st.arena.astralForm.active) },
+            player: {
+              shieldHp: (st.arena.player && st.arena.player.shieldHp) || 0,
+              boonOverloadTimer: (st.arena.player && st.arena.player.boonOverloadTimer) || 0,
+              gourdHasteTimer: (st.arena.player && st.arena.player.gourdHasteTimer) || 0,
+              gourdCritTimer: (st.arena.player && st.arena.player.gourdCritTimer) || 0,
+              petBuffTimer: (st.arena.player && st.arena.player.petBuffTimer) || 0
+            }
+          },
+          celestialPhaseId: celestialPhase ? celestialPhase.id : "dawn",
+          ledgerTotals: ledger.totals,
+          effAtk,
+          budget,
+          lifespan,
+          recipeBd
+        };
+      }, sampleGear);
+
+      const nodeLedger = combatStatsMod.computeCombatStatLedger(browserResult.gameSnap, {
+        arena: browserResult.arenaSnap,
+        getCurrentCelestialPhase: () => ({ id: browserResult.celestialPhaseId })
+      });
+      const nodeEffAtk = gearRulesMod.effectiveGearVal(sampleGear, "atk");
+      const nodeBudget = gearRulesMod.computeGearAffixBudget(sampleGear);
+      const nodeLifespan = economyRulesMod.previewLifespanImpact(browserResult.gameSnap, 18, { sandboxMode: false });
+      const nodeRecipeBd = economyRulesMod.computeRecipeCostBreakdown(browserResult.gameSnap, realmsItemsMod.RECIPES.foundation);
+
+      assert.deepEqual(nodeLedger.totals, browserResult.ledgerTotals, "Node ESM computeCombatStatLedger must match live Chromium V25 totals");
+      assert.equal(nodeEffAtk, browserResult.effAtk, "Node ESM effectiveGearVal must match live Chromium");
+      assert.deepEqual(nodeBudget, browserResult.budget, "Node ESM computeGearAffixBudget must match live Chromium");
+      assert.deepEqual(nodeLifespan, browserResult.lifespan, "Node ESM previewLifespanImpact must match live Chromium");
+      assert.deepEqual(nodeRecipeBd, browserResult.recipeBd, "Node ESM computeRecipeCostBreakdown must match live Chromium");
     } finally {
       await ctx.close();
     }
