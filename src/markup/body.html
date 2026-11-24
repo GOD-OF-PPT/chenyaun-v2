@@ -1,0 +1,669 @@
+<div id="app-root">
+  <!-- PURE VISUAL ONE-CLICK TITLE OVERLAY -->
+  <section id="welcome-screen">
+    <div class="title-centerpiece">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="cinnabar-seal">尘缘仙印</span>
+        <span style="font-family:var(--font-serif);font-size:12.5px;color:var(--gold);letter-spacing:4px;">御剑问道 · 炼丹铸器 · 渡劫飞升</span>
+      </div>
+      <h1 class="welcome-title">尘缘问道</h1>
+      <div class="realm-road-ribbon">
+        <span>凡人</span><i>→</i><span>炼气</span><i>→</i><span>筑基</span><i>→</i><span>金丹</span><i>→</i><span>元婴</span><i>→</i><span>化神</span><i>→</i><span style="color:#ffe28a;font-weight:700;">飞升真仙</span>
+      </div>
+      <div class="title-visual-icons">
+        <span class="title-mini-badge"><b class="badge-key">左键</b>四段剑舞 · 末段必暴</span>
+        <span class="title-mini-badge"><b class="badge-key">右键</b>切手派生 · 爆剑破势</span>
+        <span class="title-mini-badge"><b class="badge-key">空格</b>金芒识破 · 凝时闪避</span>
+        <span class="title-mini-badge"><b class="badge-key">B 键</b>周天吐纳 · 满修渡劫</span>
+      </div>
+
+      <div id="save-status-banner" role="alert" style="display:none;"></div>
+
+      <div class="welcome-actions">
+        <button id="btn-start-new" class="btn-start-hero">踏入山雨 · 开启新卷</button>
+        <button id="btn-continue-save" class="btn-jade" style="display:none;padding:12px 22px;border-radius:999px;font-size:14px;">续接旧卷进度</button>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;">
+        <button type="button" id="btn-toggle-origin" class="title-custom-toggle">▾ 自定义道号、先天命格与劫火周目</button>
+        <button type="button" id="btn-welcome-hall" class="title-custom-toggle" style="border-color:rgba(248,220,144,0.52);color:#ffe8a3;" data-action="open-hall-of-lives">🏛 历世道果殿堂</button>
+      </div>
+      <div id="title-custom-drawer" class="title-custom-box">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;">
+          <input id="player-name-input" type="text" maxlength="12" value="顾长青" style="background:rgba(0,0,0,0.5);border:1px solid var(--gold);color:var(--gold-bright);padding:4px 12px;border-radius:999px;text-align:center;width:120px;" />
+          <span id="legacy-summary-badge" class="tag-chip">第一世</span>
+          <span id="best-tower-badge" class="tag-chip mythic">镇妖塔 0层</span>
+          <span id="best-calamity-badge" class="tag-chip" style="border-color:rgba(255,120,108,0.5);color:#ffbcb4;">劫火未启</span>
+        </div>
+        <div id="welcome-perk-grid" class="perk-grid"></div>
+        <div id="welcome-calamity-box" style="width:100%;display:flex;flex-direction:column;gap:5px;border-top:1px solid rgba(216,179,106,0.25);padding-top:8px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MINIMALIST FLOATING TOP HUD -->
+  <header id="top-hud">
+    <div class="hud-left-stack">
+      <div class="hud-left">
+        <button id="btn-open-profile" class="hud-avatar-btn">
+          <img id="hud-avatar" class="hud-avatar-img" alt="主角" />
+          <div style="text-align:left;">
+            <div style="display:flex;align-items:center;gap:5px;">
+              <span id="hud-name" class="hud-name">顾长青</span>
+              <span id="hud-realm" class="realm-pill">凡人</span>
+              <span id="hud-calamity-badge" class="hud-calamity-pill" style="display:none;">🔥 劫火×1</span>
+            </div>
+            <div id="hud-age-school" style="font-size:10.5px;color:var(--text-sub);">18岁 · 尚未择法</div>
+          </div>
+        </button>
+
+        <div class="hud-bars">
+          <div class="bar-row-mini" title="气血">
+            <div class="bar-track"><div id="hud-hp-bar" class="bar-fill bar-hp" style="width:100%"></div></div>
+            <b id="hud-hp-txt" class="sr-only">65/65</b>
+          </div>
+          <div class="bar-row-mini" title="灵力">
+            <div class="bar-track"><div id="hud-mp-bar" class="bar-fill bar-mp" style="width:100%"></div></div>
+            <b id="hud-mp-txt" class="sr-only">28/28</b>
+          </div>
+          <div class="bar-row-mini" title="渡劫灵气">
+            <div class="bar-track"><div id="hud-xp-bar" class="bar-fill bar-xp" style="width:0%"></div></div>
+            <b id="hud-xp-txt" class="sr-only">0/10</b>
+          </div>
+        </div>
+
+        <div class="hud-stones-chip">◈ <span id="hud-stones">55</span></div>
+        <button type="button" id="hud-lifespan-badge" class="hud-lifespan-pill" style="display:none;" data-action="open-lifespan-status"></button>
+      </div>
+
+      <!-- Visual Build Icon Chain -->
+      <div id="hud-build-strip"></div>
+      <div id="run-boon-strip" aria-label="本趟秘境道韵"></div>
+
+      <!-- V13 Live 4-Tier Goal & Quest Jade-Slip Tracker -->
+      <div id="quest-tracker-hud">
+        <div class="qt-header">
+          <div id="btn-open-goals-hdr" class="qt-title" role="button" tabindex="0" style="cursor:pointer;" data-tip="九霄问道录 (T)|点击展开六卷主线、宗门悬赏令、九州15星秘宝与飞升终极道标！">
+            <span style="display:inline-flex;align-items:center;gap:5px;"><svg class="svg-ico" style="width:13px;height:13px;color:var(--gold);" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>问道目标</span>
+            <span id="qt-overall-pct" class="qt-pct-pill">12%</span>
+          </div>
+          <span id="btn-toggle-qt" role="button" tabindex="0" style="font-size:11px;color:var(--text-sub);padding:0 4px;cursor:pointer;" data-tip="折叠/展开目标追踪|保持视野清爽">▾</span>
+        </div>
+        <div id="qt-body-rows" class="qt-body"></div>
+      </div>
+    </div>
+
+    <!-- Center Stage Wave + Boss HP/Posture Banner -->
+    <div class="hud-center-stack">
+      <div id="hud-sandbox-badge" class="hud-sandbox-banner" role="status" aria-live="polite" style="display:none;">
+        <span>🧪 <b>演武沙盒模式</b> · 不影响正式存档/成就/轮回殿</span>
+        <button type="button" id="btn-exit-sandbox" class="btn-gold" style="padding:2px 10px;font-size:11px;" data-action="exit-sandbox">退出沙盒</button>
+      </div>
+      <div id="btn-mainline-compass" class="hud-compass stage-wave-hud" role="status" aria-live="polite"><div class="wave-title-row"><span id="stage-title"></span><span id="wave-sub-tag" class="tag-chip done"></span></div><div id="wave-dots-row" class="wave-dots"></div><span id="compass-vol-label" class="sr-only">第一卷 · 山雨初鸣</span> <span id="compass-step-label" class="sr-only">破庙拔剑：救下沈清禾</span></div>
+      <button type="button" id="btn-dungeon-route" class="dungeon-route-btn" data-action="open-dungeon-map" style="display:none;" data-tip="秘境五层星图 (9)|查看本趟秘境 5 层分支路线、天候气候与奖励预览；清房后点击可择路前行！"></button>
+
+      <div id="tribulation-live-banner">
+        <span id="trib-live-txt">九霄紫霄雷劫 · 空格一闪逆斩天雷</span>
+      </div>
+      <div id="boss-hud-banner">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;">
+          <span id="boss-banner-name" style="color:var(--gold-bright);font-family:var(--font-serif);">镇守首领</span>
+          <span id="boss-banner-state" style="color:var(--jade);font-size:10.5px;">白金架势</span>
+        </div>
+        <div class="boss-hp-track"><div id="boss-hp-fill" class="boss-hp-fill" style="width:100%"></div></div>
+        <div class="boss-posture-track"><div id="boss-posture-fill" class="boss-posture-fill" style="width:100%"></div></div>
+        <div id="titan-parts-hud">
+          <button type="button" class="titan-part-chip" data-lock-titan-part="left_claw">
+            <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#ffd89b;"><span>左覆海魔爪</span><span id="titan-pct-left">100%</span></div>
+            <div class="titan-part-bar"><div id="titan-bar-left" class="titan-part-fill" style="width:100%"></div></div>
+          </button>
+          <button type="button" class="titan-part-chip" data-lock-titan-part="brow_eye">
+            <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#80ffea;"><span>眉心天道竖眼</span><span id="titan-pct-eye">100%</span></div>
+            <div class="titan-part-bar"><div id="titan-bar-eye" class="titan-part-fill" style="width:100%;background:linear-gradient(90deg,#70ffe6,#ffe28a);"></div></div>
+          </button>
+          <button type="button" class="titan-part-chip" data-lock-titan-part="right_halberd">
+            <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#e2b8ff;"><span>右裂天雷戟</span><span id="titan-pct-right">100%</span></div>
+            <div class="titan-part-bar"><div id="titan-bar-right" class="titan-part-fill" style="width:100%;background:linear-gradient(90deg,#b983ff,#ffd89b);"></div></div>
+          </button>
+        </div>
+        <button type="button" id="titan-climb-btn" data-action="titan-climb-finisher">双臂崩碎巨神伏地 · 点此或出剑触发【御剑登天·踏躯逆鳞斩】</button>
+      </div>
+    </div>
+
+    <div class="hud-right">
+      <button type="button" id="btn-pending-rewards" class="pending-reward-pill" style="display:none;" data-action="open-pending-rewards" aria-label="待处置奖励" data-tip="待处置奖励|战斗静默后将依次呈现，也可点击主动提前处置（不越过败北/存档冲突保护）"><span>待处置</span><b id="pending-rewards-count">0</b></button>
+      <button id="btn-omen-banner" class="icon-btn active" data-tip="天时星象 (炼气期解封)|点击耗20灵石改换星象加成">
+        <span id="omen-label-txt">灵潮</span>
+      </button>
+      <button id="btn-goals-modal" class="goal-btn-pill" data-tip="九霄问道录 (T)|查看并领取六卷主线、宗门悬赏令与九州15星秘宝奖励！"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg><span>目标</span><span id="goal-hud-dot" class="goal-red-dot"></span></button>
+      <button id="btn-world-map" class="map-btn-pill" data-tip="九州山海舆图 (M)|展开千里青绿山海卷：自由选择五大秘境悬赏、镇妖古塔或返回听雨洞府！"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/><path d="M9 4v14M15 6v14"/></svg><span>舆图</span></button>
+      <button id="btn-sanctum-hub" class="hub-btn-pill" data-tip="听雨洞府主城 · 演武论剑坪 (H)|随时返回安全宗门洞府：休整、控火炼丹、神兵淬炼与木桩演武！"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></svg><span>洞府</span></button>
+      <button type="button" id="btn-pavilion-menu" class="pavilion-trigger-btn" data-action="toggle-pavilion" data-tip="太虚仙阁|展开问道阶梯、九世轮回殿、仙乐音效与演武沙盒开关"><svg class="svg-ico" style="width:13px;height:13px;" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.2L18.5 21 12 16.8 5.5 21l2-7.8L2 9h7l3-7z"/></svg><span>仙阁 ▾</span></button>
+      <button id="btn-speed-1" class="speed-btn active sr-only" data-speed="1">1x</button>
+      <button id="btn-speed-2" class="speed-btn sr-only" data-speed="2">2x</button>
+      <button id="btn-speed-4" class="speed-btn sr-only" data-speed="4">4x</button>
+      <button id="btn-open-settings" class="icon-btn" data-tip="卷轴设置|改键位、存档导出与辅助选项"><svg class="svg-ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M8 9h7M8 13h7"/></svg><span>卷轴</span></button>
+
+      <div id="pavilion-popover">
+        <div class="pavilion-sec-lbl"><span class="sem-badge sem-main" data-sem="main" data-shape="square">■ 仙途总览</span></div>
+        <div class="pavilion-grid">
+          <button type="button" id="btn-ascension-roadmap" class="pavilion-item-btn" data-action="open-ascension-roadmap" data-tip="问道阶梯 · 诸天系统解封图谱|查看炼气→筑基→金丹(云海空战)→元婴化神全阶段玩法解封进度并直达各试炼"><svg class="svg-ico" style="width:13px;height:13px;color:#80ffea;" viewBox="0 0 24 24"><path d="M4 19h16M6 15h4v4H6zM11 10h4v9h-4zM16 5h4v14h-4z"/></svg><span>问道阶梯</span></button>
+          <button type="button" id="btn-hall-of-lives" class="pavilion-item-btn" data-action="open-hall-of-lives" data-tip="历世道果殿堂 · 九世轮回碑|查阅历代飞升证道名录、解锁轮回先天命格、外显剑意幻化与劫火周目"><svg class="svg-ico" style="width:13px;height:13px;color:#ffe28a;" viewBox="0 0 24 24"><path d="M12 2l7 4v5c0 5-3.5 9-7 11-3.5-2-7-6-7-11V6l7-4z"/></svg><span>九世轮回殿</span></button>
+        </div>
+        <div class="pavilion-sec-lbl"><span class="sem-badge sem-side" data-sem="side" data-shape="circle">● 试炼快捷入口（同九州导航）</span></div>
+        <div class="pavilion-grid">
+          <button type="button" id="btn-boss-rush" class="pavilion-item-btn is-side" data-eco-sys="sword_tomb_rush" data-tip="万剑冢 · 踏天连战 (元婴期解封)|连续迎战七阵强化妖王、心魔镜像与太古烛龙"><svg class="svg-ico" style="width:13px;height:13px;color:#ff9a8b;" viewBox="0 0 24 24"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/></svg><span>万剑冢</span></button>
+          <button type="button" id="btn-quick-map" class="pavilion-item-btn is-side" data-eco-sys="demon_tower" data-tip="太虚锁妖古塔 (炼气期解封)|直接挑战无尽镇妖塔试炼"><svg class="svg-ico" style="width:13px;height:13px;color:var(--jade);" viewBox="0 0 24 24"><path d="M6 21h12M8 21V9l4-5 4 5v12M9 14h6"/></svg><span id="quick-map-lbl">锁妖塔</span></button>
+          <button type="button" id="btn-star-chart" class="pavilion-item-btn is-side" data-eco-sys="star_chart" data-tip="太虚周天星图 (N · 金丹期解封)|点亮二十八星宿激活星魂共鸣"><svg class="svg-ico" style="width:13px;height:13px;color:var(--gold-bright);" viewBox="0 0 24 24"><polygon points="12 2 15 9 22 9.5 16.5 14 18 21 12 17.5 6 21 7.5 14 2 9.5 9 9 12 2"/></svg><span>周天星图</span></button>
+          <button type="button" class="pavilion-item-btn is-side" data-action="open-celestial-spire" data-eco-sys="celestial_spire" data-tip="太虚登仙台 (L · 元婴期解封)|九重天宫肉鸽奇物深渊"><svg class="svg-ico" style="width:13px;height:13px;color:#d69eff;" viewBox="0 0 24 24"><path d="M12 3l8 5-8 5-8-5 8-5z"/><path d="M4 13l8 5 8-5"/></svg><span>登仙台</span></button>
+        </div>
+        <div class="pavilion-sec-lbl"><span class="sem-badge sem-system" data-sem="system" data-shape="diamond">◈ 工具与设置</span></div>
+        <div class="pavilion-grid">
+          <button type="button" id="btn-photo-mode" class="pavilion-item-btn" data-tip="太虚绘卷 · 自由摄影模式 (P)|冻结战斗定格画面并导出国风画卷"><svg class="svg-ico" style="width:13px;height:13px;color:var(--gold);" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/></svg><span>绘卷摄影</span></button>
+          <button type="button" id="btn-toggle-telemetry" class="pavilion-item-btn" data-tip="3A动作遥测与判定框 (F3)|查看预输入链、秒伤与判定框线"><svg class="svg-ico" style="width:13px;height:13px;color:var(--jade);" viewBox="0 0 24 24"><path d="M4 19h16M7 15v-4M12 15V7M17 15v-6"/></svg><span>动作遥测</span></button>
+          <button type="button" id="btn-toggle-bgm" class="pavilion-item-btn active" data-tip="仙乐伴奏|开关国风古琴背景音乐"><svg class="svg-ico" style="width:13px;height:13px;color:var(--gold);" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span>古琴仙乐</span></button>
+          <button type="button" id="btn-mute-audio" class="pavilion-item-btn" data-tip="音效开关|开关剑鸣鼓点等战斗音效"><svg class="svg-ico" style="width:13px;height:13px;color:var(--jade);" aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><span>战斗音效</span></button>
+        </div>
+        <button type="button" id="btn-toggle-arcana-all" class="pavilion-item-btn" style="width:100%;justify-content:space-between;" data-action="toggle-arcana-all" data-tip="全神通演武沙盒开关|确认后进入独立隔离的演武沙盒体验全部系统与神通，绝不写入正式存档与元存档！">
+          <span>🧪 全神通演武沙盒</span>
+          <b id="lbl-arcana-all-state" style="color:var(--gold-bright);">开启演武沙盒</b>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- FULL-SCREEN 45° ISOMETRIC 2.5D ARENA + COLLAPSIBLE DRAWER -->
+  <main id="main-workspace">
+    <section id="visual-stage" tabindex="-1" aria-label="剑阵战场">
+      <img id="stage-bg-img" alt="道场" />
+      <canvas id="fx-canvas"></canvas>
+      <div id="stage-vignette-css"></div>
+      <div id="scene-transition-veil" aria-hidden="true"></div>
+      <div id="qi-orb-layer"></div>
+      <div id="stage-center-layer"></div>
+
+      <div class="sr-only">
+        <span id="stage-eyebrow"></span><span id="player-battle-sprite"></span><span id="stage-interactive-hint"></span><span id="st_"></span><span id="orb_"></span>
+        <span id="flow-bonus-pill"></span>
+        <div id="stage-pet-badge"><img id="stage-pet-img" alt="" /><span id="stage-pet-txt"></span></div>
+        <span id="stage-latest-log"></span>
+        <span id="dao-pill-score"></span><span id="dao-pill-ben"></span><span id="dao-pill-edg"></span><span id="dao-pill-ser"></span>
+        <img id="enemy-battle-sprite" alt="" />
+        <div id="alchemy-needle"></div><div id="meridian-needle"></div>
+      </div>
+    </section>
+
+    <section id="jade-panel" role="dialog" aria-modal="true" aria-label="修行与卷宗抽屉" tabindex="-1">
+      <div id="panel-scroll-body"></div>
+    </section>
+    <div id="combo-rank-seal">
+      <div class="combo-tier-row">
+        <span id="combo-tier-txt" class="combo-tier-char">灵剑</span>
+        <span id="combo-count-txt" class="combo-hit-num">×6</span>
+      </div>
+      <span id="combo-buff-txt" class="combo-buff-sub">攻速+10% · 暴伤+12%</span>
+      <div id="combo-variety-row"></div>
+      <div class="combo-decay-track"><div id="combo-decay-bar" class="combo-decay-fill" style="width:100%"></div></div>
+    </div>
+  </main>
+
+  <!-- BOTTOM TACTILE ARPG SKILL DOCK (DYNAMIC KB/GAMEPAD GLYPHS + STYLE ULTIMATE ORB) -->
+  <div id="tag-team-hud-pill" data-unlock-rank="2" data-tip="太虚同心 · 道侣瞬切操控 (V键 · 筑基期解封) & 剑匣三器 (1/2/3)|按 V 键或点击头像在主角与道侣间【无缝换人操控】并释放【换人入场连携技】（受控或残血亦可紧急换人救场净厄）！点右侧剑匣切换【飞剑/龙胆枪/剑轮】！">
+    <span class="tag-key-cap" data-bind-cap="tagSwitch">V</span>
+    <div id="tag-roster-icons" style="display:flex;align-items:center;gap:4px;"></div>
+    <button type="button" id="btn-cycle-arsenal" class="tag-key-cap" style="cursor:pointer;color:#80ffea;border-color:rgba(112,255,230,0.55);" data-action="cycle-weapon-form">飞剑</button>
+    <button type="button" id="btn-dual-bond-ult" data-action="cast-dual-bond-ult" data-tip="双人同框羁绊合体奥义 (同心100%)|主角与当前出战道侣双立绘交辉，释放全屏合击大阵！">合璧</button>
+  </div>
+  <button type="button" id="karma-hud-pill" data-unlock-rank="2" data-action="open-karma-dilemma" data-tip="清虚正道 ↔ 劫煞魔心 (红尘因果谱系)|点击展开【红尘因果问心抉择】！正道激活【太清镇世诀】净世莲盾，魔心激活【血煞狂剑诀】燃血高爆噬血！">
+    <span id="karma-hud-icon">☯</span>
+    <strong id="karma-hud-title" style="font-family:var(--font-serif);">本真中正 · 0</strong>
+  </button>
+  <button type="button" id="posture-switch-badge" data-unlock-rank="2" data-arena-skill="posture" data-tip="双剑意姿态切换 · 太虚易剑斩 (` / LB)|实时切换【青莲疾剑式(高频迅捷)】与【玄重巨阙式(霸体破盾碎核)】；在收招或闪避瞬间按下立即触发突进破势【太虚易剑斩】！">
+    <img id="posture-emblem-img" class="posture-emblem-ico" alt="姿态" />
+    <div style="display:flex;flex-direction:column;gap:2px;flex:1;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <strong id="posture-name-txt" style="font-family:var(--font-serif);font-size:13.5px;color:#70ffe6;">青莲疾剑式</strong>
+        <span class="posture-key-pill" data-bind-cap="posture">`</span>
+      </div>
+      <span id="posture-sub-txt" style="font-size:10px;color:#b8dcd5;">攻速+14% · 移速+10% · 迅捷叠印</span>
+    </div>
+  </button>
+
+  <div id="arcana-vault-wrap">
+    <div id="arcana-vault-drawer">
+      <div class="arcana-vault-hdr">
+        <span>太虚仙法秘匣 · 高阶神通</span>
+        <button type="button" class="btn-ghost" style="padding:1px 8px;font-size:10.5px;" data-action="toggle-arcana-vault">收起 ▾</button>
+      </div>
+      <div id="v24-genesis-dock">
+        <button type="button" id="btn-sanqing-clones" class="v24-gen-btn" data-action="cast-sanqing-clones" data-arcana-act="sanqing" data-tip="一气化三清 · 身外法身三影同击 (4键 · 元婴期解封 / 二段按4移形归元爆)|凝练【玉清青莲法身(80ms)】与【上清紫电法身(160ms)】完全同步复刻一切普攻、三器混编、六象特技、空连与易剑斩！存续中再按 4 键瞬发【移形换位·三清归元十字斩】！">
+          <img id="img-sanqing-ico" alt="一气三清" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-sanqing-title" style="font-family:var(--font-serif);font-size:11px;color:#80ffea;">一气三清</strong>
+            <span id="lbl-sanqing-sub" style="font-size:9.2px;color:#cfe8e2;">三影同步斩</span>
+          </div>
+          <span class="v22-key-badge">4</span>
+        </button>
+        <button type="button" id="btn-shanhe-domain" class="v24-gen-btn" data-action="cast-shanhe-domain" data-arcana-act="shanhe" data-tip="山河社稷图 · 画中水墨降维领域 (5键 · 化神期解封)|将首领与群妖摄入10秒【太古青绿山水画中界】（敌减速42%且破防+45%）；每次挥剑烙印【临·兵·斗·者·皆·阵·列·在·前】九字真言，叠满触发【笔落惊风雨·破画万钧斩】！">
+          <img id="img-shanhe-ico" alt="山河社稷" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-shanhe-title" style="font-family:var(--font-serif);font-size:11px;color:#ffe89e;">山河社稷</strong>
+            <span id="lbl-shanhe-sub" style="font-size:9.2px;color:#9effec;">画中界九字</span>
+          </div>
+          <span class="v22-key-badge">5</span>
+        </button>
+        <button type="button" id="btn-warship-strike" class="v24-gen-btn" data-action="cast-warship-strike" data-arcana-act="warship" data-tip="凌霄仙舟 · 破界天基轰炸 (6键 · 化神期解封)|召唤宗门浮空母舰【听雨凌霄仙舟】掠空投下镇妖锁链锚定敌酋，倾泻【十二门徒御剑空降剑雨 + 太初灵晶主炮轰击】！">
+          <img id="img-warship-ico" alt="凌霄仙舟" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-warship-title" style="font-family:var(--font-serif);font-size:11px;color:#ffd166;">凌霄仙舟</strong>
+            <span id="lbl-warship-sub" style="font-size:9.2px;color:#ffe89e;">天基主炮齐射</span>
+          </div>
+          <span class="v22-key-badge">6</span>
+        </button>
+      </div>
+      <div id="v23-epoch-dock">
+        <button type="button" id="btn-coop-2p" class="v23-ep-btn" data-action="toggle-coop-2p" data-tip="太虚同游 · 本地双人同屏共斗 (]键开启 · [键换2P伙伴)|开启 1P+2P 同屏双剑联机（2P支持 IJKL/方向键/小键盘/手柄 + 智能协战兜底）：双人拉线激活【同心剑网切割线】、破势夹击触发【2.5x 双人同步处决】、力竭触发【渡气化劫瞬身救援】！">
+          <img id="img-coop-2p-ico" alt="双人同游" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-coop-2p-title" style="font-family:var(--font-serif);font-size:11px;color:#80ffea;">双人同游</strong>
+            <span id="lbl-coop-2p-sub" style="font-size:9.2px;color:#cfe8e2;">点此开启2P</span>
+          </div>
+          <span class="v22-key-badge">]</span>
+        </button>
+        <button type="button" id="btn-celestial-time" class="v23-ep-btn" data-action="cycle-celestial-time" data-tip="太虚天时 · 四相昼夜流转 (\键切换晨曦/烈阳/血暮/星河)|实时流转或一键切换四相天光与倒影法则：【晨曦紫气】正道42%莲盾、每秒回血4%/回元5%、仙葫+25%、减伤+4；【烈阳当空】常驻攻击池+10%、法天元神+25%；【残阳血暮】常驻攻击池魔心+22%/其余+12%、暴伤+16%、重击回2%最大气血；【极夜星河】二十八星宿翻倍(×2.0) + 首领月华夜煞与必掉星魄！">
+          <img id="img-celestial-ico" alt="四相天时" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-celestial-title" style="font-family:var(--font-serif);font-size:11px;color:#ffe89e;">晨曦紫气</strong>
+            <span id="lbl-celestial-sub" style="font-size:9.2px;color:#9effec;">正道护盾+回灵</span>
+          </div>
+          <span class="v22-key-badge">\</span>
+        </button>
+        <button type="button" id="btn-comic-scroll" class="v23-ep-btn" data-action="open-comic-scroll" data-tip="太虚剑意录 · 四格水墨连环画战报|自动抓拍本局最惊艳的 4 帧高光瞬间（识破剑反/双神角力/踏躯逆鳞/双剑诛仙），一键生成宣纸朱砂题跋【四格水墨连环画长卷】并导出高清 PNG！">
+          <img id="img-comic-ico" alt="剑意战报" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong style="font-family:var(--font-serif);font-size:11px;color:#ffd166;">剑意战报</strong>
+            <span id="lbl-comic-count" style="font-size:9.2px;color:#ffe89e;">四格抓拍 0/4</span>
+          </div>
+          <span class="v22-key-badge">画</span>
+        </button>
+      </div>
+      <div id="v22-tactical-dock">
+        <button type="button" id="btn-astral-form" class="v22-tac-btn" data-arena-skill="astral" data-arcana-act="astral" data-tip="法天象地 · 十丈元神真身 (O键 · 元婴期解封 / 满元神或SSS激发)|依正魔道心化为【太清金阙剑仙真身】或【九幽修罗魔剑真身】：全程霸体免控，施展裂穹巨剑与星河剑指；迎击烛龙/首领直接触发【双巨神跨屏角力】瞬碎护甲！">
+          <img id="img-astral-ico" alt="法天象地" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-astral-title" style="font-family:var(--font-serif);font-size:11.5px;color:#ffe89e;">法天象地</strong>
+            <span id="lbl-astral-pct" style="font-size:9.5px;color:#80ffea;">元神 0%</span>
+          </div>
+          <span class="v22-key-badge" data-bind-cap="astral">O</span>
+        </button>
+        <button type="button" id="btn-mount-call" class="v22-tac-btn" data-arena-skill="mount" data-arcana-act="mount" data-tip="山海灵骑 · 神兽骑乘冲锋 (J键 · 金丹期解封 / Z或右键跃马坠劈)|呼哨召出【踏云墨麒麟 / 九天青鸾凤 / 玄冥白泽兽】破阵冲锋撞飞群妖！骑乘中按 Z 或右键施展【飞身跃马·凌空坠星劈】无缝接空连！">
+          <img id="img-mount-ico" alt="灵骑" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-mount-name" style="font-family:var(--font-serif);font-size:11.5px;color:#70ffe6;">踏云麒麟</strong>
+            <span id="lbl-mount-state" style="font-size:9.5px;color:#cfe8e2;">呼哨冲锋</span>
+          </div>
+          <span class="v22-key-badge" data-bind-cap="mount">J</span>
+        </button>
+        <button type="button" id="btn-qimen-array" class="v22-tac-btn" data-arena-skill="qimen" data-arcana-act="qimen" data-tip="奇门遁甲 · 八门随身风水阵盘 (U键 · 金丹期解封)|脚下瞬展奇门风水盘并轮换【生门回春 / 景门离火附魔 / 惊门震雷聚怪 / 死门剑狱双倍破甲】；阵内放六象或合璧触发【阵眼扩域爆破】！">
+          <img id="img-qimen-ico" alt="奇门" />
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <strong id="lbl-qimen-gate" style="font-family:var(--font-serif);font-size:11.5px;color:#ffd166;">奇门·生门</strong>
+            <span id="lbl-qimen-sub" style="font-size:9.5px;color:#9effec;">布阵轮转</span>
+          </div>
+          <span class="v22-key-badge" data-bind-cap="qimen">U</span>
+        </button>
+      </div>
+    </div>
+    <button type="button" id="btn-toggle-arcana" data-action="toggle-arcana-vault" data-tip="太虚仙法秘匣|金丹解封山海灵骑(J)/奇门阵盘(U)，元婴解封一气三清(4)/法天象地(O)，化神解封山河社稷图(5)/凌霄仙舟(6)（或于右上【仙阁】开启演武沙盒）">
+      <span class="arcana-dot"></span>
+      <span id="lbl-arcana-toggle">太虚秘匣</span>
+    </button>
+  </div>
+
+  <div id="onboarding-coach-bar" aria-live="polite"></div>
+  <div id="action-skill-dock">
+    <button type="button" id="orb-slash" class="skill-orb-btn" data-unlock-rank="0" data-arena-skill="slash" data-tip="四段青霜剑舞 / 蓄力万剑 (左键)|点按施展【斜月→双龙→剑轮→青莲落星】四段剑舞，第四段必定暴击！出剑瞬间接右键触发【切手重派生】！">
+      <img id="orb-img-slash" alt="剑气" />
+      <span class="skill-key-cap" data-bind-cap="slash">左键</span>
+      <span class="skill-orb-lbl">剑气</span>
+    </button>
+
+    <button type="button" id="orb-recall" class="skill-orb-btn" data-unlock-rank="0" data-arena-skill="recall" data-tip="切手六象特技 · 爆剑引爆 (右键)|[连招中右键] 释放当前六象特技【万剑游龙刺】｜[常态右键] 收剑引爆剑印造成高额破势！">
+      <img id="orb-img-recall" alt="爆剑" />
+      <span class="skill-key-cap" data-bind-cap="recall">右键</span>
+      <span class="skill-orb-lbl" id="lbl-recall-marks">爆剑</span>
+      <div id="cd-recall" class="skill-cd-mask"></div>
+    </button>
+
+    <button type="button" id="orb-dash" class="skill-orb-btn glow-jade" data-unlock-rank="0" data-arena-skill="dash" data-tip="识破剑反 / 极限闪避凝时 (空格)|迎击【✦金光招】触发万钧剑反碎势；闪避【危·红光杀招】触发1.5秒【太虚凝时】慢镜并留爆裂残影！">
+      <img id="orb-img-dash" alt="一闪" />
+      <span class="skill-key-cap" data-bind-cap="dash">空格</span>
+      <span class="skill-orb-lbl">一闪</span>
+      <div id="cd-dash" class="skill-cd-mask"></div>
+    </button>
+
+    <button type="button" id="orb-stance" class="skill-orb-btn stance-hunt" data-unlock-rank="1" data-arena-skill="stance" data-tip="三才剑阵变幻 (Y / 手柄B)|炼气期解封：实时切换【游龙阵(追猎叠印) → 剑轮阵(护体斩弹幕) → 巨阙阵(玄天巨剑重劈破势)】！">
+      <img id="orb-img-stance" alt="剑阵" />
+      <span class="skill-key-cap" data-bind-cap="stance">Y</span>
+      <span class="skill-orb-lbl" id="lbl-stance-mode">游龙阵</span>
+    </button>
+
+    <button type="button" id="orb-jump" class="skill-orb-btn" data-unlock-rank="1" data-arena-skill="jump" data-tip="御风腾跃 · 踏剑借力 (Z / Shift)|炼气期解封：拔地凌空跃起躲避【下段裂地危招】并踩头触发【踏剑借力】；滞空点左键升龙三连斩，点右键陨星坠劈！">
+      <img id="orb-img-jump" alt="御空" />
+      <span class="skill-key-cap" data-bind-cap="jump">Z</span>
+      <span class="skill-orb-lbl" id="lbl-jump-state">御空</span>
+      <div id="cd-jump" class="skill-cd-mask"></div>
+    </button>
+
+    <button type="button" id="orb-ult" class="skill-orb-btn" data-unlock-rank="1" data-arena-skill="ult" data-tip="本命法宝剑域 (E)|炼气期解封：展开本命法宝全屏八卦莲华法轮轰击道场并叠满剑印！">
+      <img id="orb-img-ult" alt="万剑" />
+      <span class="skill-key-cap" data-bind-cap="ult">E</span>
+      <span class="skill-orb-lbl">万剑</span>
+      <div id="cd-ult" class="skill-cd-mask"></div>
+    </button>
+
+    <button type="button" id="orb-ally" class="skill-orb-btn" data-unlock-rank="1" data-arena-skill="ally" data-tip="故人真身降临 (R)|结识故人或炼气期解封：召唤已结契道侣真身降临战场结成【三才同心剑链】协同御敌！">
+      <img id="orb-img-ally" alt="助阵" />
+      <span class="skill-key-cap" data-bind-cap="ally">R</span>
+      <span class="skill-orb-lbl" id="lbl-ally-count">助阵</span>
+      <div id="cd-ally" class="skill-cd-mask"></div>
+    </button>
+
+    <button type="button" id="orb-soul" class="skill-orb-btn soul-seal-orb" data-unlock-rank="2" data-arena-skill="soul" data-tip="太虚镇妖魂印 · 精魄化身技 (C / RB)|筑基期解封：召唤已炼化妖王精魄法相出击，自带55%霸体减伤并可无缝取消剑招后摇！">
+      <img id="orb-img-soul" alt="魂印" />
+      <span class="skill-key-cap" data-bind-cap="soul">C</span>
+      <span class="skill-orb-lbl" id="lbl-soul-name">血魔印</span>
+      <div id="cd-soul" class="skill-cd-mask"></div>
+    </button>
+
+    <button type="button" id="orb-blink" class="skill-orb-btn" data-unlock-rank="2" data-arena-skill="swordBlink" data-tip="飞剑索敌 · 缩地瞬身 (F / 中键)|筑基期解封：远距投射锚定灵剑瞬身突袭妖兽或阵柱，若目标浮空则凌空追击！">
+      <img id="orb-img-blink" alt="缩地" />
+      <span class="skill-key-cap" data-bind-cap="swordBlink">中键</span>
+      <span class="skill-orb-lbl">缩地</span>
+      <div id="cd-blink" class="skill-cd-mask"></div>
+    </button>
+
+    <button type="button" id="orb-finisher" class="skill-orb-btn" data-unlock-rank="2" data-arena-skill="finisher" data-tip="流派终极奥义 (X · 蓄满100%剑意)|筑基期解封：电影黑边特写释放流派真传绝学：【太虚万剑朝宗 / 九霄紫雷神罚 / 三才同心诛仙剑阵】！">
+      <img id="orb-img-finisher" alt="奥义" />
+      <span class="skill-key-cap" data-bind-cap="finisher">X</span>
+      <span class="skill-orb-lbl" id="lbl-finisher-intent">剑意0%</span>
+      <div id="cd-finisher" class="skill-cd-mask"></div>
+    </button>
+
+    <button type="button" id="orb-pet" class="skill-orb-btn" data-unlock-rank="1" data-arena-skill="pet_ult" data-tip="灵宠觉醒神通 (G)|结契灵兽或炼气期解封：催动随行本命灵兽释放全屏本源绝技！">
+      <img id="orb-img-pet" alt="灵兽" />
+      <span class="skill-key-cap" data-bind-cap="pet">G</span>
+      <span class="skill-orb-lbl" id="lbl-pet-orb">灵宠</span>
+      <div id="cd-pet" class="skill-cd-mask"></div>
+    </button>
+
+    <button type="button" id="orb-meditate" class="skill-orb-btn" data-unlock-rank="0" data-arena-skill="meditate" data-tip="周天吐纳 · 满修渡劫 (B)|盘膝悬浮引天地灵气入体（每 3 秒耗 1 月寿元）：安全区（洞府/清场）全屏吸纳掉落（战中仅近身 200px 拾取）、积攒渡劫修为；修为圆满后按 B 引动天劫破境！">
+      <img id="orb-img-meditate" alt="吐纳" />
+      <span class="skill-key-cap" data-bind-cap="meditate">B</span>
+      <span class="skill-orb-lbl" id="lbl-meditate">吐纳</span>
+    </button>
+
+    <button type="button" id="tribulation-trigger-btn" data-arena-skill="tribulation">
+      引动天劫 (B)
+    </button>
+
+    <button type="button" id="orb-pill" class="skill-orb-btn" data-unlock-rank="0" data-arena-skill="pill" data-tip="本命九转仙葫 / 回春丹 (Q)|优先畅饮本命仙葫瞬间回血并触发已镶嵌的三槽泡酒神效；空葫时自动服用背包【回春丹】救急！回洞府自动满酿">
+      <img id="orb-img-pill" alt="仙葫" />
+      <span class="skill-key-cap" data-bind-cap="pill">Q</span>
+      <span class="skill-orb-lbl" id="lbl-pill-count">葫5/5</span>
+    </button>
+  </div>
+
+  <!-- RIGHT-EDGE COLLAPSIBLE DRAWER BUTTONS -->
+  <nav id="bottom-nav">
+    <button id="nav-btn-cultivate" class="nav-tab-btn" data-tab="cultivate" data-tip="命盘神通|切换流派、灵兽与已悟神通">
+      <svg class="svg-ico" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+      <span class="sr-only">🧘 </span>
+      <span class="nav-tab-text"><strong><span class="sr-only">洞府</span>修行</strong><small class="sr-only">吐纳 · 功法 · 破境</small></span>
+      <span id="badge-cultivate" class="nav-badge-dot" style="display:none;">!</span>
+    </button>
+    <button id="nav-btn-story" class="nav-tab-btn" data-tab="story" data-tip="故人盟契|结交沈清禾、裴照、陆玄松、砚尘">
+      <svg class="svg-ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/></svg>
+      <span class="sr-only">📜 </span>
+      <span class="nav-tab-text"><strong><span class="sr-only">红尘</span>故人</strong><small class="sr-only">结缘 · 羁绊 · 问心</small></span>
+      <span id="badge-story" class="nav-badge-dot" style="display:none;">1</span>
+    </button>
+    <button id="nav-btn-explore" class="nav-tab-btn" data-tab="explore" data-tip="五大道场|传送青岚石坪、青云仙台、照影莲台、锁妖内坛与登仙台">
+      <svg class="svg-ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 19l6-11 4.5 7L17 9l4 10H3z"/></svg>
+      <span class="sr-only">⛰️ </span>
+      <span class="nav-tab-text"><strong><span class="sr-only">九州</span>历练</strong><small class="sr-only">秘境 · 讨伐 · 委托</small></span>
+      <span id="badge-explore" class="nav-badge-dot" style="display:none;">!</span>
+    </button>
+    <button id="nav-btn-alchemy" class="nav-tab-btn" data-tab="alchemy" data-tip="丹鼎神兵|炼制灵丹、铸造法宝与切玉">
+      <svg class="svg-ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 10h10l-1 8a4 4 0 0 1-8 0L7 10z"/><path d="M5 20h14"/></svg>
+      <span class="sr-only">🔥 </span>
+      <span class="nav-tab-text"><strong><span class="sr-only">丹器</span>百工</strong><small class="sr-only">控火炼丹 · 法宝 · 坊市</small></span>
+      <span id="badge-alchemy" class="nav-badge-dot" style="display:none;">!</span>
+    </button>
+    <button id="nav-btn-bag" class="nav-tab-btn" data-tab="bag" data-tip="乾坤道果|查看灵物与五维道果总评">
+      <svg class="svg-ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M6 8h12l1.5 9a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3L6 8z"/></svg>
+      <span class="sr-only">🎒 </span>
+      <span class="nav-tab-text"><strong><span class="sr-only">行囊</span>生平</strong><small class="sr-only">灵物 · 纪事 · 道果</small></span>
+    </button>
+  </nav>
+
+  <div id="story-dialogue-bar" role="dialog" aria-modal="true" aria-label="剧情演出" tabindex="-1">
+    <div class="dlg-portrait-wrap"><img id="dlg-portrait-img" alt="人物" /></div>
+    <div class="dlg-body">
+      <div class="dlg-speaker-row">
+        <span id="dlg-role-seal" class="cinnabar-seal">青云药庐</span>
+        <span id="dlg-speaker-name" class="dlg-speaker-name">沈清禾</span>
+      </div>
+      <div id="dlg-text-content" class="dlg-text"></div>
+      <div id="dlg-choices-box" class="dlg-choices-row" style="display:none;"></div>
+    </div>
+    <div id="dlg-action-box" class="dlg-actions">
+      <button type="button" id="btn-dlg-next" class="btn-gold" style="padding:6px 14px;font-size:12px;">继续 ▸</button>
+      <button type="button" id="btn-dlg-skip" class="btn-ghost" style="padding:4px 10px;font-size:11px;">跳过</button>
+    </div>
+  </div>
+  <div id="region-cinema-card">
+    <div class="rc-title-row">
+      <span id="rc-seal" class="cinnabar-seal">仙门洞天</span>
+      <span id="rc-name">听雨洞府</span>
+    </div>
+    <div class="rc-line"></div>
+    <div id="rc-poem" class="rc-poem">松风煮茗养剑魄 · 坐看云起炼金丹</div>
+  </div>
+  <div id="relic-dharma-toast">☯ 本命法宝真形 · 太虚万剑归宗</div>
+  <div id="execution-stamp-overlay">一剑诛邪</div>
+  <div id="blade-clash-hud">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="cinnabar-seal" style="font-size:10.5px;padding:1px 7px;">剑罡角力</span>
+      <strong id="blade-clash-title" style="font-family:var(--font-serif);font-size:16px;color:#fff4c2;letter-spacing:1.5px;">⚡ 刀锋相抵 · 狂按左键/J/空格压制破敌！</strong>
+    </div>
+    <div class="clash-bar-outer"><div id="blade-clash-fill" class="clash-bar-fill" style="width:55%;"></div></div>
+    <div id="blade-clash-sub" style="font-size:11px;color:#80ffea;font-weight:700;">剑压优势 55% · 胜出直接崩碎架势派生【破军反制斩】！</div>
+  </div>
+  <div id="boss-cutin-banner">
+    <img id="boss-cutin-img" alt="首领" />
+    <div>
+      <div style="display:flex;align-items:center;gap:7px;">
+        <span class="cinnabar-seal">镇守妖王</span>
+        <strong id="boss-cutin-name" style="font-family:var(--font-serif);font-size:18px;color:#fff2c6;letter-spacing:2px;">寒潭玄蛇</strong>
+      </div>
+      <div id="boss-cutin-mech" style="font-size:11.5px;color:#84ffea;margin-top:2px;font-weight:700;">【护山金阵】重击或爆剑破除金盾！</div>
+    </div>
+  </div>
+  <!-- V25 COMPACT SANCTUM DOJO PAVILION (ZERO OVERFLOW, ZERO OVERLAP) -->
+  <div id="dojo-control-bar">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;">
+      <button type="button" id="btn-toggle-dojo-bar" class="dojo-bar-toggle" data-action="toggle-dojo-drawer">
+        <span class="cinnabar-seal" style="font-size:10px;padding:1px 7px;">演武论剑坪</span>
+        <span id="lbl-dojo-cur-mode">定身测伤桩</span>
+        <span id="lbl-dojo-caret" style="opacity:0.75;">▾</span>
+      </button>
+      <button type="button" id="btn-sanctum-build" class="dojo-bar-toggle" style="border-color:rgba(112,255,230,0.62);color:#9effec;" data-action="open-sanctum-upgrade" data-tip="听雨洞府灵脉建设|消耗秘境灵材与灵石升级聚气灵眼、紫微丹鼎、天工剑炉、藏经阁与护山大阵 (Lv.1→Lv.5)！">
+        <span>🏛 洞府建设</span>
+        <span id="lbl-sanctum-lv" style="color:#ffe28a;">Lv.5/25</span>
+      </button>
+    </div>
+    <div class="dojo-drawer-panel">
+      <div class="dojo-group-row">
+        <span class="dojo-group-lbl">木桩演武</span>
+        <div class="dojo-group-btns">
+          <button type="button" class="dojo-pill-btn active" data-dojo-mode="static">定身测伤桩</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-mode="gold_parry">金芒识破</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-mode="red_peril">红危凝时</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-mode="low_sweep">下段踏剑</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-mode="blade_clash">拼刀破擒</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-mode="mixed_ward">五行阵眼</button>
+        </div>
+      </div>
+      <div class="dojo-group-row">
+        <span class="dojo-group-lbl">专项练习</span>
+        <div class="dojo-group-btns">
+          <button type="button" class="dojo-pill-btn" data-dojo-mode="drill_mark_detonate">叠印爆剑</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-mode="drill_dodge_counter">危招识破</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-mode="drill_morph_combo">连招派生</button>
+          <button type="button" class="dojo-pill-btn" id="btn-sandbox-slot-proto" data-dojo-act="toggle-sandbox-slots" style="display:none;border-color:rgba(112,255,230,0.65);color:#80ffea;">演武槽位试验 (2主动+1奥义): 关</button>
+        </div>
+      </div>
+      <div class="dojo-group-row">
+        <span class="dojo-group-lbl">剑道专项</span>
+        <div class="dojo-group-btns">
+          <button type="button" class="dojo-pill-btn" id="btn-ghost-record" data-dojo-act="record-ghost">剑道留影 (8s)</button>
+          <button type="button" class="dojo-pill-btn" id="btn-ghost-play" data-dojo-act="toggle-ghost">残影陪练</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="fill-intent">满剑意试奥义</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="toggle-recap">伤害复盘</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="open-sequencer">自创剑谱</button>
+          <button type="button" class="dojo-pill-btn" data-dojo-act="toggle-coop-2p">双人同游</button>
+        </div>
+      </div>
+      <div class="dojo-group-row">
+        <span class="dojo-group-lbl">试炼直达（同九州导航）</span>
+        <div class="dojo-group-btns">
+          <button type="button" class="dojo-pill-btn is-side" data-dojo-act="open-taixu-craft" data-eco-sys="bagua_alchemy" style="border-color:rgba(255,176,112,0.55);color:#ffd8a8;">丹剑微操</button>
+          <button type="button" class="dojo-pill-btn is-side" data-dojo-act="start-defense" data-eco-sys="sect_defense" style="border-color:rgba(112,255,230,0.55);color:#9effec;">护山妖潮</button>
+          <button type="button" class="dojo-pill-btn is-side" data-dojo-act="start-cloud-sky" data-eco-sys="cloud_sea_trial" style="border-color:rgba(128,236,255,0.58);color:#b8f7ff;">九霄空战</button>
+          <button type="button" class="dojo-pill-btn is-side" data-dojo-act="open-expedition" data-eco-sys="vein_expedition" style="border-color:rgba(144,230,255,0.58);color:#c4f5ff;">九州远征</button>
+          <button type="button" class="dojo-pill-btn is-side" data-dojo-act="open-spire" data-eco-sys="celestial_spire" style="border-color:rgba(235,158,255,0.58);color:#f3d1ff;">太虚登仙台</button>
+          <button type="button" class="dojo-pill-btn is-side" data-dojo-act="open-rush" data-eco-sys="sword_tomb_rush" style="border-color:rgba(255,154,139,0.65);color:#ffe6dc;">万剑冢连战</button>
+          <button type="button" class="dojo-pill-btn is-side" data-dojo-act="start-titan" data-eco-sys="sword_tomb_rush" style="border-color:rgba(255,196,102,0.65);color:#ffe6a3;">太古烛龙(练习)</button>
+          <button type="button" class="dojo-pill-btn is-side" data-dojo-act="open-workshop" data-eco-sys="seed_workshop" style="border-color:rgba(255,220,120,0.58);color:#fff2b2;">造化工坊</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <aside id="dojo-training-hud" aria-label="演武专项训练遥测">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+      <strong id="dojo-hud-mode-name" style="font-family:var(--font-serif);color:#80ffea;font-size:12.5px;">演武训练 · 定身测伤桩</strong>
+      <span id="dojo-hud-grade" class="tag-chip">评级 —</span>
+    </div>
+    <div class="dojo-hud-grid">
+      <div class="dojo-hud-cell"><small>实时DPS</small><strong id="dojo-hud-dps">0</strong></div>
+      <div class="dojo-hud-cell"><small>命中次数</small><strong id="dojo-hud-hits">0</strong></div>
+      <div class="dojo-hud-cell"><small>峰值伤害</small><strong id="dojo-hud-peak">0</strong></div>
+    </div>
+    <div id="dojo-hud-drill-row" style="display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:#ffe28a;">
+      <span id="dojo-hud-progress">练习进度：自由演武</span>
+      <span id="dojo-hud-status" style="color:#70ffe6;">待命</span>
+    </div>
+    <div id="dojo-hud-feedback" style="font-size:10.5px;color:var(--text-sub);line-height:1.35;">演武不耗寿元，也不产出正式灵石/成就</div>
+    <div style="display:flex;gap:5px;justify-content:flex-end;">
+      <button type="button" class="dojo-pill-btn" data-dojo-act="reset-training" style="padding:2px 8px;font-size:10px;">重置计数</button>
+      <button type="button" class="dojo-pill-btn" data-dojo-act="refill-training" style="padding:2px 8px;font-size:10px;">满血满蓝</button>
+    </div>
+  </aside>
+
+  <aside id="action-telemetry-panel">
+    <div class="tele-hdr-row">
+      <strong style="color:var(--gold-bright);font-family:var(--font-serif);font-size:12px;white-space:nowrap;">⚔ 3A 动作与帧率遥测</strong>
+      <div style="display:flex;gap:4px;">
+        <button type="button" id="btn-toggle-hitbox" class="dojo-pill-btn" style="padding:1px 7px;font-size:10px;">框线 OFF</button>
+        <button type="button" id="btn-reset-telemetry" class="dojo-pill-btn" style="padding:1px 6px;font-size:10px;">清零</button>
+      </div>
+    </div>
+    <div class="tele-kpi-grid">
+      <div class="tele-kpi-box"><small>实时秒伤 (5s DPS)</small><strong id="tele-dps-val">0</strong></div>
+      <div class="tele-kpi-box"><small>单次最高爆发</small><strong id="tele-peak-val">0</strong></div>
+      <div class="tele-kpi-box"><small>识破剑反 / 凝时</small><strong id="tele-parry-val">0 / 0</strong></div>
+      <div class="tele-kpi-box"><small>操控设备 · 混响侧链</small><strong id="tele-input-dev" style="font-size:10.5px;color:#70ffe6;">键鼠 · 18.5kHz</strong></div>
+    </div>
+    <div style="font-size:10px;color:#9cc4bc;" id="tele-derive-hint">连招引导：点按左键起手 → 接右键触发【切手技】</div>
+    <div id="telemetry-input-chain"><span class="tele-step-chip">待出剑 · 140ms预输入就绪</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:9.5px;color:#8fb4ae;">
+      <span id="tele-fps-txt">60 FPS · 16.6 ms</span>
+      <span id="tele-buffer-txt">缓冲队列：空闲</span>
+    </div>
+    <canvas id="telemetry-fps-canvas" width="234" height="30"></canvas>
+  </aside>
+
+  <div id="stage-recap-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(216,179,106,0.25);padding-bottom:5px;">
+      <div>
+        <span class="cinnabar-seal" id="recap-style-seal" style="font-size:10px;padding:1px 6px;">万剑归宗流</span>
+        <strong style="font-family:var(--font-serif);color:var(--gold-bright);font-size:13px;margin-left:5px;">流派伤害构成复盘</strong>
+      </div>
+      <button type="button" id="btn-close-recap" class="btn-ghost" style="padding:1px 7px;font-size:11px;">✕</button>
+    </div>
+    <div id="recap-summary-line" style="font-size:10.5px;color:#9ee8dc;">总伤 0 · 最高爆发 0 · 识破/凝时 0 次</div>
+    <div id="recap-bars-box" style="display:flex;flex-direction:column;gap:5px;"></div>
+    <div id="recap-companion-box" class="recap-companion-comment" style="display:none;"></div>
+  </div>
+
+  <div id="cinema-letterbox-top" class="cinema-letterbox-bar"></div>
+  <div id="cinema-letterbox-bot" class="cinema-letterbox-bar"></div>
+  <div id="style-ult-cutin">
+    <div style="display:flex;align-items:center;">
+      <img id="style-ult-portrait" alt="奥义" />
+      <img id="style-ult-portrait-pair" alt="道侣合璧" />
+    </div>
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="cinnabar-seal" id="style-ult-school">无上真传</span>
+        <strong id="style-ult-title" style="font-family:var(--font-serif);font-size:23px;color:#fff5d1;letter-spacing:3px;">太虚万剑朝宗</strong>
+      </div>
+      <div id="style-ult-sub" style="font-size:12px;color:#70ffe6;margin-top:3px;font-weight:700;letter-spacing:1.5px;">三十六天罡剑雨破界 · 万法归宗</div>
+    </div>
+  </div>
+
+  <!-- V18 FREE PHOTO STUDIO PANEL (`P` Key 太虚绘卷·自由摄影台) -->
+  <section id="photo-mode-panel" aria-label="太虚绘卷自由摄影台">
+    <div class="photo-row" style="border-bottom:1px solid rgba(216,179,106,0.24);padding-bottom:6px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="cinnabar-seal" style="font-size:10.5px;padding:2px 8px;">太虚绘卷</span>
+        <strong style="font-family:var(--font-serif);font-size:14px;color:var(--gold-bright);">自由定格摄影台（拖拽画布平移 · 滚轮/滑杆缩放）</strong>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button type="button" class="photo-filter-chip active" data-photo-stamp="toggle" id="btn-photo-stamp">印章题跋 ON</button>
+        <button type="button" class="photo-filter-chip" data-photo-impact="toggle" id="btn-photo-impact">朱砂一闪 OFF</button>
+        <button type="button" class="btn-ghost" style="padding:3px 10px;font-size:11px;" data-photo-act="hide-ui">👁 隐去UI (U)</button>
+        <button type="button" class="btn-gold" style="padding:4px 13px;font-size:11.5px;" data-photo-act="export-png">📸 导出高清画卷 PNG</button>
+        <button type="button" class="btn-ghost" style="padding:3px 10px;font-size:11px;" data-photo-act="exit">退出摄影 (P)</button>
+      </div>
+    </div>
+    <div class="photo-row">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="color:#9cc4bc;font-size:11px;">国风滤镜：</span>
+        <button type="button" class="photo-filter-chip active" data-photo-filter="none">🏞 千里青绿</button>
+        <button type="button" class="photo-filter-chip" data-photo-filter="ink">🖌 水墨留白</button>
+        <button type="button" class="photo-filter-chip" data-photo-filter="thunder">⚡ 紫电惊鸿</button>
+        <button type="button" class="photo-filter-chip" data-photo-filter="ember">🔥 暗金劫火</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;">
+        <span style="color:#9cc4bc;font-size:11px;">焦距缩放 <b id="photo-zoom-lbl" style="color:#ffe89e;">1.15x</b></span>
+        <button type="button" class="btn-ghost" style="padding:2px 8px;font-size:11px;" data-photo-act="zoom-out">－</button>
+        <input id="photo-zoom-range" type="range" min="70" max="240" value="115" style="width:110px;accent-color:#d8b36a;" />
+        <button type="button" class="btn-ghost" style="padding:2px 8px;font-size:11px;" data-photo-act="zoom-in">＋</button>
+        <button type="button" class="btn-ghost" style="padding:2px 9px;font-size:11px;" data-photo-act="reset-cam">重置机位</button>
+      </div>
+    </div>
+  </section>
+  <button type="button" id="photo-restore-ui-btn" data-photo-act="show-ui">👁 显示摄影面板 (U)</button>
+
+  <div id="hud-save-alert" role="alert" style="display:none;"></div>
+  <div id="prop-interact-hud" aria-live="polite" style="display:none;"></div>
+  <div id="gear-compare-card" role="region" aria-label="仙装拾取对比" style="display:none;"></div>
+  <div id="new-unlock-card" role="status" aria-live="polite" aria-label="新神通解封提示" style="display:none;"></div>
+  <div id="modal-backdrop" role="dialog" aria-modal="true" aria-label="系统与抉择弹窗">
+    <div id="modal-content" class="modal-box" tabindex="-1"></div>
+  </div>
+  <div id="ling-tooltip"><strong id="ling-tip-title"></strong><p id="ling-tip-desc"></p></div>
+  <div id="toast-container"></div>
+</div>
