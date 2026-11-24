@@ -5314,8 +5314,79 @@ const ART = {
     }
   };
 
-  // ==================== 2. CELESTIAL OMENS & CORE WORLD DATA ====================
-  // Shared single source of truth for combat rule parameters referenced by BOTH live formulas and copy builders (F06)
+
+  // --- [module] src/rules/utils.mjs ---
+  // Pure safe-value, sanitization, plain-object merge, and diminishing-returns utilities.
+
+  function safeText(v, fallback = "") {
+    if (typeof v === "string") return v;
+    if (typeof v === "number" && Number.isFinite(v)) return String(v);
+    return fallback;
+  }
+
+  function safeDiag(v) {
+    if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
+    if (v === null) return "null";
+    if (v === undefined) return "undefined";
+    return "[" + typeof v + "]";
+  }
+
+  function escapeHtml(s) {
+    let str;
+    try {
+      str = s == null ? "" : String(s);
+    } catch (e) {
+      str = "";
+    }
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function num(v, d = 0) {
+    const fallback = (typeof d === "number" && Number.isFinite(d)) ? d : 0;
+    if (v == null || typeof v === "boolean" || typeof v === "object") return fallback;
+    if (typeof v === "string" && v.trim() === "") return fallback;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function rarityNum(v) {
+    return Math.max(0, Math.min(5, Math.floor(num(v, 0))));
+  }
+
+  function hasOwn(obj, key) {
+    return !!obj && typeof key === "string" && Object.prototype.hasOwnProperty.call(obj, key);
+  }
+
+  function safeAssignPlain(target, ...sources) {
+    const out = (target && typeof target === "object") ? target : {};
+    for (let i = 0; i < sources.length; i++) {
+      const src = sources[i];
+      if (!src || typeof src !== "object" || Array.isArray(src)) continue;
+      const keys = Object.keys(src);
+      for (let j = 0; j < keys.length; j++) {
+        const k = keys[j];
+        if (k === "__proto__" || k === "constructor" || k === "prototype") continue;
+        out[k] = src[k];
+      }
+    }
+    return out;
+  }
+
+  function softCapPct(rawPct, knee = 1.80, cap = 3.20) {
+    if (rawPct <= knee) return Math.max(-0.5, rawPct);
+    const span = Math.max(0.1, cap - knee);
+    return knee + span * (1 - Math.exp(-(rawPct - knee) / span));
+  }
+
+  // --- [module] src/config/combat-params.mjs ---
+  // Pure combat parameters, gear budget tables, growth caps, and stage/boss gates.
+  // Single source of truth shared by Node unit tests and assembled web/public/playable-v2.html.
+
   const COMBAT_RULE_PARAMS = Object.freeze({
     passiveSoftCapKnee: 0.95,
     passiveSoftCapMax: 1.65,
@@ -5357,8 +5428,11 @@ const ART = {
       gold_alchemist:  Object.freeze({ stoneDropMult: 1.45, perStones: 100, pctPerStep: 0.03, maxPct: 0.28, pool: "passive" })
     })
   });
+
   const GEAR_ENHANCE_STEP_PCT = 0.08;
+
   const LIFESPAN_THRESHOLDS = Object.freeze([0.75, 0.90, 0.95, 1.00]);
+
   const GEAR_STAT_WEIGHTS = Object.freeze({
     atk: 3.0,
     hp: 0.4,
@@ -5368,6 +5442,7 @@ const ART = {
     bonusSword: 85,
     affix: 45
   });
+
   const GEAR_BUDGET_BY_RARITY = Object.freeze({
     0: Object.freeze({ maxBudget: 160,  statCaps: Object.freeze({ atk: 45,  hp: 150, dr: 12, crit: 0.06, spd: 0.06, bonusSword: 0 }) }),
     1: Object.freeze({ maxBudget: 260,  statCaps: Object.freeze({ atk: 75,  hp: 250, dr: 18, crit: 0.09, spd: 0.09, bonusSword: 0 }) }),
@@ -5377,28 +5452,44 @@ const ART = {
     5: Object.freeze({ maxBudget: 1180, statCaps: Object.freeze({ atk: 320, hp: 980, dr: 64, crit: 0.22, spd: 0.22, bonusSword: 2 }) })
   });
 
-  function getLawLiveContributionText(g, lawId) {
-    if (!g) return "";
-    const P = COMBAT_RULE_PARAMS;
-    if (lawId === "wealth_power") {
-      const wp = P.laws.wealth_power;
-      const rawPct = Math.min(wp.maxPct, Math.floor(Math.max(0, num(g.stones, 0)) / wp.perStones) * wp.pctPerStep);
-      return `当前常驻池 +${Math.round(rawPct * 100)}% / 上限 +${Math.round(wp.maxPct * 100)}%`;
-    }
-    if (lawId === "age_might") {
-      const am = P.laws.age_might;
-      const years = Math.floor(((g.startAgeMonths || 216) + (g.elapsedMonths || 0)) / 12);
-      const rawPct = Math.min(am.maxPct, Math.floor(Math.max(0, years - am.baseAge) / am.yearsPerStep) * am.pctPerStep);
-      return `当前常驻池 +${Math.round(rawPct * 100)}% / 上限 +${Math.round(am.maxPct * 100)}%`;
-    }
-    if (lawId === "karma_resonance") {
-      const kr = P.laws.karma_resonance;
-      const rawPct = Math.min(kr.maxPct, Object.keys(g.choices || {}).length * kr.pctPerChoice);
-      return `当前常驻池 +${Math.round(rawPct * 100)}% / 上限 +${Math.round(kr.maxPct * 100)}%`;
-    }
-    return "";
-  }
+  const STAGE_SCALING = [1.0, 1.65, 2.50, 3.60, 4.70];
 
+  const SINGLE_HIT_CAP_RATIO = 0.45;
+
+  const REALM_COMBAT_BASELINE = {
+    mortal:     { bossHp: 3600,  mobHp: 300,   atk: 20,  heavy: 36  },
+    qi:         { bossHp: 8000,  mobHp: 600,   atk: 34,  heavy: 60  },
+    foundation: { bossHp: 18000, mobHp: 1600,  atk: 58,  heavy: 102 },
+    golden:     { bossHp: 31000, mobHp: 3200,  atk: 98,  heavy: 174 },
+    nascent:    { bossHp: 45500, mobHp: 6200,  atk: 152, heavy: 272 },
+    spirit:     { bossHp: 64000, mobHp: 9000,  atk: 215, heavy: 385 },
+    ascended:   { bossHp: 88000, mobHp: 13500, atk: 280, heavy: 510 }
+  };
+
+  const PERM_GROWTH_CAPS = {
+    totalMaxHpByRealm: { mortal: 100, qi: 180, foundation: 280, golden: 420, nascent: 580, spirit: 760, ascended: 900 },
+    totalAtkByRealm:   { mortal: 20,  qi: 40,  foundation: 70,  golden: 110, nascent: 155, spirit: 200, ascended: 240 },
+    alchemyHpByRealm:  { mortal: 40,  qi: 80,  foundation: 140, golden: 210, nascent: 290, spirit: 380, ascended: 450 },
+    alchemyAtkByRealm: { mortal: 8,   qi: 18,  foundation: 32,  golden: 50,  nascent: 72,  spirit: 96,  ascended: 120 },
+    bloodFuryPerRealm: 2,
+    spireCurioMaxStack: 3,
+    curioStoneAlchemyDmgCap: 0.40,
+    curioStoneAlchemyFloorStonePerLv: 60,
+    curioStoneAlchemyFloorStoneCap: 180,
+    curioCritSilkDmgCap: 0.54
+  };
+
+  const REALM_BOSS_GATE = {
+    mortal:     0, // 雾隐狼王 -> qi
+    qi:         1, // 守山石卫 -> foundation
+    foundation: 2, // 寒潭玄蛇 -> golden
+    golden:     3, // 古境剑傀 -> nascent
+    nascent:    3, // 古境剑傀（第五卷防跳过） -> spirit
+    spirit:     4  // 天门道影 -> ascended
+  };
+
+  // --- [module] src/config/realms-items.mjs ---
+  // Pure realm progression, item catalog, alchemy recipes, gear templates, and affix/pact tables.
   const CELESTIAL_OMENS = [
     { id: "tide", name: "灵潮涌动", short: "吐纳+45%", desc: "天地灵脉潮汐暴涨，洞府吐纳与闭关修为收益 +45%！" },
     { id: "alchemy_star", name: "紫微临丹", short: "仙品丹率大增", desc: "紫微星垂照丹庐，控火黄金温区拓宽 +10%，成丹额外获丹香修为！" },
@@ -5413,6 +5504,7 @@ const ART = {
   ];
 
   const REALM_ORDER = ["mortal", "qi", "foundation", "golden", "nascent", "spirit", "ascended"];
+
   const REALMS = {
     mortal:     { id: "mortal", name: "凡人", xpCap: 60, maxHp: 65, maxMp: 28, lifespanMonths: 744, power: 0, next: "qi", pill: null },
     qi:         { id: "qi", name: "炼气", xpCap: 400, maxHp: 120, maxMp: 68, lifespanMonths: 1140, power: 6, next: "foundation", pill: "foundation_pill" },
@@ -5453,6 +5545,64 @@ const ART = {
     ascension:   { id: "ascension", name: "炼制渡劫引", min: "spirit", inputs: { soul: 4, dao: 5 }, stones: 240, months: 24, output: "ascension_seal" }
   };
 
+  const RARITIES = [
+    { tier: 0, name: "凡品", color: "#d0ddd8", mult: 1.00, sell: 12 },
+    { tier: 1, name: "灵品", color: "#4ad2b8", mult: 1.25, sell: 28 },
+    { tier: 2, name: "玄品", color: "#63c5ff", mult: 1.55, sell: 55 },
+    { tier: 3, name: "仙品", color: "#d09eff", mult: 1.90, sell: 95 },
+    { tier: 4, name: "鸿蒙", color: "#ffd86b", mult: 2.35, sell: 160 },
+    { tier: 5, name: "紫气鸿蒙", color: "#ff9eff", mult: 2.85, sell: 320 }
+  ];
+
+  const PRIMORDIAL_AWAKENINGS = {
+    weapon: { id: "primordial_wave",  name: "紫气东来·万剑齐鸣", desc: "每第3剑额外迸发一道贯穿全屏的鸿蒙紫气剑罡（165%真伤）" },
+    armor:  { id: "primordial_aegis", name: "混元紫气·不灭道体", desc: "受重击(≥14%最大气血)时自动凝结 25% 气血混元紫气护盾（11秒冷却）" },
+    ring:   { id: "primordial_soul",  name: "周天紫微·魂印双生", desc: "C键精魄化身伤害提升 +38%，施放立即回充 +22% 无上剑意" }
+  };
+
+  const GEAR_TEMPLATES = {
+    weapon: [
+      { baseName: "青竹灵剑", art: "icon_blade" },
+      { baseName: "秋水长剑", art: "relic_frost_sword" },
+      { baseName: "惊鲵古剑", art: "icon_blade" },
+      { baseName: "龙渊仙剑", art: "relic_frost_sword" },
+      { baseName: "太虚诛仙剑", art: "relic_frost_sword" }
+    ],
+    armor: [
+      { baseName: "青云布衣", art: "icon_scroll" },
+      { baseName: "流云法袍", art: "icon_heart" },
+      { baseName: "玄武鹤氅", art: "icon_seal" },
+      { baseName: "紫霞仙衣", art: "icon_heart" },
+      { baseName: "混元不灭袍", art: "relic_jade_seal" }
+    ],
+    ring: [
+      { baseName: "温玉灵佩", art: "item_jade" },
+      { baseName: "凝神剑玦", art: "item_soul" },
+      { baseName: "贪狼星戒", art: "relic_cloud_mirror" },
+      { baseName: "阴阳太极佩", art: "relic_soul_lamp" },
+      { baseName: "鸿蒙造化环", art: "item_ascension_seal" }
+    ]
+  };
+
+  const SACRED_AFFIXES = [
+    { id: "vamp_blade",   name: "噬灵剑魄", buildTags: ["御剑推荐", "生存推荐"], desc: "每第 3 次剑气命中回复 1.5% 最大气血（至少 2 点）" },
+    { id: "posture_crush",name: "破岳重锋", buildTags: ["御剑推荐"],             desc: "削减妖兽白金架势效率 +30%" },
+    { id: "sky_thunder",  name: "紫电惊雷", buildTags: ["雷符推荐"],             desc: "每第 4 次轻剑攻击必定引落九霄紫雷（42% 剑攻）" },
+    { id: "wind_rider",   name: "御风剑意", buildTags: ["御剑推荐", "雷符推荐"], desc: "移动与飞剑攻速额外 +10%" },
+    { id: "greed_wolf",   name: "贪狼聚宝", buildTags: ["生存推荐"],             desc: "斩妖灵石收益额外 +35%" },
+    { id: "xuanwu_ward",  name: "玄武护心", buildTags: ["生存推荐"],             desc: "所受妖兽伤害额外减免 14%" }
+  ];
+
+  const PACT_SEALS = [
+    { id: "frenzy_hp",   name: "凶煞狂血", badge: "劫印·壹", desc: "群妖气血与攻击 +25%" },
+    { id: "swift_windup",name: "疾影破阵", badge: "劫印·贰", desc: "妖兽蓄势提速 +20%" },
+    { id: "iron_posture",name: "镇岳金身", badge: "劫印·叁", desc: "首领架势上限 +35%" },
+    { id: "bitter_pill", name: "丹火受限", badge: "劫印·肆", desc: "灵丹回血效果 -20%" },
+    { id: "blood_moon",  name: "九幽血月", badge: "劫印·伍", desc: "首领直接觉醒二阶狂暴" }
+  ];
+
+  // --- [module] src/config/progression-data.mjs ---
+  // Pure skills, relics, Dao laws, spirit pets, destiny fruits, perks, calamity cycles, and progression tables.
   const SKILLS = {
     sword_mind:    { id: "sword_mind", name: "青锋心诀", school: "sword", slot: "mind", min: "qi", price: 0, art: "icon_blade", desc: "基础剑道心法：左键四段剑舞叠剑印，右键切手派生与爆剑破除敌方架势。" },
     sword_still:   { id: "sword_still", name: "止水剑心", school: "sword", slot: "mind", min: "foundation", price: 95, art: "icon_heart", desc: `【稳守流】装备于心法槽时生效：周天吐纳与修为获取 +${Math.round((COMBAT_RULE_PARAMS.skills.sword_still.xpMult - 1) * 100)}%，护体减伤 +${COMBAT_RULE_PARAMS.skills.sword_still.mindDr}。` },
@@ -5482,7 +5632,6 @@ const ART = {
     cloud_mirror: { id: "cloud_mirror", name: "流云镜", art: "relic_cloud_mirror", stones: 150, passive: "兼修攻防与恢复，法宝升星同步强化剑域续航", activeName: "流云返照诀", mp: 10, activeDesc: "按 E 展开【太虚剑域】并瞬间回复大量气血与剑元！" }
   };
 
-  // ==================== 3. DAO LAWS, PAINTED SPIRIT PETS & ACHIEVEMENTS ====================
   const DAO_LAWS = {
     wanjian:         { id: "wanjian", name: "万剑归宗", rarity: "仙品", cat: "剑符神通", desc: "环身飞剑永久 +2，出剑额外激发追踪飞剑与剑雨弧光！" },
     yinyang:         { id: "yinyang", name: "阴阳剑符", rarity: "鸿蒙", cat: "跨派神通", desc: "打通剑符界限！剑招附带灼魂符印，爆剑与连携引动额外雷火爆发！" },
@@ -5501,7 +5650,6 @@ const ART = {
     destiny_eye:     { id: "destiny_eye", name: "天命慧眼", rarity: "灵品", cat: "气运财道", desc: "击杀掉落灵石与灵草翻倍，所有采集与宗门委托材料产出额外 +1！" }
   };
 
-  // Uses our newly generated painted xianxia illustrations!
   const SPIRIT_PETS = {
     fox:          { id: "fox", art: "pet_fox", name: "青丘火狐", skill: "狐火燎原", color: "#ff8a65", desc: "喷吐青丘真火灼伤敌方并挂1枚剑印，主人暴击率 +10%" },
     turtle:       { id: "turtle", art: "pet_turtle", name: "玄水灵龟", skill: "玄水灵障", color: "#4ad2b8", desc: "周期为主人回血并凝结玄水灵盾，常驻减伤 +10" },
@@ -5509,7 +5657,6 @@ const ART = {
     sword_spirit: { id: "sword_spirit", art: "pet_sword", name: "太虚剑灵", skill: "游龙剑影", color: "#f5dc9b", desc: "激发穿云双剑气叠剑印，并持续为主人回复剑元" }
   };
 
-  // G10: Tiered Spirit Pet Feeding Costs (herb → core → core → jade) & Lv.3 / Lv.5 Skill Trees
   const PET_FEED_COSTS = {
     1: { nextLevel: 2, mats: { herb: 3 }, tierLabel: "灵草初养" },
     2: { nextLevel: 3, mats: { core: 2 }, tierLabel: "妖核化形" },
@@ -5533,6 +5680,1518 @@ const ART = {
   const PET_SKILLS_BY_ID = Object.fromEntries(
     [...PET_SKILL_TIERS.tier3, ...PET_SKILL_TIERS.tier5].map(sk => [sk.id, sk])
   );
+
+  const LEGACY_STEP_ID_MAP = {
+    s1_xp: "s1_wolf",
+    s2_school: "s2_pet",
+    s3_skill: "s3_serpent",
+    s4_npc: "s4_puppet",
+    s5_shen: "s5_laws",
+    s7_trial: "s6_gate",
+    s7_end: "s6_ascend"
+  };
+
+  const PERKS = [
+    { id: "mortal_grit",      name: "山野坚心",   badge: "初始命格",   unlock: 0, unlockText: "初始可用", desc: "开局额外灵石 +45（总计 110 石）、额外回春丹 ×2（总计 ×4），凡境起步稳健。" },
+    { id: "sword_bone",       name: "先天剑骨",   badge: "初始命格",   unlock: 0, unlockText: "初始可用", desc: "基础剑道攻击 +5、暴击率 +8%，初始锋芒达 20（高于常人 +10）。" },
+    { id: "medicine_sage",    name: "药王遗泽",   badge: "初始命格",   unlock: 0, unlockText: "初始可用", desc: "丹炉控火黄金区拓宽 35%，极易炼出仙品丹，开局带凝气草 ×6、灵露 ×3。" },
+    { id: "immortal_echo",    name: "九世道胎",   badge: "一世轮回",   unlock: 1, unlockText: "飞升 1 世解锁", desc: "【轮回命格】全境界寿元 +480 月（+40 载），开局自带【太虚神速】法则（移速 +18%）！" },
+    { id: "sword_sovereign",  name: "轮回剑主",   badge: "剑冢/轮回",  unlock: 1, altUnlock: "rush_s", unlockText: "飞升 1 世或万剑冢 S 级解锁", desc: "【轮回命格】开局飞剑 +2、基础剑攻 +12、暴伤 +18%，洞府【天工剑炉】起步 Lv.2！" },
+    { id: "calamity_phoenix", name: "劫火涅槃体", badge: "劫火/二世",  unlock: 2, altUnlock: "calamity_1", unlockText: "飞升 2 世或通关劫火周目解锁", desc: "【轮回命格】开局带长生寿元丹 ×1、灵石 +140，残血(≤45%)固定减伤 +18 且常驻剑威 +22%，破境额外溢出 +15%！" },
+    { id: "primordial_sage",  name: "太初鸿蒙胎", badge: "图鉴/三世",  unlock: 3, altUnlock: "codex_65", unlockText: "飞升 3 世或图鉴达 65% 解锁", desc: "【轮回命格】洞府【聚气灵眼/紫微丹鼎】皆起步 Lv.2，开局获仙品佩剑、星魂点 +2，全攻速 +10%！" }
+  ];
+
+  const CALAMITY_CYCLES = [
+    { tier: 0, name: "凡尘问道",     short: "标准",     hpMult: 1.00, atkMult: 1.00, postureMult: 1.00, rewardMult: 1.00, dropBonus: 0, scoreMult: 1.00, reqAsc: 0, desc: "常规修仙天道难度，均衡体验全流程。" },
+    { tier: 1, name: "一重劫火·燃星", short: "劫火×1", hpMult: 1.35, atkMult: 1.22, postureMult: 1.20, rewardMult: 1.35, dropBonus: 0, scoreMult: 1.20, reqAsc: 1, desc: "敌血+35%·攻+22% | 灵石/修为+35%·仙榜×1.20" },
+    { tier: 2, name: "二重劫火·焚岳", short: "劫火×2", hpMult: 1.75, atkMult: 1.45, postureMult: 1.40, rewardMult: 1.70, dropBonus: 1, scoreMult: 1.45, reqAsc: 1, desc: "敌血+75%·攻+45% | 灵石/修为+70%·神装品阶+1" },
+    { tier: 3, name: "三重劫火·碎虚", short: "劫火×3", hpMult: 2.25, atkMult: 1.72, postureMult: 1.60, rewardMult: 2.15, dropBonus: 1, scoreMult: 1.75, reqAsc: 2, desc: "敌血+125%·攻+72% | 灵石/修为+115%·仙榜×1.75" },
+    { tier: 4, name: "四重劫火·九幽", short: "劫火×4", hpMult: 2.85, atkMult: 2.00, postureMult: 1.85, rewardMult: 2.65, dropBonus: 2, scoreMult: 2.10, reqAsc: 2, desc: "敌血+185%·攻+100% | 灵石/修为+165%·鸿蒙高爆" },
+    { tier: 5, name: "五重劫火·无间", short: "劫火×5", hpMult: 3.60, atkMult: 2.35, postureMult: 2.10, rewardMult: 3.30, dropBonus: 2, scoreMult: 2.60, reqAsc: 3, desc: "敌血+260%·攻+135% | 灵石/修为+230%·仙榜×2.60" }
+  ];
+
+  const SYSTEM_ECOSYSTEM_LADDER = [
+    {
+      realm: "qi", title: "一重仙阶 · 炼气初开（第二卷）", subtitle: "山门问道 · 采炼御兽初试锋芒",
+      systems: [
+        { id: "spirit_pet",    min: "qi", name: "本命灵宠",     short: "灵宠",   keyHint: "修行抽屉", action: "open_drawer_cultivate", desc: "契约青丘火狐 / 玄水灵龟 / 九霄雷鹏 / 太虚剑灵随行助战，分级喂养并在 Lv.3/Lv.5 择技化形。" },
+        { id: "bagua_alchemy", min: "qi", name: "八卦丹剑微操", short: "丹剑",   keyHint: "百工/洞府", action: "open_taixu_craft",      desc: "亲手控火炼制仙品丹药与鸿蒙神兵淬火。" },
+        { id: "demon_tower",   min: "qi", name: "太虚锁妖古塔", short: "锁妖塔", keyHint: "仙阁/舆图", action: "start_tower",           desc: "开启无尽镇妖塔试炼，冲层赢取海量灵石与仙装。" }
+      ]
+    },
+    {
+      realm: "foundation", title: "二重仙阶 · 筑基铸道（第三卷）", subtitle: "双姿易剑 · 化妖破招与护宗守阵",
+      systems: [
+        { id: "dual_stance",  min: "foundation", name: "双剑意姿态",   short: "双姿态", keyHint: "` 键",     action: "cycle_posture",     desc: "青莲疾剑式与玄重巨阙式瞬切，触发太虚易剑斩。" },
+        { id: "soul_seal",    min: "foundation", name: "镇妖魂印",     short: "魂印",   keyHint: "C 键",     action: "open_drawer_cultivate", desc: "炼化妖王精魄化妖破招，联动五行场地核爆。" },
+        { id: "sect_defense", min: "foundation", name: "护山大阵守卫", short: "护山战", keyHint: "洞府/舆图", action: "start_sect_defense", desc: "御剑守护听雨洞府灵核与护山灵塔（Lv.3增北辰塔）。" },
+        { id: "tag_team",     min: "foundation", name: "道侣瞬切换人", short: "换人",   keyHint: "V 键",     action: "trigger_tag_switch", desc: "无缝切换操控沈清禾/裴照等道侣并释放合璧奥义。" }
+      ]
+    },
+    {
+      realm: "golden", title: "三重仙阶 · 金丹启星（第四卷）", subtitle: "破云凌霄 · 御剑空战与周天星宿",
+      systems: [
+        { id: "cloud_sea_trial", min: "golden", name: "九霄云海空战", short: "云海空战", keyHint: "高潮过渡关", action: "start_cloud_sea", desc: "高速御剑斩破巡天雷鹏防线！首破获【破云证道印】(+12攻 · 为元婴期远征/登仙台提供+15%收益)。" },
+        { id: "star_chart",      min: "golden", name: "太虚周天星图", short: "星图",     keyHint: "N 键",       action: "open_star_chart", desc: "点亮二十八星宿激活青龙/白虎/朱雀/玄武四象圣核。" }
+      ]
+    },
+    {
+      realm: "nascent", title: "四重仙阶 · 元婴破虚（第五卷）", subtitle: "分神远征 · 九重登仙与剑冢七阵",
+      systems: [
+        { id: "vein_expedition", min: "nascent", name: "九州灵脉远征",   short: "灵脉远征", keyHint: "8 键",       action: "open_expedition", desc: "委派已结缘故人驻防五大灵脉收缴灵石星魄，触发仙门护道雷援。" },
+        { id: "celestial_spire", min: "nascent", name: "太虚登仙台",     short: "登仙台",   keyHint: "L 键",       action: "open_spire",      desc: "九重天宫肉鸽奇物深渊，叠铸太古天道奇物体系。" },
+        { id: "sword_tomb_rush", min: "nascent", name: "万剑冢七阵连战", short: "万剑冢",   keyHint: "元婴期解封", action: "open_boss_rush",  desc: "连战七阵强化妖王、太虚心魔镜像与太古烛龙三部位讨伐！" }
+      ]
+    },
+    {
+      realm: "spirit", title: "五重仙阶 · 化神凌霄（第六卷）", subtitle: "劫印问道 · 太虚造化与直叩天门",
+      systems: [
+        { id: "heavenly_pacts", min: "spirit", name: "天道劫印契约", short: "天道劫印", keyHint: "化神期解封", action: "open_endgame_goals", desc: "缔结至多五道高难天道劫印，大幅飙升爆率与仙榜倍率。" },
+        { id: "seed_workshop",  min: "spirit", name: "造化种子工坊", short: "造化工坊", keyHint: "化神期解封", action: "open_workshop",      desc: "自定义双首领共斗、机关密度与奇物组合，生成 CY22 种子码分享！" }
+      ]
+    }
+  ];
+
+  const DESTINY_FRUITS = {
+    sword_twin:   { id: "sword_twin",   name: "剑心通明", badge: "飞剑+2 · 贯虹", art: "relic_frost_sword", desc: "环身本命飞剑永久 +2 柄，且蓄力万剑穿云伤害额外提高 28%。" },
+    thunder_soul: { id: "thunder_soul", name: "紫霄雷体", badge: "一闪落雷 · 麻痹", art: "relic_soul_lamp",   desc: "每次施展空格【一闪】，在起点与终点劈落三道紫霄神雷轰击群妖并削减架势。" },
+    lotus_body:   { id: "lotus_body",   name: "青莲圣体", badge: "吐纳+35% · 护体", art: "item_lotus",        desc: "B键周天吐纳聚气效率 +35%，且每次破境与回城额外凝结 35% 最大气血青莲护盾。" },
+    zhuxian_edge: { id: "zhuxian_edge", name: "诛仙残意", badge: "爆剑增伤 · 返冷", art: "icon_blade",        desc: "右键【爆剑】引爆剑印伤害提升 55%，若引爆满印妖兽立即返还 50% 冷却。" },
+    void_phantom: { id: "void_phantom", name: "太虚幻剑", badge: "三式双影 · 剑轮", art: "relic_cloud_mirror",desc: "普攻第三式额外唤出一道太虚剑影协同投掷双倍旋风剑轮。" },
+    glutton_pill: { id: "glutton_pill", name: "饕餮丹心", badge: "服丹永驻 · 强魄", art: "item_golden_pill",  desc: "每次服用回春丹或畅饮仙葫，永久增加 +6 剑道攻击与 +18 气血上限（受本境丹道上限约束），并立即获赐回春丹×2。" },
+    hongmeng_luck:{ id: "hongmeng_luck",name: "鸿蒙紫气", badge: "神装爆率 · 赐宝", art: "item_ascension_seal",desc: "精英与首领掉落仙品/鸿蒙光柱概率翻倍，感悟瞬间立即获赐一件高品仙装！" },
+    eternal_pine: { id: "eternal_pine", name: "万古长青", badge: "暴击暴伤 · 富贵", art: "relic_jade_seal",   desc: "暴击率提升 +10%，每持有 80 灵石额外转化 +3% 暴击伤害（最高+32%），立即获赐 120 灵石。" }
+  };
+
+  const ACTION_REALM_REQ = {
+    slash: 0, recall: 0, dash: 0, meditate: 0, pill: 0, hub: 0, photo: 0, telemetry: 0,
+    stance: 1, jump: 1, ult: 1, ally: 1, pet: 1,
+    posture: 2, soul: 2, swordBlink: 2, finisher: 2, tagSwitch: 2, weapon_form: 2,
+    mount: 3, qimen: 3, sequencer: 3,
+    sanqing: 4, astral: 4,
+    shanhe: 5, warship: 5
+  };
+
+  // --- [module] src/rules/gear-rules.mjs ---
+  // Pure gear math, affix budget, deterministic pity, slot balancing, sanctum helpers, and gear rolling rules.
+  function getActivePactCount(g) {
+    return (g && Array.isArray(g.pactSeals)) ? g.pactSeals.length : 0;
+  }
+
+  function hasPact(g, pid) {
+    return g && Array.isArray(g.pactSeals) && g.pactSeals.includes(pid);
+  }
+
+  function hasGearAffix(g, affixId) {
+    if (!g || !g.equippedGear) return false;
+    return ["weapon", "armor", "ring"].some(sl => g.equippedGear[sl] && g.equippedGear[sl].affix === affixId);
+  }
+
+  function hasDestinyFruit(g, fid) {
+    return g && Array.isArray(g.destinyFruits) && g.destinyFruits.includes(fid);
+  }
+
+  function getActiveSetBonus(g) {
+    if (!g || !g.equippedGear) return null;
+    const items = ["weapon", "armor", "ring"].map(sl => g.equippedGear[sl]);
+    if (items.some(x => !x)) return null;
+    const minR = Math.min(...items.map(x => x.rarity || 0));
+    if (minR >= 5) return { minR: 5, name: "太初紫气三件套", desc: "剑道攻击+42% · 暴伤+38% · 飞剑+2 · 鸿蒙紫气圣环", atkMult: 0.42, critMult: 0.38, swords: 2, aura: "#ff9eff" };
+    if (minR >= 4) return { minR: 4, name: "鸿蒙造化三件套", desc: "剑道攻击+32% · 暴伤+28% · 飞剑+2 · 鸿蒙圣环", atkMult: 0.32, critMult: 0.28, swords: 2, aura: "#ffe28a" };
+    if (minR >= 3) return { minR: 3, name: "仙品诛仙三件套", desc: "剑道攻击+22% · 暴伤+18% · 飞剑+1 · 紫霞仙环", atkMult: 0.22, critMult: 0.18, swords: 1, aura: "#d69eff" };
+    if (minR >= 2) return { minR: 2, name: "玄品太清三件套", desc: "剑道攻击+15% · 暴击+6% · 飞剑+1 · 太清灵环", atkMult: 0.15, crit: 0.06, swords: 1, aura: "#70ffe6" };
+    if (minR >= 1) return { minR: 1, name: "灵品青锋三件套", desc: "剑道攻击+10% · 护体减伤+5", atkMult: 0.10, dr: 5, swords: 0, aura: "#4ad2b8" };
+    return { minR: 0, name: "凡铁初鸣三件套", desc: "剑道攻击+5%", atkMult: 0.05, swords: 0, aura: null };
+  }
+
+  function readSanctumLevelsPure(g) {
+    const raw = (g && g.sanctumLevels && typeof g.sanctumLevels === "object") ? g.sanctumLevels : {};
+    return {
+      spirit_eye: Math.max(1, Math.min(5, Math.floor(Number(raw.spirit_eye) || 1))),
+      cauldron: Math.max(1, Math.min(5, Math.floor(Number(raw.cauldron) || 1))),
+      sword_forge: Math.max(1, Math.min(5, Math.floor(Number(raw.sword_forge) || 1))),
+      scripture_hall: Math.max(1, Math.min(5, Math.floor(Number(raw.scripture_hall) || 1))),
+      guard_array: Math.max(1, Math.min(5, Math.floor(Number(raw.guard_array) || 1)))
+    };
+  }
+
+  function getSanctumLevel(g, bId) {
+    const lvMap = readSanctumLevelsPure(g);
+    return lvMap[bId] || 1;
+  }
+
+  function getSanctumBonuses(g) {
+    const eyeLv = getSanctumLevel(g, "spirit_eye");
+    const caulLv = getSanctumLevel(g, "cauldron");
+    const forgeLv = getSanctumLevel(g, "sword_forge");
+    const scLv = getSanctumLevel(g, "scripture_hall");
+    const grdLv = getSanctumLevel(g, "guard_array");
+    return {
+      medMult: Number((1 + (eyeLv - 1) * 0.22).toFixed(2)),
+      bonusGourdCharges: (eyeLv >= 3 ? 1 : 0) + (eyeLv >= 5 ? 1 : 0),
+      alchemySweetBonus: (caulLv - 1) * 0.035,
+      maxSoaks: caulLv >= 5 ? 5 : caulLv >= 3 ? 4 : 3,
+      longevityUnlocked: caulLv >= 2,
+      forgeAtk: (forgeLv - 1) * 8,
+      quenchDiscMult: Math.max(0.60, 1 - (forgeLv - 1) * 0.10),
+      seqDmgBonus: forgeLv >= 5 ? 0.25 : forgeLv >= 3 ? 0.12 : 0,
+      expMult: Number((1 + (scLv - 1) * 0.20).toFixed(2)),
+      sourceMult: Number((1 + (scLv - 1) * 0.15).toFixed(2)),
+      bonusBoonRerolls: scLv >= 2 ? 1 : 0,
+      bonusLawRerolls: scLv >= 4 ? 1 : 0,
+      guardDr: (grdLv - 1) * 4,
+      coreHpBonus: (grdLv - 1) * 350,
+      towerDmgMult: Number((0.92 + (grdLv - 1) * 0.22).toFixed(2)),
+      towerCd: Number(Math.max(0.36, 0.68 - (grdLv - 1) * 0.07).toFixed(2)),
+      hasThirdTower: grdLv >= 3
+    };
+  }
+
+  function effectiveGearVal(it, key, overrideLvl = null) {
+    if (!it) return 0;
+    const lvl = Math.max(0, Math.floor(num(overrideLvl !== null ? overrideLvl : (it.lvl || 0), 0)));
+    if (key === "atk" || key === "hp" || key === "dr") {
+      const base = Math.max(0, num(it[key], 0));
+      if (base <= 0) return 0;
+      const baseInt = Math.round(base);
+      if (lvl <= 0) return baseInt;
+      const scaled = Math.round(base * (1 + lvl * GEAR_ENHANCE_STEP_PCT));
+      return base >= 1 ? Math.max(baseInt + lvl, scaled) : scaled;
+    }
+    return it[key] || 0;
+  }
+
+  function getGearTotals(g) {
+    const tot = { atk: 0, hp: 0, dr: 0, crit: 0, spd: 0, bonusSword: 0 };
+    if (!g || !g.equippedGear) return tot;
+    ["weapon", "armor", "ring"].forEach(sl => {
+      const it = g.equippedGear[sl];
+      if (it && typeof it === "object") {
+        tot.atk += effectiveGearVal(it, "atk");
+        tot.hp += effectiveGearVal(it, "hp");
+        tot.dr += effectiveGearVal(it, "dr");
+        tot.crit += Math.max(0, num(it.crit, 0));
+        tot.spd += Math.max(0, num(it.spd, 0)) + (it.affix === "wind_rider" ? 0.10 : 0);
+        tot.bonusSword += Math.max(0, num(it.bonusSword, 0));
+      }
+    });
+    const setB = getActiveSetBonus(g);
+    if (setB) {
+      tot.dr += setB.dr || 0;
+      tot.crit += setB.crit || 0;
+      tot.bonusSword += setB.swords || 0;
+    }
+    return tot;
+  }
+
+  function computeGearAffixBudget(item) {
+    const r = Math.max(0, Math.min(5, Math.floor(num(item && item.rarity, 0))));
+    const spec = GEAR_BUDGET_BY_RARITY[r] || GEAR_BUDGET_BY_RARITY[0];
+    const W = GEAR_STAT_WEIGHTS;
+    const atk = Math.max(0, num(item && item.atk, 0));
+    const hp = Math.max(0, num(item && item.hp, 0));
+    const dr = Math.max(0, num(item && item.dr, 0));
+    const crit = Math.max(0, num(item && item.crit, 0));
+    const spd = Math.max(0, num(item && item.spd, 0));
+    const bonusSword = Math.max(0, Math.floor(num(item && item.bonusSword, 0)));
+    const hasAffix = Boolean(item && item.affix);
+    const statBreakdown = {
+      atk: Number((atk * W.atk).toFixed(2)),
+      hp: Number((hp * W.hp).toFixed(2)),
+      dr: Number((dr * W.dr).toFixed(2)),
+      crit: Number((crit * W.crit).toFixed(2)),
+      spd: Number((spd * W.spd).toFixed(2)),
+      bonusSword: Number((bonusSword * W.bonusSword).toFixed(2)),
+      affix: hasAffix ? W.affix : 0
+    };
+    const totalBudget = Number(Object.values(statBreakdown).reduce((s, v) => s + v, 0).toFixed(2));
+    const overCapStats = [];
+    const caps = spec.statCaps;
+    if (atk > caps.atk) overCapStats.push("atk");
+    if (hp > caps.hp) overCapStats.push("hp");
+    if (dr > caps.dr) overCapStats.push("dr");
+    if (crit > caps.crit + 1e-6) overCapStats.push("crit");
+    if (spd > caps.spd + 1e-6) overCapStats.push("spd");
+    if (bonusSword > caps.bonusSword) overCapStats.push("bonusSword");
+    return {
+      rarity: r,
+      totalBudget,
+      maxBudget: spec.maxBudget,
+      utilization: Number((totalBudget / Math.max(1, spec.maxBudget)).toFixed(3)),
+      withinBudget: totalBudget <= spec.maxBudget + 0.01 && overCapStats.length === 0,
+      statBreakdown,
+      caps: Object.assign({}, caps),
+      overCapStats
+    };
+  }
+
+  function getGearEnhanceCost(g, eq) {
+    if (!eq) return 0;
+    const base = 25 + (eq.lvl || 0) * 20;
+    const fLv = getSanctumLevel(g, "sword_forge");
+    const mult = Math.max(0.60, 1 - (fLv - 1) * 0.10);
+    return Math.max(12, Math.round(base * mult));
+  }
+
+  function getRelicTemperCost(g, stars, useCore = false) {
+    const safeStars = Math.max(1, Math.min(5, Math.floor(num(stars, 1))));
+    const forgeDisc = (g && getSanctumLevel(g, "sword_forge") >= 4) ? 0.85 : 1.0;
+    const coreCount = g && g.inventory ? Math.max(0, Math.floor(num(g.inventory.core, 0))) : 0;
+    const hasCore = coreCount > 0;
+    const applyCore = Boolean(useCore && hasCore);
+    const baseStones = Math.max(35, Math.round(safeStars * 75 * forgeDisc));
+    const discStones = Math.max(35, Math.round((safeStars * 75 - 30) * forgeDisc));
+    const finalStones = applyCore ? discStones : baseStones;
+    return {
+      baseStones,
+      discStones,
+      finalStones,
+      savedStones: Math.max(0, baseStones - discStones),
+      hasCore,
+      applyCore
+    };
+  }
+
+  function normalizeGearItem(item, fallbackSlot, validArtKeys = null) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+    const slot = ["weapon", "armor", "ring"].includes(item.slot) ? item.slot : (fallbackSlot || "weapon");
+    const defArt = slot === "armor" ? "icon_heart" : slot === "ring" ? "item_jade" : "icon_blade";
+    const artRegistry = validArtKeys || (typeof ART !== "undefined" ? ART : null);
+    const safeArt = artRegistry
+      ? (hasOwn(artRegistry, item.art) ? item.art : defArt)
+      : (typeof item.art === "string" && item.art ? item.art : defArt);
+    const out = safeAssignPlain({}, item, {
+      slot,
+      name: safeText(item.name, "灵器") || "灵器",
+      rarity: rarityNum(item.rarity),
+      lvl: Math.max(0, Math.min(10, Math.floor(num(item.lvl, 0)))),
+      atk: Math.max(0, num(item.atk, 0)),
+      hp: Math.max(0, num(item.hp, 0)),
+      dr: Math.max(0, num(item.dr, 0)),
+      crit: Math.max(0, num(item.crit, 0)),
+      spd: Math.max(0, num(item.spd, 0)),
+      bonusSword: Math.max(0, Math.floor(num(item.bonusSword, 0))),
+      sell: Math.max(0, Math.floor(num(item.sell, 15))),
+      price: Math.max(0, Math.floor(num(item.price, 25))),
+      art: safeArt
+    });
+    if (hasOwn(item, "power")) out.power = Math.max(0, num(item.power, 0));
+    if (hasOwn(out, "uid") && typeof out.uid !== "string") out.uid = safeText(out.uid, "");
+    if (hasOwn(out, "affix") && typeof out.affix !== "string") out.affix = null;
+    if (hasOwn(out, "awakenedAffix") && typeof out.awakenedAffix !== "string") out.awakenedAffix = null;
+    if (hasOwn(item, "taixuForged")) out.taixuForged = Boolean(item.taixuForged);
+    return out;
+  }
+
+  function ensureDeterministicPity(g) {
+    if (!g) return { epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 };
+    const rawPity = (g.pity && typeof g.pity === "object" && !Array.isArray(g.pity)) ? g.pity : null;
+    const pityHasUnsafeKey = !!(rawPity && (hasOwn(rawPity, "__proto__") || hasOwn(rawPity, "constructor") || hasOwn(rawPity, "prototype")));
+    const cleanPity = safeAssignPlain({ epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 }, rawPity);
+    const keys = ["epic", "mythic", "critAcc", "vampHits", "thunderHits", "gearDrops"];
+    keys.forEach(k => {
+      cleanPity[k] = Math.max(0, num(cleanPity[k], 0));
+    });
+    if (!rawPity || Object.getPrototypeOf(rawPity) !== Object.prototype || pityHasUnsafeKey || keys.some(k => rawPity[k] !== cleanPity[k])) {
+      g.pity = cleanPity;
+    }
+    return g.pity;
+  }
+
+  function pickBalancedGearSlot(g, rng = Math.random) {
+    const slots = ["weapon", "armor", "ring"];
+    if (!g || !g.equippedGear) return slots[Math.floor(rng() * slots.length)];
+    const emptySlots = slots.filter(s => !g.equippedGear[s]);
+    if (emptySlots.length > 0) return emptySlots[0];
+    const sorted = slots.slice().sort((a, b) => ((g.equippedGear[a] && g.equippedGear[a].power) || 0) - ((g.equippedGear[b] && g.equippedGear[b].power) || 0));
+    return rng() < 0.72 ? sorted[0] : sorted[1 + Math.floor(rng() * 2)];
+  }
+
+  function rollGearItem(stageTier = 0, minRarity = 0, forcedSlot = null, opts = {}) {
+    const rng = (opts && typeof opts.rng === "function") ? opts.rng : Math.random;
+    const usePity = opts && opts.usePity !== false;
+    const refGame = (opts && "game" in opts) ? opts.game : (typeof game !== "undefined" ? game : null);
+    const refArena = (opts && "arena" in opts) ? opts.arena : (typeof arena !== "undefined" ? arena : null);
+    const slot = (forcedSlot && hasOwn(GEAR_TEMPLATES, forcedSlot)) ? forcedSlot : pickBalancedGearSlot(refGame, rng);
+    const pactBoost = refGame ? getActivePactCount(refGame) * 0.055 : 0;
+    const styleBoost = (refArena && (refArena.styleScore || 0) >= 850) ? 0.22 : (refArena && (refArena.styleScore || 0) >= 580) ? 0.12 : 0;
+    const luckBoost = ((refGame && hasDestinyFruit(refGame, "hongmeng_luck")) ? 0.16 : 0) + pactBoost + styleBoost;
+    const rRoll = rng() + luckBoost;
+    let rarity = minRarity;
+    if (rRoll > 0.90) rarity = Math.max(rarity, 4);
+    else if (rRoll > 0.70) rarity = Math.max(rarity, 3);
+    else if (rRoll > 0.42) rarity = Math.max(rarity, 2);
+    else if (rRoll > 0.16) rarity = Math.max(rarity, 1);
+    rarity = Math.min(4, Math.max(minRarity, rarity + (stageTier >= 3 ? 1 : 0)));
+
+    let pityTriggered = null;
+    if (usePity && refGame) {
+      const pt = ensureDeterministicPity(refGame);
+      if (pt.mythic >= 7 && rarity < 4) {
+        rarity = 4;
+        pityTriggered = "mythic";
+      } else if (pt.epic >= 3 && rarity < 3) {
+        rarity = 3;
+        pityTriggered = "epic";
+      }
+      if (rarity >= 4) { pt.mythic = 0; pt.epic = 0; }
+      else if (rarity >= 3) { pt.epic = 0; pt.mythic += 1; }
+      else { pt.epic += 1; pt.mythic += 1; }
+      pt.gearDrops += 1;
+    }
+
+    const rSpec = RARITIES[rarity];
+    const tmpl = GEAR_TEMPLATES[slot][Math.min(4, rarity)];
+    const realmIdx = refGame ? REALM_ORDER.indexOf(refGame.realm) : -1;
+    const lvlScale = 1 + stageTier * 0.32 + (realmIdx >= 0 ? realmIdx * 0.22 : 0);
+    const qualityRoll = 0.94 + rng() * 0.12;
+
+    const item = {
+      uid: "g_" + Math.floor(rng() * 1e9).toString(36),
+      slot,
+      rarity,
+      name: `${rSpec.name}·${tmpl.baseName}`,
+      art: tmpl.art,
+      atk: 0, hp: 0, dr: 0, crit: 0, spd: 0, bonusSword: 0,
+      pityTriggered,
+      price: Math.round(rSpec.sell * 2.4 * (1 + stageTier * 0.25)),
+      sell: Math.round(rSpec.sell * (1 + stageTier * 0.2))
+    };
+
+    if (slot === "weapon") {
+      item.atk = Math.max(4, Math.round(7 * rSpec.mult * lvlScale * qualityRoll));
+      item.crit = Number((0.022 * (rarity + 1)).toFixed(2));
+      if (rarity >= 3) item.bonusSword = 1;
+    } else if (slot === "armor") {
+      item.hp = Math.max(16, Math.round(24 * rSpec.mult * lvlScale * qualityRoll));
+      item.dr = Math.max(2, Math.round(3.0 * rSpec.mult * (1 + stageTier * 0.25) * qualityRoll));
+    } else {
+      item.atk = Math.max(2, Math.round(4 * rSpec.mult * lvlScale * qualityRoll));
+      item.spd = Number((0.03 * (rarity + 1)).toFixed(2));
+      item.crit = Number((0.018 * (rarity + 1)).toFixed(2));
+    }
+    item.lvl = 0;
+    if (rarity >= 2) {
+      const ownedAffixes = refGame && refGame.equippedGear
+        ? Object.values(refGame.equippedGear).map(g => g && g.affix).filter(Boolean)
+        : [];
+      const freshPool = SACRED_AFFIXES.filter(a => !ownedAffixes.includes(a.id));
+      const pool = freshPool.length ? freshPool : SACRED_AFFIXES;
+      item.affix = pool[Math.floor(rng() * pool.length)].id;
+    } else {
+      item.affix = null;
+    }
+
+    // F22 (D05): Enforce weighted affix budget & per-stat caps ONLY on newly generated items (never retroactively mutates legacy saves)
+    const budgetSpec = GEAR_BUDGET_BY_RARITY[rarity] || GEAR_BUDGET_BY_RARITY[0];
+    const caps = budgetSpec.statCaps;
+    item.atk = Math.min(item.atk, caps.atk);
+    item.hp = Math.min(item.hp, caps.hp);
+    item.dr = Math.min(item.dr, caps.dr);
+    item.crit = Number(Math.min(item.crit, caps.crit).toFixed(3));
+    item.spd = Number(Math.min(item.spd, caps.spd).toFixed(3));
+    item.bonusSword = Math.min(item.bonusSword, caps.bonusSword);
+    const bCheck = computeGearAffixBudget(item);
+    if (bCheck.totalBudget > bCheck.maxBudget) {
+      const fixedCost = bCheck.statBreakdown.bonusSword + bCheck.statBreakdown.affix;
+      const flexCost = Math.max(1, bCheck.totalBudget - fixedCost);
+      const targetFlex = Math.max(1, bCheck.maxBudget - fixedCost);
+      const scale = Math.min(1, targetFlex / flexCost);
+      if (item.atk > 0) item.atk = Math.max(1, Math.floor(item.atk * scale));
+      if (item.hp > 0) item.hp = Math.max(8, Math.floor(item.hp * scale));
+      if (item.dr > 0) item.dr = Math.max(1, Math.floor(item.dr * scale));
+      if (item.crit > 0) item.crit = Number(Math.max(0.01, Math.floor(item.crit * scale * 100) / 100).toFixed(2));
+      if (item.spd > 0) item.spd = Number(Math.max(0.01, Math.floor(item.spd * scale * 100) / 100).toFixed(2));
+    }
+
+    item.power = item.atk * 3 + Math.round(item.hp * 0.4) + item.dr * 5 + Math.round(item.crit * 240) + Math.round(item.spd * 180) + item.bonusSword * 85 + (item.affix ? 45 : 0);
+    return item;
+  }
+
+  // --- [module] src/rules/combat-stats.mjs ---
+  // Pure combat stat ledger, single-hit cap, school specialization, and Dao bonus rules.
+  function rankOf(r) {
+    const idx = REALM_ORDER.indexOf(r);
+    return idx >= 0 ? idx : 0;
+  }
+
+  function hasLaw(g, id) {
+    return g && Array.isArray(g.laws) && g.laws.includes(id);
+  }
+
+  function currentOmen(g) {
+    const idx = Math.floor(Math.max(0, num(g && g.omenIndex, 0))) % CELESTIAL_OMENS.length;
+    return CELESTIAL_OMENS[idx] || CELESTIAL_OMENS[0];
+  }
+
+  function hasPetSkill(g, skillId) {
+    if (!g || !g.pet || !g.pet.id || !g.pet.skills || !skillId) return false;
+    const lv = Math.max(1, Math.floor(num(g.pet.level, 1)));
+    return Boolean(
+      (lv >= 3 && g.pet.skills.tier3 === skillId) ||
+      (lv >= 5 && g.pet.skills.tier5 === skillId)
+    );
+  }
+
+  function getEquippedRelicStars(g) {
+    if (!g || !g.loadout || !g.loadout.relic || !hasOwn(RELICS, g.loadout.relic)) return 0;
+    const rawStars = (g.relicStars && hasOwn(g.relicStars, g.loadout.relic)) ? g.relicStars[g.loadout.relic] : 1;
+    return Math.max(0, Math.min(5, Math.floor(num(rawStars, 1))));
+  }
+
+  function getPermGrowthCaps(g) {
+    const r = (g && typeof g.realm === "string" && hasOwn(REALMS, g.realm)) ? g.realm : "mortal";
+    return {
+      realm: r,
+      maxHpBonus: PERM_GROWTH_CAPS.totalMaxHpByRealm[r] || PERM_GROWTH_CAPS.totalMaxHpByRealm.mortal,
+      atkFlatBonus: PERM_GROWTH_CAPS.totalAtkByRealm[r] || PERM_GROWTH_CAPS.totalAtkByRealm.mortal,
+      alchemyHp: PERM_GROWTH_CAPS.alchemyHpByRealm[r] || PERM_GROWTH_CAPS.alchemyHpByRealm.mortal,
+      alchemyAtk: PERM_GROWTH_CAPS.alchemyAtkByRealm[r] || PERM_GROWTH_CAPS.alchemyAtkByRealm.mortal,
+      bloodFuryPerRealm: PERM_GROWTH_CAPS.bloodFuryPerRealm,
+      spireCurioMaxStack: PERM_GROWTH_CAPS.spireCurioMaxStack
+    };
+  }
+
+  function getKarmaState(g) {
+    const score = Math.max(-100, Math.min(100, (g && typeof g.karmaScore === "number") ? g.karmaScore : 0));
+    if (score >= 25) return { mode: "righteous", score, label: `清虚正道 +${score}`, artName: "太清镇世诀", color: "#70ffe6" };
+    if (score <= -25) return { mode: "demonic", score, label: `劫煞魔心 ${score}`, artName: "血煞狂剑诀", color: "#ff4d5e" };
+    return { mode: "neutral", score, label: `本真中正 ${score >= 0 ? "+" + score : score}`, artName: "太初归元心", color: "#ffe28a" };
+  }
+
+  function getComboTier(hits) {
+    if (hits >= 30) return { label: "万剑入神", rank: "SSS", spdBonus: 0.30, critDmgBonus: 0.38, color: "#ff9f43" };
+    if (hits >= 18) return { label: "剑仙临尘", rank: "S", spdBonus: 0.22, critDmgBonus: 0.26, color: "#ffe270" };
+    if (hits >= 10) return { label: "剑罡破军", rank: "A", spdBonus: 0.15, critDmgBonus: 0.18, color: "#70ffe6" };
+    if (hits >= 4) return { label: "灵剑初鸣", rank: "B", spdBonus: 0.08, critDmgBonus: 0.10, color: "#4ad2b8" };
+    return { label: "凡剑试锋", rank: "C", spdBonus: 0, critDmgBonus: 0, color: "#9ab5b0" };
+  }
+
+  function getStyleRankSpec(score = 0) {
+    if (score >= 850) return { rank: "SSS", title: "太虚剑神", color: "#ff9eff", haste: 0.30, critDmg: 0.42, intentMult: 1.60, dropPct: 45 };
+    if (score >= 580) return { rank: "S", title: "天人合一", color: "#ffe270", haste: 0.22, critDmg: 0.28, intentMult: 1.35, dropPct: 25 };
+    if (score >= 380) return { rank: "A", title: "剑道无双", color: "#70ffe6", haste: 0.15, critDmg: 0.18, intentMult: 1.20, dropPct: 15 };
+    if (score >= 210) return { rank: "B", title: "惊鸿掠影", color: "#4ad2b8", haste: 0.09, critDmg: 0.10, intentMult: 1.10, dropPct: 8 };
+    if (score >= 85) return { rank: "C", title: "剑心通明", color: "#a8e6dc", haste: 0.04, critDmg: 0.05, intentMult: 1.0, dropPct: 0 };
+    return { rank: "D", title: "凡铁试锋", color: "#9ab5b0", haste: 0, critDmg: 0, intentMult: 1.0, dropPct: 0 };
+  }
+
+  function getDaoBonuses(g) {
+    const dao = (g && g.dao) || { benevolence: 6, edge: 10, serenity: 6 };
+    const b = Math.max(0, Number(dao.benevolence) || 0);
+    const e = Math.max(0, Number(dao.edge) || 0);
+    const s = Math.max(0, Number(dao.serenity) || 0);
+    const healMult = 1 + Math.min(0.28, b * 0.0045);
+    const shieldMult = 1 + Math.min(0.25, b * 0.004);
+    const postureMult = 1 + Math.min(0.25, e * 0.004);
+    const critBonus = Math.min(0.08, e * 0.0012);
+    const execMult = 1 + Math.min(0.18, e * 0.003);
+    const mpRegenMult = 1 + Math.min(0.32, s * 0.005);
+    const stoneMult = 1 + Math.min(0.24, s * 0.004);
+    let dominant = "edge";
+    if (b >= e && b >= s) dominant = "benevolence";
+    else if (s >= e && s >= b) dominant = "serenity";
+    const domMap = {
+      benevolence: { title: "仁心济世", color: "#70ffe6" },
+      edge: { title: "锋芒凌霄", color: "#ffd278" },
+      serenity: { title: "本真通明", color: "#c792ff" }
+    };
+    return {
+      benevolence: b, edge: e, serenity: s,
+      healMult, shieldMult, postureMult, critBonus, execMult, mpRegenMult, stoneMult,
+      dominant,
+      dominantTitle: domMap[dominant].title,
+      dominantColor: domMap[dominant].color
+    };
+  }
+
+  function getSchoolSpecBonus(g) {
+    const isTalisman = !!(g && g.school === "talisman");
+    if (isTalisman) {
+      return {
+        id: "talisman",
+        name: "紫霄雷符",
+        badge: "回蓝+25% · 剑域/爆发术法+16% · 终结引紫霄链雷",
+        hasteBonus: 0,
+        critMultBonus: 0,
+        swordSynergyMult: 1.0,
+        mpRegenMult: 1.25,
+        skillDmgMult: 1.16,
+        chainLightningOnFinisher: true,
+        color: "#d69eff"
+      };
+    }
+    return {
+      id: "sword",
+      name: "青霜御剑",
+      badge: "挥剑攻速+10% · 飞剑协同+18% · 暴伤+8% · 四式增剑",
+      hasteBonus: 0.10,
+      critMultBonus: 0.08,
+      swordSynergyMult: 1.18,
+      mpRegenMult: 1.0,
+      skillDmgMult: 1.0,
+      chainLightningOnFinisher: false,
+      color: "#70ffe6"
+    };
+  }
+
+  function applySingleHitCap(rawDmg, maxHp, dmgReduce = 0, opts = {}) {
+    if (typeof rawDmg !== "number" || !Number.isFinite(rawDmg) || rawDmg <= 0) return 0;
+    const pactEnemyMult = Math.max(0, num(opts && opts.pactEnemyMult, 1.0));
+    const wardMult = Math.max(0, num(opts && opts.wardMult, 1.0));
+    const safeDr = Math.max(0, num(dmgReduce, 0));
+    const drMult = Math.max(0.35, 100 / (100 + safeDr));
+    const scaled = rawDmg * pactEnemyMult * drMult * wardMult;
+    let dmg = Math.max(4, Number.isFinite(scaled) ? Math.round(scaled) : Number.MAX_SAFE_INTEGER);
+    if (!(opts && opts.uncapped)) {
+      const singleHitCap = Math.max(4, Math.round(Math.max(1, num(maxHp, 1)) * SINGLE_HIT_CAP_RATIO));
+      dmg = Math.min(dmg, singleHitCap);
+    }
+    return dmg;
+  }
+
+  function getMaxHp(g, env = null) {
+    const gSafe = (g && typeof g === "object") ? g : { realm: "mortal" };
+    const gt = getGearTotals(gSafe);
+    const starFn = (env && typeof env.getStarChartBonuses === "function")
+      ? env.getStarChartBonuses
+      : (typeof getStarChartBonuses === "function" ? getStarChartBonuses : null);
+    const sb = starFn ? starFn(gSafe) : { atk: 0, hp: 0, dr: 0, crit: 0, critMult: 0, spd: 0, mp: 0 };
+    const starCoreFn = (env && typeof env.hasStarCore === "function")
+      ? env.hasStarCore
+      : (typeof hasStarCore === "function" ? hasStarCore : null);
+    const tortoiseMult = (starCoreFn && starCoreFn(gSafe, "black_tortoise")) ? 1.18 : 1.0;
+    const petHpMult = hasPetSkill(gSafe, "spirit_ward") ? 1.08 : 1.0;
+    const realmHp = (REALMS[gSafe.realm] && REALMS[gSafe.realm].maxHp) || 80;
+    const rawStatMult = Number(gSafe.statMultBonus);
+    const safeStatMult = (Number.isFinite(rawStatMult) && rawStatMult >= 0.1) ? rawStatMult : 1;
+    const rawHpBonus = Number(gSafe.maxHpBonus);
+    const safeHpBonus = (Number.isFinite(rawHpBonus) && rawHpBonus >= 0) ? rawHpBonus : 0;
+    const statCap = 1 + softCapPct(Math.max(0, safeStatMult - 1), 0.75, 1.40);
+    return Math.round((realmHp + safeHpBonus + gt.hp + sb.hp) * statCap * tortoiseMult * petHpMult);
+  }
+
+  function computeCombatStatLedger(g, env = null) {
+    const gSafe = (g && typeof g === "object") ? g : { realm: "mortal" };
+    const refArena = (env && "arena" in env) ? env.arena : (typeof arena !== "undefined" ? arena : null);
+    const starFn = (env && typeof env.getStarChartBonuses === "function")
+      ? env.getStarChartBonuses
+      : (typeof getStarChartBonuses === "function" ? getStarChartBonuses : null);
+    const celFn = (env && typeof env.getCurrentCelestialPhase === "function")
+      ? env.getCurrentCelestialPhase
+      : (typeof getCurrentCelestialPhase === "function" ? getCurrentCelestialPhase : null);
+    const curioFn = (env && typeof env.getCurioStacks === "function")
+      ? env.getCurioStacks
+      : (typeof getCurioStacks === "function" ? getCurioStacks : null);
+    const boonFn = (env && typeof env.hasRunBoon === "function")
+      ? env.hasRunBoon
+      : (typeof hasRunBoon === "function" ? hasRunBoon : null);
+    const climFn = (env && typeof env.getActiveDungeonClimate === "function")
+      ? env.getActiveDungeonClimate
+      : (typeof getActiveDungeonClimate === "function" ? getActiveDungeonClimate : null);
+
+    const finiteNonNeg = (v, fb = 0) => {
+      const n = Number(v);
+      return (Number.isFinite(n) && n >= 0) ? n : fb;
+    };
+    const finiteStatMult = (v) => {
+      const n = Number(v);
+      return (Number.isFinite(n) && n >= 0.1) ? n : 1;
+    };
+    const P = COMBAT_RULE_PARAMS;
+    const r = REALMS[gSafe.realm] || REALMS.mortal;
+    const gt = getGearTotals(gSafe);
+    const maxHp = getMaxHp(gSafe, env);
+    const safeStatMult = finiteStatMult(gSafe.statMultBonus);
+    const safeStones = finiteNonNeg(gSafe.stones, 0);
+    const safeKarmaDrBonus = finiteNonNeg(gSafe.karmaDrBonus, 0);
+    const safeStartAge = finiteNonNeg(gSafe.startAgeMonths, 216);
+    const safeElapsedMonths = finiteNonNeg(gSafe.elapsedMonths, 0);
+    const maxMpBase = Math.round(r.maxMp * (1 + Math.min(0.65, Math.max(0, safeStatMult - 1))));
+    const stars = getEquippedRelicStars(gSafe);
+    const starScale = 1 + Math.max(0, stars - 1) * 0.18;
+    const lo = (gSafe.loadout && typeof gSafe.loadout === "object") ? gSafe.loadout : {};
+    const pet = (gSafe.pet && typeof gSafe.pet === "object") ? gSafe.pet : {};
+    const mindBonus = lo.mind === "sword_pierce" ? P.skills.sword_pierce.mindAtk : lo.mind === "talisman_clear" ? P.skills.talisman_clear.mindAtk : 0;
+    const relicBonus = Math.round(((lo.relic === "frost_sword" ? 9 : lo.relic === "soul_lamp" ? 8 : 4) * (lo.relic ? starScale : 0)));
+    const starB = starFn ? starFn(gSafe) : { atk: 0, hp: 0, dr: 0, crit: 0, critMult: 0, spd: 0, mp: 0 };
+    const sanctumB = getSanctumBonuses(gSafe);
+    const years = Math.floor((safeStartAge + safeElapsedMonths) / 12);
+    const entries = [];
+    const addEntry = (id, label, category, bucket, rawContribution, cap, conditionText, active) => {
+      const rawVal = Number(rawContribution);
+      const safeRaw = Number.isFinite(rawVal) ? rawVal : 0;
+      entries.push({
+        id,
+        label,
+        category,
+        bucket,
+        rawContribution: safeRaw,
+        cap: cap == null ? null : cap,
+        effectiveDelta: active ? safeRaw : 0,
+        conditionText: conditionText || "常驻生效",
+        active: Boolean(active)
+      });
+    };
+
+    // Bucket 1: Flat Foundation ATK
+    const realmBaseAtk = 14 + r.power * 1.25;
+    const permAtk = finiteNonNeg(gSafe.atkFlatBonus, 0);
+    const perkFlatAtk = gSafe.perk === "sword_sovereign" ? 12 : gSafe.perk === "sword_bone" ? 5 : 0;
+    addEntry("base_realm_atk", `境界根基 (${r.name})`, "realm", "flat_atk", realmBaseAtk, null, "随境界提升", true);
+    if (gt.atk > 0) addEntry("gear_atk", "神兵仙装攻击", "gear", "flat_atk", gt.atk, null, "装备及淬火 (+8%/阶)", true);
+    if (permAtk > 0) addEntry("perm_atk", "永久丹道/奇遇剑攻", "permanent", "flat_atk", permAtk, getPermGrowthCaps(gSafe).atkFlatBonus, "受本境永久上限约束", true);
+    if (perkFlatAtk > 0) addEntry("perk_atk", gSafe.perk === "sword_sovereign" ? "命格 · 轮回剑主" : "命格 · 先天剑骨", "perk", "flat_atk", perkFlatAtk, null, "先天命格常驻", true);
+    if (mindBonus > 0) addEntry("mind_atk", lo.mind === "sword_pierce" ? "心法 · 破妄剑心" : "心法 · 清虚符心", "skill", "flat_atk", mindBonus, null, "装备于心法槽时生效", true);
+    if (relicBonus > 0) addEntry("relic_atk", `本命法宝 ★${stars}`, "relic", "flat_atk", relicBonus, null, "佩带法宝及星级加成", true);
+    if (starB.atk > 0) addEntry("star_atk", "周天星图剑攻", "star", "flat_atk", starB.atk, null, "已点亮星节点（星夜翻倍）", true);
+    if (sanctumB.forgeAtk > 0) addEntry("sanctum_forge_atk", "洞府 · 天工剑炉", "sanctum", "flat_atk", sanctumB.forgeAtk, 32, "剑炉每级 +8 剑攻", true);
+    const baseAtk = realmBaseAtk + gt.atk + permAtk + perkFlatAtk + mindBonus + relicBonus + starB.atk + sanctumB.forgeAtk;
+
+    // Bucket 2: Passive Additive Bonus Pool (soft-capped at knee 0.95, max 1.65)
+    const setB = getActiveSetBonus(gSafe);
+    const ks = getKarmaState(gSafe);
+    const celPh = celFn ? celFn() : { id: "dawn" };
+    const stoneCurioLv = curioFn ? curioFn(gSafe, "curio_stone_alchemy") : 0;
+    const shieldThornLv = curioFn ? curioFn(gSafe, "curio_shield_thorns") : 0;
+    const curHp = (typeof gSafe.hp === "number" && Number.isFinite(gSafe.hp) && gSafe.hp >= 0) ? gSafe.hp : maxHp;
+    const phoenixLowHp = gSafe.perk === "calamity_phoenix" && curHp <= maxHp * 0.45;
+
+    const statMultPassive = Math.max(0, safeStatMult - 1) * 0.75;
+    let rawPassivePct = statMultPassive;
+    if (statMultPassive > 0) addEntry("stat_mult_passive", "先天/历练倍增", "permanent", "passive_pct", statMultPassive, null, "并入常驻增伤池", true);
+    if (gSafe.perk === "calamity_phoenix") {
+      addEntry("perk_phoenix_pct", "命格 · 劫火涅槃体", "perk", "passive_pct", 0.22, 0.22, "气血 ≤45% 时触发", phoenixLowHp);
+      if (phoenixLowHp) rawPassivePct += 0.22;
+    }
+    if (hasLaw(gSafe, "age_might")) {
+      const v = Math.min(P.laws.age_might.maxPct, Math.floor(Math.max(0, years - P.laws.age_might.baseAge) / P.laws.age_might.yearsPerStep) * P.laws.age_might.pctPerStep);
+      rawPassivePct += v;
+      addEntry("law_age_might", "法则 · 岁积道威", "law", "passive_pct", v, P.laws.age_might.maxPct, `当前骨龄 ${years} 载`, v > 0);
+    }
+    if (hasLaw(gSafe, "karma_resonance")) {
+      const v = Math.min(P.laws.karma_resonance.maxPct, Object.keys(gSafe.choices || {}).length * P.laws.karma_resonance.pctPerChoice);
+      rawPassivePct += v;
+      addEntry("law_karma_res", "法则 · 红尘共鸣", "law", "passive_pct", v, P.laws.karma_resonance.maxPct, `已结尘缘 ${Object.keys(gSafe.choices || {}).length} 项`, v > 0);
+    }
+    if (hasLaw(gSafe, "wealth_power")) {
+      const v = Math.min(P.laws.wealth_power.maxPct, Math.floor(safeStones / P.laws.wealth_power.perStones) * P.laws.wealth_power.pctPerStep);
+      rawPassivePct += v;
+      addEntry("law_wealth_power", "法则 · 聚宝乾坤", "law", "passive_pct", v, P.laws.wealth_power.maxPct, `当前持有 ${Math.floor(safeStones)} 灵石`, v > 0);
+    }
+    if (stoneCurioLv > 0) {
+      const v = Math.min(PERM_GROWTH_CAPS.curioStoneAlchemyDmgCap, Math.floor(safeStones / 100) * 0.04 * stoneCurioLv);
+      rawPassivePct += v;
+      addEntry("curio_stone_alchemy", `奇物 · 聚灵炼金 ×${stoneCurioLv}`, "boon", "passive_pct", v, PERM_GROWTH_CAPS.curioStoneAlchemyDmgCap, "随持有灵石增伤", v > 0);
+    }
+    if (shieldThornLv > 0) {
+      const hasSh = Boolean(refArena && refArena.player && (refArena.player.shieldHp || 0) > 0);
+      const v = Math.min(0.45, 0.20 * shieldThornLv);
+      if (hasSh) rawPassivePct += v;
+      addEntry("curio_shield_thorns", `奇物 · 玄武反震甲 ×${shieldThornLv}`, "boon", "passive_pct", v, 0.45, "持护体灵盾时生效", hasSh);
+    }
+    if (setB && setB.atkMult) {
+      rawPassivePct += setB.atkMult;
+      addEntry("gear_set_atk", `套装 · ${setB.name}`, "gear", "passive_pct", setB.atkMult, null, "三件同品阶以上激活", true);
+    }
+    const karmaPassive = ks.mode === "demonic" ? 0.18 : ks.mode === "righteous" ? 0.06 : 0;
+    if (karmaPassive > 0) {
+      rawPassivePct += karmaPassive;
+      addEntry("karma_passive", `道心 · ${ks.artName}`, "karma", "passive_pct", karmaPassive, null, ks.mode === "demonic" ? "魔心 ≤-25 常驻" : "正道 ≥+25 常驻", true);
+    }
+    const celPassive = celPh.id === "noon"
+      ? P.celestialPhases.noon.passiveAtkPct
+      : (celPh.id === "blood_dusk"
+        ? (ks.mode === "demonic" ? P.celestialPhases.blood_dusk.demonicPassiveAtkPct : P.celestialPhases.blood_dusk.otherPassiveAtkPct)
+        : 0);
+    if (celPassive > 0) {
+      rawPassivePct += celPassive;
+      addEntry("celestial_passive", celPh.id === "noon" ? "天时 · 午时骄阳" : "天时 · 血月黄昏", "celestial", "passive_pct", celPassive, null, "当前天时常驻池加成", true);
+    }
+    if (boonFn && boonFn("gold_alchemist")) {
+      const v = Math.min(P.runBoons.gold_alchemist.maxPct, Math.floor(safeStones / P.runBoons.gold_alchemist.perStones) * P.runBoons.gold_alchemist.pctPerStep);
+      rawPassivePct += v;
+      addEntry("boon_gold_alchemist", "秘境词条 · 点石成锋", "boon", "passive_pct", v, P.runBoons.gold_alchemist.maxPct, "本场秘境有效", v > 0);
+    }
+    if (refArena && refArena.player && (refArena.player.boonOverloadTimer || 0) > 0) {
+      rawPassivePct += P.runBoons.gourd_overload.passiveAtkPct;
+      addEntry("boon_gourd_overload", "秘境词条 · 仙酿剑狂", "boon", "passive_pct", P.runBoons.gourd_overload.passiveAtkPct, P.runBoons.gourd_overload.passiveAtkPct, "饮仙葫后限时触发", true);
+    }
+    const petWrathBuffActive = Boolean(refArena && refArena.player && (refArena.player.petBuffTimer || 0) > 0 && hasPetSkill(gSafe, "celestial_wrath"));
+    if (petWrathBuffActive) {
+      rawPassivePct += 0.16;
+      addEntry("pet_wrath_passive", "灵宠技 · 天威狂怒", "pet", "passive_pct", 0.16, 0.16, "灵宠助战增益期间", true);
+    }
+    const cappedPassivePct = softCapPct(rawPassivePct, P.passiveSoftCapKnee, P.passiveSoftCapMax);
+    const passiveRatio = rawPassivePct > 0 ? (cappedPassivePct / rawPassivePct) : 1;
+    entries.forEach(ent => {
+      if (ent.bucket === "passive_pct" && ent.active) {
+        ent.effectiveDelta = Number((ent.rawContribution * passiveRatio).toFixed(4));
+      }
+    });
+
+    // Bucket 3: Active Stance / Burst / Climate Multiplier (capped cleanly at 1.95x)
+    const revMult = (refArena && (refArena.reversedDomainTimer || 0) > 0) ? 1.20 : 1.0;
+    const isHeavyPosture = Boolean(refArena && refArena.weaponPosture === "xuanzhong");
+    const postureAtkMult = isHeavyPosture ? 1.28 : 1.0;
+    const rushGlass = Boolean(refArena && refArena.bossRush && refArena.bossRush.active && Array.isArray(refArena.rushAffixes) && refArena.rushAffixes.includes("rush_glass"));
+    const rushAtkMult = rushGlass ? 1.38 : 1.0;
+    const astralMult = (refArena && refArena.astralForm && refArena.astralForm.active) ? (refArena.astralForm.mode === "demonic" ? 1.45 : 1.35) : 1.0;
+    const clim = climFn ? climFn() : null;
+    const climateAtkMult = (clim && clim.id === "blood_haze") ? P.climates.blood_haze.playerActiveMult : 1.0;
+    if (revMult > 1.0) addEntry("reversed_domain_mult", "逆转天象 · 破阵增伤", "domain", "active_mult", revMult, P.activeMultCap, "击毁阵眼柱后 10 秒", true);
+    if (isHeavyPosture) addEntry("posture_heavy_mult", "剑势 · 玄重巨阙式", "posture", "active_mult", postureAtkMult, P.activeMultCap, "切换重剑姿态生效", true);
+    if (rushGlass) addEntry("rush_glass_mult", "万剑冢词缀 · 脆锋狂威", "boon", "active_mult", rushAtkMult, P.activeMultCap, "血量减半换取高伤", true);
+    if (astralMult > 1.0) addEntry("astral_form_mult", "法天象地法相", "domain", "active_mult", astralMult, P.activeMultCap, "法相持续期间", true);
+    if (climateAtkMult > 1.0) addEntry("climate_blood_haze", "秘境气候 · 血雾煞境", "climate", "active_mult", climateAtkMult, P.activeMultCap, "敌我同步增伤", true);
+    const activeMult = Math.min(P.activeMultCap, revMult * postureAtkMult * rushAtkMult * astralMult * climateAtkMult);
+
+    // DR Pool
+    const drGear = gt.dr;
+    const drTurtle = pet.id === "turtle" ? 10 : 0;
+    const drPetWard = hasPetSkill(gSafe, "spirit_ward") ? 12 : 0;
+    const drMindStill = lo.mind === "sword_still" ? P.skills.sword_still.mindDr : 0;
+    const drMindClear = lo.mind === "talisman_clear" ? P.skills.talisman_clear.mindDr : 0;
+    const drRelicSeal = lo.relic === "jade_seal" ? Math.round(12 * starScale) : 0;
+    const drGuardArray = sanctumB.guardDr;
+    const drPhoenix = phoenixLowHp ? 18 : 0;
+    const drPosture = isHeavyPosture ? 16 : 0;
+    const karmaDr = safeKarmaDrBonus + (ks.mode === "righteous" ? 12 : 0);
+    const celDrBonus = celPh.id === "dawn" ? P.celestialPhases.dawn.dr : 0;
+    const dmgReduceBase = drGear + drTurtle + drPetWard + drMindStill + drMindClear + drRelicSeal + drGuardArray + drPhoenix;
+    const finalDmgReduce = dmgReduceBase + drPosture + karmaDr + starB.dr + celDrBonus;
+    if (drGear > 0) addEntry("gear_dr", "护身仙衣/套装减伤", "gear", "dr", drGear, null, "装备及淬火 (+8%/阶)", true);
+    if (drTurtle + drPetWard > 0) addEntry("pet_dr", "灵宠护体减伤", "pet", "dr", drTurtle + drPetWard, null, "玄水灵龟/灵宠护盾技", true);
+    if (drMindStill + drMindClear > 0) addEntry("mind_dr", lo.mind === "sword_still" ? "心法 · 止水剑心" : "心法 · 清虚符心", "skill", "dr", drMindStill + drMindClear, null, "装备于心法槽时生效", true);
+    if (drRelicSeal > 0) addEntry("relic_dr", "法宝 · 镇海玉玺", "relic", "dr", drRelicSeal, null, "佩带法宝及星级加成", true);
+    if (drGuardArray > 0) addEntry("sanctum_guard_dr", "洞府 · 护山大阵", "sanctum", "dr", drGuardArray, 16, "护山大阵每级 +4 减伤", true);
+    if (drPhoenix > 0) addEntry("perk_phoenix_dr", "命格 · 劫火涅槃减伤", "perk", "dr", drPhoenix, 18, "气血 ≤45% 时触发", true);
+    if (drPosture > 0) addEntry("posture_heavy_dr", "剑势 · 玄重巨阙减伤", "posture", "dr", drPosture, 16, "重剑姿态常驻", true);
+    if (karmaDr > 0) addEntry("karma_dr", "道心/正道减伤", "karma", "dr", karmaDr, null, "正道 ≥+25 常驻 +12", true);
+    if (starB.dr > 0) addEntry("star_dr", "周天星图减伤", "star", "dr", starB.dr, null, "星图节点加成", true);
+    if (celDrBonus > 0) addEntry("cel_dawn_dr", "天时 · 晨曦清露", "celestial", "dr", celDrBonus, P.celestialPhases.dawn.dr, "晨曦天时常驻", true);
+    const drMult = Math.max(0.35, 100 / (100 + Math.max(0, finalDmgReduce || 0)));
+
+    // Crit / CritMult / Haste / Speed
+    const tier = getComboTier(refArena ? (refArena.comboCount || 0) : 0);
+    const lowHpBoonCrit = (boonFn && boonFn("blood_intent") && curHp <= maxHp * P.runBoons.blood_intent.hpThreshold) ? P.runBoons.blood_intent.crit : 0;
+    const critCore = Math.min(P.critCap, 0.10 + gt.crit + (gSafe.perk === "sword_bone" ? 0.08 : 0) + (pet.id === "fox" ? 0.10 : 0) + (hasPetSkill(gSafe, "fury_fang") ? 0.05 : 0) + (hasLaw(gSafe, "crit_lotus") ? P.laws.crit_lotus.crit : 0) + (currentOmen(gSafe).id === "wolf_star" ? P.omens.wolf_star.crit : 0) + lowHpBoonCrit);
+    const climSpdMult = (clim && clim.id === "sword_wind") ? P.climates.sword_wind.speedMult : 1.0;
+    const climHaste = (clim && clim.id === "sword_wind") ? P.climates.sword_wind.haste : 0;
+    const climCritMult = (clim && clim.id === "thunder_loom") ? P.climates.thunder_loom.critMult : 0;
+    const speedBase = 3.85 * (1 + gt.spd) * (hasLaw(gSafe, "void_haste") ? 1.18 : 1.0) * (1 + tier.spdBonus * 0.30) * climSpdMult;
+    const pineCrit = hasDestinyFruit(gSafe, "eternal_pine") ? 0.10 : 0;
+    const pineMult = hasDestinyFruit(gSafe, "eternal_pine") ? Math.min(0.32, Math.floor(safeStones / 80) * 0.03) : 0;
+    const postureHasteBonus = isHeavyPosture ? -0.14 : 0.14;
+    const postureSpdMult = isHeavyPosture ? 0.92 : 1.10;
+    const finalMaxHp = rushGlass ? Math.max(40, Math.round(maxHp * 0.5)) : maxHp;
+    const gourdHaste = (refArena && refArena.player && (refArena.player.gourdHasteTimer || 0) > 0) ? P.runBoons.gourd_overload.haste : 0;
+    const gourdCrit = (refArena && refArena.player && (refArena.player.gourdCritTimer || 0) > 0) ? 0.18 : 0;
+    const styleSpec = getStyleRankSpec(refArena ? (refArena.styleScore || 0) : 0);
+    const celCritMult = celPh.id === "blood_dusk" ? P.celestialPhases.blood_dusk.critMult : 0;
+    const perkCritMult = gSafe.perk === "sword_sovereign" ? 0.18 : 0;
+    const perkHaste = gSafe.perk === "primordial_sage" ? 0.10 : 0;
+    const daoB = getDaoBonuses(gSafe);
+    const schoolB = getSchoolSpecBonus(gSafe);
+    const finalAtk = Math.max(8, Math.round(baseAtk * (1 + cappedPassivePct) * activeMult));
+    const finalMaxMp = maxMpBase + starB.mp;
+    const finalCrit = Math.min(P.critCap, critCore + pineCrit + gourdCrit + starB.crit + daoB.critBonus);
+    const finalCritMult = Math.min(P.critMultCap, 1.48 + styleSpec.critDmg * 0.75 + starB.critMult + celCritMult + climCritMult + perkCritMult + (schoolB.critMultBonus || 0) + (hasLaw(gSafe, "crit_lotus") ? P.laws.crit_lotus.critMult : 0) + pineMult + ((setB && setB.critMult) || 0));
+    const finalAtkHaste = Math.max(0.70, Math.min(1.85, 1 + gt.spd + starB.spd + styleSpec.haste * 0.7 + postureHasteBonus + gourdHaste + climHaste + perkHaste + (petWrathBuffActive ? 0.15 : 0) + (schoolB.hasteBonus || 0) + (refArena && refArena.domain ? 0.24 : 0) + ((refArena && (refArena.reversedDomainTimer || 0) > 0) ? 0.20 : 0)));
+    const finalSpeed = speedBase * postureSpdMult * (1 + gourdHaste * 0.7 + starB.spd);
+
+    addEntry("base_crit", "基础暴击率", "realm", "crit", 0.10, P.critCap, "角色基础 10%", true);
+    if (gt.crit > 0) addEntry("gear_crit", "装备暴击率", "gear", "crit", gt.crit, P.critCap, "神兵词条与套装", true);
+    if (gSafe.perk === "sword_bone") addEntry("perk_crit", "命格 · 先天剑骨暴击", "perk", "crit", 0.08, P.critCap, "常驻 +8%", true);
+    if (pet.id === "fox" || hasPetSkill(gSafe, "fury_fang")) addEntry("pet_crit", "灵宠暴击加成", "pet", "crit", (pet.id === "fox" ? 0.10 : 0) + (hasPetSkill(gSafe, "fury_fang") ? 0.05 : 0), P.critCap, "火狐/狂牙灵技", true);
+    if (hasLaw(gSafe, "crit_lotus")) addEntry("law_crit_lotus", "法则 · 暴击青莲", "law", "crit", P.laws.crit_lotus.crit, P.critCap, "暴击与暴伤各 +18%", true);
+    if (currentOmen(gSafe).id === "wolf_star") addEntry("omen_wolf_star", "天象 · 贪狼破军", "celestial", "crit", P.omens.wolf_star.crit, P.critCap, "天象常驻 +12%", true);
+    if (pineCrit > 0) addEntry("fruit_pine_crit", "道果 · 万古长青暴击", "fruit", "crit", pineCrit, P.critCap, "道果常驻 +10%", true);
+    if (daoB.critBonus > 0) addEntry("dao_edge_crit", "道果 · 锋芒暴击", "dao", "crit", daoB.critBonus, 0.08, `锋芒 ${daoB.edge}`, true);
+    if (starB.crit > 0) addEntry("star_crit", "周天星图暴击", "star", "crit", starB.crit, P.critCap, "已点亮星节点加成", true);
+    if (lowHpBoonCrit > 0) addEntry("boon_blood_intent", "词条 · 血战剑心", "boon", "crit", lowHpBoonCrit, P.critCap, "气血 ≤55% 时触发", true);
+    if (gourdCrit > 0) addEntry("gourd_crimson_vine", "仙葫 · 赤渊龙血藤", "boon", "crit", gourdCrit, P.critCap, "饮葫后 5 秒 +18%", true);
+
+    addEntry("base_crit_mult", "基础暴击倍率", "realm", "crit_mult", 1.48, P.critMultCap, "角色基础 1.48×", true);
+    if (styleSpec.critDmg > 0) addEntry("style_crit_mult", "评价 · 剑意评分暴伤", "style", "crit_mult", styleSpec.critDmg * 0.75, P.critMultCap, `当前评分 ${styleSpec.rank || ""}`, true);
+    if (starB.critMult > 0) addEntry("star_crit_mult", "周天星图暴伤", "star", "crit_mult", starB.critMult, P.critMultCap, "已点亮星节点加成", true);
+    if (celCritMult > 0) addEntry("cel_crit_mult", "天时 · 血月黄昏暴伤", "celestial", "crit_mult", celCritMult, P.critMultCap, "血月黄昏天时常驻", true);
+    if (climCritMult > 0) addEntry("climate_crit_mult", "秘境气候 · 雷云暴伤", "climate", "crit_mult", climCritMult, P.critMultCap, "当前秘境气候加成", true);
+    if (hasLaw(gSafe, "crit_lotus")) addEntry("law_crit_lotus_mult", "法则 · 暴击青莲暴伤", "law", "crit_mult", P.laws.crit_lotus.critMult, P.critMultCap, "暴击青莲常驻 +18%", true);
+    if (setB && setB.critMult > 0) addEntry("gear_set_crit_mult", `套装 · ${setB.name}暴伤`, "gear", "crit_mult", setB.critMult, P.critMultCap, "三件同品阶以上激活", true);
+    if (schoolB.critMultBonus > 0) addEntry("school_crit_mult", `流派 · ${schoolB.name}暴伤`, "school", "crit_mult", schoolB.critMultBonus, P.critMultCap, "御剑专精 +8%", true);
+    if (pineMult > 0) addEntry("fruit_pine_mult", "道果 · 万古长青暴伤", "fruit", "crit_mult", pineMult, 0.32, "每 80 灵石 +3%（上限 +32%）", true);
+    if (perkCritMult > 0) addEntry("perk_sovereign_mult", "命格 · 轮回剑主暴伤", "perk", "crit_mult", perkCritMult, P.critMultCap, "常驻暴伤 +18%", true);
+
+    if (schoolB.hasteBonus > 0) addEntry("school_haste", `流派 · ${schoolB.name}攻速`, "school", "haste", schoolB.hasteBonus, 1.85, "御剑专精 +10%", true);
+    addEntry("posture_haste", isHeavyPosture ? "剑势 · 玄重巨阙攻速" : "剑势 · 青莲疾剑攻速", "posture", "haste", postureHasteBonus, 1.85, isHeavyPosture ? "重剑姿态 -14%" : "疾剑姿态 +14%", true);
+    if (gt.spd > 0) addEntry("gear_spd", "装备攻速/移速", "gear", "haste", gt.spd, 1.85, "含御风剑意 +10%", true);
+    if (starB.spd > 0) addEntry("star_haste", "周天星图攻速", "star", "haste", starB.spd, 1.85, "已点亮星节点加成", true);
+    if (styleSpec.haste > 0) addEntry("style_haste", "评价 · 剑意评分攻速", "style", "haste", styleSpec.haste * 0.7, 1.85, `当前评分 ${styleSpec.rank || ""}`, true);
+    if (perkHaste > 0) addEntry("perk_haste", "命格 · 太初鸿蒙胎", "perk", "haste", perkHaste, 1.85, "常驻攻速 +10%", true);
+    if (gourdHaste > 0) addEntry("gourd_haste", "仙葫/词条疾风攻速", "boon", "haste", gourdHaste, 1.85, "青鸾御风羽/仙酿剑狂 +22%", true);
+    if (climHaste > 0) addEntry("climate_haste", "秘境气候 · 剑风攻速", "climate", "haste", climHaste, 1.85, "当前秘境气候加成", true);
+    if (petWrathBuffActive) addEntry("pet_wrath_haste", "灵宠技 · 天威狂怒攻速", "pet", "haste", 0.15, 1.85, "灵宠助战增益期间 +15%", true);
+    if (refArena && refArena.domain) addEntry("domain_haste", "剑域展开攻速", "domain", "haste", 0.24, 1.85, "剑域持续期间 +24%", true);
+    if (refArena && (refArena.reversedDomainTimer || 0) > 0) addEntry("reversed_domain_haste", "逆转天象 · 破阵攻速", "domain", "haste", 0.20, 1.85, "击毁阵眼柱后 10 秒 +20%", true);
+
+    return {
+      entries,
+      totals: {
+        maxHp: finalMaxHp,
+        maxMp: finalMaxMp,
+        atk: finalAtk,
+        dmgReduce: finalDmgReduce,
+        crit: finalCrit,
+        critMult: finalCritMult,
+        atkHaste: finalAtkHaste,
+        speed: finalSpeed,
+        drMult: Number(drMult.toFixed(4)),
+        daoBonuses: daoB,
+        schoolSpec: schoolB,
+        statBreakdown: {
+          baseAtk: Math.round(baseAtk),
+          rawPassivePct: Number(rawPassivePct.toFixed(3)),
+          cappedPassivePct: Number(cappedPassivePct.toFixed(3)),
+          activeMult: Number(activeMult.toFixed(3))
+        }
+      },
+      caps: {
+        passiveSoftCapKnee: P.passiveSoftCapKnee,
+        passiveSoftCapMax: P.passiveSoftCapMax,
+        activeMultCap: P.activeMultCap,
+        critCap: P.critCap,
+        critMultCap: P.critMultCap,
+        atkHasteMin: 0.70,
+        atkHasteMax: 1.85,
+        drMultFloor: 0.35
+      }
+    };
+  }
+
+  function getCombatStats(g, env = null) {
+    const t = computeCombatStatLedger(g, env).totals;
+    return {
+      maxHp: t.maxHp,
+      maxMp: t.maxMp,
+      atk: t.atk,
+      dmgReduce: t.dmgReduce,
+      crit: t.crit,
+      critMult: t.critMult,
+      atkHaste: t.atkHaste,
+      speed: t.speed,
+      daoBonuses: t.daoBonuses,
+      schoolSpec: t.schoolSpec,
+      statBreakdown: t.statBreakdown
+    };
+  }
+
+  // --- [module] src/rules/economy-rules.mjs ---
+  // Pure alchemy cost breakdown, batch craft/enhance previews, and lifespan threshold rules.
+  function computeRecipeCostBreakdown(g, rec) {
+    const fairDisc = (g && currentOmen(g).id === "fair") ? 0.8 : 1.0;
+    const baseStones = Math.max(0, Math.round(num(rec && rec.stones, 0) * fairDisc));
+    const missingItems = [];
+    let matBuyCost = 0;
+    const inv = (g && g.inventory) || {};
+    Object.entries((rec && rec.inputs) || {}).forEach(([k, req]) => {
+      const reqAmt = Math.max(0, Math.floor(num(req, 0)));
+      const haveAmt = Math.max(0, Math.floor(num(inv[k], 0)));
+      const lack = Math.max(0, reqAmt - haveAmt);
+      if (lack > 0) {
+        const spec = ITEMS[k];
+        const unitPrice = Math.round(num(spec && spec.buy, 20) * fairDisc);
+        const subCost = lack * unitPrice;
+        matBuyCost += subCost;
+        missingItems.push({
+          id: k,
+          name: (spec && spec.name) || k,
+          req: reqAmt,
+          have: haveAmt,
+          lack,
+          unitPrice,
+          subCost
+        });
+      }
+    });
+    return {
+      fairDisc,
+      baseStones,
+      missingItems,
+      matBuyCost,
+      totalStoneCost: baseStones + matBuyCost,
+      hasMissing: missingItems.length > 0 && matBuyCost > 0
+    };
+  }
+
+  function computeBatchRecipeCost(g, rec, qty = 1) {
+    const safeQty = Math.max(1, Math.min(5, Math.floor(num(qty, 1))));
+    const fairDisc = (g && currentOmen(g).id === "fair") ? 0.8 : 1.0;
+    const baseStonesEach = Math.max(0, Math.round(num(rec && rec.stones, 0) * fairDisc));
+    const baseStones = baseStonesEach * safeQty;
+    const inv = (g && g.inventory) || {};
+    const missingItems = [];
+    const consumedMats = [];
+    let matBuyCost = 0;
+    Object.entries((rec && rec.inputs) || {}).forEach(([k, req]) => {
+      const reqEach = Math.max(0, Math.floor(num(req, 0)));
+      const reqTotal = reqEach * safeQty;
+      const haveAmt = Math.max(0, Math.floor(num(inv[k], 0)));
+      const useAmt = Math.min(haveAmt, reqTotal);
+      const lack = Math.max(0, reqTotal - haveAmt);
+      const spec = ITEMS[k];
+      consumedMats.push({ id: k, name: (spec && spec.name) || k, req: reqTotal, have: haveAmt, use: useAmt, lack });
+      if (lack > 0) {
+        const unitPrice = Math.round(num(spec && spec.buy, 20) * fairDisc);
+        const subCost = lack * unitPrice;
+        matBuyCost += subCost;
+        missingItems.push({
+          id: k,
+          name: (spec && spec.name) || k,
+          req: reqTotal,
+          have: haveAmt,
+          lack,
+          unitPrice,
+          subCost
+        });
+      }
+    });
+    const perCraft = (g && (hasLaw(g, "nine_pill") || currentOmen(g).id === "alchemy_star")) ? 2 : 1;
+    const bonusHealing = (g && getSanctumLevel(g, "cauldron") >= 4) ? safeQty : 0;
+    const totalMonths = Math.max(1, Math.floor(num(rec && rec.months, 3))) * safeQty;
+    return {
+      qty: safeQty,
+      fairDisc,
+      baseStones,
+      matBuyCost,
+      totalStoneCost: baseStones + matBuyCost,
+      totalMonths,
+      perCraft,
+      totalOutput: perCraft * safeQty,
+      bonusHealing,
+      consumedMats,
+      missingItems,
+      hasMissing: missingItems.length > 0 && matBuyCost > 0
+    };
+  }
+
+  function computeBatchEnhancePreview(g, slot, steps, env = null) {
+    const eq = g && g.equippedGear ? g.equippedGear[slot] : null;
+    if (!g || !eq) return { valid: false, slot, steps: 0, maxSteps: 0, totalCost: 0, canAfford: false, before: null, after: null, dAtk: 0, dHp: 0, dDr: 0 };
+    const eqLvl = Math.max(0, Math.floor(num(eq.lvl, 0)));
+    const maxSteps = Math.max(0, 10 - eqLvl);
+    if (typeof steps !== "number" || !Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1 || steps > 5) {
+      return { valid: false, slot, steps: 0, maxSteps, totalCost: 0, canAfford: false, before: null, after: null, dAtk: 0, dHp: 0, dDr: 0 };
+    }
+    const safeSteps = maxSteps > 0 ? Math.min(maxSteps, steps) : 0;
+    let totalCost = 0;
+    for (let i = 0; i < safeSteps; i++) {
+      totalCost += getGearEnhanceCost(g, Object.assign({}, eq, { lvl: eqLvl + i }));
+    }
+    const before = getCombatStats(g, env);
+    const simGame = Object.assign({}, g, {
+      equippedGear: Object.assign({}, g.equippedGear, {
+        [slot]: Object.assign({}, eq, { lvl: eqLvl + safeSteps })
+      })
+    });
+    const after = getCombatStats(simGame, env);
+    const dAtk = Math.round(after.atk - before.atk);
+    const dHp = Math.round(after.maxHp - before.maxHp);
+    const dDr = Math.round(after.dmgReduce - before.dmgReduce);
+    const atkPct = before.atk > 0 ? Math.round((dAtk / before.atk) * 1000) / 10 : 0;
+    return {
+      valid: safeSteps > 0,
+      slot,
+      name: eq.name,
+      fromLvl: eqLvl,
+      toLvl: eqLvl + safeSteps,
+      steps: safeSteps,
+      maxSteps,
+      totalCost,
+      canAfford: safeSteps > 0 && num(g.stones, 0) >= totalCost,
+      before,
+      after,
+      dAtk,
+      dHp,
+      dDr,
+      atkPct
+    };
+  }
+
+  function getLifespanInfo(g) {
+    if (!g) {
+      const defaultRatio = 216 / 744;
+      return {
+        curMonths: 216, maxMonths: 744, remainMonths: 528, curYears: 18, maxYears: 62, remainYears: 44,
+        rawRatio: defaultRatio,
+        ratio: Number(defaultRatio.toFixed(3)),
+        status: "normal", xpEfficiencyMult: 1.0, penaltyPct: 0, isExhausted: false, medPenaltyMult: 1.0
+      };
+    }
+    const r = REALMS[g.realm] || REALMS.mortal;
+    const curMonths = Math.max(12, Math.round((g.startAgeMonths || 216) + (g.elapsedMonths || 0)));
+    const maxMonths = Math.max(240, (r.lifespanMonths || 744) + (g.perk === "immortal_echo" ? 480 : 0) + (g.lifespanBonusMonths || 0));
+    const remainMonths = Math.max(0, maxMonths - curMonths);
+    const curYears = Math.floor(curMonths / 12);
+    const maxYears = Math.floor(maxMonths / 12);
+    const remainYears = Math.max(0, maxYears - curYears);
+    const ratio = g.realm === "ascended" ? 0.05 : curMonths / Math.max(1, maxMonths);
+    let status = "normal";
+    let xpEfficiencyMult = 1.0;
+    let penaltyPct = 0;
+    let isExhausted = false;
+    if (g.realm !== "ascended" && ratio >= 1.0) {
+      status = "exhausted";
+      xpEfficiencyMult = 0.25;
+      penaltyPct = 75;
+      isExhausted = true;
+    } else if (ratio >= 0.95) {
+      status = "critical";
+      xpEfficiencyMult = 0.50;
+      penaltyPct = 50;
+    } else if (ratio >= 0.90) {
+      status = "critical";
+      xpEfficiencyMult = 0.75;
+      penaltyPct = 25;
+    } else if (ratio >= 0.75) {
+      status = "warning";
+      xpEfficiencyMult = 1.0;
+      penaltyPct = 0;
+    }
+    return {
+      curMonths, maxMonths, remainMonths, curYears, maxYears, remainYears,
+      rawRatio: ratio,
+      ratio: Number(ratio.toFixed(3)),
+      status,
+      xpEfficiencyMult,
+      penaltyPct,
+      isExhausted,
+      medPenaltyMult: xpEfficiencyMult
+    };
+  }
+
+  function previewLifespanImpact(g, deltaMonths = 0, env = null) {
+    const reqDelta = Math.max(0, Math.round(num(deltaMonths, 0)));
+    const before = getLifespanInfo(g);
+    const isAscended = Boolean(g && g.realm === "ascended");
+    const isSandbox = (env && "sandboxMode" in env)
+      ? Boolean(env.sandboxMode)
+      : (typeof sandboxMode !== "undefined" && sandboxMode);
+    const isPractice = (env && typeof env.isPracticeModeActive === "function")
+      ? Boolean(env.isPracticeModeActive())
+      : (typeof isPracticeModeActive === "function" && isPracticeModeActive());
+    const sandboxExempt = Boolean(isSandbox || isPractice || isAscended);
+    const effectiveDelta = sandboxExempt ? 0 : reqDelta;
+    const virtualGame = g && typeof g === "object"
+      ? Object.assign({}, g, { elapsedMonths: Math.max(0, Math.floor(num(g.elapsedMonths, 0))) + effectiveDelta })
+      : { realm: "mortal", startAgeMonths: 216, elapsedMonths: effectiveDelta };
+    const after = getLifespanInfo(virtualGame);
+    const beforeRatio = typeof before.rawRatio === "number" ? before.rawRatio : before.ratio;
+    const afterRatio = typeof after.rawRatio === "number" ? after.rawRatio : after.ratio;
+    const crossedThresholds = [];
+    if (!sandboxExempt && effectiveDelta > 0) {
+      LIFESPAN_THRESHOLDS.forEach(t => {
+        if (beforeRatio < t && afterRatio >= t) crossedThresholds.push(Math.round(t * 100));
+      });
+    }
+    const willExhaust = Boolean(!before.isExhausted && after.isExhausted);
+    let warningText = "";
+    if (sandboxExempt) {
+      warningText = isAscended ? "飞升真仙不受寿元所限" : "沙盒/练习模式免耗寿元";
+    } else if (willExhaust || crossedThresholds.includes(100)) {
+      warningText = "⚠ 将触及 100% 大限（修炼效率降至 25%，绝不删档）";
+    } else if (crossedThresholds.includes(95)) {
+      warningText = "⚠ 将跨过 95% 寿元危线（修炼效率降至 50%）";
+    } else if (crossedThresholds.includes(90)) {
+      warningText = "⚠ 将跨过 90% 大限预警（修炼效率降至 75%）";
+    } else if (crossedThresholds.includes(75)) {
+      warningText = "提示：将跨过 75% 寿元提醒线（建议预备延寿青莲丹或破境）";
+    }
+    const summaryText = sandboxExempt
+      ? `⏳ 预计耗时 ${reqDelta} 月（${warningText}）`
+      : `⏳ 耗寿 ${effectiveDelta} 月（${before.curYears}→${after.curYears}/${after.maxYears} 载 · ${Math.round(before.ratio * 100)}%→${Math.round(after.ratio * 100)}%）`;
+    return {
+      deltaMonths: reqDelta,
+      effectiveDelta,
+      sandboxExempt,
+      before,
+      after,
+      crossedThresholds,
+      crossesAny: crossedThresholds.length > 0,
+      willExhaust,
+      summaryText,
+      warningText
+    };
+  }
+
+  // --- [module] src/rules/scoring-rules.mjs ---
+  // Pure stage star totals, calamity cycle lookup, competition scoring, and grade evaluation rules.
+  function getCalamityCycleSpec(tierOrGame) {
+    const rawTier = (typeof tierOrGame === "object" && tierOrGame !== null)
+      ? num(tierOrGame.calamityTier, 0)
+      : num(tierOrGame, 0);
+    const clamped = Math.max(0, Math.min(CALAMITY_CYCLES.length - 1, Math.floor(rawTier) || 0));
+    return CALAMITY_CYCLES[clamped] || CALAMITY_CYCLES[0];
+  }
+
+  function getTotalStageStars(g) {
+    if (!g || !g.stageStars) return 0;
+    return [0, 1, 2, 3, 4].reduce((s, idx) => s + Math.min(3, g.stageStars[idx] || 0), 0);
+  }
+
+  function computeCompetitionScore(g, env = null) {
+    if (!g) return 0;
+    const clearedFn = (env && typeof env.getClearedCampaignStageIndices === "function")
+      ? env.getClearedCampaignStageIndices
+      : (typeof getClearedCampaignStageIndices === "function"
+        ? getClearedCampaignStageIndices
+        : (st) => [0, 1, 2, 3, 4].filter(idx => (st.stageStars && num(st.stageStars[idx], 0) >= 1) || (st.defeatedStageBosses && st.defeatedStageBosses[idx] === true) || (idx === 4 && st.trialCompleted === true)));
+    const endingsList = (env && Array.isArray(env.ASCENSION_ENDINGS))
+      ? env.ASCENSION_ENDINGS
+      : (typeof ASCENSION_ENDINGS !== "undefined" ? ASCENSION_ENDINGS : []);
+    const achList = (env && Array.isArray(env.ACHIEVEMENTS))
+      ? env.ACHIEVEMENTS
+      : (typeof ACHIEVEMENTS !== "undefined" ? ACHIEVEMENTS : []);
+    const bondedFn = (env && typeof env.getBondedCompanionIds === "function")
+      ? env.getBondedCompanionIds
+      : (typeof getBondedCompanionIds === "function" ? getBondedCompanionIds : () => []);
+    const synList = (env && Array.isArray(env.SYNERGIES))
+      ? env.SYNERGIES
+      : (typeof SYNERGIES !== "undefined" ? SYNERGIES : []);
+
+    const clearedStages = clearedFn(g).length;
+    const totalStars = getTotalStageStars(g);
+    const realmPts = rankOf(g.realm) * 100;
+    const stagePts = clearedStages * 100 + totalStars * 110;
+    const endSpec = endingsList.find(e => e.id === g.ending);
+    const ascendPts = (g.status === "ascended" && clearedStages > 0) ? 250 : 0;
+    const endBonus = (endSpec && clearedStages > 0) ? 150 : 0;
+    const achPts = Math.round((g.achievements || []).reduce((s, id) => {
+      const a = achList.find(x => x.id === id);
+      return s + (a ? a.pts : 0);
+    }, 0) * 0.4);
+    const allyPts = bondedFn(g).length * 80 + Math.min(10, Object.keys(g.choices || {}).length) * 25;
+    const lawPts = Math.min(15, (g.laws || []).length) * 80;
+    const synPts = synList.filter(s => s.active(g)).length * 140;
+    const gt = getGearTotals(g);
+    const gearPts = Math.min(400, gt.atk * 2 + gt.dr * 4);
+    const towerPts = Math.min(20, Math.max(0, Math.floor(num(g.towerBest, 0)))) * 65
+                   + Math.min(9, Math.max(0, Math.floor(num(g.bestSpireFloor, 0)))) * 45;
+    const winPts = Math.min(400, Math.max(0, Math.floor(num(g.wins, 0))) * 8);
+    const rushMap = { "S+": 360, "SS": 300, "S": 220, "A": 140, "B": 80, "C": 40 };
+    const rushPts = hasOwn(rushMap, g.rushBestGrade) ? rushMap[g.rushBestGrade] : 0;
+    const defiantPts = Math.min(5, Math.max(0, Math.floor(num(g.defiantBreakthroughs, 0)))) * 60;
+    const pactMult = 1 + getActivePactCount(g) * 0.12;
+    const calMult = getCalamityCycleSpec(g).scoreMult || 1.0;
+    return Math.round(pactMult * calMult * (
+      realmPts + stagePts + ascendPts + endBonus + lawPts + synPts + gearPts + towerPts + winPts + allyPts + achPts + rushPts + defiantPts
+    ));
+  }
+
+  function getScoreGrade(score, g = null, env = null) {
+    const s = Math.max(0, num(score, 0));
+    let tier = 0; // 0:C, 1:B, 2:A, 3:S, 4:SS, 5:SSS
+    if (s >= 6400) tier = 5;
+    else if (s >= 4800) tier = 4;
+    else if (s >= 3400) tier = 3;
+    else if (s >= 2000) tier = 2;
+    else if (s >= 1000) tier = 1;
+    else tier = 0;
+
+    if (g) {
+      const clearedFn = (env && typeof env.getClearedCampaignStageIndices === "function")
+        ? env.getClearedCampaignStageIndices
+        : (typeof getClearedCampaignStageIndices === "function"
+          ? getClearedCampaignStageIndices
+          : (st) => [0, 1, 2, 3, 4].filter(idx => (st.stageStars && num(st.stageStars[idx], 0) >= 1) || (st.defeatedStageBosses && st.defeatedStageBosses[idx] === true) || (idx === 4 && st.trialCompleted === true)));
+      const stageCount = (env && typeof env.stageCount === "number")
+        ? env.stageCount
+        : (typeof STAGES !== "undefined" ? STAGES.length : 5);
+      const clearedStages = clearedFn(g).length;
+      const totalStars = getTotalStageStars(g);
+      if (totalStars <= 0 || clearedStages <= 0) tier = Math.min(tier, s >= 1400 ? 1 : 0);
+      else if (clearedStages < stageCount || totalStars < 8) tier = Math.min(tier, 2);
+      else if (totalStars < 12) tier = Math.min(tier, 3);
+      else if (totalStars < 14) tier = Math.min(tier, 4);
+    }
+
+    const GRADE_TABLE = [
+      { grade: "C", title: "初窥门径" },
+      { grade: "B", title: "问道修士" },
+      { grade: "A", title: "青云真人" },
+      { grade: "S", title: "太虚剑尊" },
+      { grade: "SS", title: "九霄真仙" },
+      { grade: "SSS", title: "万古剑帝" }
+    ];
+    return GRADE_TABLE[tier];
+  }
+
+  // --- [module] src/state/save-rules.mjs ---
+  // Pure save envelope v2 checksum, canonical payload validation, legacy step ID mapping, and CRDT meta-state merge rules.
+  const STORAGE_KEY = "chenyuan_wendao_v11_save";
+  const META_KEY = "chenyuan_wendao_v11_meta";
+  const RUSH_GRADE_RANK = { "S+": 6, "SS": 5, "S": 4, "A": 3, "B": 2, "C": 1 };
+
+  function canonicalizeStepId(id) {
+    if (typeof id !== "string" || !id) return "";
+    return hasOwn(LEGACY_STEP_ID_MAP, id) ? LEGACY_STEP_ID_MAP[id] : id;
+  }
+
+  function createDefaultMetaState() {
+    return {
+      metaRev: 0,
+      ascensions: 0,
+      bestScore: 0,
+      bestTower: 0,
+      bestRushGrade: null,
+      bestRushTime: 0,
+      bestSpireFloor: 0,
+      bestCalamityTier: 0,
+      cloudSeaClears: 0,
+      taixuTrailUnlocked: false,
+      lastEnding: null,
+      seenEnemies: ["wolf"],
+      seenLaws: [],
+      unlockedEndings: [],
+      karmaAscensions: { righteous: 0, neutral: 0, demonic: 0 },
+      reincarnationPoints: 0,
+      hallOfLives: []
+    };
+  }
+
+  function sanitizeHallEntry(entry) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+    const rawKarma = safeText(entry.karmaMode, "neutral");
+    const safeKarma = ["righteous", "demonic", "neutral"].includes(rawKarma) ? rawKarma : "neutral";
+    return {
+      lifeNum: Math.max(1, Math.floor(num(entry.lifeNum, 1))),
+      name: safeText(entry.name, "顾长青") || "顾长青",
+      endingId: typeof entry.endingId === "string" ? entry.endingId : "",
+      endingName: safeText(entry.endingName, ""),
+      karmaMode: safeKarma,
+      karmaLabel: safeText(entry.karmaLabel, "本真中正") || "本真中正",
+      epithet: safeText(entry.epithet, ""),
+      poem: safeText(entry.poem, ""),
+      grade: safeText(entry.grade, "B") || "B",
+      score: Math.max(0, num(entry.score, 0)),
+      towerBest: Math.max(0, Math.floor(num(entry.towerBest, 0))),
+      rushGrade: safeText(entry.rushGrade, "未挑战") || "未挑战",
+      spireBest: Math.max(0, Math.floor(num(entry.spireBest, 0))),
+      sanctumLv: Math.max(0, Math.floor(num(entry.sanctumLv, 5))),
+      codexPct: Math.max(0, Math.min(100, Math.floor(num(entry.codexPct, 0)))),
+      perkId: safeText(entry.perkId, "sword_bone") || "sword_bone",
+      calamityTier: Math.max(0, Math.floor(num(entry.calamityTier, 0))),
+      swordAura: typeof entry.swordAura === "string" ? entry.swordAura : "azure_jade",
+      recordedAt: Math.max(0, num(entry.recordedAt, 0))
+    };
+  }
+
+  function parseAndValidateMetaRaw(raw, sourceKey) {
+    if (!raw || typeof raw !== "string") {
+      return { ok: false, empty: true, sourceKey };
+    }
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      return { ok: false, empty: false, sourceKey, reason: `JSON 解析失败（${safeText(e && e.message, "格式损坏") || "格式损坏"}）`, raw };
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { ok: false, empty: false, sourceKey, reason: "元存档根结构非法（非对象）", raw };
+    }
+    const isInvalidNonNegField = (v) => v !== undefined && (
+      v === null || typeof v === "boolean" || typeof v === "object" ||
+      (typeof v === "string" && v.trim() === "") ||
+      !Number.isFinite(Number(v)) || Number(v) < 0
+    );
+    if (isInvalidNonNegField(parsed.metaRev)) {
+      return { ok: false, empty: false, sourceKey, reason: "元存档版本号字段非法", raw };
+    }
+    if (isInvalidNonNegField(parsed.ascensions)) {
+      return { ok: false, empty: false, sourceKey, reason: "元存档飞升世数字段非法", raw };
+    }
+    return {
+      ok: true,
+      empty: false,
+      sourceKey,
+      meta: parsed,
+      metaRev: Math.max(0, Math.floor(num(parsed.metaRev, 0))),
+      legacy: sourceKey !== META_KEY
+    };
+  }
+
+  function mergeMetaStates(local, remote) {
+    const a = (local && typeof local === "object") ? local : createDefaultMetaState();
+    const b = (remote && typeof remote === "object") ? remote : {};
+    const localRev = Math.max(0, Math.floor(num(a.metaRev, 0)));
+    const remoteRev = Math.max(0, Math.floor(num(b.metaRev, 0)));
+    const numMax = (k) => Math.max(0, num(a[k], 0), num(b[k], 0));
+    const strUnion = (arrA, arrB) => {
+      const out = [];
+      const seen = new Set();
+      [...(Array.isArray(arrA) ? arrA : []), ...(Array.isArray(arrB) ? arrB : [])].forEach(v => {
+        if (typeof v === "string" && v && !seen.has(v)) { seen.add(v); out.push(v); }
+      });
+      return out;
+    };
+    const seenEnemies = strUnion(a.seenEnemies, b.seenEnemies);
+    if (seenEnemies.length === 0) seenEnemies.push("wolf");
+    const rA = hasOwn(RUSH_GRADE_RANK, a.bestRushGrade) ? RUSH_GRADE_RANK[a.bestRushGrade] : 0;
+    const rB = hasOwn(RUSH_GRADE_RANK, b.bestRushGrade) ? RUSH_GRADE_RANK[b.bestRushGrade] : 0;
+    const bestRushGrade = rB > rA ? b.bestRushGrade : (rA > 0 ? a.bestRushGrade : (rB > 0 ? b.bestRushGrade : null));
+    const tA = Math.max(0, num(a.bestRushTime, 0));
+    const tB = Math.max(0, num(b.bestRushTime, 0));
+    const bestRushTime = (tA > 0 && tB > 0) ? Math.min(tA, tB) : Math.max(tA, tB);
+    const karmaA = (a.karmaAscensions && typeof a.karmaAscensions === "object" && !Array.isArray(a.karmaAscensions)) ? a.karmaAscensions : {};
+    const karmaB = (b.karmaAscensions && typeof b.karmaAscensions === "object" && !Array.isArray(b.karmaAscensions)) ? b.karmaAscensions : {};
+    const karmaAscensions = { righteous: 0, neutral: 0, demonic: 0 };
+    new Set(["righteous", "neutral", "demonic", ...Object.keys(karmaA), ...Object.keys(karmaB)]).forEach(k => {
+      if (k === "__proto__" || k === "constructor" || k === "prototype") return;
+      karmaAscensions[k] = Math.max(0, Math.floor(num(karmaA[k], 0)), Math.floor(num(karmaB[k], 0)));
+    });
+    const hallMap = new Map();
+    [...(Array.isArray(a.hallOfLives) ? a.hallOfLives : []), ...(Array.isArray(b.hallOfLives) ? b.hallOfLives : [])].forEach(rawEntry => {
+      const entry = sanitizeHallEntry(rawEntry);
+      if (!entry) return;
+      const key = `${entry.recordedAt || 0}|${entry.lifeNum || 0}|${entry.endingId || ""}|${entry.name || ""}|${entry.score || 0}`;
+      if (!hallMap.has(key)) hallMap.set(key, entry);
+    });
+    const hallOfLives = Array.from(hallMap.values())
+      .sort((x, y) => ((num(y.recordedAt, 0)) - (num(x.recordedAt, 0))) || ((num(y.lifeNum, 0)) - (num(x.lifeNum, 0))))
+      .slice(0, 18);
+    const lastA = (typeof a.lastEnding === "string" && a.lastEnding) ? a.lastEnding : null;
+    const lastB = (typeof b.lastEnding === "string" && b.lastEnding) ? b.lastEnding : null;
+    return {
+      metaRev: Math.max(localRev, remoteRev),
+      ascensions: Math.floor(numMax("ascensions")),
+      bestScore: numMax("bestScore"),
+      bestTower: Math.floor(numMax("bestTower")),
+      bestRushGrade,
+      bestRushTime,
+      bestSpireFloor: Math.floor(numMax("bestSpireFloor")),
+      bestCalamityTier: Math.floor(numMax("bestCalamityTier")),
+      cloudSeaClears: Math.floor(numMax("cloudSeaClears")),
+      taixuTrailUnlocked: Boolean(a.taixuTrailUnlocked) || Boolean(b.taixuTrailUnlocked),
+      lastEnding: (remoteRev > localRev && lastB) ? lastB : (lastA || lastB || null),
+      seenEnemies,
+      seenLaws: strUnion(a.seenLaws, b.seenLaws),
+      unlockedEndings: strUnion(a.unlockedEndings, b.unlockedEndings),
+      karmaAscensions,
+      reincarnationPoints: Math.floor(numMax("reincarnationPoints")),
+      hallOfLives
+    };
+  }
+
+  function computeSaveChecksum(str) {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h.toString(16).toUpperCase().padStart(8, "0");
+  }
+
+  function buildCanonicalSavePayload(bundleObj) {
+    return JSON.stringify({
+      game: bundleObj.game,
+      stageIdx: bundleObj.stageIdx,
+      stanceIdx: bundleObj.stanceIdx,
+      towerMode: !!bundleObj.towerMode,
+      sanctumMode: !!bundleObj.sanctumMode
+    });
+  }
+
+  function parseAndValidateSaveRaw(raw, sourceKey) {
+    if (!raw || typeof raw !== "string") {
+      return { ok: false, empty: true, sourceKey };
+    }
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      return { ok: false, empty: false, sourceKey, reason: `JSON 解析失败（${safeText(e && e.message, "格式损坏") || "格式损坏"}）`, raw };
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || !parsed.game || typeof parsed.game !== "object" || Array.isArray(parsed.game)) {
+      return { ok: false, empty: false, sourceKey, reason: "存档缺少核心 game 数据结构", raw };
+    }
+    if (typeof parsed.game.realm !== "string" || !hasOwn(REALMS, parsed.game.realm)) {
+      return { ok: false, empty: false, sourceKey, reason: `存档境界字段非法（${safeDiag(parsed.game.realm)}）`, raw };
+    }
+    if (parsed.saveRev !== undefined && (
+      parsed.saveRev === null || typeof parsed.saveRev === "boolean" || typeof parsed.saveRev === "object" ||
+      (typeof parsed.saveRev === "string" && parsed.saveRev.trim() === "") ||
+      !Number.isFinite(Number(parsed.saveRev)) || Number(parsed.saveRev) < 0
+    )) {
+      return { ok: false, empty: false, sourceKey, reason: "存档版本号字段非法", raw };
+    }
+    if (parsed.envelopeVersion !== undefined && (
+      parsed.envelopeVersion === null || typeof parsed.envelopeVersion === "boolean" || typeof parsed.envelopeVersion === "object" ||
+      (typeof parsed.envelopeVersion === "string" && parsed.envelopeVersion.trim() === "") ||
+      !Number.isFinite(Number(parsed.envelopeVersion)) || Number(parsed.envelopeVersion) < 1
+    )) {
+      return { ok: false, empty: false, sourceKey, reason: "存档封装版本字段非法", raw };
+    }
+    const envVer = parsed.envelopeVersion !== undefined ? Number(parsed.envelopeVersion) : 0;
+    if (envVer >= 2) {
+      if (typeof parsed.checksum !== "string" || !parsed.checksum.trim()) {
+        return { ok: false, empty: false, sourceKey, reason: "存档校验和字段缺失或非法", raw };
+      }
+      const expected = computeSaveChecksum(buildCanonicalSavePayload(parsed));
+      if (expected !== parsed.checksum) {
+        return { ok: false, empty: false, sourceKey, reason: `存档校验和不匹配（期望 ${expected}，实得 ${safeDiag(parsed.checksum)}）`, raw };
+      }
+    }
+    return {
+      ok: true,
+      empty: false,
+      sourceKey,
+      bundle: parsed,
+      rev: Math.max(0, Math.floor(num(parsed.saveRev, 0))),
+      tabId: typeof parsed.tabId === "string" ? parsed.tabId : null,
+      lineageId: typeof parsed.lineageId === "string" && parsed.lineageId ? parsed.lineageId : null,
+      updatedAt: Math.max(0, Math.floor(num(parsed.updatedAt, 0))),
+      legacy: sourceKey !== STORAGE_KEY || !envVer
+    };
+  }
+
+  // ==================== 2. CELESTIAL OMENS & CORE WORLD DATA ====================
+  // Shared single source of truth for combat rule parameters referenced by BOTH live formulas and copy builders (F06)
+
+  function getLawLiveContributionText(g, lawId) {
+    if (!g) return "";
+    const P = COMBAT_RULE_PARAMS;
+    if (lawId === "wealth_power") {
+      const wp = P.laws.wealth_power;
+      const rawPct = Math.min(wp.maxPct, Math.floor(Math.max(0, num(g.stones, 0)) / wp.perStones) * wp.pctPerStep);
+      return `当前常驻池 +${Math.round(rawPct * 100)}% / 上限 +${Math.round(wp.maxPct * 100)}%`;
+    }
+    if (lawId === "age_might") {
+      const am = P.laws.age_might;
+      const years = Math.floor(((g.startAgeMonths || 216) + (g.elapsedMonths || 0)) / 12);
+      const rawPct = Math.min(am.maxPct, Math.floor(Math.max(0, years - am.baseAge) / am.yearsPerStep) * am.pctPerStep);
+      return `当前常驻池 +${Math.round(rawPct * 100)}% / 上限 +${Math.round(am.maxPct * 100)}%`;
+    }
+    if (lawId === "karma_resonance") {
+      const kr = P.laws.karma_resonance;
+      const rawPct = Math.min(kr.maxPct, Object.keys(g.choices || {}).length * kr.pctPerChoice);
+      return `当前常驻池 +${Math.round(rawPct * 100)}% / 上限 +${Math.round(kr.maxPct * 100)}%`;
+    }
+    return "";
+  }
+
+
+
+
+
+
+
+  // ==================== 3. DAO LAWS, PAINTED SPIRIT PETS & ACHIEVEMENTS ====================
+
+  // Uses our newly generated painted xianxia illustrations!
+
+  // G10: Tiered Spirit Pet Feeding Costs (herb → core → core → jade) & Lv.3 / Lv.5 Skill Trees
+
+
 
   function getPetNextFeedCost(level) {
     const lv = Math.max(1, Math.min(5, Math.floor(num(level, 1))));
@@ -5573,14 +7232,6 @@ const ART = {
     return lacks.join("、");
   }
 
-  function hasPetSkill(g, skillId) {
-    if (!g || !g.pet || !g.pet.id || !g.pet.skills || !skillId) return false;
-    const lv = Math.max(1, Math.floor(num(g.pet.level, 1)));
-    return Boolean(
-      (lv >= 3 && g.pet.skills.tier3 === skillId) ||
-      (lv >= 5 && g.pet.skills.tier5 === skillId)
-    );
-  }
 
   function getPendingPetSkillTier(g) {
     if (!g || !g.pet || !g.pet.id) return null;
@@ -5757,20 +7408,7 @@ const ART = {
     }
   ];
 
-  const LEGACY_STEP_ID_MAP = {
-    s1_xp: "s1_wolf",
-    s2_school: "s2_pet",
-    s3_skill: "s3_serpent",
-    s4_npc: "s4_puppet",
-    s5_shen: "s5_laws",
-    s7_trial: "s6_gate",
-    s7_end: "s6_ascend"
-  };
 
-  function canonicalizeStepId(id) {
-    if (typeof id !== "string" || !id) return "";
-    return hasOwn(LEGACY_STEP_ID_MAP, id) ? LEGACY_STEP_ID_MAP[id] : id;
-  }
 
   const VOLUME_RECAP_META = [
     {
@@ -5926,71 +7564,11 @@ const ART = {
     }
   ];
 
-  const PERKS = [
-    { id: "mortal_grit",      name: "山野坚心",   badge: "初始命格",   unlock: 0, unlockText: "初始可用", desc: "开局额外灵石 +45（总计 110 石）、额外回春丹 ×2（总计 ×4），凡境起步稳健。" },
-    { id: "sword_bone",       name: "先天剑骨",   badge: "初始命格",   unlock: 0, unlockText: "初始可用", desc: "基础剑道攻击 +5、暴击率 +8%，初始锋芒达 20（高于常人 +10）。" },
-    { id: "medicine_sage",    name: "药王遗泽",   badge: "初始命格",   unlock: 0, unlockText: "初始可用", desc: "丹炉控火黄金区拓宽 35%，极易炼出仙品丹，开局带凝气草 ×6、灵露 ×3。" },
-    { id: "immortal_echo",    name: "九世道胎",   badge: "一世轮回",   unlock: 1, unlockText: "飞升 1 世解锁", desc: "【轮回命格】全境界寿元 +480 月（+40 载），开局自带【太虚神速】法则（移速 +18%）！" },
-    { id: "sword_sovereign",  name: "轮回剑主",   badge: "剑冢/轮回",  unlock: 1, altUnlock: "rush_s", unlockText: "飞升 1 世或万剑冢 S 级解锁", desc: "【轮回命格】开局飞剑 +2、基础剑攻 +12、暴伤 +18%，洞府【天工剑炉】起步 Lv.2！" },
-    { id: "calamity_phoenix", name: "劫火涅槃体", badge: "劫火/二世",  unlock: 2, altUnlock: "calamity_1", unlockText: "飞升 2 世或通关劫火周目解锁", desc: "【轮回命格】开局带长生寿元丹 ×1、灵石 +140，残血(≤45%)固定减伤 +18 且常驻剑威 +22%，破境额外溢出 +15%！" },
-    { id: "primordial_sage",  name: "太初鸿蒙胎", badge: "图鉴/三世",  unlock: 3, altUnlock: "codex_65", unlockText: "飞升 3 世或图鉴达 65% 解锁", desc: "【轮回命格】洞府【聚气灵眼/紫微丹鼎】皆起步 Lv.2，开局获仙品佩剑、星魂点 +2，全攻速 +10%！" }
-  ];
 
   // ==================== M4-A. CALAMITY FIRE NG+ CYCLES & REALM-WOVEN ECOSYSTEM LADDER ====================
-  const CALAMITY_CYCLES = [
-    { tier: 0, name: "凡尘问道",     short: "标准",     hpMult: 1.00, atkMult: 1.00, postureMult: 1.00, rewardMult: 1.00, dropBonus: 0, scoreMult: 1.00, reqAsc: 0, desc: "常规修仙天道难度，均衡体验全流程。" },
-    { tier: 1, name: "一重劫火·燃星", short: "劫火×1", hpMult: 1.35, atkMult: 1.22, postureMult: 1.20, rewardMult: 1.35, dropBonus: 0, scoreMult: 1.20, reqAsc: 1, desc: "敌血+35%·攻+22% | 灵石/修为+35%·仙榜×1.20" },
-    { tier: 2, name: "二重劫火·焚岳", short: "劫火×2", hpMult: 1.75, atkMult: 1.45, postureMult: 1.40, rewardMult: 1.70, dropBonus: 1, scoreMult: 1.45, reqAsc: 1, desc: "敌血+75%·攻+45% | 灵石/修为+70%·神装品阶+1" },
-    { tier: 3, name: "三重劫火·碎虚", short: "劫火×3", hpMult: 2.25, atkMult: 1.72, postureMult: 1.60, rewardMult: 2.15, dropBonus: 1, scoreMult: 1.75, reqAsc: 2, desc: "敌血+125%·攻+72% | 灵石/修为+115%·仙榜×1.75" },
-    { tier: 4, name: "四重劫火·九幽", short: "劫火×4", hpMult: 2.85, atkMult: 2.00, postureMult: 1.85, rewardMult: 2.65, dropBonus: 2, scoreMult: 2.10, reqAsc: 2, desc: "敌血+185%·攻+100% | 灵石/修为+165%·鸿蒙高爆" },
-    { tier: 5, name: "五重劫火·无间", short: "劫火×5", hpMult: 3.60, atkMult: 2.35, postureMult: 2.10, rewardMult: 3.30, dropBonus: 2, scoreMult: 2.60, reqAsc: 3, desc: "敌血+260%·攻+135% | 灵石/修为+230%·仙榜×2.60" }
-  ];
 
-  const SYSTEM_ECOSYSTEM_LADDER = [
-    {
-      realm: "qi", title: "一重仙阶 · 炼气初开（第二卷）", subtitle: "山门问道 · 采炼御兽初试锋芒",
-      systems: [
-        { id: "spirit_pet",    min: "qi", name: "本命灵宠",     short: "灵宠",   keyHint: "修行抽屉", action: "open_drawer_cultivate", desc: "契约青丘火狐 / 玄水灵龟 / 九霄雷鹏 / 太虚剑灵随行助战，分级喂养并在 Lv.3/Lv.5 择技化形。" },
-        { id: "bagua_alchemy", min: "qi", name: "八卦丹剑微操", short: "丹剑",   keyHint: "百工/洞府", action: "open_taixu_craft",      desc: "亲手控火炼制仙品丹药与鸿蒙神兵淬火。" },
-        { id: "demon_tower",   min: "qi", name: "太虚锁妖古塔", short: "锁妖塔", keyHint: "仙阁/舆图", action: "start_tower",           desc: "开启无尽镇妖塔试炼，冲层赢取海量灵石与仙装。" }
-      ]
-    },
-    {
-      realm: "foundation", title: "二重仙阶 · 筑基铸道（第三卷）", subtitle: "双姿易剑 · 化妖破招与护宗守阵",
-      systems: [
-        { id: "dual_stance",  min: "foundation", name: "双剑意姿态",   short: "双姿态", keyHint: "` 键",     action: "cycle_posture",     desc: "青莲疾剑式与玄重巨阙式瞬切，触发太虚易剑斩。" },
-        { id: "soul_seal",    min: "foundation", name: "镇妖魂印",     short: "魂印",   keyHint: "C 键",     action: "open_drawer_cultivate", desc: "炼化妖王精魄化妖破招，联动五行场地核爆。" },
-        { id: "sect_defense", min: "foundation", name: "护山大阵守卫", short: "护山战", keyHint: "洞府/舆图", action: "start_sect_defense", desc: "御剑守护听雨洞府灵核与护山灵塔（Lv.3增北辰塔）。" },
-        { id: "tag_team",     min: "foundation", name: "道侣瞬切换人", short: "换人",   keyHint: "V 键",     action: "trigger_tag_switch", desc: "无缝切换操控沈清禾/裴照等道侣并释放合璧奥义。" }
-      ]
-    },
-    {
-      realm: "golden", title: "三重仙阶 · 金丹启星（第四卷）", subtitle: "破云凌霄 · 御剑空战与周天星宿",
-      systems: [
-        { id: "cloud_sea_trial", min: "golden", name: "九霄云海空战", short: "云海空战", keyHint: "高潮过渡关", action: "start_cloud_sea", desc: "高速御剑斩破巡天雷鹏防线！首破获【破云证道印】(+12攻 · 为元婴期远征/登仙台提供+15%收益)。" },
-        { id: "star_chart",      min: "golden", name: "太虚周天星图", short: "星图",     keyHint: "N 键",       action: "open_star_chart", desc: "点亮二十八星宿激活青龙/白虎/朱雀/玄武四象圣核。" }
-      ]
-    },
-    {
-      realm: "nascent", title: "四重仙阶 · 元婴破虚（第五卷）", subtitle: "分神远征 · 九重登仙与剑冢七阵",
-      systems: [
-        { id: "vein_expedition", min: "nascent", name: "九州灵脉远征",   short: "灵脉远征", keyHint: "8 键",       action: "open_expedition", desc: "委派已结缘故人驻防五大灵脉收缴灵石星魄，触发仙门护道雷援。" },
-        { id: "celestial_spire", min: "nascent", name: "太虚登仙台",     short: "登仙台",   keyHint: "L 键",       action: "open_spire",      desc: "九重天宫肉鸽奇物深渊，叠铸太古天道奇物体系。" },
-        { id: "sword_tomb_rush", min: "nascent", name: "万剑冢七阵连战", short: "万剑冢",   keyHint: "元婴期解封", action: "open_boss_rush",  desc: "连战七阵强化妖王、太虚心魔镜像与太古烛龙三部位讨伐！" }
-      ]
-    },
-    {
-      realm: "spirit", title: "五重仙阶 · 化神凌霄（第六卷）", subtitle: "劫印问道 · 太虚造化与直叩天门",
-      systems: [
-        { id: "heavenly_pacts", min: "spirit", name: "天道劫印契约", short: "天道劫印", keyHint: "化神期解封", action: "open_endgame_goals", desc: "缔结至多五道高难天道劫印，大幅飙升爆率与仙榜倍率。" },
-        { id: "seed_workshop",  min: "spirit", name: "造化种子工坊", short: "造化工坊", keyHint: "化神期解封", action: "open_workshop",      desc: "自定义双首领共斗、机关密度与奇物组合，生成 CY22 种子码分享！" }
-      ]
-    }
-  ];
 
   // ==================== 5. V11 COMPLETE EDITION: SANCTUM HUB, BRANCHING ROOMS, LOOT & CUTSCENES ====================
-  const STORAGE_KEY = "chenyuan_wendao_v11_save";
-  const META_KEY = "chenyuan_wendao_v11_meta";
 
   const IMG_CACHE = {};
   function preloadSprites() {
@@ -6003,55 +7581,7 @@ const ART = {
 
   let metaReadError = null;
   let metaWriteError = null;
-  const RUSH_GRADE_RANK = { "S+": 6, "SS": 5, "S": 4, "A": 3, "B": 2, "C": 1 };
-  function createDefaultMetaState() {
-    return {
-      metaRev: 0,
-      ascensions: 0,
-      bestScore: 0,
-      bestTower: 0,
-      bestRushGrade: null,
-      bestRushTime: 0,
-      bestSpireFloor: 0,
-      bestCalamityTier: 0,
-      cloudSeaClears: 0,
-      taixuTrailUnlocked: false,
-      lastEnding: null,
-      seenEnemies: ["wolf"],
-      seenLaws: [],
-      unlockedEndings: [],
-      karmaAscensions: { righteous: 0, neutral: 0, demonic: 0 },
-      reincarnationPoints: 0,
-      hallOfLives: []
-    };
-  }
   let metaState = createDefaultMetaState();
-  function sanitizeHallEntry(entry) {
-    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
-    const rawKarma = safeText(entry.karmaMode, "neutral");
-    const safeKarma = ["righteous", "demonic", "neutral"].includes(rawKarma) ? rawKarma : "neutral";
-    return {
-      lifeNum: Math.max(1, Math.floor(num(entry.lifeNum, 1))),
-      name: safeText(entry.name, "顾长青") || "顾长青",
-      endingId: typeof entry.endingId === "string" ? entry.endingId : "",
-      endingName: safeText(entry.endingName, ""),
-      karmaMode: safeKarma,
-      karmaLabel: safeText(entry.karmaLabel, "本真中正") || "本真中正",
-      epithet: safeText(entry.epithet, ""),
-      poem: safeText(entry.poem, ""),
-      grade: safeText(entry.grade, "B") || "B",
-      score: Math.max(0, num(entry.score, 0)),
-      towerBest: Math.max(0, Math.floor(num(entry.towerBest, 0))),
-      rushGrade: safeText(entry.rushGrade, "未挑战") || "未挑战",
-      spireBest: Math.max(0, Math.floor(num(entry.spireBest, 0))),
-      sanctumLv: Math.max(0, Math.floor(num(entry.sanctumLv, 5))),
-      codexPct: Math.max(0, Math.min(100, Math.floor(num(entry.codexPct, 0)))),
-      perkId: safeText(entry.perkId, "sword_bone") || "sword_bone",
-      calamityTier: Math.max(0, Math.floor(num(entry.calamityTier, 0))),
-      swordAura: typeof entry.swordAura === "string" ? entry.swordAura : "azure_jade",
-      recordedAt: Math.max(0, num(entry.recordedAt, 0))
-    };
-  }
   function ensureMetaState() {
     metaState.seenEnemies = Array.isArray(metaState.seenEnemies)
       ? metaState.seenEnemies.filter(v => typeof v === "string" && v)
@@ -6088,100 +7618,6 @@ const ART = {
     metaState.taixuTrailUnlocked = Boolean(metaState.taixuTrailUnlocked);
     metaState.lastEnding = (typeof metaState.lastEnding === "string" && metaState.lastEnding) ? metaState.lastEnding : null;
     return metaState;
-  }
-  function parseAndValidateMetaRaw(raw, sourceKey) {
-    if (!raw || typeof raw !== "string") {
-      return { ok: false, empty: true, sourceKey };
-    }
-    let parsed = null;
-    try {
-      parsed = JSON.parse(raw);
-    } catch (e) {
-      return { ok: false, empty: false, sourceKey, reason: `JSON 解析失败（${safeText(e && e.message, "格式损坏") || "格式损坏"}）`, raw };
-    }
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return { ok: false, empty: false, sourceKey, reason: "元存档根结构非法（非对象）", raw };
-    }
-    const isInvalidNonNegField = (v) => v !== undefined && (
-      v === null || typeof v === "boolean" || typeof v === "object" ||
-      (typeof v === "string" && v.trim() === "") ||
-      !Number.isFinite(Number(v)) || Number(v) < 0
-    );
-    if (isInvalidNonNegField(parsed.metaRev)) {
-      return { ok: false, empty: false, sourceKey, reason: "元存档版本号字段非法", raw };
-    }
-    if (isInvalidNonNegField(parsed.ascensions)) {
-      return { ok: false, empty: false, sourceKey, reason: "元存档飞升世数字段非法", raw };
-    }
-    return {
-      ok: true,
-      empty: false,
-      sourceKey,
-      meta: parsed,
-      metaRev: Math.max(0, Math.floor(num(parsed.metaRev, 0))),
-      legacy: sourceKey !== META_KEY
-    };
-  }
-  function mergeMetaStates(local, remote) {
-    const a = (local && typeof local === "object") ? local : createDefaultMetaState();
-    const b = (remote && typeof remote === "object") ? remote : {};
-    const localRev = Math.max(0, Math.floor(num(a.metaRev, 0)));
-    const remoteRev = Math.max(0, Math.floor(num(b.metaRev, 0)));
-    const numMax = (k) => Math.max(0, num(a[k], 0), num(b[k], 0));
-    const strUnion = (arrA, arrB) => {
-      const out = [];
-      const seen = new Set();
-      [...(Array.isArray(arrA) ? arrA : []), ...(Array.isArray(arrB) ? arrB : [])].forEach(v => {
-        if (typeof v === "string" && v && !seen.has(v)) { seen.add(v); out.push(v); }
-      });
-      return out;
-    };
-    const seenEnemies = strUnion(a.seenEnemies, b.seenEnemies);
-    if (seenEnemies.length === 0) seenEnemies.push("wolf");
-    const rA = hasOwn(RUSH_GRADE_RANK, a.bestRushGrade) ? RUSH_GRADE_RANK[a.bestRushGrade] : 0;
-    const rB = hasOwn(RUSH_GRADE_RANK, b.bestRushGrade) ? RUSH_GRADE_RANK[b.bestRushGrade] : 0;
-    const bestRushGrade = rB > rA ? b.bestRushGrade : (rA > 0 ? a.bestRushGrade : (rB > 0 ? b.bestRushGrade : null));
-    const tA = Math.max(0, num(a.bestRushTime, 0));
-    const tB = Math.max(0, num(b.bestRushTime, 0));
-    const bestRushTime = (tA > 0 && tB > 0) ? Math.min(tA, tB) : Math.max(tA, tB);
-    const karmaA = (a.karmaAscensions && typeof a.karmaAscensions === "object" && !Array.isArray(a.karmaAscensions)) ? a.karmaAscensions : {};
-    const karmaB = (b.karmaAscensions && typeof b.karmaAscensions === "object" && !Array.isArray(b.karmaAscensions)) ? b.karmaAscensions : {};
-    const karmaAscensions = { righteous: 0, neutral: 0, demonic: 0 };
-    new Set(["righteous", "neutral", "demonic", ...Object.keys(karmaA), ...Object.keys(karmaB)]).forEach(k => {
-      if (k === "__proto__" || k === "constructor" || k === "prototype") return;
-      karmaAscensions[k] = Math.max(0, Math.floor(num(karmaA[k], 0)), Math.floor(num(karmaB[k], 0)));
-    });
-    const hallMap = new Map();
-    [...(Array.isArray(a.hallOfLives) ? a.hallOfLives : []), ...(Array.isArray(b.hallOfLives) ? b.hallOfLives : [])].forEach(rawEntry => {
-      const entry = sanitizeHallEntry(rawEntry);
-      if (!entry) return;
-      const key = `${entry.recordedAt || 0}|${entry.lifeNum || 0}|${entry.endingId || ""}|${entry.name || ""}|${entry.score || 0}`;
-      if (!hallMap.has(key)) hallMap.set(key, entry);
-    });
-    const hallOfLives = Array.from(hallMap.values())
-      .sort((x, y) => ((num(y.recordedAt, 0)) - (num(x.recordedAt, 0))) || ((num(y.lifeNum, 0)) - (num(x.lifeNum, 0))))
-      .slice(0, 18);
-    const lastA = (typeof a.lastEnding === "string" && a.lastEnding) ? a.lastEnding : null;
-    const lastB = (typeof b.lastEnding === "string" && b.lastEnding) ? b.lastEnding : null;
-    return {
-      metaRev: Math.max(localRev, remoteRev),
-      ascensions: Math.floor(numMax("ascensions")),
-      bestScore: numMax("bestScore"),
-      bestTower: Math.floor(numMax("bestTower")),
-      bestRushGrade,
-      bestRushTime,
-      bestSpireFloor: Math.floor(numMax("bestSpireFloor")),
-      bestCalamityTier: Math.floor(numMax("bestCalamityTier")),
-      cloudSeaClears: Math.floor(numMax("cloudSeaClears")),
-      taixuTrailUnlocked: Boolean(a.taixuTrailUnlocked) || Boolean(b.taixuTrailUnlocked),
-      lastEnding: (remoteRev > localRev && lastB) ? lastB : (lastA || lastB || null),
-      seenEnemies,
-      seenLaws: strUnion(a.seenLaws, b.seenLaws),
-      unlockedEndings: strUnion(a.unlockedEndings, b.unlockedEndings),
-      karmaAscensions,
-      reincarnationPoints: Math.floor(numMax("reincarnationPoints")),
-      hallOfLives
-    };
   }
   function hallEntryKey(rawEntry) {
     const entry = sanitizeHallEntry(rawEntry);
@@ -6339,34 +7775,11 @@ const ART = {
     matDrops: act.matDrops, bossMats: act.bossMats, dropPreview: act.dropPreview
   }));
 
-  const STAGE_SCALING = [1.0, 1.65, 2.50, 3.60, 4.70];
-  const SINGLE_HIT_CAP_RATIO = 0.45;
-  const REALM_COMBAT_BASELINE = {
-    mortal:     { bossHp: 3600,  mobHp: 300,   atk: 20,  heavy: 36  },
-    qi:         { bossHp: 8000,  mobHp: 600,   atk: 34,  heavy: 60  },
-    foundation: { bossHp: 18000, mobHp: 1600,  atk: 58,  heavy: 102 },
-    golden:     { bossHp: 31000, mobHp: 3200,  atk: 98,  heavy: 174 },
-    nascent:    { bossHp: 45500, mobHp: 6200,  atk: 152, heavy: 272 },
-    spirit:     { bossHp: 64000, mobHp: 9000,  atk: 215, heavy: 385 },
-    ascended:   { bossHp: 88000, mobHp: 13500, atk: 280, heavy: 510 }
-  };
   function getRealmCombatBaseline(realmId) {
     return REALM_COMBAT_BASELINE[realmId] || REALM_COMBAT_BASELINE.mortal;
   }
 
   // G5: Permanent Growth Caps (Total/Alchemy Stat Ceilings by Realm, Blood-Fury Quota, Spire Curio Caps)
-  const PERM_GROWTH_CAPS = {
-    totalMaxHpByRealm: { mortal: 100, qi: 180, foundation: 280, golden: 420, nascent: 580, spirit: 760, ascended: 900 },
-    totalAtkByRealm:   { mortal: 20,  qi: 40,  foundation: 70,  golden: 110, nascent: 155, spirit: 200, ascended: 240 },
-    alchemyHpByRealm:  { mortal: 40,  qi: 80,  foundation: 140, golden: 210, nascent: 290, spirit: 380, ascended: 450 },
-    alchemyAtkByRealm: { mortal: 8,   qi: 18,  foundation: 32,  golden: 50,  nascent: 72,  spirit: 96,  ascended: 120 },
-    bloodFuryPerRealm: 2,
-    spireCurioMaxStack: 3,
-    curioStoneAlchemyDmgCap: 0.40,
-    curioStoneAlchemyFloorStonePerLv: 60,
-    curioStoneAlchemyFloorStoneCap: 180,
-    curioCritSilkDmgCap: 0.54
-  };
 
   function ensurePermGrowth(g) {
     if (!g) return { alchemyHp: 0, alchemyAtk: 0, bloodFuryBought: {} };
@@ -6382,18 +7795,6 @@ const ART = {
     return pg;
   }
 
-  function getPermGrowthCaps(g) {
-    const r = (g && typeof g.realm === "string" && hasOwn(REALMS, g.realm)) ? g.realm : "mortal";
-    return {
-      realm: r,
-      maxHpBonus: PERM_GROWTH_CAPS.totalMaxHpByRealm[r] || PERM_GROWTH_CAPS.totalMaxHpByRealm.mortal,
-      atkFlatBonus: PERM_GROWTH_CAPS.totalAtkByRealm[r] || PERM_GROWTH_CAPS.totalAtkByRealm.mortal,
-      alchemyHp: PERM_GROWTH_CAPS.alchemyHpByRealm[r] || PERM_GROWTH_CAPS.alchemyHpByRealm.mortal,
-      alchemyAtk: PERM_GROWTH_CAPS.alchemyAtkByRealm[r] || PERM_GROWTH_CAPS.alchemyAtkByRealm.mortal,
-      bloodFuryPerRealm: PERM_GROWTH_CAPS.bloodFuryPerRealm,
-      spireCurioMaxStack: PERM_GROWTH_CAPS.spireCurioMaxStack
-    };
-  }
 
   function grantPermanentStatBonus(g, opts = {}) {
     const caps = getPermGrowthCaps(g);
@@ -6435,14 +7836,6 @@ const ART = {
     return { realm: r, bought, max, remaining: Math.max(0, max - bought) };
   }
 
-  const REALM_BOSS_GATE = {
-    mortal:     0, // 雾隐狼王 -> qi
-    qi:         1, // 守山石卫 -> foundation
-    foundation: 2, // 寒潭玄蛇 -> golden
-    golden:     3, // 古境剑傀 -> nascent
-    nascent:    3, // 古境剑傀（第五卷防跳过） -> spirit
-    spirit:     4  // 天门道影 -> ascended
-  };
 
   function isStageBossDefeated(g, stageIdx) {
     if (!g) return false;
@@ -6512,57 +7905,11 @@ const ART = {
   ];
 
   // ==================== 5B. IMMORTAL GEAR & MARKET SYSTEM (4-SLOT LOOT ENGINE) ====================
-  const RARITIES = [
-    { tier: 0, name: "凡品", color: "#d0ddd8", mult: 1.00, sell: 12 },
-    { tier: 1, name: "灵品", color: "#4ad2b8", mult: 1.25, sell: 28 },
-    { tier: 2, name: "玄品", color: "#63c5ff", mult: 1.55, sell: 55 },
-    { tier: 3, name: "仙品", color: "#d09eff", mult: 1.90, sell: 95 },
-    { tier: 4, name: "鸿蒙", color: "#ffd86b", mult: 2.35, sell: 160 },
-    { tier: 5, name: "紫气鸿蒙", color: "#ff9eff", mult: 2.85, sell: 320 }
-  ];
 
-  const PRIMORDIAL_AWAKENINGS = {
-    weapon: { id: "primordial_wave",  name: "紫气东来·万剑齐鸣", desc: "每第3剑额外迸发一道贯穿全屏的鸿蒙紫气剑罡（165%真伤）" },
-    armor:  { id: "primordial_aegis", name: "混元紫气·不灭道体", desc: "受重击(≥14%最大气血)时自动凝结 25% 气血混元紫气护盾（11秒冷却）" },
-    ring:   { id: "primordial_soul",  name: "周天紫微·魂印双生", desc: "C键精魄化身伤害提升 +38%，施放立即回充 +22% 无上剑意" }
-  };
 
-  const GEAR_TEMPLATES = {
-    weapon: [
-      { baseName: "青竹灵剑", art: "icon_blade" },
-      { baseName: "秋水长剑", art: "relic_frost_sword" },
-      { baseName: "惊鲵古剑", art: "icon_blade" },
-      { baseName: "龙渊仙剑", art: "relic_frost_sword" },
-      { baseName: "太虚诛仙剑", art: "relic_frost_sword" }
-    ],
-    armor: [
-      { baseName: "青云布衣", art: "icon_scroll" },
-      { baseName: "流云法袍", art: "icon_heart" },
-      { baseName: "玄武鹤氅", art: "icon_seal" },
-      { baseName: "紫霞仙衣", art: "icon_heart" },
-      { baseName: "混元不灭袍", art: "relic_jade_seal" }
-    ],
-    ring: [
-      { baseName: "温玉灵佩", art: "item_jade" },
-      { baseName: "凝神剑玦", art: "item_soul" },
-      { baseName: "贪狼星戒", art: "relic_cloud_mirror" },
-      { baseName: "阴阳太极佩", art: "relic_soul_lamp" },
-      { baseName: "鸿蒙造化环", art: "item_ascension_seal" }
-    ]
-  };
 
 
   // ==================== V12 DESTINY DAO FRUITS, KYUSHU MAP NODES & SECRET ENCOUNTERS ====================
-  const DESTINY_FRUITS = {
-    sword_twin:   { id: "sword_twin",   name: "剑心通明", badge: "飞剑+2 · 贯虹", art: "relic_frost_sword", desc: "环身本命飞剑永久 +2 柄，且蓄力万剑穿云伤害额外提高 28%。" },
-    thunder_soul: { id: "thunder_soul", name: "紫霄雷体", badge: "一闪落雷 · 麻痹", art: "relic_soul_lamp",   desc: "每次施展空格【一闪】，在起点与终点劈落三道紫霄神雷轰击群妖并削减架势。" },
-    lotus_body:   { id: "lotus_body",   name: "青莲圣体", badge: "吐纳+35% · 护体", art: "item_lotus",        desc: "B键周天吐纳聚气效率 +35%，且每次破境与回城额外凝结 35% 最大气血青莲护盾。" },
-    zhuxian_edge: { id: "zhuxian_edge", name: "诛仙残意", badge: "爆剑增伤 · 返冷", art: "icon_blade",        desc: "右键【爆剑】引爆剑印伤害提升 55%，若引爆满印妖兽立即返还 50% 冷却。" },
-    void_phantom: { id: "void_phantom", name: "太虚幻剑", badge: "三式双影 · 剑轮", art: "relic_cloud_mirror",desc: "普攻第三式额外唤出一道太虚剑影协同投掷双倍旋风剑轮。" },
-    glutton_pill: { id: "glutton_pill", name: "饕餮丹心", badge: "服丹永驻 · 强魄", art: "item_golden_pill",  desc: "每次服用回春丹或畅饮仙葫，永久增加 +6 剑道攻击与 +18 气血上限（受本境丹道上限约束），并立即获赐回春丹×2。" },
-    hongmeng_luck:{ id: "hongmeng_luck",name: "鸿蒙紫气", badge: "神装爆率 · 赐宝", art: "item_ascension_seal",desc: "精英与首领掉落仙品/鸿蒙光柱概率翻倍，感悟瞬间立即获赐一件高品仙装！" },
-    eternal_pine: { id: "eternal_pine", name: "万古长青", badge: "暴击暴伤 · 富贵", art: "relic_jade_seal",   desc: "暴击率提升 +10%，每持有 80 灵石额外转化 +3% 暴击伤害（最高+32%），立即获赐 120 灵石。" }
-  };
 
   const KYUSHU_MAP_NODES = [
     {
@@ -7018,28 +8365,10 @@ const ART = {
     }
   };
 
-  function hasDestinyFruit(g, fid) {
-    return g && Array.isArray(g.destinyFruits) && g.destinyFruits.includes(fid);
-  }
 
 
   // ==================== V14 AAA FORGE AFFIXES, SET RESONANCES, PACT OF CALAMITY & CINEMA CARDS ====================
-  const SACRED_AFFIXES = [
-    { id: "vamp_blade",   name: "噬灵剑魄", buildTags: ["御剑推荐", "生存推荐"], desc: "每第 3 次剑气命中回复 1.5% 最大气血（至少 2 点）" },
-    { id: "posture_crush",name: "破岳重锋", buildTags: ["御剑推荐"],             desc: "削减妖兽白金架势效率 +30%" },
-    { id: "sky_thunder",  name: "紫电惊雷", buildTags: ["雷符推荐"],             desc: "每第 4 次轻剑攻击必定引落九霄紫雷（42% 剑攻）" },
-    { id: "wind_rider",   name: "御风剑意", buildTags: ["御剑推荐", "雷符推荐"], desc: "移动与飞剑攻速额外 +10%" },
-    { id: "greed_wolf",   name: "贪狼聚宝", buildTags: ["生存推荐"],             desc: "斩妖灵石收益额外 +35%" },
-    { id: "xuanwu_ward",  name: "玄武护心", buildTags: ["生存推荐"],             desc: "所受妖兽伤害额外减免 14%" }
-  ];
 
-  const PACT_SEALS = [
-    { id: "frenzy_hp",   name: "凶煞狂血", badge: "劫印·壹", desc: "群妖气血与攻击 +25%" },
-    { id: "swift_windup",name: "疾影破阵", badge: "劫印·贰", desc: "妖兽蓄势提速 +20%" },
-    { id: "iron_posture",name: "镇岳金身", badge: "劫印·叁", desc: "首领架势上限 +35%" },
-    { id: "bitter_pill", name: "丹火受限", badge: "劫印·肆", desc: "灵丹回血效果 -20%" },
-    { id: "blood_moon",  name: "九幽血月", badge: "劫印·伍", desc: "首领直接觉醒二阶狂暴" }
-  ];
 
   const REGION_POEMS = Object.assign({
     hub:       { seal: "青云仙苑", name: "听雨洞府", poem: "松风煮茗养剑魄 · 坐看云起炼金丹" },
@@ -7134,31 +8463,9 @@ const ART = {
     execStampTimer = setTimeout(() => el.classList.remove("slam"), 1250);
   }
 
-  function getActivePactCount(g) {
-    return (g && Array.isArray(g.pactSeals)) ? g.pactSeals.length : 0;
-  }
 
-  function hasPact(g, pid) {
-    return g && Array.isArray(g.pactSeals) && g.pactSeals.includes(pid);
-  }
 
-  function hasGearAffix(g, affixId) {
-    if (!g || !g.equippedGear) return false;
-    return ["weapon", "armor", "ring"].some(sl => g.equippedGear[sl] && g.equippedGear[sl].affix === affixId);
-  }
 
-  function getActiveSetBonus(g) {
-    if (!g || !g.equippedGear) return null;
-    const items = ["weapon", "armor", "ring"].map(sl => g.equippedGear[sl]);
-    if (items.some(x => !x)) return null;
-    const minR = Math.min(...items.map(x => x.rarity || 0));
-    if (minR >= 5) return { minR: 5, name: "太初紫气三件套", desc: "剑道攻击+42% · 暴伤+38% · 飞剑+2 · 鸿蒙紫气圣环", atkMult: 0.42, critMult: 0.38, swords: 2, aura: "#ff9eff" };
-    if (minR >= 4) return { minR: 4, name: "鸿蒙造化三件套", desc: "剑道攻击+32% · 暴伤+28% · 飞剑+2 · 鸿蒙圣环", atkMult: 0.32, critMult: 0.28, swords: 2, aura: "#ffe28a" };
-    if (minR >= 3) return { minR: 3, name: "仙品诛仙三件套", desc: "剑道攻击+22% · 暴伤+18% · 飞剑+1 · 紫霞仙环", atkMult: 0.22, critMult: 0.18, swords: 1, aura: "#d69eff" };
-    if (minR >= 2) return { minR: 2, name: "玄品太清三件套", desc: "剑道攻击+15% · 暴击+6% · 飞剑+1 · 太清灵环",  atkMult: 0.15, crit: 0.06, swords: 1, aura: "#70ffe6" };
-    if (minR >= 1) return { minR: 1, name: "灵品青锋三件套", desc: "剑道攻击+10% · 护体减伤+5", atkMult: 0.10, dr: 5, swords: 0, aura: "#4ad2b8" };
-    return { minR: 0, name: "凡铁初鸣三件套", desc: "剑道攻击+5%", atkMult: 0.05, swords: 0, aura: null };
-  }
 
 
   // ==================== V15 BESPOKE 5-BOSS MOVESETS & BUILD ARCHETYPE MUTATORS ====================
@@ -7224,64 +8531,7 @@ const ART = {
     }
   };
 
-  function getDaoBonuses(g) {
-    const dao = (g && g.dao) || { benevolence: 6, edge: 10, serenity: 6 };
-    const b = Math.max(0, Number(dao.benevolence) || 0);
-    const e = Math.max(0, Number(dao.edge) || 0);
-    const s = Math.max(0, Number(dao.serenity) || 0);
-    const healMult = 1 + Math.min(0.28, b * 0.0045);
-    const shieldMult = 1 + Math.min(0.25, b * 0.004);
-    const postureMult = 1 + Math.min(0.25, e * 0.004);
-    const critBonus = Math.min(0.08, e * 0.0012);
-    const execMult = 1 + Math.min(0.18, e * 0.003);
-    const mpRegenMult = 1 + Math.min(0.32, s * 0.005);
-    const stoneMult = 1 + Math.min(0.24, s * 0.004);
-    let dominant = "edge";
-    if (b >= e && b >= s) dominant = "benevolence";
-    else if (s >= e && s >= b) dominant = "serenity";
-    const domMap = {
-      benevolence: { title: "仁心济世", color: "#70ffe6" },
-      edge:        { title: "锋芒凌霄", color: "#ffd278" },
-      serenity:    { title: "本真通明", color: "#c792ff" }
-    };
-    return {
-      benevolence: b, edge: e, serenity: s,
-      healMult, shieldMult, postureMult, critBonus, execMult, mpRegenMult, stoneMult,
-      dominant,
-      dominantTitle: domMap[dominant].title,
-      dominantColor: domMap[dominant].color
-    };
-  }
 
-  function getSchoolSpecBonus(g) {
-    const isTalisman = !!(g && g.school === "talisman");
-    if (isTalisman) {
-      return {
-        id: "talisman",
-        name: "紫霄雷符",
-        badge: "回蓝+25% · 剑域/爆发术法+16% · 终结引紫霄链雷",
-        hasteBonus: 0,
-        critMultBonus: 0,
-        swordSynergyMult: 1.0,
-        mpRegenMult: 1.25,
-        skillDmgMult: 1.16,
-        chainLightningOnFinisher: true,
-        color: "#d69eff"
-      };
-    }
-    return {
-      id: "sword",
-      name: "青霜御剑",
-      badge: "挥剑攻速+10% · 飞剑协同+18% · 暴伤+8% · 四式增剑",
-      hasteBonus: 0.10,
-      critMultBonus: 0.08,
-      swordSynergyMult: 1.18,
-      mpRegenMult: 1.0,
-      skillDmgMult: 1.0,
-      chainLightningOnFinisher: false,
-      color: "#70ffe6"
-    };
-  }
 
   const BUILD_ROLE_GUIDE = Object.freeze({
     sword: Object.freeze({
@@ -7397,169 +8647,9 @@ const ART = {
     return out;
   }
 
-  function ensureDeterministicPity(g) {
-    if (!g) return { epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 };
-    const rawPity = (g.pity && typeof g.pity === "object" && !Array.isArray(g.pity)) ? g.pity : null;
-    const pityHasUnsafeKey = !!(rawPity && (hasOwn(rawPity, "__proto__") || hasOwn(rawPity, "constructor") || hasOwn(rawPity, "prototype")));
-    const cleanPity = safeAssignPlain({ epic: 0, mythic: 0, critAcc: 0, vampHits: 0, thunderHits: 0, gearDrops: 0 }, rawPity);
-    const keys = ["epic", "mythic", "critAcc", "vampHits", "thunderHits", "gearDrops"];
-    keys.forEach(k => {
-      cleanPity[k] = Math.max(0, num(cleanPity[k], 0));
-    });
-    if (!rawPity || Object.getPrototypeOf(rawPity) !== Object.prototype || pityHasUnsafeKey || keys.some(k => rawPity[k] !== cleanPity[k])) {
-      g.pity = cleanPity;
-    }
-    return g.pity;
-  }
 
-  function computeGearAffixBudget(item) {
-    const r = Math.max(0, Math.min(5, Math.floor(num(item && item.rarity, 0))));
-    const spec = GEAR_BUDGET_BY_RARITY[r] || GEAR_BUDGET_BY_RARITY[0];
-    const W = GEAR_STAT_WEIGHTS;
-    const atk = Math.max(0, num(item && item.atk, 0));
-    const hp = Math.max(0, num(item && item.hp, 0));
-    const dr = Math.max(0, num(item && item.dr, 0));
-    const crit = Math.max(0, num(item && item.crit, 0));
-    const spd = Math.max(0, num(item && item.spd, 0));
-    const bonusSword = Math.max(0, Math.floor(num(item && item.bonusSword, 0)));
-    const hasAffix = Boolean(item && item.affix);
-    const statBreakdown = {
-      atk: Number((atk * W.atk).toFixed(2)),
-      hp: Number((hp * W.hp).toFixed(2)),
-      dr: Number((dr * W.dr).toFixed(2)),
-      crit: Number((crit * W.crit).toFixed(2)),
-      spd: Number((spd * W.spd).toFixed(2)),
-      bonusSword: Number((bonusSword * W.bonusSword).toFixed(2)),
-      affix: hasAffix ? W.affix : 0
-    };
-    const totalBudget = Number(Object.values(statBreakdown).reduce((s, v) => s + v, 0).toFixed(2));
-    const overCapStats = [];
-    const caps = spec.statCaps;
-    if (atk > caps.atk) overCapStats.push("atk");
-    if (hp > caps.hp) overCapStats.push("hp");
-    if (dr > caps.dr) overCapStats.push("dr");
-    if (crit > caps.crit + 1e-6) overCapStats.push("crit");
-    if (spd > caps.spd + 1e-6) overCapStats.push("spd");
-    if (bonusSword > caps.bonusSword) overCapStats.push("bonusSword");
-    return {
-      rarity: r,
-      totalBudget,
-      maxBudget: spec.maxBudget,
-      utilization: Number((totalBudget / Math.max(1, spec.maxBudget)).toFixed(3)),
-      withinBudget: totalBudget <= spec.maxBudget + 0.01 && overCapStats.length === 0,
-      statBreakdown,
-      caps: Object.assign({}, caps),
-      overCapStats
-    };
-  }
 
-  function pickBalancedGearSlot(g, rng = Math.random) {
-    const slots = ["weapon", "armor", "ring"];
-    if (!g || !g.equippedGear) return slots[Math.floor(rng() * slots.length)];
-    const emptySlots = slots.filter(s => !g.equippedGear[s]);
-    if (emptySlots.length > 0) return emptySlots[0];
-    const sorted = slots.slice().sort((a, b) => ((g.equippedGear[a] && g.equippedGear[a].power) || 0) - ((g.equippedGear[b] && g.equippedGear[b].power) || 0));
-    return rng() < 0.72 ? sorted[0] : sorted[1 + Math.floor(rng() * 2)];
-  }
 
-  function rollGearItem(stageTier = 0, minRarity = 0, forcedSlot = null, opts = {}) {
-    const rng = (opts && typeof opts.rng === "function") ? opts.rng : Math.random;
-    const usePity = opts && opts.usePity !== false;
-    const refGame = (opts && opts.game) ? opts.game : game;
-    const slot = (forcedSlot && hasOwn(GEAR_TEMPLATES, forcedSlot)) ? forcedSlot : pickBalancedGearSlot(refGame, rng);
-    const pactBoost = refGame ? getActivePactCount(refGame) * 0.055 : 0;
-    const styleBoost = (arena && (arena.styleScore || 0) >= 850) ? 0.22 : (arena && (arena.styleScore || 0) >= 580) ? 0.12 : 0;
-    const luckBoost = ((refGame && hasDestinyFruit(refGame, "hongmeng_luck")) ? 0.16 : 0) + pactBoost + styleBoost;
-    const rRoll = rng() + luckBoost;
-    let rarity = minRarity;
-    if (rRoll > 0.90) rarity = Math.max(rarity, 4);
-    else if (rRoll > 0.70) rarity = Math.max(rarity, 3);
-    else if (rRoll > 0.42) rarity = Math.max(rarity, 2);
-    else if (rRoll > 0.16) rarity = Math.max(rarity, 1);
-    rarity = Math.min(4, Math.max(minRarity, rarity + (stageTier >= 3 ? 1 : 0)));
-
-    let pityTriggered = null;
-    if (usePity && refGame) {
-      const pt = ensureDeterministicPity(refGame);
-      if (pt.mythic >= 7 && rarity < 4) {
-        rarity = 4;
-        pityTriggered = "mythic";
-      } else if (pt.epic >= 3 && rarity < 3) {
-        rarity = 3;
-        pityTriggered = "epic";
-      }
-      if (rarity >= 4) { pt.mythic = 0; pt.epic = 0; }
-      else if (rarity >= 3) { pt.epic = 0; pt.mythic += 1; }
-      else { pt.epic += 1; pt.mythic += 1; }
-      pt.gearDrops += 1;
-    }
-
-    const rSpec = RARITIES[rarity];
-    const tmpl = GEAR_TEMPLATES[slot][Math.min(4, rarity)];
-    const lvlScale = 1 + stageTier * 0.32 + (refGame ? rankOf(refGame.realm) * 0.22 : 0);
-    const qualityRoll = 0.94 + rng() * 0.12;
-
-    const item = {
-      uid: "g_" + Math.floor(rng() * 1e9).toString(36),
-      slot,
-      rarity,
-      name: `${rSpec.name}·${tmpl.baseName}`,
-      art: tmpl.art,
-      atk: 0, hp: 0, dr: 0, crit: 0, spd: 0, bonusSword: 0,
-      pityTriggered,
-      price: Math.round(rSpec.sell * 2.4 * (1 + stageTier * 0.25)),
-      sell: Math.round(rSpec.sell * (1 + stageTier * 0.2))
-    };
-
-    if (slot === "weapon") {
-      item.atk = Math.max(4, Math.round(7 * rSpec.mult * lvlScale * qualityRoll));
-      item.crit = Number((0.022 * (rarity + 1)).toFixed(2));
-      if (rarity >= 3) item.bonusSword = 1;
-    } else if (slot === "armor") {
-      item.hp = Math.max(16, Math.round(24 * rSpec.mult * lvlScale * qualityRoll));
-      item.dr = Math.max(2, Math.round(3.0 * rSpec.mult * (1 + stageTier * 0.25) * qualityRoll));
-    } else {
-      item.atk = Math.max(2, Math.round(4 * rSpec.mult * lvlScale * qualityRoll));
-      item.spd = Number((0.03 * (rarity + 1)).toFixed(2));
-      item.crit = Number((0.018 * (rarity + 1)).toFixed(2));
-    }
-    item.lvl = 0;
-    if (rarity >= 2) {
-      const ownedAffixes = refGame && refGame.equippedGear
-        ? Object.values(refGame.equippedGear).map(g => g && g.affix).filter(Boolean)
-        : [];
-      const freshPool = SACRED_AFFIXES.filter(a => !ownedAffixes.includes(a.id));
-      const pool = freshPool.length ? freshPool : SACRED_AFFIXES;
-      item.affix = pool[Math.floor(rng() * pool.length)].id;
-    } else {
-      item.affix = null;
-    }
-
-    // F22 (D05): Enforce weighted affix budget & per-stat caps ONLY on newly generated items (never retroactively mutates legacy saves)
-    const budgetSpec = GEAR_BUDGET_BY_RARITY[rarity] || GEAR_BUDGET_BY_RARITY[0];
-    const caps = budgetSpec.statCaps;
-    item.atk = Math.min(item.atk, caps.atk);
-    item.hp = Math.min(item.hp, caps.hp);
-    item.dr = Math.min(item.dr, caps.dr);
-    item.crit = Number(Math.min(item.crit, caps.crit).toFixed(3));
-    item.spd = Number(Math.min(item.spd, caps.spd).toFixed(3));
-    item.bonusSword = Math.min(item.bonusSword, caps.bonusSword);
-    const bCheck = computeGearAffixBudget(item);
-    if (bCheck.totalBudget > bCheck.maxBudget) {
-      const fixedCost = bCheck.statBreakdown.bonusSword + bCheck.statBreakdown.affix;
-      const flexCost = Math.max(1, bCheck.totalBudget - fixedCost);
-      const targetFlex = Math.max(1, bCheck.maxBudget - fixedCost);
-      const scale = Math.min(1, targetFlex / flexCost);
-      if (item.atk > 0) item.atk = Math.max(1, Math.floor(item.atk * scale));
-      if (item.hp > 0) item.hp = Math.max(8, Math.floor(item.hp * scale));
-      if (item.dr > 0) item.dr = Math.max(1, Math.floor(item.dr * scale));
-      if (item.crit > 0) item.crit = Number(Math.max(0.01, Math.floor(item.crit * scale * 100) / 100).toFixed(2));
-      if (item.spd > 0) item.spd = Number(Math.max(0.01, Math.floor(item.spd * scale * 100) / 100).toFixed(2));
-    }
-
-    item.power = item.atk * 3 + Math.round(item.hp * 0.4) + item.dr * 5 + Math.round(item.crit * 240) + Math.round(item.spd * 180) + item.bonusSword * 85 + (item.affix ? 45 : 0);
-    return item;
-  }
 
   function openAffixEngraveModal(slot) {
     if (!game || !game.equippedGear || !game.equippedGear[slot]) return;
@@ -8133,13 +9223,6 @@ const ART = {
 
   const BAGUA_GLYPHS = ["☰", "☱", "☲", "☳", "☴", "☵", "☶", "☷"];
 
-  function getComboTier(hits) {
-    if (hits >= 30) return { label: "万剑入神", rank: "SSS", spdBonus: 0.30, critDmgBonus: 0.38, color: "#ff9f43" };
-    if (hits >= 18) return { label: "剑仙临尘", rank: "S",   spdBonus: 0.22, critDmgBonus: 0.26, color: "#ffe270" };
-    if (hits >= 10) return { label: "剑罡破军", rank: "A",   spdBonus: 0.15, critDmgBonus: 0.18, color: "#70ffe6" };
-    if (hits >= 4)  return { label: "灵剑初鸣", rank: "B",   spdBonus: 0.08, critDmgBonus: 0.10, color: "#4ad2b8" };
-    return { label: "凡剑试锋", rank: "C", spdBonus: 0, critDmgBonus: 0, color: "#9ab5b0" };
-  }
 
   function getPlazaCenter(w, h) {
     const stg = arena.sanctumMode ? STAGES[1] : arena.towerMode ? STAGES[3] : STAGES[arena.stageIdx];
@@ -8940,12 +10023,6 @@ const ART = {
     exportCount: 0
   };
 
-  function getKarmaState(g) {
-    const score = Math.max(-100, Math.min(100, (g && typeof g.karmaScore === "number") ? g.karmaScore : 0));
-    if (score >= 25) return { mode: "righteous", score, label: `清虚正道 +${score}`, artName: "太清镇世诀", color: "#70ffe6" };
-    if (score <= -25) return { mode: "demonic", score, label: `劫煞魔心 ${score}`, artName: "血煞狂剑诀", color: "#ff4d5e" };
-    return { mode: "neutral", score, label: `本真中正 ${score >= 0 ? "+" + score : score}`, artName: "太初归元心", color: "#ffe28a" };
-  }
 
   function getCompanionBondTier(g, npcId) {
     if (!g) return 0;
@@ -9728,14 +10805,6 @@ const ART = {
   }
 
   // Real-Time Sword Style & Variety Meter (`剑道风华评级仪 D -> C -> B -> A -> S -> SSS`)
-  function getStyleRankSpec(score = 0) {
-    if (score >= 850) return { rank: "SSS", title: "太虚剑神", color: "#ff9eff", haste: 0.30, critDmg: 0.42, intentMult: 1.60, dropPct: 45 };
-    if (score >= 580) return { rank: "S",   title: "天人合一", color: "#ffe270", haste: 0.22, critDmg: 0.28, intentMult: 1.35, dropPct: 25 };
-    if (score >= 380) return { rank: "A",   title: "剑道无双", color: "#70ffe6", haste: 0.15, critDmg: 0.18, intentMult: 1.20, dropPct: 15 };
-    if (score >= 210) return { rank: "B",   title: "惊鸿掠影", color: "#4ad2b8", haste: 0.09, critDmg: 0.10, intentMult: 1.10, dropPct: 8 };
-    if (score >= 85)  return { rank: "C",   title: "剑心通明", color: "#a8e6dc", haste: 0.04, critDmg: 0.05, intentMult: 1.0,  dropPct: 0 };
-    return { rank: "D", title: "凡铁试锋", color: "#9ab5b0", haste: 0, critDmg: 0, intentMult: 1.0, dropPct: 0 };
-  }
 
   function registerStyleAction(moveType, basePts = 65) {
     const hist = arena.recentMoveHistory || [];
@@ -15320,58 +16389,6 @@ const ART = {
     return `CY24SAVE-${chk}-${utf8ToBase64(jsonStr)}`;
   }
 
-  function safeText(v, fallback = "") {
-    if (typeof v === "string") return v;
-    if (typeof v === "number" && Number.isFinite(v)) return String(v);
-    return fallback;
-  }
-  function safeDiag(v) {
-    if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
-    if (v === null) return "null";
-    if (v === undefined) return "undefined";
-    return "[" + typeof v + "]";
-  }
-  function escapeHtml(s) {
-    let str;
-    try {
-      str = s == null ? "" : String(s);
-    } catch (e) {
-      str = "";
-    }
-    return str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  }
-  function num(v, d = 0) {
-    const fallback = (typeof d === "number" && Number.isFinite(d)) ? d : 0;
-    if (v == null || typeof v === "boolean" || typeof v === "object") return fallback;
-    if (typeof v === "string" && v.trim() === "") return fallback;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : fallback;
-  }
-  function rarityNum(v) {
-    return Math.max(0, Math.min(5, Math.floor(num(v, 0))));
-  }
-  function hasOwn(obj, key) {
-    return !!obj && typeof key === "string" && Object.prototype.hasOwnProperty.call(obj, key);
-  }
-  function safeAssignPlain(target, ...sources) {
-    const out = (target && typeof target === "object") ? target : {};
-    for (let i = 0; i < sources.length; i++) {
-      const src = sources[i];
-      if (!src || typeof src !== "object" || Array.isArray(src)) continue;
-      const keys = Object.keys(src);
-      for (let j = 0; j < keys.length; j++) {
-        const k = keys[j];
-        if (k === "__proto__" || k === "constructor" || k === "prototype") continue;
-        out[k] = src[k];
-      }
-    }
-    return out;
-  }
 
   let pendingCloudImport = null;
 
@@ -15896,14 +16913,6 @@ const ART = {
     acquireGearItem(rollGearItem(4, 4, "weapon"));
   }
 
-  const ACTION_REALM_REQ = {
-    slash: 0, recall: 0, dash: 0, meditate: 0, pill: 0, hub: 0, photo: 0, telemetry: 0,
-    stance: 1, jump: 1, ult: 1, ally: 1, pet: 1,
-    posture: 2, soul: 2, swordBlink: 2, finisher: 2, tagSwitch: 2, weapon_form: 2,
-    mount: 3, qimen: 3, sequencer: 3,
-    sanqing: 4, astral: 4,
-    shanhe: 5, warship: 5
-  };
   const ACTION_DISPLAY_NAME = {
     stance: "三才剑阵 (Y)", jump: "御风腾跃 (Z)", ult: "法宝剑域 (E)", ally: "故人助阵 (R)", pet: "灵宠绝技 (G)",
     posture: "双剑意姿态 (`)", soul: "镇妖魂印 (C)", swordBlink: "缩地瞬身 (F)", finisher: "流派奥义 (X)",
@@ -17032,19 +18041,10 @@ const ART = {
 
   loadKeybinds();
 
-  function rankOf(r) {
-    const idx = REALM_ORDER.indexOf(r);
-    return idx >= 0 ? idx : 0;
-  }
-  function hasLaw(g, id) { return g && Array.isArray(g.laws) && g.laws.includes(id); }
   function hasSynergy(g, synId) {
     if (!g) return false;
     const sp = SYNERGIES.find(s => s.id === synId);
     return sp ? sp.active(g) : false;
-  }
-  function currentOmen(g) {
-    const idx = Math.floor(Math.max(0, num(g && g.omenIndex, 0))) % CELESTIAL_OMENS.length;
-    return CELESTIAL_OMENS[idx] || CELESTIAL_OMENS[0];
   }
   function escTip(t, d) { return `${escapeHtml(t)}|${escapeHtml(d)}`; }
 
@@ -17058,34 +18058,7 @@ const ART = {
     return n;
   }
 
-  function getEquippedRelicStars(g) {
-    if (!g || !g.loadout || !g.loadout.relic || !hasOwn(RELICS, g.loadout.relic)) return 0;
-    const rawStars = (g.relicStars && hasOwn(g.relicStars, g.loadout.relic)) ? g.relicStars[g.loadout.relic] : 1;
-    return Math.max(0, Math.min(5, Math.floor(num(rawStars, 1))));
-  }
 
-  function getGearTotals(g) {
-    const tot = { atk: 0, hp: 0, dr: 0, crit: 0, spd: 0, bonusSword: 0 };
-    if (!g || !g.equippedGear) return tot;
-    ["weapon", "armor", "ring"].forEach(sl => {
-      const it = g.equippedGear[sl];
-      if (it && typeof it === "object") {
-        tot.atk += effectiveGearVal(it, "atk");
-        tot.hp += effectiveGearVal(it, "hp");
-        tot.dr += effectiveGearVal(it, "dr");
-        tot.crit += Math.max(0, num(it.crit, 0));
-        tot.spd += Math.max(0, num(it.spd, 0)) + (it.affix === "wind_rider" ? 0.10 : 0);
-        tot.bonusSword += Math.max(0, num(it.bonusSword, 0));
-      }
-    });
-    const setB = getActiveSetBonus(g);
-    if (setB) {
-      tot.dr += setB.dr || 0;
-      tot.crit += setB.crit || 0;
-      tot.bonusSword += setB.swords || 0;
-    }
-    return tot;
-  }
 
   function getSwordCount(g) {
     if (!g) return 2;
@@ -17246,32 +18219,6 @@ const ART = {
     return g;
   }
 
-  function normalizeGearItem(item, fallbackSlot) {
-    if (!item || typeof item !== "object" || Array.isArray(item)) return null;
-    const slot = ["weapon", "armor", "ring"].includes(item.slot) ? item.slot : (fallbackSlot || "weapon");
-    const defArt = slot === "armor" ? "icon_heart" : slot === "ring" ? "item_jade" : "icon_blade";
-    const out = safeAssignPlain({}, item, {
-      slot,
-      name: safeText(item.name, "灵器") || "灵器",
-      rarity: rarityNum(item.rarity),
-      lvl: Math.max(0, Math.min(10, Math.floor(num(item.lvl, 0)))),
-      atk: Math.max(0, num(item.atk, 0)),
-      hp: Math.max(0, num(item.hp, 0)),
-      dr: Math.max(0, num(item.dr, 0)),
-      crit: Math.max(0, num(item.crit, 0)),
-      spd: Math.max(0, num(item.spd, 0)),
-      bonusSword: Math.max(0, Math.floor(num(item.bonusSword, 0))),
-      sell: Math.max(0, Math.floor(num(item.sell, 15))),
-      price: Math.max(0, Math.floor(num(item.price, 25))),
-      art: hasOwn(ART, item.art) ? item.art : defArt
-    });
-    if (hasOwn(item, "power")) out.power = Math.max(0, num(item.power, 0));
-    if (hasOwn(out, "uid") && typeof out.uid !== "string") out.uid = safeText(out.uid, "");
-    if (hasOwn(out, "affix") && typeof out.affix !== "string") out.affix = null;
-    if (hasOwn(out, "awakenedAffix") && typeof out.awakenedAffix !== "string") out.awakenedAffix = null;
-    if (hasOwn(item, "taixuForged")) out.taixuForged = Boolean(item.taixuForged);
-    return out;
-  }
 
   function normalizeLoadedGame(raw) {
     const rawCal = num(raw && raw.calamityTier, 0);
@@ -17970,24 +18917,7 @@ const ART = {
     return true;
   }
 
-  function computeSaveChecksum(str) {
-    let h = 2166136261 >>> 0;
-    for (let i = 0; i < str.length; i++) {
-      h ^= str.charCodeAt(i);
-      h = Math.imul(h, 16777619) >>> 0;
-    }
-    return h.toString(16).toUpperCase().padStart(8, "0");
-  }
 
-  function buildCanonicalSavePayload(bundleObj) {
-    return JSON.stringify({
-      game: bundleObj.game,
-      stageIdx: bundleObj.stageIdx,
-      stanceIdx: bundleObj.stanceIdx,
-      towerMode: !!bundleObj.towerMode,
-      sanctumMode: !!bundleObj.sanctumMode
-    });
-  }
 
   function computeCurrentPayloadChecksum() {
     if (!game) return null;
@@ -18013,58 +18943,6 @@ const ART = {
     }));
   }
 
-  function parseAndValidateSaveRaw(raw, sourceKey) {
-    if (!raw || typeof raw !== "string") {
-      return { ok: false, empty: true, sourceKey };
-    }
-    let parsed = null;
-    try {
-      parsed = JSON.parse(raw);
-    } catch (e) {
-      return { ok: false, empty: false, sourceKey, reason: `JSON 解析失败（${safeText(e && e.message, "格式损坏") || "格式损坏"}）`, raw };
-    }
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || !parsed.game || typeof parsed.game !== "object" || Array.isArray(parsed.game)) {
-      return { ok: false, empty: false, sourceKey, reason: "存档缺少核心 game 数据结构", raw };
-    }
-    if (typeof parsed.game.realm !== "string" || !hasOwn(REALMS, parsed.game.realm)) {
-      return { ok: false, empty: false, sourceKey, reason: `存档境界字段非法（${safeDiag(parsed.game.realm)}）`, raw };
-    }
-    if (parsed.saveRev !== undefined && (
-      parsed.saveRev === null || typeof parsed.saveRev === "boolean" || typeof parsed.saveRev === "object" ||
-      (typeof parsed.saveRev === "string" && parsed.saveRev.trim() === "") ||
-      !Number.isFinite(Number(parsed.saveRev)) || Number(parsed.saveRev) < 0
-    )) {
-      return { ok: false, empty: false, sourceKey, reason: "存档版本号字段非法", raw };
-    }
-    if (parsed.envelopeVersion !== undefined && (
-      parsed.envelopeVersion === null || typeof parsed.envelopeVersion === "boolean" || typeof parsed.envelopeVersion === "object" ||
-      (typeof parsed.envelopeVersion === "string" && parsed.envelopeVersion.trim() === "") ||
-      !Number.isFinite(Number(parsed.envelopeVersion)) || Number(parsed.envelopeVersion) < 1
-    )) {
-      return { ok: false, empty: false, sourceKey, reason: "存档封装版本字段非法", raw };
-    }
-    const envVer = parsed.envelopeVersion !== undefined ? Number(parsed.envelopeVersion) : 0;
-    if (envVer >= 2) {
-      if (typeof parsed.checksum !== "string" || !parsed.checksum.trim()) {
-        return { ok: false, empty: false, sourceKey, reason: "存档校验和字段缺失或非法", raw };
-      }
-      const expected = computeSaveChecksum(buildCanonicalSavePayload(parsed));
-      if (expected !== parsed.checksum) {
-        return { ok: false, empty: false, sourceKey, reason: `存档校验和不匹配（期望 ${expected}，实得 ${safeDiag(parsed.checksum)}）`, raw };
-      }
-    }
-    return {
-      ok: true,
-      empty: false,
-      sourceKey,
-      bundle: parsed,
-      rev: Math.max(0, Math.floor(num(parsed.saveRev, 0))),
-      tabId: typeof parsed.tabId === "string" ? parsed.tabId : null,
-      lineageId: typeof parsed.lineageId === "string" && parsed.lineageId ? parsed.lineageId : null,
-      updatedAt: Math.max(0, Math.floor(num(parsed.updatedAt, 0))),
-      legacy: sourceKey !== STORAGE_KEY || !envVer
-    };
-  }
 
   function inspectSavedBundle() {
     let primaryRaw = null;
@@ -18775,66 +19653,7 @@ const ART = {
     return ["shen", "pei", "lu", "yan"].filter(id => getCompanionBondTier(g, id) >= 1);
   }
 
-  function computeCompetitionScore(g) {
-    if (!g) return 0;
-    const clearedStages = getClearedCampaignStageIndices(g).length;
-    const totalStars = getTotalStageStars(g);
-    const realmPts = rankOf(g.realm) * 100;
-    const stagePts = clearedStages * 100 + totalStars * 110;
-    const endSpec = ASCENSION_ENDINGS.find(e => e.id === g.ending);
-    const ascendPts = (g.status === "ascended" && clearedStages > 0) ? 250 : 0;
-    const endBonus = (endSpec && clearedStages > 0) ? 150 : 0;
-    const achPts = Math.round((g.achievements || []).reduce((s, id) => {
-      const a = ACHIEVEMENTS.find(x => x.id === id);
-      return s + (a ? a.pts : 0);
-    }, 0) * 0.4);
-    const allyPts = getBondedCompanionIds(g).length * 80 + Math.min(10, Object.keys(g.choices || {}).length) * 25;
-    const lawPts = Math.min(15, (g.laws || []).length) * 80;
-    const synPts = SYNERGIES.filter(s => s.active(g)).length * 140;
-    const gt = getGearTotals(g);
-    const gearPts = Math.min(400, gt.atk * 2 + gt.dr * 4);
-    const towerPts = Math.min(20, Math.max(0, Math.floor(num(g.towerBest, 0)))) * 65
-                   + Math.min(9, Math.max(0, Math.floor(num(g.bestSpireFloor, 0)))) * 45;
-    const winPts = Math.min(400, Math.max(0, Math.floor(num(g.wins, 0))) * 8);
-    const rushMap = { "S+": 360, "SS": 300, "S": 220, "A": 140, "B": 80, "C": 40 };
-    const rushPts = hasOwn(rushMap, g.rushBestGrade) ? rushMap[g.rushBestGrade] : 0;
-    const defiantPts = Math.min(5, Math.max(0, Math.floor(num(g.defiantBreakthroughs, 0)))) * 60;
-    const pactMult = 1 + getActivePactCount(g) * 0.12;
-    const calMult = getCalamityCycleSpec(g).scoreMult || 1.0;
-    return Math.round(pactMult * calMult * (
-      realmPts + stagePts + ascendPts + endBonus + lawPts + synPts + gearPts + towerPts + winPts + allyPts + achPts + rushPts + defiantPts
-    ));
-  }
 
-  function getScoreGrade(score, g = null) {
-    const s = Math.max(0, num(score, 0));
-    let tier = 0; // 0:C, 1:B, 2:A, 3:S, 4:SS, 5:SSS
-    if (s >= 6400) tier = 5;
-    else if (s >= 4800) tier = 4;
-    else if (s >= 3400) tier = 3;
-    else if (s >= 2000) tier = 2;
-    else if (s >= 1000) tier = 1;
-    else tier = 0;
-
-    if (g) {
-      const clearedStages = getClearedCampaignStageIndices(g).length;
-      const totalStars = getTotalStageStars(g);
-      if (totalStars <= 0 || clearedStages <= 0) tier = Math.min(tier, s >= 1400 ? 1 : 0);
-      else if (clearedStages < STAGES.length || totalStars < 8) tier = Math.min(tier, 2);
-      else if (totalStars < 12) tier = Math.min(tier, 3);
-      else if (totalStars < 14) tier = Math.min(tier, 4);
-    }
-
-    const GRADE_TABLE = [
-      { grade: "C",   title: "初窥门径" },
-      { grade: "B",   title: "问道修士" },
-      { grade: "A",   title: "青云真人" },
-      { grade: "S",   title: "太虚剑尊" },
-      { grade: "SS",  title: "九霄真仙" },
-      { grade: "SSS", title: "万古剑帝" }
-    ];
-    return GRADE_TABLE[tier];
-  }
 
   // ==================== Q1 (F07–F13): PAUSE TOKENS, MODAL PRIORITY, NOTICE BUS & PERSISTED PENDING REWARDS ====================
   const COMBAT_CALM_GRACE_SEC = 0.8;
@@ -18927,99 +19746,7 @@ const ART = {
     };
   }
 
-  function computeBatchRecipeCost(g, rec, qty = 1) {
-    const safeQty = Math.max(1, Math.min(5, Math.floor(num(qty, 1))));
-    const fairDisc = (g && currentOmen(g).id === "fair") ? 0.8 : 1.0;
-    const baseStonesEach = Math.max(0, Math.round(num(rec && rec.stones, 0) * fairDisc));
-    const baseStones = baseStonesEach * safeQty;
-    const inv = (g && g.inventory) || {};
-    const missingItems = [];
-    const consumedMats = [];
-    let matBuyCost = 0;
-    Object.entries((rec && rec.inputs) || {}).forEach(([k, req]) => {
-      const reqEach = Math.max(0, Math.floor(num(req, 0)));
-      const reqTotal = reqEach * safeQty;
-      const haveAmt = Math.max(0, Math.floor(num(inv[k], 0)));
-      const useAmt = Math.min(haveAmt, reqTotal);
-      const lack = Math.max(0, reqTotal - haveAmt);
-      const spec = ITEMS[k];
-      consumedMats.push({ id: k, name: (spec && spec.name) || k, req: reqTotal, have: haveAmt, use: useAmt, lack });
-      if (lack > 0) {
-        const unitPrice = Math.round(num(spec && spec.buy, 20) * fairDisc);
-        const subCost = lack * unitPrice;
-        matBuyCost += subCost;
-        missingItems.push({
-          id: k,
-          name: (spec && spec.name) || k,
-          req: reqTotal,
-          have: haveAmt,
-          lack,
-          unitPrice,
-          subCost
-        });
-      }
-    });
-    const perCraft = (g && (hasLaw(g, "nine_pill") || currentOmen(g).id === "alchemy_star")) ? 2 : 1;
-    const bonusHealing = (g && getSanctumLevel(g, "cauldron") >= 4) ? safeQty : 0;
-    const totalMonths = Math.max(1, Math.floor(num(rec && rec.months, 3))) * safeQty;
-    return {
-      qty: safeQty,
-      fairDisc,
-      baseStones,
-      matBuyCost,
-      totalStoneCost: baseStones + matBuyCost,
-      totalMonths,
-      perCraft,
-      totalOutput: perCraft * safeQty,
-      bonusHealing,
-      consumedMats,
-      missingItems,
-      hasMissing: missingItems.length > 0 && matBuyCost > 0
-    };
-  }
 
-  function computeBatchEnhancePreview(g, slot, steps) {
-    const eq = g && g.equippedGear ? g.equippedGear[slot] : null;
-    if (!g || !eq) return { valid: false, slot, steps: 0, maxSteps: 0, totalCost: 0, canAfford: false, before: null, after: null, dAtk: 0, dHp: 0, dDr: 0 };
-    const eqLvl = Math.max(0, Math.floor(num(eq.lvl, 0)));
-    const maxSteps = Math.max(0, 10 - eqLvl);
-    if (typeof steps !== "number" || !Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1 || steps > 5) {
-      return { valid: false, slot, steps: 0, maxSteps, totalCost: 0, canAfford: false, before: null, after: null, dAtk: 0, dHp: 0, dDr: 0 };
-    }
-    const safeSteps = maxSteps > 0 ? Math.min(maxSteps, steps) : 0;
-    let totalCost = 0;
-    for (let i = 0; i < safeSteps; i++) {
-      totalCost += getGearEnhanceCost(g, Object.assign({}, eq, { lvl: eqLvl + i }));
-    }
-    const before = getCombatStats(g);
-    const simGame = Object.assign({}, g, {
-      equippedGear: Object.assign({}, g.equippedGear, {
-        [slot]: Object.assign({}, eq, { lvl: eqLvl + safeSteps })
-      })
-    });
-    const after = getCombatStats(simGame);
-    const dAtk = Math.round(after.atk - before.atk);
-    const dHp = Math.round(after.maxHp - before.maxHp);
-    const dDr = Math.round(after.dmgReduce - before.dmgReduce);
-    const atkPct = before.atk > 0 ? Math.round((dAtk / before.atk) * 1000) / 10 : 0;
-    return {
-      valid: safeSteps > 0,
-      slot,
-      name: eq.name,
-      fromLvl: eqLvl,
-      toLvl: eqLvl + safeSteps,
-      steps: safeSteps,
-      maxSteps,
-      totalCost,
-      canAfford: safeSteps > 0 && num(g.stones, 0) >= totalCost,
-      before,
-      after,
-      dAtk,
-      dHp,
-      dDr,
-      atkPct
-    };
-  }
 
   function computeUpgradePreview(g, kind, targetId, opts = {}) {
     if (!g) return { valid: false, canAfford: false, costText: "", deltaText: "", sceneText: "", missingMats: [] };
@@ -19557,19 +20284,6 @@ const ART = {
     return DUNGEON_CLIMATES[arena.dungeonMap.activeClimate] || null;
   }
 
-  function effectiveGearVal(it, key, overrideLvl = null) {
-    if (!it) return 0;
-    const lvl = Math.max(0, Math.floor(num(overrideLvl !== null ? overrideLvl : (it.lvl || 0), 0)));
-    if (key === "atk" || key === "hp" || key === "dr") {
-      const base = Math.max(0, num(it[key], 0));
-      if (base <= 0) return 0;
-      const baseInt = Math.round(base);
-      if (lvl <= 0) return baseInt;
-      const scaled = Math.round(base * (1 + lvl * GEAR_ENHANCE_STEP_PCT));
-      return base >= 1 ? Math.max(baseInt + lvl, scaled) : scaled;
-    }
-    return it[key] || 0;
-  }
 
   const GEAR_BAG_LIMIT = 24;
   const pendingGearOverflowQueue = []; // legacy compat mirror (formal source of truth is game.pendingRewards)
@@ -20337,26 +21051,7 @@ const ART = {
     requestCalmReevaluation();
   }
 
-  function softCapPct(rawPct, knee = 1.80, cap = 3.20) {
-    if (rawPct <= knee) return Math.max(-0.5, rawPct);
-    const span = Math.max(0.1, cap - knee);
-    return knee + span * (1 - Math.exp(-(rawPct - knee) / span));
-  }
 
-  function getMaxHp(g) {
-    const gSafe = (g && typeof g === "object") ? g : { realm: "mortal" };
-    const gt = getGearTotals(gSafe);
-    const sb = getStarChartBonuses(gSafe);
-    const tortoiseMult = hasStarCore(gSafe, "black_tortoise") ? 1.18 : 1.0;
-    const petHpMult = hasPetSkill(gSafe, "spirit_ward") ? 1.08 : 1.0;
-    const realmHp = (REALMS[gSafe.realm] && REALMS[gSafe.realm].maxHp) || 80;
-    const rawStatMult = Number(gSafe.statMultBonus);
-    const safeStatMult = (Number.isFinite(rawStatMult) && rawStatMult >= 0.1) ? rawStatMult : 1;
-    const rawHpBonus = Number(gSafe.maxHpBonus);
-    const safeHpBonus = (Number.isFinite(rawHpBonus) && rawHpBonus >= 0) ? rawHpBonus : 0;
-    const statCap = 1 + softCapPct(Math.max(0, safeStatMult - 1), 0.75, 1.40);
-    return Math.round((realmHp + safeHpBonus + gt.hp + sb.hp) * statCap * tortoiseMult * petHpMult);
-  }
 
   // ==================== M3 ENGINE: SANCTUM CONSTRUCTION, LIFESPAN, COMPANION PRESENCE & KARMA WORLD ====================
   function ensureSanctumLevels(g) {
@@ -20370,21 +21065,7 @@ const ART = {
     return g.sanctumLevels;
   }
 
-  function readSanctumLevelsPure(g) {
-    const raw = (g && g.sanctumLevels && typeof g.sanctumLevels === "object") ? g.sanctumLevels : {};
-    return {
-      spirit_eye: Math.max(1, Math.min(5, Math.floor(Number(raw.spirit_eye) || 1))),
-      cauldron: Math.max(1, Math.min(5, Math.floor(Number(raw.cauldron) || 1))),
-      sword_forge: Math.max(1, Math.min(5, Math.floor(Number(raw.sword_forge) || 1))),
-      scripture_hall: Math.max(1, Math.min(5, Math.floor(Number(raw.scripture_hall) || 1))),
-      guard_array: Math.max(1, Math.min(5, Math.floor(Number(raw.guard_array) || 1)))
-    };
-  }
 
-  function getSanctumLevel(g, bId) {
-    const lvMap = readSanctumLevelsPure(g);
-    return lvMap[bId] || 1;
-  }
 
   function getSanctumTotalLevel(g) {
     const lvMap = readSanctumLevelsPure(g);
@@ -20411,144 +21092,9 @@ const ART = {
     return cLv >= 5 ? 5 : cLv >= 3 ? 4 : 3;
   }
 
-  function getGearEnhanceCost(g, eq) {
-    if (!eq) return 0;
-    const base = 25 + (eq.lvl || 0) * 20;
-    const fLv = getSanctumLevel(g, "sword_forge");
-    const mult = Math.max(0.60, 1 - (fLv - 1) * 0.10);
-    return Math.max(12, Math.round(base * mult));
-  }
 
-  function getSanctumBonuses(g) {
-    const eyeLv = getSanctumLevel(g, "spirit_eye");
-    const caulLv = getSanctumLevel(g, "cauldron");
-    const forgeLv = getSanctumLevel(g, "sword_forge");
-    const scLv = getSanctumLevel(g, "scripture_hall");
-    const grdLv = getSanctumLevel(g, "guard_array");
-    return {
-      medMult: Number((1 + (eyeLv - 1) * 0.22).toFixed(2)),
-      bonusGourdCharges: (eyeLv >= 3 ? 1 : 0) + (eyeLv >= 5 ? 1 : 0),
-      alchemySweetBonus: (caulLv - 1) * 0.035,
-      maxSoaks: caulLv >= 5 ? 5 : caulLv >= 3 ? 4 : 3,
-      longevityUnlocked: caulLv >= 2,
-      forgeAtk: (forgeLv - 1) * 8,
-      quenchDiscMult: Math.max(0.60, 1 - (forgeLv - 1) * 0.10),
-      seqDmgBonus: forgeLv >= 5 ? 0.25 : forgeLv >= 3 ? 0.12 : 0,
-      expMult: Number((1 + (scLv - 1) * 0.20).toFixed(2)),
-      sourceMult: Number((1 + (scLv - 1) * 0.15).toFixed(2)),
-      bonusBoonRerolls: scLv >= 2 ? 1 : 0,
-      bonusLawRerolls: scLv >= 4 ? 1 : 0,
-      guardDr: (grdLv - 1) * 4,
-      coreHpBonus: (grdLv - 1) * 350,
-      towerDmgMult: Number((0.92 + (grdLv - 1) * 0.22).toFixed(2)),
-      towerCd: Number(Math.max(0.36, 0.68 - (grdLv - 1) * 0.07).toFixed(2)),
-      hasThirdTower: grdLv >= 3
-    };
-  }
 
-  function getLifespanInfo(g) {
-    if (!g) {
-      const defaultRatio = 216 / 744;
-      return {
-        curMonths: 216, maxMonths: 744, remainMonths: 528, curYears: 18, maxYears: 62, remainYears: 44,
-        rawRatio: defaultRatio,
-        ratio: Number(defaultRatio.toFixed(3)),
-        status: "normal", xpEfficiencyMult: 1.0, penaltyPct: 0, isExhausted: false, medPenaltyMult: 1.0
-      };
-    }
-    const r = REALMS[g.realm] || REALMS.mortal;
-    const curMonths = Math.max(12, Math.round((g.startAgeMonths || 216) + (g.elapsedMonths || 0)));
-    const maxMonths = Math.max(240, (r.lifespanMonths || 744) + (g.perk === "immortal_echo" ? 480 : 0) + (g.lifespanBonusMonths || 0));
-    const remainMonths = Math.max(0, maxMonths - curMonths);
-    const curYears = Math.floor(curMonths / 12);
-    const maxYears = Math.floor(maxMonths / 12);
-    const remainYears = Math.max(0, maxYears - curYears);
-    const ratio = g.realm === "ascended" ? 0.05 : curMonths / Math.max(1, maxMonths);
-    let status = "normal";
-    let xpEfficiencyMult = 1.0;
-    let penaltyPct = 0;
-    let isExhausted = false;
-    if (g.realm !== "ascended" && ratio >= 1.0) {
-      status = "exhausted";
-      xpEfficiencyMult = 0.25;
-      penaltyPct = 75;
-      isExhausted = true;
-    } else if (ratio >= 0.95) {
-      status = "critical";
-      xpEfficiencyMult = 0.50;
-      penaltyPct = 50;
-    } else if (ratio >= 0.90) {
-      status = "critical";
-      xpEfficiencyMult = 0.75;
-      penaltyPct = 25;
-    } else if (ratio >= 0.75) {
-      status = "warning";
-      xpEfficiencyMult = 1.0;
-      penaltyPct = 0;
-    }
-    return {
-      curMonths, maxMonths, remainMonths, curYears, maxYears, remainYears,
-      rawRatio: ratio,
-      ratio: Number(ratio.toFixed(3)),
-      status,
-      xpEfficiencyMult,
-      penaltyPct,
-      isExhausted,
-      medPenaltyMult: xpEfficiencyMult
-    };
-  }
 
-  function previewLifespanImpact(g, deltaMonths = 0) {
-    const reqDelta = Math.max(0, Math.round(num(deltaMonths, 0)));
-    const before = getLifespanInfo(g);
-    const isAscended = Boolean(g && g.realm === "ascended");
-    const sandboxExempt = Boolean(
-      (typeof sandboxMode !== "undefined" && sandboxMode) ||
-      (typeof isPracticeModeActive === "function" && isPracticeModeActive()) ||
-      isAscended
-    );
-    const effectiveDelta = sandboxExempt ? 0 : reqDelta;
-    const virtualGame = g && typeof g === "object"
-      ? Object.assign({}, g, { elapsedMonths: Math.max(0, Math.floor(num(g.elapsedMonths, 0))) + effectiveDelta })
-      : { realm: "mortal", startAgeMonths: 216, elapsedMonths: effectiveDelta };
-    const after = getLifespanInfo(virtualGame);
-    const beforeRatio = typeof before.rawRatio === "number" ? before.rawRatio : before.ratio;
-    const afterRatio = typeof after.rawRatio === "number" ? after.rawRatio : after.ratio;
-    const crossedThresholds = [];
-    if (!sandboxExempt && effectiveDelta > 0) {
-      LIFESPAN_THRESHOLDS.forEach(t => {
-        if (beforeRatio < t && afterRatio >= t) crossedThresholds.push(Math.round(t * 100));
-      });
-    }
-    const willExhaust = Boolean(!before.isExhausted && after.isExhausted);
-    let warningText = "";
-    if (sandboxExempt) {
-      warningText = isAscended ? "飞升真仙不受寿元所限" : "沙盒/练习模式免耗寿元";
-    } else if (willExhaust || crossedThresholds.includes(100)) {
-      warningText = "⚠ 将触及 100% 大限（修炼效率降至 25%，绝不删档）";
-    } else if (crossedThresholds.includes(95)) {
-      warningText = "⚠ 将跨过 95% 寿元危线（修炼效率降至 50%）";
-    } else if (crossedThresholds.includes(90)) {
-      warningText = "⚠ 将跨过 90% 大限预警（修炼效率降至 75%）";
-    } else if (crossedThresholds.includes(75)) {
-      warningText = "提示：将跨过 75% 寿元提醒线（建议预备延寿青莲丹或破境）";
-    }
-    const summaryText = sandboxExempt
-      ? `⏳ 预计耗时 ${reqDelta} 月（${warningText}）`
-      : `⏳ 耗寿 ${effectiveDelta} 月（${before.curYears}→${after.curYears}/${after.maxYears} 载 · ${Math.round(before.ratio * 100)}%→${Math.round(after.ratio * 100)}%）`;
-    return {
-      deltaMonths: reqDelta,
-      effectiveDelta,
-      sandboxExempt,
-      before,
-      after,
-      crossedThresholds,
-      crossesAny: crossedThresholds.length > 0,
-      willExhaust,
-      summaryText,
-      warningText
-    };
-  }
 
   function applyLifespanPostAdvanceEffects(prevLf, nextLf, opts = {}) {
     const prevRatio = (prevLf && typeof prevLf.rawRatio === "number") ? prevLf.rawRatio : (prevLf ? prevLf.ratio : 0);
@@ -21361,13 +21907,6 @@ const ART = {
     return false;
   }
 
-  function getCalamityCycleSpec(tierOrGame) {
-    const rawTier = (typeof tierOrGame === "object" && tierOrGame !== null)
-      ? num(tierOrGame.calamityTier, 0)
-      : num(tierOrGame, 0);
-    const clamped = Math.max(0, Math.min(CALAMITY_CYCLES.length - 1, Math.floor(rawTier) || 0));
-    return CALAMITY_CYCLES[clamped] || CALAMITY_CYCLES[0];
-  }
 
   function isCalamityTierUnlocked(tier) {
     ensureMetaState();
@@ -21641,312 +22180,12 @@ const ART = {
     `, true);
   }
 
-  function computeCombatStatLedger(g) {
-    const gSafe = (g && typeof g === "object") ? g : { realm: "mortal" };
-    const finiteNonNeg = (v, fb = 0) => {
-      const n = Number(v);
-      return (Number.isFinite(n) && n >= 0) ? n : fb;
-    };
-    const finiteStatMult = (v) => {
-      const n = Number(v);
-      return (Number.isFinite(n) && n >= 0.1) ? n : 1;
-    };
-    const P = COMBAT_RULE_PARAMS;
-    const r = REALMS[gSafe.realm] || REALMS.mortal;
-    const gt = getGearTotals(gSafe);
-    const maxHp = getMaxHp(gSafe);
-    const safeStatMult = finiteStatMult(gSafe.statMultBonus);
-    const safeStones = finiteNonNeg(gSafe.stones, 0);
-    const safeKarmaDrBonus = finiteNonNeg(gSafe.karmaDrBonus, 0);
-    const safeStartAge = finiteNonNeg(gSafe.startAgeMonths, 216);
-    const safeElapsedMonths = finiteNonNeg(gSafe.elapsedMonths, 0);
-    const maxMpBase = Math.round(r.maxMp * (1 + Math.min(0.65, Math.max(0, safeStatMult - 1))));
-    const stars = getEquippedRelicStars(gSafe);
-    const starScale = 1 + Math.max(0, stars - 1) * 0.18;
-    const lo = (gSafe.loadout && typeof gSafe.loadout === "object") ? gSafe.loadout : {};
-    const pet = (gSafe.pet && typeof gSafe.pet === "object") ? gSafe.pet : {};
-    const mindBonus = lo.mind === "sword_pierce" ? P.skills.sword_pierce.mindAtk : lo.mind === "talisman_clear" ? P.skills.talisman_clear.mindAtk : 0;
-    const relicBonus = Math.round(((lo.relic === "frost_sword" ? 9 : lo.relic === "soul_lamp" ? 8 : 4) * (lo.relic ? starScale : 0)));
-    const starB = getStarChartBonuses(gSafe);
-    const sanctumB = getSanctumBonuses(gSafe);
-    const years = Math.floor((safeStartAge + safeElapsedMonths) / 12);
-    const entries = [];
-    const addEntry = (id, label, category, bucket, rawContribution, cap, conditionText, active) => {
-      const rawVal = Number(rawContribution);
-      const safeRaw = Number.isFinite(rawVal) ? rawVal : 0;
-      entries.push({
-        id,
-        label,
-        category,
-        bucket,
-        rawContribution: safeRaw,
-        cap: cap == null ? null : cap,
-        effectiveDelta: active ? safeRaw : 0,
-        conditionText: conditionText || "常驻生效",
-        active: Boolean(active)
-      });
-    };
 
-    // Bucket 1: Flat Foundation ATK
-    const realmBaseAtk = 14 + r.power * 1.25;
-    const permAtk = finiteNonNeg(gSafe.atkFlatBonus, 0);
-    const perkFlatAtk = gSafe.perk === "sword_sovereign" ? 12 : gSafe.perk === "sword_bone" ? 5 : 0;
-    addEntry("base_realm_atk", `境界根基 (${r.name})`, "realm", "flat_atk", realmBaseAtk, null, "随境界提升", true);
-    if (gt.atk > 0) addEntry("gear_atk", "神兵仙装攻击", "gear", "flat_atk", gt.atk, null, "装备及淬火 (+8%/阶)", true);
-    if (permAtk > 0) addEntry("perm_atk", "永久丹道/奇遇剑攻", "permanent", "flat_atk", permAtk, getPermGrowthCaps(gSafe).atkFlatBonus, "受本境永久上限约束", true);
-    if (perkFlatAtk > 0) addEntry("perk_atk", gSafe.perk === "sword_sovereign" ? "命格 · 轮回剑主" : "命格 · 先天剑骨", "perk", "flat_atk", perkFlatAtk, null, "先天命格常驻", true);
-    if (mindBonus > 0) addEntry("mind_atk", lo.mind === "sword_pierce" ? "心法 · 破妄剑心" : "心法 · 清虚符心", "skill", "flat_atk", mindBonus, null, "装备于心法槽时生效", true);
-    if (relicBonus > 0) addEntry("relic_atk", `本命法宝 ★${stars}`, "relic", "flat_atk", relicBonus, null, "佩带法宝及星级加成", true);
-    if (starB.atk > 0) addEntry("star_atk", "周天星图剑攻", "star", "flat_atk", starB.atk, null, "已点亮星节点（星夜翻倍）", true);
-    if (sanctumB.forgeAtk > 0) addEntry("sanctum_forge_atk", "洞府 · 天工剑炉", "sanctum", "flat_atk", sanctumB.forgeAtk, 32, "剑炉每级 +8 剑攻", true);
-    const baseAtk = realmBaseAtk + gt.atk + permAtk + perkFlatAtk + mindBonus + relicBonus + starB.atk + sanctumB.forgeAtk;
-
-    // Bucket 2: Passive Additive Bonus Pool (soft-capped at knee 0.95, max 1.65)
-    const setB = getActiveSetBonus(gSafe);
-    const ks = getKarmaState(gSafe);
-    const celPh = typeof getCurrentCelestialPhase === "function" ? getCurrentCelestialPhase() : { id: "dawn" };
-    const stoneCurioLv = getCurioStacks(gSafe, "curio_stone_alchemy");
-    const shieldThornLv = getCurioStacks(gSafe, "curio_shield_thorns");
-    const curHp = (typeof gSafe.hp === "number" && Number.isFinite(gSafe.hp) && gSafe.hp >= 0) ? gSafe.hp : maxHp;
-    const phoenixLowHp = gSafe.perk === "calamity_phoenix" && curHp <= maxHp * 0.45;
-
-    const statMultPassive = Math.max(0, safeStatMult - 1) * 0.75;
-    let rawPassivePct = statMultPassive;
-    if (statMultPassive > 0) addEntry("stat_mult_passive", "先天/历练倍增", "permanent", "passive_pct", statMultPassive, null, "并入常驻增伤池", true);
-    if (gSafe.perk === "calamity_phoenix") {
-      addEntry("perk_phoenix_pct", "命格 · 劫火涅槃体", "perk", "passive_pct", 0.22, 0.22, "气血 ≤45% 时触发", phoenixLowHp);
-      if (phoenixLowHp) rawPassivePct += 0.22;
-    }
-    if (hasLaw(gSafe, "age_might")) {
-      const v = Math.min(P.laws.age_might.maxPct, Math.floor(Math.max(0, years - P.laws.age_might.baseAge) / P.laws.age_might.yearsPerStep) * P.laws.age_might.pctPerStep);
-      rawPassivePct += v;
-      addEntry("law_age_might", "法则 · 岁积道威", "law", "passive_pct", v, P.laws.age_might.maxPct, `当前骨龄 ${years} 载`, v > 0);
-    }
-    if (hasLaw(gSafe, "karma_resonance")) {
-      const v = Math.min(P.laws.karma_resonance.maxPct, Object.keys(gSafe.choices || {}).length * P.laws.karma_resonance.pctPerChoice);
-      rawPassivePct += v;
-      addEntry("law_karma_res", "法则 · 红尘共鸣", "law", "passive_pct", v, P.laws.karma_resonance.maxPct, `已结尘缘 ${Object.keys(gSafe.choices || {}).length} 项`, v > 0);
-    }
-    if (hasLaw(gSafe, "wealth_power")) {
-      const v = Math.min(P.laws.wealth_power.maxPct, Math.floor(safeStones / P.laws.wealth_power.perStones) * P.laws.wealth_power.pctPerStep);
-      rawPassivePct += v;
-      addEntry("law_wealth_power", "法则 · 聚宝乾坤", "law", "passive_pct", v, P.laws.wealth_power.maxPct, `当前持有 ${Math.floor(safeStones)} 灵石`, v > 0);
-    }
-    if (stoneCurioLv > 0) {
-      const v = Math.min(PERM_GROWTH_CAPS.curioStoneAlchemyDmgCap, Math.floor(safeStones / 100) * 0.04 * stoneCurioLv);
-      rawPassivePct += v;
-      addEntry("curio_stone_alchemy", `奇物 · 聚灵炼金 ×${stoneCurioLv}`, "boon", "passive_pct", v, PERM_GROWTH_CAPS.curioStoneAlchemyDmgCap, "随持有灵石增伤", v > 0);
-    }
-    if (shieldThornLv > 0) {
-      const hasSh = Boolean(arena && arena.player && (arena.player.shieldHp || 0) > 0);
-      const v = Math.min(0.45, 0.20 * shieldThornLv);
-      if (hasSh) rawPassivePct += v;
-      addEntry("curio_shield_thorns", `奇物 · 玄武反震甲 ×${shieldThornLv}`, "boon", "passive_pct", v, 0.45, "持护体灵盾时生效", hasSh);
-    }
-    if (setB && setB.atkMult) {
-      rawPassivePct += setB.atkMult;
-      addEntry("gear_set_atk", `套装 · ${setB.name}`, "gear", "passive_pct", setB.atkMult, null, "三件同品阶以上激活", true);
-    }
-    const karmaPassive = ks.mode === "demonic" ? 0.18 : ks.mode === "righteous" ? 0.06 : 0;
-    if (karmaPassive > 0) {
-      rawPassivePct += karmaPassive;
-      addEntry("karma_passive", `道心 · ${ks.artName}`, "karma", "passive_pct", karmaPassive, null, ks.mode === "demonic" ? "魔心 ≤-25 常驻" : "正道 ≥+25 常驻", true);
-    }
-    const celPassive = celPh.id === "noon"
-      ? P.celestialPhases.noon.passiveAtkPct
-      : (celPh.id === "blood_dusk"
-        ? (ks.mode === "demonic" ? P.celestialPhases.blood_dusk.demonicPassiveAtkPct : P.celestialPhases.blood_dusk.otherPassiveAtkPct)
-        : 0);
-    if (celPassive > 0) {
-      rawPassivePct += celPassive;
-      addEntry("celestial_passive", celPh.id === "noon" ? "天时 · 午时骄阳" : "天时 · 血月黄昏", "celestial", "passive_pct", celPassive, null, "当前天时常驻池加成", true);
-    }
-    if (hasRunBoon("gold_alchemist")) {
-      const v = Math.min(P.runBoons.gold_alchemist.maxPct, Math.floor(safeStones / P.runBoons.gold_alchemist.perStones) * P.runBoons.gold_alchemist.pctPerStep);
-      rawPassivePct += v;
-      addEntry("boon_gold_alchemist", "秘境词条 · 点石成锋", "boon", "passive_pct", v, P.runBoons.gold_alchemist.maxPct, "本场秘境有效", v > 0);
-    }
-    if (arena && arena.player && (arena.player.boonOverloadTimer || 0) > 0) {
-      rawPassivePct += P.runBoons.gourd_overload.passiveAtkPct;
-      addEntry("boon_gourd_overload", "秘境词条 · 仙酿剑狂", "boon", "passive_pct", P.runBoons.gourd_overload.passiveAtkPct, P.runBoons.gourd_overload.passiveAtkPct, "饮仙葫后限时触发", true);
-    }
-    const petWrathBuffActive = Boolean(arena && arena.player && (arena.player.petBuffTimer || 0) > 0 && hasPetSkill(gSafe, "celestial_wrath"));
-    if (petWrathBuffActive) {
-      rawPassivePct += 0.16;
-      addEntry("pet_wrath_passive", "灵宠技 · 天威狂怒", "pet", "passive_pct", 0.16, 0.16, "灵宠助战增益期间", true);
-    }
-    const cappedPassivePct = softCapPct(rawPassivePct, P.passiveSoftCapKnee, P.passiveSoftCapMax);
-    const passiveRatio = rawPassivePct > 0 ? (cappedPassivePct / rawPassivePct) : 1;
-    entries.forEach(ent => {
-      if (ent.bucket === "passive_pct" && ent.active) {
-        ent.effectiveDelta = Number((ent.rawContribution * passiveRatio).toFixed(4));
-      }
-    });
-
-    // Bucket 3: Active Stance / Burst / Climate Multiplier (capped cleanly at 1.95x)
-    const revMult = (arena && (arena.reversedDomainTimer || 0) > 0) ? 1.20 : 1.0;
-    const isHeavyPosture = Boolean(arena && arena.weaponPosture === "xuanzhong");
-    const postureAtkMult = isHeavyPosture ? 1.28 : 1.0;
-    const rushGlass = Boolean(arena && arena.bossRush && arena.bossRush.active && Array.isArray(arena.rushAffixes) && arena.rushAffixes.includes("rush_glass"));
-    const rushAtkMult = rushGlass ? 1.38 : 1.0;
-    const astralMult = (arena && arena.astralForm && arena.astralForm.active) ? (arena.astralForm.mode === "demonic" ? 1.45 : 1.35) : 1.0;
-    const clim = getActiveDungeonClimate();
-    const climateAtkMult = (clim && clim.id === "blood_haze") ? P.climates.blood_haze.playerActiveMult : 1.0;
-    if (revMult > 1.0) addEntry("reversed_domain_mult", "逆转天象 · 破阵增伤", "domain", "active_mult", revMult, P.activeMultCap, "击毁阵眼柱后 10 秒", true);
-    if (isHeavyPosture) addEntry("posture_heavy_mult", "剑势 · 玄重巨阙式", "posture", "active_mult", postureAtkMult, P.activeMultCap, "切换重剑姿态生效", true);
-    if (rushGlass) addEntry("rush_glass_mult", "万剑冢词缀 · 脆锋狂威", "boon", "active_mult", rushAtkMult, P.activeMultCap, "血量减半换取高伤", true);
-    if (astralMult > 1.0) addEntry("astral_form_mult", "法天象地法相", "domain", "active_mult", astralMult, P.activeMultCap, "法相持续期间", true);
-    if (climateAtkMult > 1.0) addEntry("climate_blood_haze", "秘境气候 · 血雾煞境", "climate", "active_mult", climateAtkMult, P.activeMultCap, "敌我同步增伤", true);
-    const activeMult = Math.min(P.activeMultCap, revMult * postureAtkMult * rushAtkMult * astralMult * climateAtkMult);
-
-    // DR Pool
-    const drGear = gt.dr;
-    const drTurtle = pet.id === "turtle" ? 10 : 0;
-    const drPetWard = hasPetSkill(gSafe, "spirit_ward") ? 12 : 0;
-    const drMindStill = lo.mind === "sword_still" ? P.skills.sword_still.mindDr : 0;
-    const drMindClear = lo.mind === "talisman_clear" ? P.skills.talisman_clear.mindDr : 0;
-    const drRelicSeal = lo.relic === "jade_seal" ? Math.round(12 * starScale) : 0;
-    const drGuardArray = sanctumB.guardDr;
-    const drPhoenix = phoenixLowHp ? 18 : 0;
-    const drPosture = isHeavyPosture ? 16 : 0;
-    const karmaDr = safeKarmaDrBonus + (ks.mode === "righteous" ? 12 : 0);
-    const celDrBonus = celPh.id === "dawn" ? P.celestialPhases.dawn.dr : 0;
-    const dmgReduceBase = drGear + drTurtle + drPetWard + drMindStill + drMindClear + drRelicSeal + drGuardArray + drPhoenix;
-    const finalDmgReduce = dmgReduceBase + drPosture + karmaDr + starB.dr + celDrBonus;
-    if (drGear > 0) addEntry("gear_dr", "护身仙衣/套装减伤", "gear", "dr", drGear, null, "装备及淬火 (+8%/阶)", true);
-    if (drTurtle + drPetWard > 0) addEntry("pet_dr", "灵宠护体减伤", "pet", "dr", drTurtle + drPetWard, null, "玄水灵龟/灵宠护盾技", true);
-    if (drMindStill + drMindClear > 0) addEntry("mind_dr", lo.mind === "sword_still" ? "心法 · 止水剑心" : "心法 · 清虚符心", "skill", "dr", drMindStill + drMindClear, null, "装备于心法槽时生效", true);
-    if (drRelicSeal > 0) addEntry("relic_dr", "法宝 · 镇海玉玺", "relic", "dr", drRelicSeal, null, "佩带法宝及星级加成", true);
-    if (drGuardArray > 0) addEntry("sanctum_guard_dr", "洞府 · 护山大阵", "sanctum", "dr", drGuardArray, 16, "护山大阵每级 +4 减伤", true);
-    if (drPhoenix > 0) addEntry("perk_phoenix_dr", "命格 · 劫火涅槃减伤", "perk", "dr", drPhoenix, 18, "气血 ≤45% 时触发", true);
-    if (drPosture > 0) addEntry("posture_heavy_dr", "剑势 · 玄重巨阙减伤", "posture", "dr", drPosture, 16, "重剑姿态常驻", true);
-    if (karmaDr > 0) addEntry("karma_dr", "道心/正道减伤", "karma", "dr", karmaDr, null, "正道 ≥+25 常驻 +12", true);
-    if (starB.dr > 0) addEntry("star_dr", "周天星图减伤", "star", "dr", starB.dr, null, "星图节点加成", true);
-    if (celDrBonus > 0) addEntry("cel_dawn_dr", "天时 · 晨曦清露", "celestial", "dr", celDrBonus, P.celestialPhases.dawn.dr, "晨曦天时常驻", true);
-    const drMult = Math.max(0.35, 100 / (100 + Math.max(0, finalDmgReduce || 0)));
-
-    // Crit / CritMult / Haste / Speed
-    const tier = getComboTier(arena ? (arena.comboCount || 0) : 0);
-    const lowHpBoonCrit = (hasRunBoon("blood_intent") && curHp <= maxHp * P.runBoons.blood_intent.hpThreshold) ? P.runBoons.blood_intent.crit : 0;
-    const critCore = Math.min(P.critCap, 0.10 + gt.crit + (gSafe.perk === "sword_bone" ? 0.08 : 0) + (pet.id === "fox" ? 0.10 : 0) + (hasPetSkill(gSafe, "fury_fang") ? 0.05 : 0) + (hasLaw(gSafe, "crit_lotus") ? P.laws.crit_lotus.crit : 0) + (currentOmen(gSafe).id === "wolf_star" ? P.omens.wolf_star.crit : 0) + lowHpBoonCrit);
-    const climSpdMult = (clim && clim.id === "sword_wind") ? P.climates.sword_wind.speedMult : 1.0;
-    const climHaste = (clim && clim.id === "sword_wind") ? P.climates.sword_wind.haste : 0;
-    const climCritMult = (clim && clim.id === "thunder_loom") ? P.climates.thunder_loom.critMult : 0;
-    const speedBase = 3.85 * (1 + gt.spd) * (hasLaw(gSafe, "void_haste") ? 1.18 : 1.0) * (1 + tier.spdBonus * 0.30) * climSpdMult;
-    const pineCrit = hasDestinyFruit(gSafe, "eternal_pine") ? 0.10 : 0;
-    const pineMult = hasDestinyFruit(gSafe, "eternal_pine") ? Math.min(0.32, Math.floor(safeStones / 80) * 0.03) : 0;
-    const postureHasteBonus = isHeavyPosture ? -0.14 : 0.14;
-    const postureSpdMult = isHeavyPosture ? 0.92 : 1.10;
-    const finalMaxHp = rushGlass ? Math.max(40, Math.round(maxHp * 0.5)) : maxHp;
-    const gourdHaste = (arena && arena.player && (arena.player.gourdHasteTimer || 0) > 0) ? P.runBoons.gourd_overload.haste : 0;
-    const gourdCrit = (arena && arena.player && (arena.player.gourdCritTimer || 0) > 0) ? 0.18 : 0;
-    const styleSpec = getStyleRankSpec(arena ? (arena.styleScore || 0) : 0);
-    const celCritMult = celPh.id === "blood_dusk" ? P.celestialPhases.blood_dusk.critMult : 0;
-    const perkCritMult = gSafe.perk === "sword_sovereign" ? 0.18 : 0;
-    const perkHaste = gSafe.perk === "primordial_sage" ? 0.10 : 0;
-    const daoB = getDaoBonuses(gSafe);
-    const schoolB = getSchoolSpecBonus(gSafe);
-    const finalAtk = Math.max(8, Math.round(baseAtk * (1 + cappedPassivePct) * activeMult));
-    const finalMaxMp = maxMpBase + starB.mp;
-    const finalCrit = Math.min(P.critCap, critCore + pineCrit + gourdCrit + starB.crit + daoB.critBonus);
-    const finalCritMult = Math.min(P.critMultCap, 1.48 + styleSpec.critDmg * 0.75 + starB.critMult + celCritMult + climCritMult + perkCritMult + (schoolB.critMultBonus || 0) + (hasLaw(gSafe, "crit_lotus") ? P.laws.crit_lotus.critMult : 0) + pineMult + ((setB && setB.critMult) || 0));
-    const finalAtkHaste = Math.max(0.70, Math.min(1.85, 1 + gt.spd + starB.spd + styleSpec.haste * 0.7 + postureHasteBonus + gourdHaste + climHaste + perkHaste + (petWrathBuffActive ? 0.15 : 0) + (schoolB.hasteBonus || 0) + (arena && arena.domain ? 0.24 : 0) + ((arena && (arena.reversedDomainTimer || 0) > 0) ? 0.20 : 0)));
-    const finalSpeed = speedBase * postureSpdMult * (1 + gourdHaste * 0.7 + starB.spd);
-
-    addEntry("base_crit", "基础暴击率", "realm", "crit", 0.10, P.critCap, "角色基础 10%", true);
-    if (gt.crit > 0) addEntry("gear_crit", "装备暴击率", "gear", "crit", gt.crit, P.critCap, "神兵词条与套装", true);
-    if (gSafe.perk === "sword_bone") addEntry("perk_crit", "命格 · 先天剑骨暴击", "perk", "crit", 0.08, P.critCap, "常驻 +8%", true);
-    if (pet.id === "fox" || hasPetSkill(gSafe, "fury_fang")) addEntry("pet_crit", "灵宠暴击加成", "pet", "crit", (pet.id === "fox" ? 0.10 : 0) + (hasPetSkill(gSafe, "fury_fang") ? 0.05 : 0), P.critCap, "火狐/狂牙灵技", true);
-    if (hasLaw(gSafe, "crit_lotus")) addEntry("law_crit_lotus", "法则 · 暴击青莲", "law", "crit", P.laws.crit_lotus.crit, P.critCap, "暴击与暴伤各 +18%", true);
-    if (currentOmen(gSafe).id === "wolf_star") addEntry("omen_wolf_star", "天象 · 贪狼破军", "celestial", "crit", P.omens.wolf_star.crit, P.critCap, "天象常驻 +12%", true);
-    if (pineCrit > 0) addEntry("fruit_pine_crit", "道果 · 万古长青暴击", "fruit", "crit", pineCrit, P.critCap, "道果常驻 +10%", true);
-    if (daoB.critBonus > 0) addEntry("dao_edge_crit", "道果 · 锋芒暴击", "dao", "crit", daoB.critBonus, 0.08, `锋芒 ${daoB.edge}`, true);
-    if (starB.crit > 0) addEntry("star_crit", "周天星图暴击", "star", "crit", starB.crit, P.critCap, "已点亮星节点加成", true);
-    if (lowHpBoonCrit > 0) addEntry("boon_blood_intent", "词条 · 血战剑心", "boon", "crit", lowHpBoonCrit, P.critCap, "气血 ≤55% 时触发", true);
-    if (gourdCrit > 0) addEntry("gourd_crimson_vine", "仙葫 · 赤渊龙血藤", "boon", "crit", gourdCrit, P.critCap, "饮葫后 5 秒 +18%", true);
-
-    addEntry("base_crit_mult", "基础暴击倍率", "realm", "crit_mult", 1.48, P.critMultCap, "角色基础 1.48×", true);
-    if (styleSpec.critDmg > 0) addEntry("style_crit_mult", "评价 · 剑意评分暴伤", "style", "crit_mult", styleSpec.critDmg * 0.75, P.critMultCap, `当前评分 ${styleSpec.rank || ""}`, true);
-    if (starB.critMult > 0) addEntry("star_crit_mult", "周天星图暴伤", "star", "crit_mult", starB.critMult, P.critMultCap, "已点亮星节点加成", true);
-    if (celCritMult > 0) addEntry("cel_crit_mult", "天时 · 血月黄昏暴伤", "celestial", "crit_mult", celCritMult, P.critMultCap, "血月黄昏天时常驻", true);
-    if (climCritMult > 0) addEntry("climate_crit_mult", "秘境气候 · 雷云暴伤", "climate", "crit_mult", climCritMult, P.critMultCap, "当前秘境气候加成", true);
-    if (hasLaw(gSafe, "crit_lotus")) addEntry("law_crit_lotus_mult", "法则 · 暴击青莲暴伤", "law", "crit_mult", P.laws.crit_lotus.critMult, P.critMultCap, "暴击青莲常驻 +18%", true);
-    if (setB && setB.critMult > 0) addEntry("gear_set_crit_mult", `套装 · ${setB.name}暴伤`, "gear", "crit_mult", setB.critMult, P.critMultCap, "三件同品阶以上激活", true);
-    if (schoolB.critMultBonus > 0) addEntry("school_crit_mult", `流派 · ${schoolB.name}暴伤`, "school", "crit_mult", schoolB.critMultBonus, P.critMultCap, "御剑专精 +8%", true);
-    if (pineMult > 0) addEntry("fruit_pine_mult", "道果 · 万古长青暴伤", "fruit", "crit_mult", pineMult, 0.32, "每 80 灵石 +3%（上限 +32%）", true);
-    if (perkCritMult > 0) addEntry("perk_sovereign_mult", "命格 · 轮回剑主暴伤", "perk", "crit_mult", perkCritMult, P.critMultCap, "常驻暴伤 +18%", true);
-
-    if (schoolB.hasteBonus > 0) addEntry("school_haste", `流派 · ${schoolB.name}攻速`, "school", "haste", schoolB.hasteBonus, 1.85, "御剑专精 +10%", true);
-    addEntry("posture_haste", isHeavyPosture ? "剑势 · 玄重巨阙攻速" : "剑势 · 青莲疾剑攻速", "posture", "haste", postureHasteBonus, 1.85, isHeavyPosture ? "重剑姿态 -14%" : "疾剑姿态 +14%", true);
-    if (gt.spd > 0) addEntry("gear_spd", "装备攻速/移速", "gear", "haste", gt.spd, 1.85, "含御风剑意 +10%", true);
-    if (starB.spd > 0) addEntry("star_haste", "周天星图攻速", "star", "haste", starB.spd, 1.85, "已点亮星节点加成", true);
-    if (styleSpec.haste > 0) addEntry("style_haste", "评价 · 剑意评分攻速", "style", "haste", styleSpec.haste * 0.7, 1.85, `当前评分 ${styleSpec.rank || ""}`, true);
-    if (perkHaste > 0) addEntry("perk_haste", "命格 · 太初鸿蒙胎", "perk", "haste", perkHaste, 1.85, "常驻攻速 +10%", true);
-    if (gourdHaste > 0) addEntry("gourd_haste", "仙葫/词条疾风攻速", "boon", "haste", gourdHaste, 1.85, "青鸾御风羽/仙酿剑狂 +22%", true);
-    if (climHaste > 0) addEntry("climate_haste", "秘境气候 · 剑风攻速", "climate", "haste", climHaste, 1.85, "当前秘境气候加成", true);
-    if (petWrathBuffActive) addEntry("pet_wrath_haste", "灵宠技 · 天威狂怒攻速", "pet", "haste", 0.15, 1.85, "灵宠助战增益期间 +15%", true);
-    if (arena && arena.domain) addEntry("domain_haste", "剑域展开攻速", "domain", "haste", 0.24, 1.85, "剑域持续期间 +24%", true);
-    if (arena && (arena.reversedDomainTimer || 0) > 0) addEntry("reversed_domain_haste", "逆转天象 · 破阵攻速", "domain", "haste", 0.20, 1.85, "击毁阵眼柱后 10 秒 +20%", true);
-
-    return {
-      entries,
-      totals: {
-        maxHp: finalMaxHp,
-        maxMp: finalMaxMp,
-        atk: finalAtk,
-        dmgReduce: finalDmgReduce,
-        crit: finalCrit,
-        critMult: finalCritMult,
-        atkHaste: finalAtkHaste,
-        speed: finalSpeed,
-        drMult: Number(drMult.toFixed(4)),
-        daoBonuses: daoB,
-        schoolSpec: schoolB,
-        statBreakdown: {
-          baseAtk: Math.round(baseAtk),
-          rawPassivePct: Number(rawPassivePct.toFixed(3)),
-          cappedPassivePct: Number(cappedPassivePct.toFixed(3)),
-          activeMult: Number(activeMult.toFixed(3))
-        }
-      },
-      caps: {
-        passiveSoftCapKnee: P.passiveSoftCapKnee,
-        passiveSoftCapMax: P.passiveSoftCapMax,
-        activeMultCap: P.activeMultCap,
-        critCap: P.critCap,
-        critMultCap: P.critMultCap,
-        atkHasteMin: 0.70,
-        atkHasteMax: 1.85,
-        drMultFloor: 0.35
-      }
-    };
-  }
-
-  function getCombatStats(g) {
-    const t = computeCombatStatLedger(g).totals;
-    return {
-      maxHp: t.maxHp,
-      maxMp: t.maxMp,
-      atk: t.atk,
-      dmgReduce: t.dmgReduce,
-      crit: t.crit,
-      critMult: t.critMult,
-      atkHaste: t.atkHaste,
-      speed: t.speed,
-      daoBonuses: t.daoBonuses,
-      schoolSpec: t.schoolSpec,
-      statBreakdown: t.statBreakdown
-    };
-  }
 
 
   let questHudCollapsed = false;
   let currentGoalTab = "mainline";
 
-  function getTotalStageStars(g) {
-    if (!g || !g.stageStars) return 0;
-    return [0, 1, 2, 3, 4].reduce((s, idx) => s + Math.min(3, g.stageStars[idx] || 0), 0);
-  }
 
   function getBountySpec(g, chain) {
     const tier = Math.max(1, (g.bountyTiers && g.bountyTiers[chain.slot]) || 1);
@@ -28873,12 +29112,11 @@ const ART = {
     const hasLotusSoak = game && game.gourd && Array.isArray(game.gourd.soaks) && game.gourd.soaks.includes("iron_lotus");
     const hyperMult = (p.hyperArmorTimer || 0) > 0 ? (hasLotusSoak ? 0.52 : 0.65) : 1.0;
     const wardMult = (hasGearAffix(game, "xuanwu_ward") ? 0.86 : 1.0) * hyperMult;
-    const drMult = Math.max(0.35, 100 / (100 + Math.max(0, st.dmgReduce || 0)));
-    let dmg = Math.max(4, Math.round(rawDmg * pactEnemyMult * drMult * wardMult));
-    if (!(opts && opts.uncapped)) {
-      const singleHitCap = Math.max(4, Math.round(st.maxHp * SINGLE_HIT_CAP_RATIO));
-      dmg = Math.min(dmg, singleHitCap);
-    }
+    let dmg = applySingleHitCap(rawDmg, st.maxHp, st.dmgReduce, {
+      pactEnemyMult,
+      wardMult,
+      uncapped: Boolean(opts && opts.uncapped)
+    });
 
     if (hasPrimordialAwakening(game, "primordial_aegis") && (p.primordialShieldCd || 0) <= 0 && dmg >= st.maxHp * 0.14) {
       p.primordialShieldCd = 11.0;
@@ -33817,60 +34055,7 @@ const ART = {
     }
   }
 
-  function computeRecipeCostBreakdown(g, rec) {
-    const fairDisc = (g && currentOmen(g).id === "fair") ? 0.8 : 1.0;
-    const baseStones = Math.max(0, Math.round(num(rec && rec.stones, 0) * fairDisc));
-    const missingItems = [];
-    let matBuyCost = 0;
-    const inv = (g && g.inventory) || {};
-    Object.entries((rec && rec.inputs) || {}).forEach(([k, req]) => {
-      const reqAmt = Math.max(0, Math.floor(num(req, 0)));
-      const haveAmt = Math.max(0, Math.floor(num(inv[k], 0)));
-      const lack = Math.max(0, reqAmt - haveAmt);
-      if (lack > 0) {
-        const spec = ITEMS[k];
-        const unitPrice = Math.round(num(spec && spec.buy, 20) * fairDisc);
-        const subCost = lack * unitPrice;
-        matBuyCost += subCost;
-        missingItems.push({
-          id: k,
-          name: (spec && spec.name) || k,
-          req: reqAmt,
-          have: haveAmt,
-          lack,
-          unitPrice,
-          subCost
-        });
-      }
-    });
-    return {
-      fairDisc,
-      baseStones,
-      missingItems,
-      matBuyCost,
-      totalStoneCost: baseStones + matBuyCost,
-      hasMissing: missingItems.length > 0 && matBuyCost > 0
-    };
-  }
 
-  function getRelicTemperCost(g, stars, useCore = false) {
-    const safeStars = Math.max(1, Math.min(5, Math.floor(num(stars, 1))));
-    const forgeDisc = (g && getSanctumLevel(g, "sword_forge") >= 4) ? 0.85 : 1.0;
-    const coreCount = g && g.inventory ? Math.max(0, Math.floor(num(g.inventory.core, 0))) : 0;
-    const hasCore = coreCount > 0;
-    const applyCore = Boolean(useCore && hasCore);
-    const baseStones = Math.max(35, Math.round(safeStars * 75 * forgeDisc));
-    const discStones = Math.max(35, Math.round((safeStars * 75 - 30) * forgeDisc));
-    const finalStones = applyCore ? discStones : baseStones;
-    return {
-      baseStones,
-      discStones,
-      finalStones,
-      savedStones: Math.max(0, baseStones - discStones),
-      hasCore,
-      applyCore
-    };
-  }
 
   function canRefillGourdInAlchemyDrawer() {
     return Boolean(game && arena.sanctumMode && isCombatCalm() && !arena.tribulation);
@@ -38786,6 +38971,72 @@ const ART = {
     triggerSwordGlideRavineDash,
     startSectDefenseSiege,
     buildBladeSplineSamples
+  };
+  // ==================== Q5 (F31/F32): ADDITIVE COMPAT DEBUG FACADE ====================
+  // Strictly additive facade delegating to preserved window.__CHENYUAN_V18__..__CHENYUAN_V25__.
+  window.__CHENYUAN_DEBUG__ = {
+    version: "q5-compat-1",
+    namespaces: {
+      v18: window.__CHENYUAN_V18__,
+      v19: window.__CHENYUAN_V19__,
+      v20: window.__CHENYUAN_V20__,
+      v21: window.__CHENYUAN_V21__,
+      v22: window.__CHENYUAN_V22__,
+      v23: window.__CHENYUAN_V23__,
+      v24: window.__CHENYUAN_V24__,
+      v25: window.__CHENYUAN_V25__
+    },
+    getNamespace: (ver) => {
+      const key = String(ver || "").toLowerCase();
+      return hasOwn(window.__CHENYUAN_DEBUG__.namespaces, key)
+        ? window.__CHENYUAN_DEBUG__.namespaces[key]
+        : null;
+    },
+    getState: () => window.__CHENYUAN_V25__.getState(),
+    rules: {
+      computeCombatStatLedger,
+      getCombatStats,
+      effectiveGearVal,
+      computeGearAffixBudget,
+      rollGearItem,
+      getLifespanInfo,
+      previewLifespanImpact,
+      computeRecipeCostBreakdown,
+      computeBatchRecipeCost,
+      computeBatchEnhancePreview,
+      computeCompetitionScore,
+      getScoreGrade,
+      applySingleHitCap
+    },
+    persistence: {
+      STORAGE_KEY,
+      META_KEY,
+      computeSaveChecksum,
+      buildCanonicalSavePayload,
+      parseAndValidateSaveRaw,
+      mergeMetaStates,
+      normalizeGearItem,
+      normalizeLoadedGame,
+      exportFullCloudSaveCode: (...args) => window.__CHENYUAN_V24__.exportFullCloudSaveCode(...args),
+      importFullCloudSaveCode: (...args) => window.__CHENYUAN_V24__.importFullCloudSaveCode(...args)
+    },
+    art: {
+      getCount: () => Object.keys(ART).length,
+      getKeys: () => Object.keys(ART),
+      getDecodeSummary: () => window.__CHENYUAN_V25__.getArtDecodeSummary()
+    },
+    telemetry: {
+      getNoticeState: () => ({
+        inbox: window.__CHENYUAN_V25__.getCombatInbox(),
+        activeUnlockCardId: window.__CHENYUAN_V25__.getActiveUnlockCardId(),
+        pendingUnlockCards: window.__CHENYUAN_V25__.getPendingUnlockCardQueue()
+      }),
+      getPendingRewards: () => window.__CHENYUAN_V25__.getPendingRewards(),
+      getPauseTokens: () => window.__CHENYUAN_V25__.getPauseTokens(),
+      getEncounterTelemetry: () => window.__CHENYUAN_V25__.getEncounterTelemetry(),
+      getFramePerfSnapshot: () => window.__CHENYUAN_V25__.getPerfStats(),
+      getPerfStats: () => window.__CHENYUAN_V25__.getPerfStats()
+    }
   };
   window.addEventListener("load", () => {
     preloadSprites();

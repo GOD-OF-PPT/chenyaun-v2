@@ -78,3 +78,22 @@
 | **D02** | 正式模式保留全部已有技能槽与键位；2主动+1奥义槽位试验仅在 `sandboxMode` 内显式切换（退出沙盒自动还原） | 关闭 `sandboxSlotPrototype` 即恢复完整技能栏 |
 | **D05** | 校准新装备预算与黑市防套利；保留全部旧资源、旧评级与旧存档已有装备属性不做回溯削弱 | 仅需还原 `GEAR_BUDGET_BY_RARITY` 或 `km_demon_core` 售价封顶 |
 | **D07** | 修正已确认的演武套利与文案-实效漂移；保持玩家明确主动的菜单与战斗操作 | 独立函数/常量封装，逐项可回退 |
+
+## 8. 首卷视听打磨与观察式试玩状态（Q4：F24–F29）
+
+Q4 围绕「第一卷破庙→救援→择道→洞府整备→狼王→渡劫」建立完整体验样板（自动化回归 `Q4-1..Q4-5` 已覆盖）：
+
+- **动作与读招对齐（F24）**：统一主角六向动作轮廓、受击/闪避反馈与狼王/石卫蓄势锚点，确保金芒可识破与红危可凝时判定与视觉朝向一致。
+- **场景分层与资产质检（F25–F26）**：分层背景视差避让危招前景，支持 `reducedMotion` 冻结视差；`scripts/art-manifest.mjs --check` 强制校验 115 张内联 WebP 二进制尺寸与 5 张受保护 VP8X RGBA 精灵（`item_rough_jade`、`pet_fox`、`pet_roc`、`pet_sword`、`pet_turtle`）。
+- **打击反馈、音频层次与首卷整备闭环（F27–F28）**：普通/重击/识破/终结四级声效与帧时间统计接入；破庙择道预览下战收益，洞府整备保留 D01 非强制炼丹指引，渡劫界面呈现天地人三品规则对比与弹反归因，且试玩遥测严格不污染主/元存档。
+- **观察式真人试玩（F29）**：当前状态为 **`NOT_RUN`（`0 / 5~8` 名真人新玩家）**。自动化脚本与遥测导出格式已就绪，但不以机器人或脚本替代真人理解度/停顿/死亡归因验收。
+
+## 9. 模块化编辑源与分层测试基线（Q5：F30–F33 · D06 保守基线）
+
+依据 **D06 保守基线**，在严格保持单文件独立发行与历史调试钩子零破坏的前提下完成源产物分离与测试分层：
+
+- **运行资产提取与确定性构建（F30）**：从 `web/public/playable-v2.html` 内联 `const ART` 原样提取全部 115 张 WebP 至 `src/assets/runtime/*.webp` 与无时间戳清单 `src/assets/art-index.json`（保留 5 张 VP8X RGBA 精灵，不改动 `web/public/art/v4/`）。纯 Node ESM 脚本 `scripts/build-playable.mjs` 支持默认构建、`--check` 逐字节校验与 `--out <path>`，并内置单 `<script>`、零外部 CDN、`vm.Script` 语法及 115 张 WebP SHA-256 双向核验。
+- **纯配置与规则渐进抽离（F31）**：将无副作用配置与核心数值/经济/存档规则抽离为 9 个可被 Node 原生导入的 `.mjs` 模块（`src/config/*`、`src/rules/*`、`src/state/save-rules.mjs`），构建时剥离顶层 `import`/`export` 并按 2 空格缩进拼入单一运行时 IIFE，保持 `eval-combat-matrix.mjs`、`audit-economy.mjs` 与 `art-manifest.mjs` 结果零漂移。
+- **测试分层与兼容门面（F32）**：新增纯 Node `node:test` 单元测试（`tests/unit/*.test.mjs`）、3 项 Q5 浏览器回归套件（`Q5-1..Q5-3`，总回归 `70 → 73`，含 `file://` 与 HTTP 一致性及 Node ESM 与 Chromium 实机交叉校验），并将 `npm run build:check` 与 `npm run test:unit` 接入 `.github/workflows/e2e.yml`。全量保留 `window.__CHENYUAN_V18__` 至 `__CHENYUAN_V25__` 全部 382 项既有接口，仅增补只读委托门面 `window.__CHENYUAN_DEBUG__`（`q5-compat-1`）。
+- **非核心扩展边界（F37 · D08）**：按 D08 保守基线，扫荡、移动端适配与自动连升保持 **`DEFERRED`**，不在 Q5 重构中引入。
+
