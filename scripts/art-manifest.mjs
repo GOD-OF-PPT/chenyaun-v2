@@ -61,6 +61,94 @@ const IGNORED_OBJECT_PROPS = new Set([
  */
 const PROVENANCE_OVERRIDES = {};
 
+const PROTECTED_INLINE_RGBA_KEYS = Object.freeze([
+  "item_rough_jade",
+  "pet_fox",
+  "pet_roc",
+  "pet_sword",
+  "pet_turtle",
+]);
+
+function parseWebpHeader(buf, label = "webp") {
+  if (!Buffer.isBuffer(buf) || buf.length < 20) {
+    throw new Error(`Invalid WebP buffer (too short: ${buf ? buf.length : 0} bytes) for ${label}`);
+  }
+  if (buf.toString("ascii", 0, 4) !== "RIFF" || buf.toString("ascii", 8, 12) !== "WEBP") {
+    throw new Error(`Invalid RIFF/WEBP signature for ${label}`);
+  }
+  const riffSize = buf.readUInt32LE(4);
+  if (riffSize + 8 > buf.length + 1) {
+    throw new Error(`Truncated RIFF container (${buf.length} < ${riffSize + 8}) for ${label}`);
+  }
+  const fourcc = buf.toString("ascii", 12, 16);
+  const chunkSize = buf.readUInt32LE(16);
+  if (fourcc === "VP8 ") {
+    if (buf.length < 30) throw new Error(`Truncated VP8 header for ${label}`);
+    const frameTag = buf[20] | (buf[21] << 8) | (buf[22] << 16);
+    if ((frameTag & 1) !== 0) throw new Error(`Non-keyframe VP8 bitstream for ${label}`);
+    if (buf[23] !== 0x9d || buf[24] !== 0x01 || buf[25] !== 0x2a) {
+      throw new Error(`Invalid VP8 start code for ${label}`);
+    }
+    const width = buf.readUInt16LE(26) & 0x3fff;
+    const height = buf.readUInt16LE(28) & 0x3fff;
+    return { format: "VP8", width, height, alpha: false };
+  }
+  if (fourcc === "VP8L") {
+    if (buf.length < 25 || buf[20] !== 0x2f) {
+      throw new Error(`Invalid VP8L signature for ${label}`);
+    }
+    const bits = buf.readUInt32LE(21);
+    const width = (bits & 0x3fff) + 1;
+    const height = ((bits >>> 14) & 0x3fff) + 1;
+    const alpha = Boolean((bits >>> 28) & 1);
+    return { format: "VP8L", width, height, alpha };
+  }
+  if (fourcc === "VP8X") {
+    if (buf.length < 30 || chunkSize < 10) {
+      throw new Error(`Invalid VP8X header for ${label}`);
+    }
+    const flags = buf[20];
+    let alpha = Boolean(flags & 0x10);
+    const width = 1 + (buf[24] | (buf[25] << 8) | (buf[26] << 16));
+    const height = 1 + (buf[27] | (buf[28] << 8) | (buf[29] << 16));
+    let offset = 20 + chunkSize + (chunkSize & 1);
+    while (offset + 8 <= buf.length) {
+      const subId = buf.toString("ascii", offset, offset + 4);
+      const subSize = buf.readUInt32LE(offset + 4);
+      if (subId === "ALPH") {
+        alpha = true;
+      } else if (subId === "VP8L" && offset + 13 <= buf.length && buf[offset + 8] === 0x2f) {
+        const subBits = buf.readUInt32LE(offset + 9);
+        if ((subBits >>> 28) & 1) alpha = true;
+      }
+      offset += 8 + subSize + (subSize & 1);
+    }
+    return { format: "VP8X", width, height, alpha };
+  }
+  throw new Error(`Unsupported WebP chunk "${fourcc}" for ${label}`);
+}
+
+function classifyPreloadCompatibility(asset) {
+  const { key, webp } = asset;
+  const alpha = Boolean(webp && webp.alpha);
+  if (key.startsWith("scene_")) {
+    return alpha
+      ? "Transparent scene layer — verify framing before arena overlay"
+      : "Opaque full-bleed backdrop — do not blind-overlay over arena_*";
+  }
+  if (key.startsWith("banner_")) {
+    return "Opaque full-bleed banner — reserve for modal/header slots, do not stack on arena";
+  }
+  if (key.startsWith("ui_")) {
+    return alpha
+      ? "Transparent UI ornament — safe for HUD/panel framing"
+      : "Opaque UI texture — use as panel backdrop or blend mode only, do not blind-overlay over arena_*";
+  }
+  return alpha
+    ? "Transparent RGBA sprite — compatible with arena overlay"
+    : "Opaque RGB image — do not overlay transparently without alpha cutout";
+}
+
 function sha256Hex(buffer) {
   return crypto.createHash("sha256").update(buffer).digest("hex");
 }
@@ -136,6 +224,16 @@ function parseArtBlock(lines, htmlLabel) {
       throw new Error(`Empty decoded payload for ART key "${key}" at ${htmlLabel}:${lineNum}`);
     }
 
+    let webp = null;
+    if (subtype.toLowerCase() === "webp") {
+      webp = parseWebpHeader(decoded, `${htmlLabel}:${lineNum} (${key})`);
+      if (webp.width < 16 || webp.height < 16) {
+        throw new Error(
+          `WebP dimensions too small (${webp.width}x${webp.height} < 16x16) for ART key "${key}" at ${htmlLabel}:${lineNum}`
+        );
+      }
+    }
+
     seenKeys.add(key);
     const override = PROVENANCE_OVERRIDES[key] || {};
     inlineAssets.push({
@@ -145,6 +243,7 @@ function parseArtBlock(lines, htmlLabel) {
       mime: `image/${subtype}`,
       bytes: decoded.length,
       sha256: sha256Hex(decoded),
+      webp,
       origin: override.origin || DEFAULT_LEGACY_ORIGIN,
       license: override.license || DEFAULT_LEGACY_LICENSE,
       notes: override.notes || "",
@@ -692,6 +791,11 @@ function reconcileDiskFiles(inlineAssets) {
       status = inline.sha256 === sha256 ? "MATCH" : "DIFFERS";
     }
 
+    let diskWebp = null;
+    if (ext.toLowerCase() === ".webp") {
+      diskWebp = parseWebpHeader(buf, repoRelPath);
+    }
+
     const record = {
       file: repoRelPath,
       relInArt: relPosix,
@@ -703,6 +807,8 @@ function reconcileDiskFiles(inlineAssets) {
       inlineLine: inline ? inline.defLine : null,
       diskSha256: sha256,
       inlineSha256: inline ? inline.sha256 : null,
+      diskWebp,
+      inlineWebp: inline ? inline.webp : null,
       origin: (PROVENANCE_OVERRIDES[mappedKey] || {}).origin || DEFAULT_LEGACY_ORIGIN,
       license: (PROVENANCE_OVERRIDES[mappedKey] || {}).license || DEFAULT_LEGACY_LICENSE,
     };
@@ -756,6 +862,76 @@ function buildManifestData(htmlPath = DEFAULT_HTML_PATH) {
     );
   }
   const diskFiles = reconcileDiskFiles(inlineAssets);
+  const inlineByKey = new Map(inlineAssets.map((a) => [a.key, a]));
+  const diskByKey = new Map(diskFiles.filter((d) => d.mappedKey).map((d) => [d.mappedKey, d]));
+
+  // Validate PROVENANCE_OVERRIDES entries cleanly
+  for (const [overrideKey, overrideVal] of Object.entries(PROVENANCE_OVERRIDES)) {
+    if (!overrideVal || typeof overrideVal !== "object" || Array.isArray(overrideVal)) {
+      throw new Error(`Invalid PROVENANCE_OVERRIDES entry for "${overrideKey}"`);
+    }
+    if (overrideVal.origin !== undefined && (typeof overrideVal.origin !== "string" || !overrideVal.origin.trim())) {
+      throw new Error(`PROVENANCE_OVERRIDES["${overrideKey}"].origin must be a non-empty string`);
+    }
+    if (overrideVal.license !== undefined && (typeof overrideVal.license !== "string" || !overrideVal.license.trim())) {
+      throw new Error(`PROVENANCE_OVERRIDES["${overrideKey}"].license must be a non-empty string`);
+    }
+    const isKnownKey =
+      inlineByKey.has(overrideKey) ||
+      overrideKey === "favicon_svg" ||
+      overrideKey.startsWith("other:");
+    if (!isKnownKey) {
+      throw new Error(`PROVENANCE_OVERRIDES references unknown asset key "${overrideKey}"`);
+    }
+  }
+
+  // F26 Guard: Protect the 5 divergent inline RGBA assets against accidental RGB disk overwrite!
+  const protectedRgbaAudit = [];
+  for (const pKey of PROTECTED_INLINE_RGBA_KEYS) {
+    const asset = inlineByKey.get(pKey);
+    if (!asset) {
+      throw new Error(`Protected inline RGBA asset "${pKey}" is missing from const ART!`);
+    }
+    if (!asset.webp || asset.webp.alpha !== true) {
+      throw new Error(
+        `Protected inline RGBA asset "${pKey}" lost alpha channel (format=${asset.webp ? asset.webp.format : "unknown"}, alpha=${asset.webp ? asset.webp.alpha : "none"})!`
+      );
+    }
+    const diskRec = diskByKey.get(pKey) || null;
+    if (diskRec && diskRec.diskSha256 === asset.sha256 && diskRec.diskWebp && !diskRec.diskWebp.alpha) {
+      throw new Error(
+        `Protected inline RGBA asset "${pKey}" was clobbered by smaller RGB disk file "${diskRec.file}"!`
+      );
+    }
+    if (diskRec && diskRec.diskBytes > 0 && asset.bytes <= diskRec.diskBytes && diskRec.diskWebp && !diskRec.diskWebp.alpha) {
+      throw new Error(
+        `Protected inline RGBA asset "${pKey}" (${asset.bytes} B) must remain larger RGBA payload than RGB disk file "${diskRec.file}" (${diskRec.diskBytes} B)!`
+      );
+    }
+    protectedRgbaAudit.push({
+      key: pKey,
+      inlineBytes: asset.bytes,
+      inlineFormat: asset.webp.format,
+      inlineAlpha: asset.webp.alpha,
+      inlineDims: `${asset.webp.width}x${asset.webp.height}`,
+      diskFile: diskRec ? diskRec.file : null,
+      diskBytes: diskRec ? diskRec.diskBytes : null,
+      diskFormat: diskRec && diskRec.diskWebp ? diskRec.diskWebp.format : null,
+      diskAlpha: diskRec && diskRec.diskWebp ? diskRec.diskWebp.alpha : null,
+    });
+  }
+
+  const preloadAudit = inlineAssets
+    .filter((a) => a.preloadOnly)
+    .map((a) => ({
+      key: a.key,
+      bytes: a.bytes,
+      format: a.webp ? a.webp.format : "unknown",
+      width: a.webp ? a.webp.width : 0,
+      height: a.webp ? a.webp.height : 0,
+      alpha: Boolean(a.webp && a.webp.alpha),
+      verdict: classifyPreloadCompatibility(a),
+    }));
 
   const totalInlineBytes = inlineAssets.reduce((sum, a) => sum + a.bytes, 0);
   const totalDiskBytes = diskFiles.reduce((sum, d) => sum + d.diskBytes, 0);
@@ -765,6 +941,8 @@ function buildManifestData(htmlPath = DEFAULT_HTML_PATH) {
   const diskDiffCount = diskFiles.filter((d) => d.status === "DIFFERS").length;
   const diskUnmappedCount = diskFiles.filter((d) => d.status === "UNMAPPED").length;
   const inlineOnlyCount = inlineAssets.filter((a) => a.diskStatus === "INLINE_ONLY").length;
+  const inlineAlphaCount = inlineAssets.filter((a) => a.webp && a.webp.alpha).length;
+  const inlineOpaqueCount = inlineAssets.length - inlineAlphaCount;
 
   return {
     sourceHtml: HTML_REL,
@@ -777,6 +955,8 @@ function buildManifestData(htmlPath = DEFAULT_HTML_PATH) {
       totalInlineBytes,
       activeUsedCount,
       preloadOnlyCount,
+      inlineAlphaCount,
+      inlineOpaqueCount,
       diskCount: diskFiles.length,
       totalDiskBytes,
       diskMatchCount,
@@ -784,7 +964,10 @@ function buildManifestData(htmlPath = DEFAULT_HTML_PATH) {
       diskUnmappedCount,
       inlineOnlyCount,
       otherInlineCount: otherInlineAssets.length,
+      protectedRgbaCount: protectedRgbaAudit.length,
     },
+    protectedRgbaAudit,
+    preloadAudit,
     diskFiles,
     inlineAssets,
     otherInlineAssets,
@@ -792,7 +975,7 @@ function buildManifestData(htmlPath = DEFAULT_HTML_PATH) {
 }
 
 function renderMarkdown(data) {
-  const { summary, diskFiles, inlineAssets, otherInlineAssets, preloadSymbol } = data;
+  const { summary, diskFiles, inlineAssets, otherInlineAssets, preloadSymbol, protectedRgbaAudit, preloadAudit } = data;
   const differingFiles = diskFiles.filter((d) => d.status === "DIFFERS");
   const preloadOnlyKeys = inlineAssets.filter((a) => a.preloadOnly).map((a) => `\`${a.key}\``);
 
@@ -807,10 +990,13 @@ function renderMarkdown(data) {
   out.push("## Summary");
   out.push("");
   out.push(
-    `- **Inline \`const ART\` assets (\`${HTML_REL}\`)**: **${summary.inlineCount}** entries (all \`image/webp\`, **${formatNumber(summary.totalInlineBytes)}** decoded bytes total; **${summary.activeUsedCount}** actively referenced in code/tables, **${summary.preloadOnlyCount}** preload-only via \`Object.entries(ART)\` in \`${preloadSymbol}()\`).`
+    `- **Inline \`const ART\` assets (\`${HTML_REL}\`)**: **${summary.inlineCount}** entries (all \`image/webp\`, **${formatNumber(summary.totalInlineBytes)}** decoded bytes total; **${summary.inlineAlphaCount}** RGBA transparent, **${summary.inlineOpaqueCount}** RGB opaque; **${summary.activeUsedCount}** actively referenced in code/tables, **${summary.preloadOnlyCount}** preload-only via \`Object.entries(ART)\` in \`${preloadSymbol}()\`).`
   );
   out.push(
     `- **Disk source files (\`${ART_DIR_REL}/\`)**: **${summary.diskCount}** files (**${formatNumber(summary.totalDiskBytes)}** bytes total) — **${summary.diskMatchCount}** byte-identical \`MATCH\`, **${summary.diskDiffCount}** \`DIFFERS\`, **${summary.diskUnmappedCount}** \`UNMAPPED\`; **${summary.inlineOnlyCount}** inline assets have no disk source file currently in \`${ART_DIR_REL}/\`.`
+  );
+  out.push(
+    `- **WebP binary QA & RGBA protection**: All **${summary.inlineCount}** inline WebP payloads verified via RIFF/WEBP header parser (\`width >= 16\`, \`height >= 16\`); all **${summary.protectedRgbaCount}** divergent inline RGBA sprites verified intact against smaller RGB disk copies.`
   );
   out.push(
     `- **Other inline \`data:image/\` assets**: **${summary.otherInlineCount}** (inline SVG favicon).`
@@ -841,20 +1027,51 @@ function renderMarkdown(data) {
   out.push("");
   if (differingFiles.length > 0) {
     out.push(
-      `> **Checksum divergence notice (${differingFiles.length} files differ from inline base64):** ${differingFiles.map((d) => `\`${d.mappedKey}\` (\`${d.file}\`)`).join(", ")}. The disk files in \`web/public/art/v4/\` have smaller byte sizes and different SHA-256 digests than the corresponding inline base64 payloads embedded in \`${HTML_REL}\`.`
+      `> **Checksum divergence notice (${differingFiles.length} files differ from inline base64):** ${differingFiles.map((d) => `\`${d.mappedKey}\` (\`${d.file}\`)`).join(", ")}. The disk files in \`web/public/art/v4/\` have smaller byte sizes and different SHA-256 digests than the corresponding inline base64 payloads embedded in \`${HTML_REL}\`. Per F26, the inline RGBA payloads are preserved as authoritative and protected by \`--check\`.`
     );
     out.push("");
   }
 
   out.push(
-    "| Disk File | Mapped `ART` Key | Status | Disk Bytes | Inline Bytes | Disk SHA-256 | Inline SHA-256 |"
+    "| Disk File | Mapped `ART` Key | Status | Disk Format | Inline Format | Disk Bytes | Inline Bytes | Disk SHA-256 | Inline SHA-256 |"
   );
-  out.push("|---|---|---|---:|---:|---|---|");
+  out.push("|---|---|---|---|---|---:|---:|---|---|");
   for (const d of diskFiles) {
     const statusLabel =
       d.status === "MATCH" && d.renamedHyphen ? "MATCH (`-` → `_`)" : d.status;
+    const diskFmt = d.diskWebp
+      ? `${d.diskWebp.width}×${d.diskWebp.height} ${d.diskWebp.format} ${d.diskWebp.alpha ? "RGBA" : "RGB"}`
+      : "—";
+    const inlineFmt = d.inlineWebp
+      ? `${d.inlineWebp.width}×${d.inlineWebp.height} ${d.inlineWebp.format} ${d.inlineWebp.alpha ? "RGBA" : "RGB"}`
+      : "—";
     out.push(
-      `| \`${escapeMdCell(d.file)}\` | \`${escapeMdCell(d.mappedKey)}\` | ${statusLabel} | ${formatNumber(d.diskBytes)} | ${d.inlineBytes !== null ? formatNumber(d.inlineBytes) : "—"} | \`${d.diskSha256}\` | ${d.inlineSha256 ? `\`${d.inlineSha256}\`` : "—"} |`
+      `| \`${escapeMdCell(d.file)}\` | \`${escapeMdCell(d.mappedKey)}\` | ${statusLabel} | ${diskFmt} | ${inlineFmt} | ${formatNumber(d.diskBytes)} | ${d.inlineBytes !== null ? formatNumber(d.inlineBytes) : "—"} | \`${d.diskSha256}\` | ${d.inlineSha256 ? `\`${d.inlineSha256}\`` : "—"} |`
+    );
+  }
+  out.push("");
+
+  out.push("## WebP Binary QA & Preload-Only Compatibility Audit");
+  out.push("");
+  out.push("### Protected Divergent Inline RGBA Assets");
+  out.push("");
+  out.push("| `ART` Key | Inline Dimensions & Format | Inline Bytes | Disk File | Disk Format | Disk Bytes | Guard Status |");
+  out.push("|---|---|---:|---|---|---:|---|");
+  for (const p of protectedRgbaAudit) {
+    const diskFmt = p.diskFormat ? `${p.diskFormat} ${p.diskAlpha ? "RGBA" : "RGB"}` : "—";
+    out.push(
+      `| \`${escapeMdCell(p.key)}\` | ${p.inlineDims} ${p.inlineFormat} ${p.inlineAlpha ? "RGBA" : "RGB"} | ${formatNumber(p.inlineBytes)} | ${p.diskFile ? `\`${escapeMdCell(p.diskFile)}\`` : "—"} | ${diskFmt} | ${p.diskBytes !== null ? formatNumber(p.diskBytes) : "—"} | PROTECTED_RGBA_OK |`
+    );
+  }
+  out.push("");
+
+  out.push(`### Preload-Only Asset Compatibility Audit (${preloadAudit.length} keys)`);
+  out.push("");
+  out.push("| `ART` Key | Dimensions | Format | Channel | Bytes | Compatibility Verdict |");
+  out.push("|---|---|---|---|---:|---|");
+  for (const pa of preloadAudit) {
+    out.push(
+      `| \`${escapeMdCell(pa.key)}\` | ${pa.width}×${pa.height} | ${pa.format} | ${pa.alpha ? "RGBA" : "RGB"} | ${formatNumber(pa.bytes)} | ${escapeMdCell(pa.verdict)} |`
     );
   }
   out.push("");
@@ -868,12 +1085,15 @@ function renderMarkdown(data) {
     out.push("");
   }
   out.push(
-    "| # | `ART` Key | MIME | Bytes | SHA-256 | Disk Source | Origin | License | Usage Contexts (`web/public/playable-v2.html`) |"
+    "| # | `ART` Key | MIME | WebP QA | Bytes | SHA-256 | Disk Source | Origin | License | Usage Contexts (`web/public/playable-v2.html`) |"
   );
-  out.push("|---:|---|---|---:|---|---|---|---|---|");
+  out.push("|---:|---|---|---|---:|---|---|---|---|---|");
   for (const a of inlineAssets) {
+    const qaCell = a.webp
+      ? `${a.webp.width}×${a.webp.height} ${a.webp.format} ${a.webp.alpha ? "RGBA" : "RGB"}`
+      : "—";
     out.push(
-      `| ${a.index} | \`${escapeMdCell(a.key)}\` | \`${escapeMdCell(a.mime)}\` | ${formatNumber(a.bytes)} | \`${a.sha256}\` | ${a.diskSource} | ${escapeMdCell(a.origin)} | ${escapeMdCell(a.license)} | ${escapeMdCell(a.usageDisplay)} |`
+      `| ${a.index} | \`${escapeMdCell(a.key)}\` | \`${escapeMdCell(a.mime)}\` | ${qaCell} | ${formatNumber(a.bytes)} | \`${a.sha256}\` | ${a.diskSource} | ${escapeMdCell(a.origin)} | ${escapeMdCell(a.license)} | ${escapeMdCell(a.usageDisplay)} |`
     );
   }
   out.push("");
