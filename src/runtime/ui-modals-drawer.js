@@ -2351,7 +2351,10 @@
   }
 
   function openBatchEnhanceModal(slot, steps = 3) {
-    if (!game || !game.equippedGear || !game.equippedGear[slot]) return false;
+    if (!game || isWelcomeScreenVisible() || cutscene.active) return false;
+    if (!guardNotInTribulation("渡劫中批量淬火强化")) return false;
+    if (!guardNotPracticeMode("批量淬火强化")) return false;
+    if (!game.equippedGear || !game.equippedGear[slot]) return false;
     const eq = game.equippedGear[slot];
     const eqLvl = Math.max(0, Math.floor(num(eq.lvl, 0)));
     const maxSteps = Math.max(0, 10 - eqLvl);
@@ -2409,6 +2412,7 @@
 
   function executeGearBatchEnhance(slot, steps) {
     if (!game || !game.equippedGear || !game.equippedGear[slot]) return { ok: false, reason: "missing_slot" };
+    if (!guardNotInTribulation("渡劫中批量淬火强化")) return { ok: false, reason: "tribulation" };
     if (!guardNotPracticeMode("批量淬火强化")) return { ok: false, reason: "practice_mode" };
     if (typeof steps !== "number" || !Number.isFinite(steps) || !Number.isInteger(steps) || steps < 1 || steps > 5) {
       return { ok: false, reason: "invalid_steps" };

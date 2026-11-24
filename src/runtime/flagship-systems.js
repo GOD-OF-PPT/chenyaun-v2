@@ -1857,6 +1857,12 @@
     arena.bladeClash = null;
     arena.titanDualClash = null;
     arena.titanClimbCine = null;
+    arena.ravineGlide = null;
+    if (arena.player) {
+      arena.player.z = 0;
+      arena.player.vz = 0;
+      arena.player.plunging = false;
+    }
     if (typeof document !== "undefined") {
       if (document.body) document.body.classList.remove("letterbox-active");
       const clashHud = document.getElementById("blade-clash-hud");
@@ -1926,6 +1932,7 @@
       arena.player.boonOverloadTimer = 0;
       arena.player.guardShieldCd = 0;
       arena.player.zenStacks = 0;
+      arena.player.ravineBuffTimer = 0;
     }
     if (typeof syncV23EpochDock === "function") syncV23EpochDock();
     if (typeof syncV24GenesisDock === "function") syncV24GenesisDock();

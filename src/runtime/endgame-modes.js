@@ -660,6 +660,7 @@
   // ==================== PILLAR 3: SWORD-GLIDE RAVINE ZIPLINE & SANCTUM SECT DEFENSE SIEGE (`护山大阵·百鬼夜行`) ====================
   function triggerSwordGlideRavineDash(anchorProp = null) {
     if (!game || arena.ravineGlide) return false;
+    if (!guardNotInTribulation("御剑渡渊")) return false;
     const cv = document.getElementById("fx-canvas");
     const w = (cv && cv.width) || 1440, h = (cv && cv.height) || 900;
     const p = arena.player;

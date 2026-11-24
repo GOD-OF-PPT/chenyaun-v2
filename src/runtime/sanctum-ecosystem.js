@@ -349,6 +349,7 @@
     arena.sectDefense = null;
     arena.cloudFlight = null;
     clearCinematicClashOverlays();
+    if (arena.player) arena.player.ravineBuffTimer = 0;
     resetStageTransitionState();
     resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
     resetRuntimeCombatOverrides();

@@ -243,6 +243,7 @@
     restoreCustomSeedTempCurio();
     arena.customSeedRun = null;
     clearCinematicClashOverlays();
+    if (arena.player) arena.player.ravineBuffTimer = 0;
     if (arena.coop2P) arena.coop2P.active = false;
     syncV23EpochDock();
     arena.tribulation = null;

@@ -2765,7 +2765,7 @@ export const tests = [
       assert.equal(e2eR8a1.afterHide.isBody, false, "DEFECT-R8-A1 E2E: alert hide with drawer open keeps focus off BODY");
       assert.equal(e2eR8a1.afterHide.inDrawer, true, "DEFECT-R8-A1 E2E: alert hide restores focus to #jade-panel");
 
-      // D08 Tribulation & Practice Guards + #stage-sweep-error-msg
+      // D08 Tribulation & Practice Guards + R9B-2 Batch Enhance & Sibling Guards + #stage-sweep-error-msg
       const e2eD08 = await page.evaluate(() => {
         const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
@@ -2776,12 +2776,37 @@ export const tests = [
         s.game.stageSweepState = {};
         s.game.stones = 600;
         s.game.inventory.herb = 10;
+        s.game.inventory.core = 3;
         s.game.inventory.healing_pill = 0;
         if (!s.game.equippedGear.weapon) s.game.equippedGear.weapon = api.rollGearItem(1, 2, "weapon");
+        if (!s.game.equippedGear.armor) s.game.equippedGear.armor = api.rollGearItem(1, 2, "armor");
         s.game.equippedGear.weapon.lvl = 1;
+        s.game.equippedGear.weapon.affix = "pierce_qi";
+        s.game.equippedGear.armor.lvl = 0;
+        s.game.ownedRelics = ["frost_sword"];
+        s.game.relicStars = { frost_sword: 1 };
+        s.game.loadout.relic = "frost_sword";
+        s.game.sanctumLevels.sword_forge = 1;
         api.enterSanctumHub();
         api.saveGame({ forceOverwrite: true });
         api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        api.toggleDrawer("cultivate");
+        document.querySelector('#jade-panel [data-open-batch-enhance="armor"]')?.click();
+        document.querySelector('#jade-panel [data-reforge-slot="weapon"]')?.click();
+        const tribModalOpen = document.getElementById("modal-backdrop").classList.contains("open");
+        const tribBatchOpen = api.openBatchEnhanceModal("armor", 3);
+        const tribBatchExec = api.executeGearBatchEnhance("armor", 3);
+        const tribAffixOpen = api.openAffixEngraveModal("weapon");
+        const engraveProbe = document.createElement("button");
+        engraveProbe.setAttribute("data-engrave-slot", "weapon");
+        engraveProbe.setAttribute("data-engrave-affix", "vamp_blade");
+        document.getElementById("jade-panel")?.appendChild(engraveProbe);
+        engraveProbe.click();
+        engraveProbe.remove();
+        api.toggleDrawer("alchemy");
+        document.querySelector('#jade-panel [data-temper-relic="frost_sword"]')?.click();
+        document.querySelector('#jade-panel [data-relic="jade_seal"]')?.click();
+        api.closeDrawer();
         const tribEnh = api.q6.executeSingleGearEnhance("weapon");
         const tribCraft = api.q6.executeSingleAlchemyCraft("healing");
         const tribSweepOpen = api.q6.openStageSweepConfirmModal(0);
@@ -2789,31 +2814,57 @@ export const tests = [
         s.arena.tribulation = null;
         api.startBossRushGauntlet(6);
         const pracEnh = api.q6.executeSingleGearEnhance("weapon");
+        const pracBatchOpen = api.openBatchEnhanceModal("weapon", 3);
+        const pracBatchExec = api.executeGearBatchEnhance("weapon", 3);
+        const pracAffixOpen = api.openAffixEngraveModal("weapon");
+        const pracModalOpen = document.getElementById("modal-backdrop").classList.contains("open");
         const pracCraft = api.q6.executeSingleAlchemyCraft("healing");
         const pracSweepOpen = api.q6.openStageSweepConfirmModal(0);
         const pracSweepExec = api.q6.executeStageSweep(0);
         api.enterSanctumHub();
         return {
+          tribModalOpen,
+          tribBatchOpen,
+          tribBatchExec: tribBatchExec.reason,
+          tribAffixOpen,
           tribEnh: tribEnh.stopReason,
           tribCraft: tribCraft.stopReason,
           tribSweepOpen,
           tribSweepExec: tribSweepExec.reason,
           pracEnh: pracEnh.stopReason,
+          pracBatchOpen,
+          pracBatchExec: pracBatchExec.reason,
+          pracAffixOpen,
+          pracModalOpen,
           pracCraft: pracCraft.stopReason,
           pracSweepOpen,
           pracSweepExec: pracSweepExec.reason,
-          unchanged: s.game.stones === 600 && s.game.equippedGear.weapon.lvl === 1 && s.game.inventory.healing_pill === 0
+          unchanged: s.game.stones === 600
+            && s.game.equippedGear.weapon.lvl === 1
+            && s.game.equippedGear.weapon.affix === "pierce_qi"
+            && s.game.equippedGear.armor.lvl === 0
+            && s.game.relicStars.frost_sword === 1
+            && s.game.ownedRelics.length === 1
+            && s.game.inventory.healing_pill === 0
         };
       });
+      assert.equal(e2eD08.tribModalOpen, false, "R9B-2 E2E: batch enhance / reforge click blocked in tribulation");
+      assert.equal(e2eD08.tribBatchOpen, false, "R9B-2 E2E: openBatchEnhanceModal blocked in tribulation");
+      assert.equal(e2eD08.tribBatchExec, "tribulation", "R9B-2 E2E: executeGearBatchEnhance blocked in tribulation");
+      assert.equal(e2eD08.tribAffixOpen, false, "R9B-2 Sibling E2E: openAffixEngraveModal blocked in tribulation");
       assert.equal(e2eD08.tribEnh, "tribulation", "D08 E2E: single enhance blocked in tribulation");
       assert.equal(e2eD08.tribCraft, "tribulation", "D08 E2E: single alchemy blocked in tribulation");
       assert.equal(e2eD08.tribSweepOpen, false, "D08 E2E: sweep modal blocked in tribulation");
       assert.equal(e2eD08.tribSweepExec, "tribulation", "D08 E2E: sweep execute blocked in tribulation");
       assert.equal(e2eD08.pracEnh, "practice_mode", "D08 E2E: single enhance blocked in practice");
+      assert.equal(e2eD08.pracBatchOpen, false, "R9B-2 E2E: openBatchEnhanceModal blocked in practice");
+      assert.equal(e2eD08.pracBatchExec, "practice_mode", "R9B-2 E2E: executeGearBatchEnhance blocked in practice");
+      assert.equal(e2eD08.pracAffixOpen, false, "R9B-2 Sibling E2E: openAffixEngraveModal blocked in practice");
+      assert.equal(e2eD08.pracModalOpen, false, "R9B-2 E2E: practice leaves modal closed");
       assert.equal(e2eD08.pracCraft, "practice_mode", "D08 E2E: single alchemy blocked in practice");
       assert.equal(e2eD08.pracSweepOpen, false, "D08 E2E: sweep modal blocked in practice");
       assert.equal(e2eD08.pracSweepExec, "practice_mode", "D08 E2E: sweep execute blocked in practice");
-      assert.equal(e2eD08.unchanged, true, "D08 E2E: zero state mutation under tribulation/practice guards");
+      assert.equal(e2eD08.unchanged, true, "D08/R9B-2 E2E: zero stone/gear/affix/relic/pill mutation under tribulation/practice guards");
 
       await page.evaluate((sk) => {
         const api = window.__CHENYUAN_DEBUG__;
@@ -2853,7 +2904,7 @@ export const tests = [
       assert.equal(e2eSweepErr.focusIsBody, false, "D08 E2E: focus stays off BODY");
       assert.equal(e2eSweepErr.stones, 600, "D08 E2E: stones rolled back on sweep write failure");
 
-      // R8B-2 & R8B-3: bladeClash, titanDualClash, titanClimbCine overlay & state cleanup + DEFECT-R8-A2 welcome focus
+      // R8B-2 & R8B-3: bladeClash, titanDualClash, titanClimbCine overlay & state cleanup + R9B-1 ravineGlide purge + DEFECT-R8-A2 welcome focus
       await page.evaluate(() => {
         const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
@@ -2893,14 +2944,67 @@ export const tests = [
         const m = api.getMetaState();
         m.ascensions = Math.max(1, m.ascensions || 0);
         api.saveMeta();
+
+        // R9B-1 E2E (Part 1): ravineGlide & ravineBuffTimer across Hardcore Tribulation, Spire, Sanctum Hub & Boss Rush
+        const triggerZip = () => {
+          api.initArenaStage(1, false);
+          const zip = s.arena.props.find(pr => pr && pr.kind === "ravine_zipline");
+          if (!zip) return false;
+          s.arena.player.x = zip.x;
+          s.arena.player.y = zip.y;
+          api.focusBattlefield();
+          window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyF", key: "f", bubbles: true }));
+          if (!s.arena.ravineGlide) return false;
+          api.stepArena(0.05);
+          return Boolean(s.arena.ravineGlide && (s.arena.player.z || 0) > 0);
+        };
+        const z1 = triggerZip();
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        const tribCd0 = s.arena.tribulation ? s.arena.tribulation.cooldown : -1;
+        const tribGlide = s.arena.ravineGlide;
+        const tribZ = s.arena.player.z || 0;
+        for (let i = 0; i < 4; i++) api.stepArena(0.05);
+        const tribCd1 = s.arena.tribulation ? s.arena.tribulation.cooldown : -1;
+        const tribBuff = s.arena.player.ravineBuffTimer || 0;
+        s.arena.tribulation = null;
+
+        const z2 = triggerZip();
+        api.startCelestialSpireRun(1);
+        const spireGlide = s.arena.ravineGlide;
+        const spireZ = s.arena.player.z || 0;
+        for (let i = 0; i < 5; i++) api.stepArena(0.05);
+        const spireBuff = s.arena.player.ravineBuffTimer || 0;
+
+        const z3 = triggerZip();
+        api.enterSanctumHub();
+        const hubGlide = s.arena.ravineGlide;
+        const hubZ = s.arena.player.z || 0;
+
+        s.arena.player.ravineBuffTimer = 6.0;
+        api.startBossRushGauntlet(1);
+        const rushBuff = s.arena.player.ravineBuffTimer || 0;
+
         api.saveGame({ forceOverwrite: true });
         api.startColossalTitanRaid();
         api.triggerTitanVsTitanClash(s.arena.enemies[0]);
-        return res;
+        return Object.assign(res, { z1, tribGlide, tribZ, tribCd0, tribCd1, tribBuff, z2, spireGlide, spireZ, spireBuff, z3, hubGlide, hubZ, rushBuff });
       });
       assert.equal(e2eR8b3Hub.climb, null, "R8B-3 E2E: KeyH clears titanClimbCine");
       assert.equal(e2eR8b3Hub.lbt, false, "R8B-3 E2E: KeyH removes #cinema-letterbox-top.open");
       assert.equal(e2eR8b3Hub.lbb, false, "R8B-3 E2E: KeyH removes #cinema-letterbox-bot.open");
+      assert.equal(e2eR8b3Hub.z1, true, "R9B-1 E2E: zipline triggers airborne glide");
+      assert.equal(e2eR8b3Hub.tribGlide, null, "R9B-1 E2E: Hardcore Tribulation clears ravineGlide");
+      assert.equal(e2eR8b3Hub.tribZ, 0, "R9B-1 E2E: Hardcore Tribulation resets player.z");
+      assert.ok(e2eR8b3Hub.tribCd1 < e2eR8b3Hub.tribCd0, "R9B-1 E2E: Hardcore Tribulation bolt cooldown ticks normally");
+      assert.equal(e2eR8b3Hub.tribBuff, 0, "R9B-1 E2E: 0 free ravineBuffTimer in Hardcore Tribulation");
+      assert.equal(e2eR8b3Hub.z2, true, "R9B-1 E2E: zipline active before Spire");
+      assert.equal(e2eR8b3Hub.spireGlide, null, "R9B-1 E2E: Celestial Spire clears ravineGlide");
+      assert.equal(e2eR8b3Hub.spireZ, 0, "R9B-1 E2E: Celestial Spire resets player.z");
+      assert.equal(e2eR8b3Hub.spireBuff, 0, "R9B-1 E2E: 0 free ravineBuffTimer in Spire");
+      assert.equal(e2eR8b3Hub.z3, true, "R9B-1 E2E: zipline active before Sanctum Hub");
+      assert.equal(e2eR8b3Hub.hubGlide, null, "R9B-1 E2E: Sanctum Hub clears ravineGlide");
+      assert.equal(e2eR8b3Hub.hubZ, 0, "R9B-1 E2E: Sanctum Hub resets player.z");
+      assert.equal(e2eR8b3Hub.rushBuff, 0, "R9B-1 E2E: Boss Rush clears ravineBuffTimer");
 
       await page.click("#btn-open-settings");
       await page.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
@@ -2939,6 +3043,56 @@ export const tests = [
       }, STORAGE_KEY);
       assert.equal(e2eDelFocus.isBody, false, "DEFECT-R8-A2 E2E: cross-tab delete keeps focus off BODY");
       assert.equal(e2eDelFocus.id, "btn-start-new", "DEFECT-R8-A2 E2E: cross-tab delete falls back to #btn-start-new");
+
+      // R9B-1 E2E (Part 2): return-title-safe -> #btn-start-new clears ravineGlide, z & ravineBuffTimer
+      await page.click("#btn-start-new");
+      await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+      await page.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        s.game.realm = "foundation";
+        s.game.seenCutscenes = Object.assign({}, s.game.seenCutscenes, { enter_sect: true });
+        api.initArenaStage(1, false);
+        const zip = s.arena.props.find(pr => pr && pr.kind === "ravine_zipline");
+        s.arena.player.x = zip.x;
+        s.arena.player.y = zip.y;
+        api.focusBattlefield();
+      });
+      await page.keyboard.press("KeyF");
+      const e2ePreTitleZip = await page.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        if (s.arena.ravineGlide) api.stepArena(0.05);
+        s.arena.player.ravineBuffTimer = 6.0;
+        return { glide: Boolean(s.arena.ravineGlide), z: s.arena.player.z || 0 };
+      });
+      assert.equal(e2ePreTitleZip.glide, true, "R9B-1 E2E: KeyF starts ravineGlide before title return");
+      assert.ok(e2ePreTitleZip.z > 0, "R9B-1 E2E: airborne z > 0 before title return");
+      await page.click("#btn-open-settings");
+      await page.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+      await page.click('[data-sys-tab="controls"]');
+      await page.waitForSelector('#modal-backdrop.open [data-action="return-title-safe"]');
+      await page.click('[data-action="return-title-safe"]');
+      await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display !== "none");
+      const e2eOnTitleZip = await page.evaluate(() => {
+        const s = window.__CHENYUAN_DEBUG__.getState();
+        return { glide: s.arena.ravineGlide, z: s.arena.player.z || 0, buff: s.arena.player.ravineBuffTimer || 0 };
+      });
+      assert.equal(e2eOnTitleZip.glide, null, "R9B-1 E2E: return-title-safe clears ravineGlide");
+      assert.equal(e2eOnTitleZip.z, 0, "R9B-1 E2E: return-title-safe resets player.z");
+      assert.equal(e2eOnTitleZip.buff, 0, "R9B-1 E2E: return-title-safe clears ravineBuffTimer");
+      await page.click("#btn-start-new");
+      await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+      const e2eNewSession = await page.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        for (let i = 0; i < 4; i++) api.stepArena(0.05);
+        return { realm: s.game?.realm, glide: s.arena.ravineGlide, z: s.arena.player.z || 0, buff: s.arena.player.ravineBuffTimer || 0 };
+      });
+      assert.equal(e2eNewSession.realm, "mortal", "R9B-1 E2E: fresh session starts at mortal");
+      assert.equal(e2eNewSession.glide, null, "R9B-1 E2E: fresh session has no hijacked ravineGlide");
+      assert.equal(e2eNewSession.z, 0, "R9B-1 E2E: fresh session grounded (z === 0)");
+      assert.equal(e2eNewSession.buff, 0, "R9B-1 E2E: fresh session has 0 leaked ravineBuffTimer");
     }
   }
 ];

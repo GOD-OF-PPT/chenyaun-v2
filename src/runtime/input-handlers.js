@@ -1506,6 +1506,7 @@
       arena.sectDefense = null;
       arena.cloudFlight = null;
       clearCinematicClashOverlays();
+      if (arena.player) arena.player.ravineBuffTimer = 0;
       resetStageTransitionState();
       resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
       resetRuntimeCombatOverrides();
@@ -1699,6 +1700,7 @@
       arena.sectDefense = null;
       arena.cloudFlight = null;
       clearCinematicClashOverlays();
+      if (arena.player) arena.player.ravineBuffTimer = 0;
       resetStageTransitionState();
       resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
       resetRuntimeCombatOverrides();
@@ -1886,6 +1888,7 @@
       return;
     }
     if (t.hasAttribute("data-claim-ach")) {
+      if (!guardNotInTribulation("领取成就赏赐")) return;
       if (!guardNotPracticeMode("领取成就赏赐")) return;
       const aid = t.getAttribute("data-claim-ach");
       const spec = ACHIEVEMENTS.find(a => a.id === aid);
@@ -1901,6 +1904,7 @@
     }
 
     if (t.hasAttribute("data-buy-gear")) {
+      if (!guardNotInTribulation("百宝坊购装")) return;
       if (!guardNotPracticeMode("百宝坊购装")) return;
       const idx = Number(t.getAttribute("data-buy-gear"));
       const it = game.marketStock[idx];
@@ -1930,6 +1934,7 @@
       return;
     }
     if (t.getAttribute("data-action") === "smelt-all-gear") {
+      if (!guardNotInTribulation("一键熔炼行囊")) return;
       if (!guardNotPracticeMode("一键熔炼行囊")) return;
       if (!game.gearBag.length) return;
       const gained = game.gearBag.reduce((s, x) => s + (x.sell || 15), 0);
@@ -2316,6 +2321,7 @@
     }
     if (t.id === "btn-star-chart" || t.getAttribute("data-action") === "open-star-chart") { openStarChartModal(); return; }
     if (t.getAttribute("data-action") === "buy-star-point") {
+      if (!guardNotInTribulation("凝炼星魂点")) return;
       if (!guardNotPracticeMode("凝炼星魂点")) return;
       if (game.stones < 60) { showToast("凝炼星魂需 60 灵石"); return; }
       game.stones -= 60;
@@ -2364,6 +2370,7 @@
       return;
     }
     if (t.hasAttribute("data-awaken-primordial")) {
+      if (!guardNotInTribulation("鸿蒙紫气突破")) return;
       if (!guardNotPracticeMode("鸿蒙紫气突破")) return;
       const sl = t.getAttribute("data-awaken-primordial");
       const eq = game && game.equippedGear ? game.equippedGear[sl] : null;
@@ -2423,6 +2430,7 @@
       return;
     }
     if (t.hasAttribute("data-gift-npc")) {
+      if (!guardNotInTribulation("故人赠礼晋阶")) return;
       if (!guardNotPracticeMode("故人赠礼晋阶")) return;
       const nid = t.getAttribute("data-gift-npc");
       const curT = getCompanionBondTier(game, nid);
@@ -2732,6 +2740,8 @@
       return;
     }
     if (t.hasAttribute("data-temper-relic")) {
+      if (!guardNotInTribulation("法宝淬炼升星")) return;
+      if (!guardNotPracticeMode("法宝淬炼升星")) return;
       const rid = t.getAttribute("data-temper-relic");
       const curStars = (game.relicStars && game.relicStars[rid]) || 1;
       if (curStars >= 5) return;
@@ -2858,12 +2868,14 @@
       return;
     }
     if (t.hasAttribute("data-reforge-slot")) {
+      if (!guardNotInTribulation("定向词条刻录")) return;
       if (!guardNotPracticeMode("定向词条刻录")) return;
       const sl = t.getAttribute("data-reforge-slot");
       openAffixEngraveModal(sl);
       return;
     }
     if (t.hasAttribute("data-engrave-slot")) {
+      if (!guardNotInTribulation("定向词条刻录")) return;
       if (!guardNotPracticeMode("定向词条刻录")) return;
       const sl = t.getAttribute("data-engrave-slot");
       const afId = t.getAttribute("data-engrave-affix");
@@ -3214,6 +3226,8 @@
                     ? "存在未处理的多标签页存档冲突"
                     : "本地存档写入失败";
             errMsg = `⚠ 存档写入失败：${detail}（已原子回滚本次批量淬火，未扣除任何灵石）`;
+          } else if (res && res.reason === "tribulation") {
+            errMsg = "⚡ 正在九霄紫霄雷劫渡劫中，无法进行批量淬火强化！";
           } else if (res && res.reason === "practice_mode") {
             errMsg = "⚔ 演武练习模式禁止批量淬火强化，请先按 H 返回听雨洞府！";
           } else if (res && res.reason === "insufficient_stones") {
@@ -3571,6 +3585,8 @@
       return;
     }
     if (t.hasAttribute("data-relic")) {
+      if (!guardNotInTribulation("本命法宝铸造与佩带")) return;
+      if (!guardNotPracticeMode("本命法宝铸造与佩带")) return;
       const rel = RELICS[t.getAttribute("data-relic")];
       if (!rel) return;
       const fairDisc = currentOmen(game).id === "fair" ? 0.8 : 1.0;
@@ -3600,6 +3616,7 @@
       initArenaStage(3, true);
       saveGame();
     } else if (act === "feed-pet" && game.pet.id) {
+      if (!guardNotInTribulation("灵宠喂养进阶")) return;
       if (!guardNotPracticeMode("灵宠喂养进阶")) return;
       const curLv = Math.max(1, Math.min(5, Math.floor(num(game.pet.level, 1))));
       if (curLv >= 5) { showToast("灵兽已臻化境 Lv.5"); return; }
@@ -3631,6 +3648,7 @@
         if (trig && isElementFocusable(trig)) lastModalTriggerEl = trig;
       }
     } else if (act === "gamble-jade") {
+      if (!guardNotInTribulation("原石切玉")) return;
       if (!guardNotPracticeMode("原石切玉")) return;
       if (isAllDaoLawsCollected(game)) {
         showToast("诸天大道法则已尽数参悟，无需再行切玉赌注！");

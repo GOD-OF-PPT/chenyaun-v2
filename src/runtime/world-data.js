@@ -1497,7 +1497,9 @@
 
 
   function openAffixEngraveModal(slot) {
-    if (!game || !game.equippedGear || !game.equippedGear[slot]) return;
+    if (!game || !game.equippedGear || !game.equippedGear[slot]) return false;
+    if (!guardNotInTribulation("定向词条刻录")) return false;
+    if (!guardNotPracticeMode("定向词条刻录")) return false;
     const eq = game.equippedGear[slot];
     const slotNames = { weapon: "本命佩剑", armor: "护身仙衣", ring: "乾坤灵佩" };
     const activeSchoolTag = game.school === "talisman" ? "雷符推荐" : "御剑推荐";
