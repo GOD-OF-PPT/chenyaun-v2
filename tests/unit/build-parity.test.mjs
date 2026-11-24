@@ -209,12 +209,12 @@ test("pure ESM rule modules match live assembled playable-v2.html engine inside 
   assert.deepEqual(plain(perfSnap), plain(perfStats));
 });
 
-test("static repo guard asserts zero legacy versioned debug hook references in src/, scripts/, tests/e2e/, and built playable-v2.html", () => {
+test("static repo guard asserts zero legacy versioned debug hook references in src/, scripts/, tests/, and built playable-v2.html", () => {
   const legacyHookRe = new RegExp("__CHENYUAN_" + "V(?:1[89]|2[0-5])__", "g");
   const targets = [
     ...collectFilesRecursive(path.join(REPO_ROOT, "src")),
     ...collectFilesRecursive(path.join(REPO_ROOT, "scripts")),
-    ...collectFilesRecursive(path.join(REPO_ROOT, "tests/e2e")),
+    ...collectFilesRecursive(path.join(REPO_ROOT, "tests")),
     PLAYABLE_PATH
   ];
   const violations = [];

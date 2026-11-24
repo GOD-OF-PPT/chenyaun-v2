@@ -11133,6 +11133,7 @@ try {
         const a = initial.arena;
         delete a.coop2P;
         delete a.sanqingState;
+        delete g.pity;
         delete g.primordialCrafts;
         delete g.customComboSeq;
         delete g.expeditions;
@@ -11141,6 +11142,7 @@ try {
         const mutatedAfterGetState = {
           coop2P: a.coop2P !== undefined,
           sanqingState: a.sanqingState !== undefined,
+          pity: Object.prototype.hasOwnProperty.call(g, "pity"),
           primordialCrafts: g.primordialCrafts !== undefined,
           customComboSeq: g.customComboSeq !== undefined,
           expeditions: g.expeditions !== undefined
@@ -11189,10 +11191,12 @@ try {
       assert.deepEqual(facadeCheck.mutatedAfterGetState, {
         coop2P: false,
         sanqingState: false,
+        pity: false,
         primordialCrafts: false,
         customComboSeq: false,
         expeditions: false
       }, "Unified getState() must be strictly non-mutating");
+      assert.equal(facadeCheck.mutatedAfterGetState.pity, false, "Unified getState() must not lazily materialize game.pity");
       assert.equal(facadeCheck.styleRankOk, true);
       assert.equal(facadeCheck.splineOk, true);
       assert.equal(facadeCheck.workshopRoundTripOk, true);
@@ -11265,7 +11269,7 @@ try {
         dbg.closeModal();
 
         // Also verify data-temper-core-toggle branch inside change listener
-        dbg.toggleDrawer("bag");
+        dbg.toggleDrawer("alchemy");
         const chk = document.getElementById("chk-temper-use-core");
         let temperChanged = false;
         let temperAfter = null;
@@ -11281,9 +11285,8 @@ try {
       });
       assert.equal(changeListenerRes.wsBoss1, changeListenerRes.nextBossNum, "Rescued change listener must update workshopState.boss1");
       assert.equal(changeListenerRes.seedInputVal, changeListenerRes.expectedSeed, "Rescued change listener must sync #inp-workshop-seed");
-      if (changeListenerRes.hasTemperChk) {
-        assert.equal(changeListenerRes.temperChanged, true, "Rescued change listener must toggle temperUseCoreDiscount");
-      }
+      assert.equal(changeListenerRes.hasTemperChk, true, "Expected #chk-temper-use-core on alchemy drawer tab");
+      assert.equal(changeListenerRes.temperChanged, true, "Rescued change listener must toggle temperUseCoreDiscount");
     } finally {
       await ctx.close();
     }
