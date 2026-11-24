@@ -449,7 +449,7 @@ async function startCleanGamePage(browser, tag, markPrologueDone = true, { dismi
   await page.waitForTimeout(160);
   if (markPrologueDone) {
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.getState().game.openingChoice = "help";
       api.saveGame();
     });
@@ -481,7 +481,7 @@ try {
     const { ctx, page } = await startCleanGamePage(browser, "M1-1", false);
 
     const init = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return {
         realm: s.game.realm,
         xpCap: s.realmSpec.xpCap,
@@ -497,7 +497,7 @@ try {
     await page.click("#btn-sanctum-hub");
     await page.waitForTimeout(280);
     const afterSanctum = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return {
         sanctumMode: s.arena.sanctumMode,
         openingChoice: s.game.openingChoice,
@@ -510,14 +510,14 @@ try {
     const merch = afterSanctum.props.find(p => p.kind === "merchant_npc");
     assert.ok(merch, "Sanctum should have merchant_npc prop");
     await page.evaluate(({ x, y }) => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       s.arena.player.x = x;
       s.arena.player.y = y;
     }, merch);
     await page.waitForTimeout(320);
 
     const propHudState = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       const hud = document.getElementById("prop-interact-hud");
       return {
         drawerOpen: s.drawerOpen,
@@ -532,13 +532,13 @@ try {
     await page.evaluate(() => { if (document.activeElement) document.activeElement.blur(); });
     await page.keyboard.press("Enter");
     await page.waitForTimeout(180);
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().drawerOpen), true);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().drawerOpen), true);
     await page.keyboard.press("Escape");
     await page.waitForTimeout(150);
 
     // Blood altar must NOT auto-drain HP until explicitly confirmed
     const hpCheck = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       s.arena.props = [{
         id: "test_blood_altar", kind: "blood_altar", art: "prop_blood_altar",
         name: "血祭剑坛", badge: "献祭气血换飞剑", x: s.arena.player.x, y: s.arena.player.y, r: 40, progress: 0
@@ -548,8 +548,8 @@ try {
     });
     await page.waitForTimeout(380);
     const untouched = await page.evaluate(() => ({
-      hp: window.__CHENYUAN_V25__.getState().game.hp,
-      bonus: window.__CHENYUAN_V25__.getState().game.bonusSwords || 0,
+      hp: window.__CHENYUAN_DEBUG__.getState().game.hp,
+      bonus: window.__CHENYUAN_DEBUG__.getState().game.bonusSwords || 0,
       danger: document.getElementById("prop-interact-hud").classList.contains("danger-prop")
     }));
     assert.equal(untouched.hp, hpCheck.hpBefore);
@@ -559,8 +559,8 @@ try {
     await page.click("#btn-prop-interact");
     await page.waitForTimeout(180);
     const afterSac = await page.evaluate(() => ({
-      hp: window.__CHENYUAN_V25__.getState().game.hp,
-      bonus: window.__CHENYUAN_V25__.getState().game.bonusSwords || 0
+      hp: window.__CHENYUAN_DEBUG__.getState().game.hp,
+      bonus: window.__CHENYUAN_DEBUG__.getState().game.bonusSwords || 0
     }));
     assert.ok(afterSac.hp < hpCheck.hpBefore);
     assert.equal(afterSac.bonus, hpCheck.bonusBefore + 2);
@@ -583,7 +583,7 @@ try {
     assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.getAttribute("data-tab")), "bag");
 
     // Safe return-to-title + reload persistence
-    await page.evaluate(() => { window.__CHENYUAN_V25__.getState().game.stones = 777; });
+    await page.evaluate(() => { window.__CHENYUAN_DEBUG__.getState().game.stones = 777; });
     await page.click("#btn-open-settings");
     await page.waitForTimeout(120);
     await page.click('[data-sys-tab="controls"]');
@@ -595,7 +595,7 @@ try {
     await page.waitForSelector("#btn-continue-save");
     await page.click("#btn-continue-save");
     await page.waitForTimeout(220);
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones), 777);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.stones), 777);
     await ctx.close();
   });
 
@@ -604,7 +604,7 @@ try {
 
     // M3 G3 single-hit cap guardrail: ordinary hurtPlayer(99999) MUST be capped at <= 45% maxHp
     const capCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       const maxHp = api.getCombatStats(s.game).maxHp;
       s.game.hp = maxHp;
@@ -621,16 +621,16 @@ try {
     );
 
     await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       s.game.inventory.healing_pill = 1;
       s.game.stones = 333;
       s.arena.player.invuln = 0;
-      window.__CHENYUAN_V25__.hurtPlayer(99999, { uncapped: true });
+      window.__CHENYUAN_DEBUG__.hurtPlayer(99999, { uncapped: true });
     });
     await page.waitForTimeout(180);
 
     const firstDefeat = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       const modal = document.getElementById("modal-backdrop");
       const pillBtn = document.querySelector('[data-defeat-act="revive-pill"]');
       return {
@@ -649,14 +649,14 @@ try {
 
     await page.click('[data-defeat-act="revive-pill"]');
     await page.waitForTimeout(180);
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.defeatRevivesUsed), 1);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.defeatRevivesUsed), 1);
 
     await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       s.game.inventory.healing_pill = 5;
       s.game.gourd.charges = 5;
       s.arena.player.invuln = 0;
-      window.__CHENYUAN_V25__.hurtPlayer(99999, { uncapped: true });
+      window.__CHENYUAN_DEBUG__.hurtPlayer(99999, { uncapped: true });
     });
     await page.waitForTimeout(180);
     const secondDefeat = await page.evaluate(() => ({
@@ -669,7 +669,7 @@ try {
     await page.click('[data-defeat-act="retreat-sanctum"]');
     await page.waitForTimeout(220);
     const afterRetreat = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return { sanctum: s.arena.sanctumMode, retreats: s.game.retreats, stones: s.game.stones, hp: s.game.hp };
     });
     assert.equal(afterRetreat.sanctum, true);
@@ -684,7 +684,7 @@ try {
 
     // M3 S1 Boss-gate check: Qi -> Foundation tribulation must be blocked until Stage 1 Boss (守山石卫) is defeated
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "qi";
       s.game.xp = api.getState().realmSpec.xpCap;
@@ -708,7 +708,7 @@ try {
 
     // Now record Stage 1 Boss defeat and open Tribulation Prep Ritual
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       api.closeModal();
       s.game.defeatedStageBosses[1] = true;
@@ -723,7 +723,7 @@ try {
     await page.click('[data-trib-start="pill"]');
     await page.waitForTimeout(180);
     const pillTrib = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return { usedPill: s.arena.tribulation?.usedPill, totalBolts: s.arena.tribulation?.totalBolts, shield: s.game.tribShield };
     });
     assert.equal(pillTrib.usedPill, true);
@@ -731,33 +731,33 @@ try {
     assert.equal(pillTrib.shield, 3);
 
     await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       s.game.tribShield = 0;
       s.arena.player.invuln = 0;
-      window.__CHENYUAN_V25__.hurtPlayer(99999, { uncapped: true });
+      window.__CHENYUAN_DEBUG__.hurtPlayer(99999, { uncapped: true });
     });
     await page.waitForTimeout(180);
     assert.equal(await page.isVisible('[data-defeat-act="abort-tribulation"]'), true);
     await page.click('[data-defeat-act="abort-tribulation"]');
     await page.waitForTimeout(220);
     const afterAbort = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return { fails: s.game.tribulationFails, xp: s.game.xp, expected: Math.round(s.realmSpec.xpCap * 0.75) };
     });
     assert.equal(afterAbort.fails, 1);
     assert.equal(afterAbort.xp, afterAbort.expected);
 
     await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       s.game.xp = s.realmSpec.xpCap;
-      window.__CHENYUAN_V25__.startLiveTribulation();
+      window.__CHENYUAN_DEBUG__.startLiveTribulation();
     });
     await page.waitForTimeout(160);
     assert.equal(await page.isVisible("[data-trib-craft-pill]"), true);
     await page.click('[data-trib-start="defiant"]');
     await page.waitForTimeout(180);
     const defTrib = await page.evaluate(() => {
-      const t = window.__CHENYUAN_V25__.getState().arena.tribulation;
+      const t = window.__CHENYUAN_DEBUG__.getState().arena.tribulation;
       return { hardcore: t?.hardcore, totalBolts: t?.totalBolts };
     });
     assert.equal(defTrib.hardcore, true);
@@ -783,7 +783,7 @@ try {
     await page.click("#btn-continue-save");
     await page.waitForTimeout(220);
     const upgraded = await page.evaluate((primaryKey) => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       const parsed = JSON.parse(localStorage.getItem(primaryKey));
       return { name: s.game.name, stones: s.game.stones, envVer: parsed.envelopeVersion, hasSum: Boolean(parsed.checksum) };
     }, STORAGE_KEY);
@@ -836,7 +836,7 @@ try {
     const writeFail = await page.evaluate(() => {
       window.__origSetItem = Storage.prototype.setItem;
       Storage.prototype.setItem = function () { throw new DOMException("Simulated quota full", "QuotaExceededError"); };
-      const ok = window.__CHENYUAN_V25__.saveGame();
+      const ok = window.__CHENYUAN_DEBUG__.saveGame();
       const alertEl = document.getElementById("hud-save-alert");
       return { ok, display: getComputedStyle(alertEl).display, text: alertEl.textContent };
     });
@@ -860,8 +860,8 @@ try {
     await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
     await dismissOpeningScroll(tabA);
     await tabA.evaluate(() => {
-      window.__CHENYUAN_V25__.getState().game.stones = 100;
-      window.__CHENYUAN_V25__.saveGame();
+      window.__CHENYUAN_DEBUG__.getState().game.stones = 100;
+      window.__CHENYUAN_DEBUG__.saveGame();
     });
 
     const tabB = await ctx.newPage();
@@ -873,13 +873,13 @@ try {
     await tabB.click("#btn-sanctum-hub");
     await tabB.waitForTimeout(180);
     await tabB.evaluate(() => {
-      window.__CHENYUAN_V25__.getState().game.stones = 999;
-      window.__CHENYUAN_V25__.saveGame();
+      window.__CHENYUAN_DEBUG__.getState().game.stones = 999;
+      window.__CHENYUAN_DEBUG__.saveGame();
     });
     await tabA.waitForTimeout(300);
 
     const conflictA = await tabA.evaluate(() => ({
-      hasConflict: Boolean(window.__CHENYUAN_V25__.getPersistenceState().saveConflictState),
+      hasConflict: Boolean(window.__CHENYUAN_DEBUG__.getPersistenceState().saveConflictState),
       modalOpen: document.getElementById("modal-backdrop").classList.contains("open")
     }));
     assert.equal(conflictA.hasConflict, true);
@@ -888,15 +888,15 @@ try {
     await tabA.click('[data-action="stay-readonly-save"]');
     await tabA.waitForTimeout(180);
     const ro = await tabA.evaluate((k) => {
-      window.__CHENYUAN_V25__.getState().game.stones = 55;
-      return { saved: window.__CHENYUAN_V25__.saveGame(), storedStones: JSON.parse(localStorage.getItem(k)).game.stones };
+      window.__CHENYUAN_DEBUG__.getState().game.stones = 55;
+      return { saved: window.__CHENYUAN_DEBUG__.saveGame(), storedStones: JSON.parse(localStorage.getItem(k)).game.stones };
     }, STORAGE_KEY);
     assert.equal(ro.saved, false);
     assert.equal(ro.storedStones, 999);
 
     await tabA.click('[data-action="load-latest-save"]');
     await tabA.waitForTimeout(220);
-    assert.equal(await tabA.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones), 999);
+    assert.equal(await tabA.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.stones), 999);
     await ctx.close();
   });
 
@@ -906,21 +906,21 @@ try {
   await runSuite("M2-1", "5-Chapter Continuous Progression (0->1->2->3 古修剑冢->4 九霄天门) & Tower Decoupling", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "M2-1", true);
     const stgInfo = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       return { len: api.STAGES.length, s3Id: api.STAGES[3].id };
     });
     assert.equal(stgInfo.len, 5);
     assert.equal(stgInfo.s3Id, "sword_mound");
 
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "golden";
       api.initArenaStage(2, false);
     });
     await dismissActiveCutscene(page);
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.arena.dungeonMap.currentNodeId = "n4_0";
       s.arena.waveIdx = 4;
@@ -929,7 +929,7 @@ try {
     });
     await dismissActiveCutscene(page);
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       for (const e of s.arena.enemies.slice()) api.handleEnemyDeath(e);
     });
@@ -943,7 +943,7 @@ try {
     await dismissActiveCutscene(page);
     await page.waitForSelector("#modal-backdrop.open #btn-volume-recap-confirm");
     const portalBeforeRecap2 = await page.evaluate(() =>
-      window.__CHENYUAN_V25__.getState().arena.props.some(x => x.id === "portal_next")
+      window.__CHENYUAN_DEBUG__.getState().arena.props.some(x => x.id === "portal_next")
     );
     assert.equal(portalBeforeRecap2, false, "portal_next must wait until Volume-End Recap modal is confirmed (Stage 2)");
     await page.click("#btn-volume-recap-confirm");
@@ -957,22 +957,22 @@ try {
     }
     await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
     const p2 = await page.evaluate(() => {
-      const p = window.__CHENYUAN_V25__.getState().arena.props.find(x => x.id === "portal_next");
+      const p = window.__CHENYUAN_DEBUG__.getState().arena.props.find(x => x.id === "portal_next");
       return p ? { nextIdx: p.nextIdx, toTower: p.toTower } : null;
     });
     assert.equal(p2?.nextIdx, 3);
     assert.equal(p2?.toTower, false);
 
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.interactWithProp(api.getState().arena.props.find(x => x.id === "portal_next"));
     });
     await page.waitForTimeout(200);
     await dismissActiveCutscene(page);
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.stageIdx), 3);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.stageIdx), 3);
 
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.arena.dungeonMap.currentNodeId = "n4_0";
       s.arena.waveIdx = 4;
@@ -981,7 +981,7 @@ try {
     });
     await dismissActiveCutscene(page);
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       for (const e of s.arena.enemies.slice()) api.handleEnemyDeath(e);
     });
@@ -995,7 +995,7 @@ try {
     await dismissActiveCutscene(page);
     await page.waitForSelector("#modal-backdrop.open #btn-volume-recap-confirm");
     const portalBeforeRecap3 = await page.evaluate(() =>
-      window.__CHENYUAN_V25__.getState().arena.props.some(x => x.id === "portal_next")
+      window.__CHENYUAN_DEBUG__.getState().arena.props.some(x => x.id === "portal_next")
     );
     assert.equal(portalBeforeRecap3, false, "portal_next must wait until Volume-End Recap modal is confirmed (Stage 3)");
     await page.click("#btn-volume-recap-confirm");
@@ -1008,14 +1008,14 @@ try {
       await page.waitForTimeout(120);
     }
     await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.props.find(x => x.id === "portal_next")?.nextIdx), 4);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.props.find(x => x.id === "portal_next")?.nextIdx), 4);
     await ctx.close();
   });
 
   await runSuite("M2-2", "5-Layer Branching Expedition Star-Map, Run Boons Draft, Peaceful Spring & 3-Role Squad", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "M2-2", true);
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.getState().game.realm = "foundation";
       api.initArenaStage(1, false);
     });
@@ -1024,7 +1024,7 @@ try {
     await page.waitForTimeout(120);
 
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       for (const e of api.getState().arena.enemies.slice()) api.handleEnemyDeath(e);
     });
     await page.waitForTimeout(650);
@@ -1034,12 +1034,12 @@ try {
     await page.waitForTimeout(220);
 
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       for (const e of api.getState().arena.enemies.slice()) api.handleEnemyDeath(e);
     });
     await page.waitForTimeout(650);
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.interactWithProp(api.getState().arena.props.find(p => p.kind === "boon_stele"));
     });
     await page.waitForTimeout(180);
@@ -1052,13 +1052,13 @@ try {
     await page.waitForTimeout(140);
     await page.click('[data-dungeon-node="n2_1"]');
     await page.waitForTimeout(200);
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.enemies.length), 0);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.enemies.length), 0);
 
     await page.click("#btn-dungeon-route");
     await page.waitForTimeout(140);
     await page.click('[data-dungeon-node="n3_0"]');
     await page.waitForTimeout(250);
-    const roles = await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.enemies.map(e => e.tacticalRole).filter(Boolean));
+    const roles = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.enemies.map(e => e.tacticalRole).filter(Boolean));
     assert.ok(roles.includes("shield_vanguard") && roles.includes("hex_chanter") && roles.includes("flank_assassin"));
     await ctx.close();
   });
@@ -1069,7 +1069,7 @@ try {
     await page.waitForTimeout(220);
 
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.equippedGear.weapon = {
         uid: "old_quenched_sw", slot: "weapon", rarity: 1, lvl: 5,
@@ -1080,11 +1080,11 @@ try {
         name: "仙品·龙渊仙剑", art: "relic_frost_sword", atk: 26, hp: 0, dr: 0, crit: 0.09, spd: 0.04, bonusSword: 0, price: 180, sell: 95, power: 112
       });
     });
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.equippedGear.weapon.uid), "old_quenched_sw");
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.equippedGear.weapon.uid), "old_quenched_sw");
     await page.click('[data-action="compare-equip-transfer"]');
     await page.waitForTimeout(180);
     const after = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return { uid: s.game.equippedGear.weapon.uid, lvl: s.game.equippedGear.weapon.lvl };
     });
     assert.equal(after.uid, "new_immortal_sw");
@@ -1095,7 +1095,7 @@ try {
   await runSuite("M2-4", "Combat Rebalance Soft-Cap, Hex-Buff Mitigation & Posture-Shatter Boon", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "M2-4", true);
     const bal = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "spirit";
       s.game.stones = 6000;
@@ -1140,7 +1140,7 @@ try {
   await runSuite("M3-1", "Sanctum 5-Building Upgrades (Lv.1->Lv.5), 3rd Tower & Save Reload", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "M3-1", true);
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const { game } = api.getState();
       game.realm = "golden";
       game.stones = 3000;
@@ -1160,7 +1160,7 @@ try {
 
     const siegeTowers = await page.evaluate(() => {
       document.querySelector('[data-dojo-act="start-defense"]').click();
-      return window.__CHENYUAN_V25__.getState().arena.sectDefense?.towers?.length || 0;
+      return window.__CHENYUAN_DEBUG__.getState().arena.sectDefense?.towers?.length || 0;
     });
     assert.equal(siegeTowers, 3);
 
@@ -1168,7 +1168,7 @@ try {
     await page.waitForSelector("#btn-continue-save");
     await page.click("#btn-continue-save");
     await page.waitForTimeout(220);
-    const lv = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.sanctumLevels);
+    const lv = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.sanctumLevels);
     assert.equal(lv.cauldron, 3);
     assert.equal(lv.guard_array, 3);
     assert.equal(lv.spirit_eye, 3);
@@ -1178,7 +1178,7 @@ try {
   await runSuite("M3-2", "Companion Hub Modal, Portrait Story Choices, Tea/Spar & Post-Battle Commentary", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "M3-2", true);
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.getState().game.realm = "qi";
       api.getState().game.stones = 200;
       api.enterSanctumHub();
@@ -1190,12 +1190,12 @@ try {
     assert.equal(await page.locator("#dlg-choices-box .dlg-choice-btn").count(), 2);
     await page.click('[data-story-bar-id="lu_intro"][data-story-bar-opt="ambition"]');
     await page.waitForTimeout(160);
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones), 240);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.stones), 240);
     await page.click("#btn-dlg-next");
     await page.waitForTimeout(120);
 
     const comment = await page.evaluate(() => {
-      window.__CHENYUAN_V25__.renderStageDamageRecap(true);
+      window.__CHENYUAN_DEBUG__.renderStageDamageRecap(true);
       return document.getElementById("recap-companion-box").textContent.trim();
     });
     assert.ok(comment.includes("战后评语"));
@@ -1205,7 +1205,7 @@ try {
   await runSuite("M3-3", "Karma World Differentiation (Market, Encounters, Boss Monologues & Ending Poems)", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "M3-3", true);
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const { game } = api.getState();
       game.realm = "golden"; game.stones = 600; game.karmaScore = 60;
       api.refreshMarketStock(); api.updateHud();
@@ -1216,24 +1216,24 @@ try {
     await page.click('[data-buy-karma-item="km_longevity"]');
     await page.waitForTimeout(100);
 
-    const rightMono = await page.evaluate(() => window.__CHENYUAN_V25__.getBossKarmaMonologue("warden"));
+    const rightMono = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getBossKarmaMonologue("warden"));
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const { game } = api.getState();
       game.karmaScore = -60; game.stones = 600;
       api.closeDrawer(); api.refreshMarketStock(); api.updateHud();
     });
-    const demonMono = await page.evaluate(() => window.__CHENYUAN_V25__.getBossKarmaMonologue("warden"));
+    const demonMono = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getBossKarmaMonologue("warden"));
     assert.notEqual(rightMono, demonMono);
 
-    await page.evaluate(() => window.__CHENYUAN_V25__.openEncounterModal(0));
+    await page.evaluate(() => window.__CHENYUAN_DEBUG__.openEncounterModal(0));
     await page.waitForTimeout(150);
     assert.equal(await page.locator('[data-enc-karma="demonic"]').count(), 1);
     await page.click('[data-enc-karma="demonic"]');
     await page.waitForTimeout(120);
 
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const { game } = api.getState();
       game.realm = "ascended"; game.status = "ascended"; game.ending = null;
       api.openEndingModal();
@@ -1249,7 +1249,7 @@ try {
   await runSuite("M3-4", "Lifespan Strategy (Critical Alert, Non-Lethal Penalty & Longevity Pill Extension)", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "M3-4", true);
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const { game } = api.getState();
       game.realm = "mortal"; game.startAgeMonths = 216; game.elapsedMonths = 504;
       game.inventory.longevity_pill = 1;
@@ -1260,7 +1260,7 @@ try {
     assert.equal(await page.locator(".lifespan-alert-card.critical").count(), 1);
     await page.click('.lifespan-alert-card [data-use-item="longevity_pill"]');
     await page.waitForTimeout(150);
-    const lf = await page.evaluate(() => window.__CHENYUAN_V25__.getLifespanInfo(window.__CHENYUAN_V25__.getState().game));
+    const lf = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getLifespanInfo(window.__CHENYUAN_DEBUG__.getState().game));
     assert.equal(lf.maxYears, 92);
     assert.equal(lf.status, "normal");
     await ctx.close();
@@ -1274,7 +1274,7 @@ try {
 
     // 1. In Mortal realm (rank 0): all 14 ecosystem systems must be locked
     const mortalGates = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const { game } = api.getState();
       return {
         pet: api.isEcosystemSystemUnlocked(game, "spirit_pet"),
@@ -1309,7 +1309,7 @@ try {
 
     // 3. Toggle 【全神通演武】 inside Roadmap -> requires explicit confirmation modal (#btn-confirm-enter-sandbox) & isolates live save
     // Flush paused live state once before snapshotting so enterSandboxMode()'s pre-sandbox saveGame() matches the canonical checksum
-    await page.evaluate(() => window.__CHENYUAN_V25__.saveGame());
+    await page.evaluate(() => window.__CHENYUAN_DEBUG__.saveGame());
     const beforeSandboxSnap = await page.evaluate((sk) => {
       const raw = localStorage.getItem(sk);
       const parsed = raw ? JSON.parse(raw) : null;
@@ -1331,7 +1331,7 @@ try {
       const raw = localStorage.getItem(sk);
       const parsed = raw ? JSON.parse(raw) : null;
       return {
-        isSandbox: window.__CHENYUAN_V25__.isSandboxMode(),
+        isSandbox: window.__CHENYUAN_DEBUG__.isSandboxMode(),
         badgeVisible: getComputedStyle(document.getElementById("hud-sandbox-badge")).display !== "none",
         rawSaveInsideSandbox: raw,
         persistedChecksum: parsed?.checksum || null,
@@ -1358,7 +1358,7 @@ try {
     await page.waitForTimeout(180);
     assert.ok((await page.textContent("#modal-content")).includes("太虚造化工坊"));
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.getState().game.stones = 999999;
       api.getState().game.unlockAllArcana = true;
       api.saveGame();
@@ -1368,9 +1368,9 @@ try {
     await page.click("#btn-exit-sandbox");
     await page.waitForTimeout(180);
     const afterExitSandbox = await page.evaluate((sk) => ({
-      isSandbox: window.__CHENYUAN_V25__.isSandboxMode(),
+      isSandbox: window.__CHENYUAN_DEBUG__.isSandboxMode(),
       liveSaveNow: localStorage.getItem(sk),
-      stonesNow: window.__CHENYUAN_V25__.getState().game.stones
+      stonesNow: window.__CHENYUAN_DEBUG__.getState().game.stones
     }), STORAGE_KEY);
     assert.equal(afterExitSandbox.isSandbox, false, "#btn-exit-sandbox must cleanly exit sandbox mode");
     assert.equal(
@@ -1382,7 +1382,7 @@ try {
 
     // 4. Step through realms (qi -> foundation -> golden -> nascent -> spirit) matching M6 SYSTEM_ECOSYSTEM_LADDER
     const ladderCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const { game } = api.getState();
       const out = {};
       for (const r of ["qi", "foundation", "golden", "nascent", "spirit"]) {
@@ -1420,7 +1420,7 @@ try {
 
     // 5. Golden Core Cloud Sea Climax Trial -> defeat commander & verify permanent seal + +12 ATK + +15% Expedition bonus
     const cloudRes = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "golden";
       s.game.cloudSeaCleared = false;
@@ -1436,7 +1436,7 @@ try {
     assert.equal(cloudRes.active, true, "Golden Core player must be able to launch Cloud Sea Aerial Trial");
     await page.waitForTimeout(350);
     const afterCloud = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       return {
         cleared: s.game.cloudSeaCleared,
@@ -1457,7 +1457,7 @@ try {
 
     // Verify before ascension: Hall of Lives is empty, golden_lotus swordAura & immortal_echo are locked
     const preAsc = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const echoPerk = api.PERKS.find(p => p.id === "immortal_echo");
       const lotusAura = api.WARDROBE_OPTIONS.swordAura.find(a => a.id === "golden_lotus");
       return {
@@ -1472,7 +1472,7 @@ try {
 
     // Ascend life 1 (Righteous Karma) and pick ending -> records chronicle entry ONCE & unlocks perks/transmog
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "ascended";
       s.game.status = "ascended";
@@ -1492,7 +1492,7 @@ try {
 
     // Re-calling recordPastLifeInHall must NOT duplicate entry
     const postAsc = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const { game } = api.getState();
       api.recordPastLifeInHall(game, "mortal_guardian");
       const meta = api.getMetaState();
@@ -1524,7 +1524,7 @@ try {
     assert.ok((await page.textContent("#modal-content")).includes("历世道果殿堂"));
     await page.click('#modal-content [data-equip-sword-aura="golden_lotus"]');
     await page.waitForTimeout(160);
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.cosmetics.swordAura), "golden_lotus");
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.cosmetics.swordAura), "golden_lotus");
     await maybeShot(page, "m4_03_hall_of_past_lives.png");
     await ctx.close();
   });
@@ -1534,7 +1534,7 @@ try {
 
     // Complete 1st life & select Calamity Fire Tier 2 before reincarnating
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "ascended";
       s.game.status = "ascended";
@@ -1558,8 +1558,8 @@ try {
       welcomeVisible: getComputedStyle(document.getElementById("welcome-screen")).display !== "none",
       runCleared: localStorage.getItem(key) === null,
       drawerOpen: document.getElementById("title-custom-drawer").classList.contains("open"),
-      hallCount: window.__CHENYUAN_V25__.getMetaState().hallOfLives.length,
-      selectedCal: window.__CHENYUAN_V25__.getSelectedCalamityTier()
+      hallCount: window.__CHENYUAN_DEBUG__.getMetaState().hallOfLives.length,
+      selectedCal: window.__CHENYUAN_DEBUG__.getSelectedCalamityTier()
     }), STORAGE_KEY);
     assert.equal(welcomeState.welcomeVisible, true);
     assert.equal(welcomeState.runCleared, true);
@@ -1579,7 +1579,7 @@ try {
     await page.waitForTimeout(160);
 
     const ngPlusCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       const calBadge = document.getElementById("hud-calamity-badge");
       const calSpec = api.getCalamityCycleSpec(s.game);
@@ -1622,7 +1622,7 @@ try {
     await page.click("#btn-continue-save");
     await page.waitForTimeout(250);
     const reloaded = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const { game } = api.getState();
       return {
         calTier: game.calamityTier,
@@ -1685,12 +1685,12 @@ try {
 
     // 1. 4.2s AFK test in prologue: wolves must stay alive & player must take real HP damage
     const startSnap = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return { hp: s.game.hp, enemies: s.arena.enemies.length };
     });
     await page.waitForTimeout(3600);
     const afkSnap = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       const snap = {
         hp: s.game.hp,
@@ -1706,21 +1706,21 @@ try {
 
     // 2. All Mortal realm locks enforced on API & keyboard (4/5/6/E blocked)
     const lockCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const { game } = api.getState();
       const lockedActs = ["stance", "jump", "ult", "ally", "pet", "posture", "soul", "swordBlink", "finisher", "tagSwitch", "weapon_form", "astral", "mount", "qimen", "sanqing", "shanhe", "warship", "sequencer"];
       return lockedActs.filter(a => api.isActionUnlockedByRealm(game, a));
     });
     assert.equal(lockCheck.length, 0, `Mortal must have 0 high-realm actions unlocked, got: ${lockCheck.join(",")}`);
 
-    const mpBeforeKeys = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.mp);
+    const mpBeforeKeys = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.mp);
     for (const key of ["Digit4", "Digit5", "Digit6", "KeyE"]) {
       await page.keyboard.press(key);
       await page.waitForTimeout(80);
     }
     const afterKeys = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
-      const s24 = window.__CHENYUAN_V24__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
+      const s24 = window.__CHENYUAN_DEBUG__.getState();
       return {
         mp: s.game.mp,
         domain: !!s.arena.domain,
@@ -1737,7 +1737,7 @@ try {
 
     // 3. Ch1-Ch5 combat calibration (%HP light hit pressure + healthy Boss TTK, deterministic representative loadouts)
     const curveRows = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const presets = [
         { realm: "mortal",     wpnAtk: 8,   armHp: 18,  armDr: 4,  rngCrit: 0.03, relic: null,          laws: [] },
         { realm: "qi",         wpnAtk: 24,  armHp: 45,  armDr: 10, rngCrit: 0.05, relic: "frost_sword", laws: ["wanjian"] },
@@ -1793,7 +1793,7 @@ try {
 
     // 4. Real MP spend & cooldown on Golden Core E (Digit4 blocked until Nascent per M6), then Nascent E + Digit4
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       api.closeModal();
       s.arena.paused = false;
@@ -1805,12 +1805,12 @@ try {
       s.arena.sanqingCd = 0;
       api.syncProgressiveSkillVisibility();
     });
-    const mpStartGold = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.mp);
+    const mpStartGold = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.mp);
     await page.keyboard.press("Digit4");
     await page.waitForTimeout(100);
     const goldBlockedDigit4 = await page.evaluate(() => ({
-      mp: window.__CHENYUAN_V25__.getState().game.mp,
-      sanqingCd: window.__CHENYUAN_V25__.getState().arena.sanqingCd || 0
+      mp: window.__CHENYUAN_DEBUG__.getState().game.mp,
+      sanqingCd: window.__CHENYUAN_DEBUG__.getState().arena.sanqingCd || 0
     }));
     assert.equal(goldBlockedDigit4.sanqingCd, 0, "M6 gate: Digit4 (一气三清) must stay blocked in Golden Core realm");
     assert.ok(goldBlockedDigit4.mp >= mpStartGold, "Blocked Digit4 in Golden Core must not spend MP");
@@ -1818,7 +1818,7 @@ try {
     await page.keyboard.press("KeyE");
     await page.waitForTimeout(120);
     const goldAfterE = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return { mp: s.game.mp, ultCd: s.arena.player.ultCd };
     });
     assert.ok(goldAfterE.mp < mpStartGold, `Expected Golden Core KeyE to spend real MP (before=${mpStartGold}, after=${goldAfterE.mp})`);
@@ -1826,7 +1826,7 @@ try {
 
     // Now advance to Nascent Soul where both KeyE and Digit4 are unlocked
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "nascent";
       const st = api.getCombatStats(s.game);
@@ -1836,13 +1836,13 @@ try {
       s.arena.sanqingCd = 0;
       api.syncProgressiveSkillVisibility();
     });
-    const mpStartNascent = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.mp);
+    const mpStartNascent = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.mp);
     await page.keyboard.press("KeyE");
     await page.waitForTimeout(120);
     await page.keyboard.press("Digit4");
     await page.waitForTimeout(120);
     const nascentAfter = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return { mp: s.game.mp, ultCd: s.arena.player.ultCd, sanqingCd: s.arena.sanqingCd || 0 };
     });
     assert.ok(nascentAfter.mp < mpStartNascent - 35, `Expected Nascent KeyE + Digit4 to spend real MP (before=${mpStartNascent}, after=${nascentAfter.mp})`);
@@ -1856,7 +1856,7 @@ try {
 
     // 1. 5-Act Single-Source-of-Truth parity
     const parity = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const expected = [
         { boss: "wolf", bossName: "雾隐狼王" },
         { boss: "warden", bossName: "守山石卫" },
@@ -1881,7 +1881,7 @@ try {
 
     // 2. Prologue pedestal opens two player-chosen portals with 0 in-place wolf ambush
     const pedCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.arena.enemies = [];
       api.activatePedestalChoice("help");
@@ -1897,7 +1897,7 @@ try {
 
     // 3. portal_next (kind="portal") realm gate blocks Mortal and allows Qi
     const gateCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "mortal";
       api.initArenaStage(0, false);
@@ -1920,7 +1920,7 @@ try {
 
     // 4. Golden Core Sanctum meditation pacing (<12% in 2.2s, never 100%)
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "golden";
       s.game.xp = 0;
@@ -1929,14 +1929,14 @@ try {
     await page.keyboard.press("KeyB");
     await page.waitForTimeout(2200);
     const medCheck = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return { xp: s.game.xp, cap: s.realmSpec.xpCap, pct: (s.game.xp / s.realmSpec.xpCap) * 100 };
     });
     assert.ok(medCheck.pct > 0.5 && medCheck.pct < 12, `Golden Core 2.2s meditation XP (${medCheck.pct.toFixed(2)}%) must stay paced in (0.5%, 12%)`);
 
     // 5. High-realm low-stage XP attenuation & 7-material combat drops across Ch1-Ch5
     const dropCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "spirit";
       s.game.seenCutscenes = { prologue_rescue: true, enter_sect: true, enter_secret: true, enter_sword_mound: true, enter_terrace: true };
@@ -1975,7 +1975,7 @@ try {
     }
     await dismissActiveCutscene(page, 300);
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.openingChoice = "help";
       api.closeModal();
@@ -2003,7 +2003,7 @@ try {
       return {
         visibleBtnCount: btns.length,
         coachVisible: !!(coach && coach.classList.contains("show")),
-        step: window.__CHENYUAN_V25__.getState().game.tutorialStep
+        step: window.__CHENYUAN_DEBUG__.getState().game.tutorialStep
       };
     });
     assert.ok(hudSnap.visibleBtnCount <= 14, `Mortal start HUD must have <= 14 visible buttons, got ${hudSnap.visibleBtnCount}`);
@@ -2013,28 +2013,28 @@ try {
 
     // 2. Onboarding advances 0 -> 1 on 3 manual slashes, 1 -> 2 on Space dash parry
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       for (let i = 0; i < 3; i++) {
         s.arena.player.slashCd = 0;
         api.fireManualSlash();
       }
     });
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.tutorialStep), 1);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.tutorialStep), 1);
     await page.keyboard.press("Space");
     await page.waitForTimeout(120);
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.tutorialStep), 2);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.tutorialStep), 2);
 
     // 3. Skip onboarding & verify persistence across reload
     await page.click("#btn-skip-onboarding");
     await page.waitForTimeout(150);
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.tutorialDismissed), true);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.tutorialDismissed), true);
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.waitForSelector("#btn-continue-save");
     await page.click("#btn-continue-save");
     await page.waitForTimeout(240);
     const postReloadTut = await page.evaluate(() => ({
-      dismissed: window.__CHENYUAN_V25__.getState().game.tutorialDismissed,
+      dismissed: window.__CHENYUAN_DEBUG__.getState().game.tutorialDismissed,
       coachOpen: document.getElementById("onboarding-coach-bar").classList.contains("show")
     }));
     assert.equal(postReloadTut.dismissed, true);
@@ -2051,9 +2051,9 @@ try {
 
     // 5. Unified alchemy drawer (0 duplicate horizontal furnace track)
     await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       s.game.openingChoice = "help";
-      window.__CHENYUAN_V25__.updateHud();
+      window.__CHENYUAN_DEBUG__.updateHud();
     });
     await page.click('#nav-btn-alchemy');
     await page.waitForTimeout(160);
@@ -2074,7 +2074,7 @@ try {
 
     // 1. Cutscene alignment (Ch3 Frost Serpent + Ch4 Sword Mound) & live Ch4 trigger
     const csCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const secText = (api.CHAPTER_CUTSCENES.enter_secret || []).map(l => l.text).join("");
       const moundText = (api.CHAPTER_CUTSCENES.enter_sword_mound || []).map(l => l.text).join("");
       const s = api.getState();
@@ -2099,14 +2099,14 @@ try {
     await page.keyboard.press("Escape");
     await page.waitForTimeout(120);
     const ch4Variants = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return s.arena.enemies.map(e => ({ name: e.name, tag: e.variantTag, color: e.variantColor }));
     });
     assert.ok(ch4Variants.length > 0 && ch4Variants.every(v => v.tag && v.color), "Ch4 enemies must carry chapter variant metadata");
 
     // 2. All 5 Chapters spawn distinct chapter-flavored enemy variants
     const allStageVariants = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.seenCutscenes = { prologue_rescue: true, enter_sect: true, enter_secret: true, enter_sword_mound: true, enter_terrace: true };
       const namesByStage = [];
@@ -2125,7 +2125,7 @@ try {
 
     // 3. 3D Dao Heart real gameplay impact (heal, crit, posture, MP regen, stone drops)
     const daoCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "foundation";
       s.game.dao = { benevolence: 6, edge: 10, serenity: 6 };
@@ -2158,7 +2158,7 @@ try {
     await page.click('#panel-scroll-body [data-school="sword"]');
     await page.waitForTimeout(140);
     const swordSnap = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const st = api.getCombatStats(api.getState().game);
       return {
         haste: st.atkHaste,
@@ -2171,7 +2171,7 @@ try {
     await page.click('#panel-scroll-body [data-school="talisman"]');
     await page.waitForTimeout(140);
     const talSnap = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const st = api.getCombatStats(api.getState().game);
       return {
         haste: st.atkHaste,
@@ -2199,7 +2199,7 @@ try {
 
     // 1. Quest progression cannot skip Act 2 Foundation breakthrough or Act 4 Sword Mound boss
     const questCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       const ch2 = api.CHAPTERS.find(c => c.index === 2);
       const ch4 = api.CHAPTERS.find(c => c.index === 4);
@@ -2233,7 +2233,7 @@ try {
 
     // 2. Every Act's breakthrough pill recipe uses ONLY materials natively dropped by that Act
     const recipeCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const pairs = [
         { actIdx: 1, recipeId: "foundation" },
         { actIdx: 2, recipeId: "golden" },
@@ -2256,7 +2256,7 @@ try {
 
     // 3. Act 5 ascend_gate waits for Volume-End Recap confirm and differentiates Nascent (化神台) vs Spirit (九霄仙门)
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.openingChoice = "help";
       s.game.seenCutscenes = { prologue_rescue: true, enter_sect: true, enter_secret: true, enter_sword_mound: true, enter_terrace: true };
@@ -2269,17 +2269,17 @@ try {
     await dismissActiveCutscene(page);
     await page.waitForSelector("#modal-backdrop.open #btn-volume-recap-confirm");
     const nascentGateBeforeConfirm = await page.evaluate(() =>
-      window.__CHENYUAN_V25__.getState().arena.props.some(p => p.kind === "ascend_gate")
+      window.__CHENYUAN_DEBUG__.getState().arena.props.some(p => p.kind === "ascend_gate")
     );
     assert.equal(nascentGateBeforeConfirm, false, "Stage 4 ascend_gate must wait until Volume-End Recap modal is confirmed");
     await page.click("#btn-volume-recap-confirm");
     await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
     const nascentGate = await page.evaluate(() =>
-      (window.__CHENYUAN_V25__.getState().arena.props.find(p => p.kind === "ascend_gate") || {}).name || ""
+      (window.__CHENYUAN_DEBUG__.getState().arena.props.find(p => p.kind === "ascend_gate") || {}).name || ""
     );
 
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "spirit";
       api.initArenaStage(4, false);
@@ -2292,19 +2292,19 @@ try {
     await page.click("#btn-volume-recap-confirm");
     await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
     const spiritGate = await page.evaluate(() =>
-      (window.__CHENYUAN_V25__.getState().arena.props.find(p => p.kind === "ascend_gate") || {}).name || ""
+      (window.__CHENYUAN_DEBUG__.getState().arena.props.find(p => p.kind === "ascend_gate") || {}).name || ""
     );
     assert.ok(nascentGate.includes("化神"), `Nascent Stage 4 gate should mention 化神, got ${nascentGate}`);
     assert.ok(spiritGate.includes("飞升"), `Spirit Stage 4 gate should mention 飞升, got ${spiritGate}`);
 
     // 4. Celestial Spire Floor 3 (chaos_wager) must NOT auto-drain HP; interactive spire_wager_altar requires explicit click
     const spireWager = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "nascent";
       const st = api.getCombatStats(s.game);
       s.game.hp = st.maxHp;
-      window.__CHENYUAN_V21__.startCelestialSpireRun(3);
+      window.__CHENYUAN_DEBUG__.startCelestialSpireRun(3);
       const hpAfterEnter = s.game.hp;
       const wagerBeforeClick = s.arena.celestialSpire.wagerDouble;
       const altar = s.arena.props.find(p => p.kind === "spire_wager_altar");
@@ -2329,7 +2329,7 @@ try {
 
     // 5. Boss Rush 7-bout HP strictly increases from Bout 1 -> Bout 5 -> Bout 6 Inner Demon -> Bout 7 Colossal Titan
     const rushHps = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "nascent";
       s.game.calamityTier = 0;
@@ -2373,7 +2373,7 @@ try {
         text: el ? el.textContent : "",
         hasCopyBtn: !!el?.querySelector('[data-action="copy-corrupt-meta-raw"]'),
         hasResetBtn: !!el?.querySelector('[data-action="prompt-reset-corrupt-meta"]'),
-        metaReadError: window.__CHENYUAN_V25__.getPersistenceState().metaReadError
+        metaReadError: window.__CHENYUAN_DEBUG__.getPersistenceState().metaReadError
       };
     });
     assert.ok(bannerInfo.visible, "Welcome #save-status-banner must be visible when meta is corrupt");
@@ -2392,7 +2392,7 @@ try {
     await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
     await dismissOpeningScroll(page);
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.getState().game.stones += 55;
       api.saveGame();
       api.saveMeta();
@@ -2422,7 +2422,7 @@ try {
       const alertEl = document.getElementById("hud-save-alert");
       return {
         parsed,
-        metaReadError: window.__CHENYUAN_V25__.getPersistenceState().metaReadError,
+        metaReadError: window.__CHENYUAN_DEBUG__.getPersistenceState().metaReadError,
         alertHidden: !alertEl || getComputedStyle(alertEl).display === "none"
       };
     }, META_KEY);
@@ -2453,7 +2453,7 @@ try {
 
     const inputCheck = await page.evaluate(() => ({
       modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
-      photoActive: window.__CHENYUAN_V18__.getState().photoMode.active,
+      photoActive: window.__CHENYUAN_DEBUG__.getState().photoMode.active,
       telemetryVisible: document.getElementById("action-telemetry-panel") ? getComputedStyle(document.getElementById("action-telemetry-panel")).display !== "none" : false,
       inpVal: document.getElementById("inp-cloud-save-code")?.value || ""
     }));
@@ -2469,7 +2469,7 @@ try {
     }
     const modalGateCheck = await page.evaluate(() => ({
       modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
-      photoActive: window.__CHENYUAN_V18__.getState().photoMode.active,
+      photoActive: window.__CHENYUAN_DEBUG__.getState().photoMode.active,
       telemetryVisible: document.getElementById("action-telemetry-panel") ? getComputedStyle(document.getElementById("action-telemetry-panel")).display !== "none" : false,
       stillControls: !!document.getElementById("inp-cloud-save-code")
     }));
@@ -2528,11 +2528,11 @@ try {
     // 7. Positive controls outside inputs/modals/drawers: P enters photo mode & F3 toggles #action-telemetry-panel
     await page.keyboard.press("KeyP");
     await page.waitForTimeout(80);
-    const photoOn = await page.evaluate(() => window.__CHENYUAN_V18__.getState().photoMode.active);
+    const photoOn = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().photoMode.active);
     assert.equal(photoOn, true, "Positive control: pressing P outside inputs/modals/drawers must enter photo mode");
     await page.keyboard.press("Escape");
     await page.waitForTimeout(80);
-    const photoOff = await page.evaluate(() => window.__CHENYUAN_V18__.getState().photoMode.active);
+    const photoOff = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().photoMode.active);
     assert.equal(photoOff, false, "Escape must exit photo mode");
 
     await page.keyboard.press("F3");
@@ -2561,7 +2561,7 @@ try {
 
     // Prepare current save A ("原道友", stones 123) and synthesize a valid cloud code B ("云端剑尊", qi, stones 888, omitting newer fields)
     const { codeB, badRealmCode } = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const st = api.getState();
       st.game.name = "原道友";
       st.game.stones = 123;
@@ -2604,7 +2604,7 @@ try {
     const badRes = await page.evaluate(() => ({
       hasConfirmBtn: !!document.getElementById("btn-confirm-cloud-import"),
       statusText: document.getElementById("lbl-cloud-save-status")?.textContent || "",
-      stones: window.__CHENYUAN_V25__.getState().game.stones
+      stones: window.__CHENYUAN_DEBUG__.getState().game.stones
     }));
     assert.equal(badRes.hasConfirmBtn, false, "Invalid realm cloud code must not open confirm modal");
     assert.ok(badRes.statusText.includes("非法") || badRes.statusText.includes("✕"), `Expected error status, got: ${badRes.statusText}`);
@@ -2616,8 +2616,8 @@ try {
     await page.waitForSelector("#btn-confirm-cloud-import");
     const previewState = await page.evaluate(() => ({
       modalText: document.getElementById("modal-content").textContent,
-      curName: window.__CHENYUAN_V25__.getState().game.name,
-      curStones: window.__CHENYUAN_V25__.getState().game.stones
+      curName: window.__CHENYUAN_DEBUG__.getState().game.name,
+      curStones: window.__CHENYUAN_DEBUG__.getState().game.stones
     }));
     assert.ok(previewState.modalText.includes("原道友") && previewState.modalText.includes("云端剑尊"), "Preview modal must show current vs imported 道号");
     assert.ok(previewState.modalText.includes("炼气") && previewState.modalText.includes("888"), "Preview modal must show imported 境界 & 灵石");
@@ -2626,7 +2626,7 @@ try {
     // 3. Cancel returns to Settings without modifying game
     await page.click('[data-action="cancel-cloud-import"]');
     await page.waitForSelector("#inp-cloud-save-code");
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones), 123);
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.stones), 123);
 
     // 4. Write failure (QuotaExceededError) on Confirm must roll back & report failure honestly (NEVER "成功")
     await page.fill("#inp-cloud-save-code", codeB);
@@ -2648,8 +2648,8 @@ try {
       return {
         errVisible: !!errEl && getComputedStyle(errEl).display !== "none",
         errText: errEl ? errEl.textContent : "",
-        name: window.__CHENYUAN_V25__.getState().game.name,
-        stones: window.__CHENYUAN_V25__.getState().game.stones
+        name: window.__CHENYUAN_DEBUG__.getState().game.name,
+        stones: window.__CHENYUAN_DEBUG__.getState().game.stones
       };
     });
     assert.ok(failedImport.errVisible && failedImport.errText.includes("导入失败"), `Write failure must show honest error, got: ${failedImport.errText}`);
@@ -2661,8 +2661,8 @@ try {
     await page.click("#btn-confirm-cloud-import");
     await page.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
     const committed = await page.evaluate(() => {
-      const g = window.__CHENYUAN_V25__.getState().game;
-      const m = window.__CHENYUAN_V25__.getMetaState();
+      const g = window.__CHENYUAN_DEBUG__.getState().game;
+      const m = window.__CHENYUAN_DEBUG__.getMetaState();
       return {
         name: g.name,
         realm: g.realm,
@@ -2686,8 +2686,8 @@ try {
     await page.click("#btn-continue-save");
     await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
     const afterReload = await page.evaluate(() => ({
-      name: window.__CHENYUAN_V25__.getState().game.name,
-      stones: window.__CHENYUAN_V25__.getState().game.stones
+      name: window.__CHENYUAN_DEBUG__.getState().game.name,
+      stones: window.__CHENYUAN_DEBUG__.getState().game.stones
     }));
     assert.equal(afterReload.name, "云端剑尊");
     assert.equal(afterReload.stones, 888);
@@ -2749,7 +2749,7 @@ try {
     assert.ok(drawerXss.titleText.includes("<img src=x onerror=window.__XSS_MURAL=1>"), "muralHeader() must render literal escaped game.name");
 
     // Open Hall of Lives modal (renders metaState.bestRushGrade & metaState.hallOfLives)
-    await page.evaluate(() => window.__CHENYUAN_V25__.openHallOfLivesModal());
+    await page.evaluate(() => window.__CHENYUAN_DEBUG__.openHallOfLivesModal());
     await page.waitForSelector("#modal-backdrop.open .hall-life-card");
     const hallXss = await page.evaluate(() => ({
       hallRan: window.__XSS_HALL,
@@ -2820,13 +2820,13 @@ try {
 
     // Tab A progresses ascensions=3, seenEnemies+=stone_golem, bestRushGrade="S", bestRushTime=120
     await tabA.evaluate(() => {
-      const m = window.__CHENYUAN_V25__.getMetaState();
+      const m = window.__CHENYUAN_DEBUG__.getMetaState();
       m.ascensions = 3;
       m.reincarnationPoints += 120;
       m.bestRushGrade = "S";
       m.bestRushTime = 120;
       m.seenEnemies.push("stone_golem");
-      window.__CHENYUAN_V25__.saveMeta();
+      window.__CHENYUAN_DEBUG__.saveMeta();
     });
 
     // Wait for Chromium Mojo DOMStorage IPC to deliver Tab A's write to Tab B's localStorage cache
@@ -2839,19 +2839,19 @@ try {
 
     // Tab B (explicitly keeping stale in-memory ascensions=2) progresses bestScore=999, seenEnemies+=jade_serpent, bestRushGrade="SS"
     await tabB.evaluate(() => {
-      const m = window.__CHENYUAN_V25__.getMetaState();
+      const m = window.__CHENYUAN_DEBUG__.getMetaState();
       m.ascensions = 2;
       m.bestScore = 999;
       m.bestRushGrade = "SS";
       m.seenEnemies.push("jade_serpent");
-      window.__CHENYUAN_V25__.saveMeta();
+      window.__CHENYUAN_DEBUG__.saveMeta();
     });
 
     // Wait for Chromium cross-tab storage IPC + storage event sync on tabA
     await tabA.waitForFunction((mk) => {
       try {
         const cur = JSON.parse(localStorage.getItem(mk) || "{}");
-        return cur.bestScore === 999 && window.__CHENYUAN_V25__.getMetaState().bestScore === 999;
+        return cur.bestScore === 999 && window.__CHENYUAN_DEBUG__.getMetaState().bestScore === 999;
       } catch (e) { return false; }
     }, META_KEY, { timeout: 5000 });
 
@@ -2865,7 +2865,7 @@ try {
 
     // Reload Tab A and verify merged meta persists
     await tabA.reload({ waitUntil: "domcontentloaded" });
-    const afterReloadMeta = await tabA.evaluate(() => window.__CHENYUAN_V25__.getMetaState());
+    const afterReloadMeta = await tabA.evaluate(() => window.__CHENYUAN_DEBUG__.getMetaState());
     assert.equal(afterReloadMeta.ascensions, 3);
     assert.equal(afterReloadMeta.bestScore, 999);
 
@@ -2886,8 +2886,8 @@ try {
     await tabA.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
     await dismissOpeningScroll(tabA);
     await tabA.evaluate(() => {
-      window.__CHENYUAN_V25__.getState().game.openingChoice = "help";
-      window.__CHENYUAN_V25__.saveGame();
+      window.__CHENYUAN_DEBUG__.getState().game.openingChoice = "help";
+      window.__CHENYUAN_DEBUG__.saveGame();
     });
 
     const tabB = await ctx.newPage();
@@ -2900,10 +2900,10 @@ try {
     // Tab B saves newer stones=777 with an XSS payload in name -> Tab A receives conflict -> verify escaped HTML -> Tab A chooses read-only mode
     const conflictXssPayload = "<img src=x onerror=window.__XSS_CONFLICT=1>";
     await tabB.evaluate((payload) => {
-      const g = window.__CHENYUAN_V25__.getState().game;
+      const g = window.__CHENYUAN_DEBUG__.getState().game;
       g.name = payload;
       g.stones = 777;
-      window.__CHENYUAN_V25__.saveGame();
+      window.__CHENYUAN_DEBUG__.saveGame();
     }, conflictXssPayload);
     await tabA.waitForSelector('#modal-backdrop.open [data-action="stay-readonly-save"]');
     const conflictXssCheck = await tabA.evaluate(() => ({
@@ -2948,14 +2948,14 @@ try {
     assert.equal(afterDangerClicks, 777, "execute-reset-save and reincarnate-now must NOT delete storage in read-only mode");
 
     // 3. Cloud import in read-only Tab A MUST be refused and never report success
-    const codeFromA = await tabA.evaluate(() => window.__CHENYUAN_V25__.exportFullCloudSaveCode());
-    const importInReadOnly = await tabA.evaluate((code) => window.__CHENYUAN_V24__.importFullCloudSaveCode(code), codeFromA);
+    const codeFromA = await tabA.evaluate(() => window.__CHENYUAN_DEBUG__.exportFullCloudSaveCode());
+    const importInReadOnly = await tabA.evaluate((code) => window.__CHENYUAN_DEBUG__.importFullCloudSaveCode(code), codeFromA);
     assert.equal(importInReadOnly, false, "Cloud import must return false in read-only mode");
     assert.equal(await tabA.evaluate((sk) => JSON.parse(localStorage.getItem(sk) || "{}")?.game?.stones, STORAGE_KEY), 777);
 
     // 4. pagehide flush in read-only Tab A must NOT overwrite Tab B's 777
     await tabA.evaluate(() => {
-      window.__CHENYUAN_V25__.getState().game.stones = 11;
+      window.__CHENYUAN_DEBUG__.getState().game.stones = 11;
       window.dispatchEvent(new Event("pagehide"));
     });
     assert.equal(await tabA.evaluate((sk) => JSON.parse(localStorage.getItem(sk) || "{}")?.game?.stones, STORAGE_KEY), 777);
@@ -2964,14 +2964,14 @@ try {
     // 5. Clean Tab C: mutate stones=456 without saveGame(), dispatch pagehide -> reload -> persists 456!
     const { ctx: ctxC, page: tabC } = await startCleanGamePage(browser, "R2-5-TabC", true);
     await tabC.evaluate(() => {
-      window.__CHENYUAN_V25__.getState().game.stones = 456;
+      window.__CHENYUAN_DEBUG__.getState().game.stones = 456;
       window.dispatchEvent(new Event("pagehide"));
     });
     await tabC.reload({ waitUntil: "domcontentloaded" });
     await tabC.waitForSelector("#btn-continue-save");
     await tabC.click("#btn-continue-save");
     await tabC.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
-    assert.equal(await tabC.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones), 456, "pagehide must flush active save to storage");
+    assert.equal(await tabC.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.stones), 456, "pagehide must flush active save to storage");
 
     // 6. Synthetic invalid cross-tab storage event must display visible HUD alert & block overwrite
     await tabC.evaluate((sk) => {
@@ -2983,7 +2983,7 @@ try {
       return {
         visible: !!el && getComputedStyle(el).display !== "none",
         text: el ? el.textContent : "",
-        hasReadErr: !!window.__CHENYUAN_V25__.getPersistenceState().storageReadError
+        hasReadErr: !!window.__CHENYUAN_DEBUG__.getPersistenceState().storageReadError
       };
     });
     assert.ok(extAlert.visible && extAlert.hasReadErr, `Invalid external storage event must show HUD alert, got: ${JSON.stringify(extAlert)}`);
@@ -3005,7 +3005,7 @@ try {
     await dismissOpeningScroll(page);
 
     const check = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const a11y = api.getState().a11ySettings;
       const defs = api.DEFAULT_KEYBINDS;
       const padBtns = Object.values(defs).map(v => v.padBtn).filter(v => v !== null && v !== undefined);
@@ -3040,7 +3040,7 @@ try {
     // Unlock posture (foundation realm) and verify Tab moves focus WITHOUT switching arena.weaponPosture,
     // while Backquote (`) DOES switch arena.weaponPosture (positive control)
     const postureBefore = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const st = api.getState();
       st.game.realm = "foundation";
       st.game.openingChoice = "help";
@@ -3058,14 +3058,14 @@ try {
       });
       if (activeDesc) visitedIds.add(activeDesc);
     }
-    const postureAfterTab = await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.weaponPosture);
+    const postureAfterTab = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.weaponPosture);
     assert.ok(visitedIds.size >= 3, `Native Tab focus navigation must cycle across HUD controls, visited: ${Array.from(visitedIds).join(", ")}`);
     assert.equal(postureAfterTab, postureBefore, `Pressing Tab must NOT hijack weaponPosture (before=${postureBefore}, after=${postureAfterTab})`);
 
     // Positive control: pressing Backquote (`) MUST switch weaponPosture!
     await page.keyboard.press("Backquote");
     await page.waitForTimeout(80);
-    const postureAfterBackquote = await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.weaponPosture);
+    const postureAfterBackquote = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.weaponPosture);
     assert.notEqual(postureAfterBackquote, postureBefore, `Positive control: pressing Backquote must switch arena.weaponPosture from ${postureBefore}`);
     await ctx.close();
 
@@ -3089,7 +3089,7 @@ try {
     await pageNormal.waitForTimeout(80);
     const afterManual = await pageNormal.evaluate(() => {
       const btn = document.getElementById("btn-open-settings");
-      const a11y = window.__CHENYUAN_V25__.getState().a11ySettings;
+      const a11y = window.__CHENYUAN_DEBUG__.getState().a11ySettings;
       return {
         reducedMotion: a11y.reducedMotion,
         hasClass: document.documentElement.classList.contains("reduced-motion"),
@@ -3120,7 +3120,7 @@ try {
     });
     await pageMig.reload({ waitUntil: "domcontentloaded" });
     const migRes = await pageMig.evaluate(() => {
-      const kb = window.__CHENYUAN_V25__.getKeybinds();
+      const kb = window.__CHENYUAN_DEBUG__.getKeybinds();
       const padBtns = Object.values(kb).map(v => v.padBtn).filter(v => v !== null && v !== undefined);
       return {
         postureKb: kb.posture.kb,
@@ -3292,7 +3292,7 @@ try {
       await page.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
 
       const loadedCheck = await page.evaluate((pFull) => {
-        const g = window.__CHENYUAN_V25__.getState().game;
+        const g = window.__CHENYUAN_DEBUG__.getState().game;
         return {
           hudName: document.getElementById("hud-name")?.textContent || "",
           hudStones: (document.getElementById("hud-stones")?.textContent || "").trim(),
@@ -3305,9 +3305,9 @@ try {
           daoEdge: g.dao?.edge,
           daoSer: g.dao?.serenity,
           herb: g.inventory?.herb,
-          bestRushGrade: window.__CHENYUAN_V25__.getMetaState().bestRushGrade,
-          slashLabel: window.__CHENYUAN_V25__.getKeybinds().slash.label,
-          slashKb: window.__CHENYUAN_V25__.getKeybinds().slash.kb,
+          bestRushGrade: window.__CHENYUAN_DEBUG__.getMetaState().bestRushGrade,
+          slashLabel: window.__CHENYUAN_DEBUG__.getKeybinds().slash.label,
+          slashKb: window.__CHENYUAN_DEBUG__.getKeybinds().slash.kb,
           matchesFull: (document.getElementById("hud-name")?.textContent || "") === pFull
         };
       }, P_FULL);
@@ -3328,23 +3328,23 @@ try {
 
       // Open BossRush (also verify render-sink escapeHtml even if bestRushGrade were tampered in memory)
       await page.evaluate((pImg) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getMetaState().bestRushGrade = pImg;
         api.openBossRushModal();
       }, P_IMG);
       await page.waitForSelector("#modal-backdrop.open");
       await probeXss(page, "R2-7b-bossrush");
-      await page.evaluate(() => { window.__CHENYUAN_V25__.getMetaState().bestRushGrade = null; window.__CHENYUAN_V25__.closeModal(); });
+      await page.evaluate(() => { window.__CHENYUAN_DEBUG__.getMetaState().bestRushGrade = null; window.__CHENYUAN_DEBUG__.closeModal(); });
 
       // SanctumUpgrade modal
-      await page.evaluate(() => window.__CHENYUAN_V25__.openSanctumUpgradeModal());
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.openSanctumUpgradeModal());
       await page.waitForSelector("#modal-backdrop.open");
       await probeXss(page, "R2-7b-sanctum");
       await page.keyboard.press("Escape");
 
       // TribulationPrep modal
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.xp = 1e9;
         api.openTribulationPrepModal();
       });
@@ -3353,11 +3353,11 @@ try {
       await page.keyboard.press("Escape");
 
       // Ending modal (verdict + ascended branch)
-      await page.evaluate(() => window.__CHENYUAN_V25__.openEndingModal());
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.openEndingModal());
       await page.waitForSelector("#modal-backdrop.open");
       await probeXss(page, "R2-7b-ending-verdict");
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const g = api.getState().game;
         g.status = "ascended";
         g.ending = null;
@@ -3366,19 +3366,19 @@ try {
       await page.waitForSelector("#modal-backdrop.open");
       await probeXss(page, "R2-7b-ending-ascended");
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.status = "active";
         api.closeModal();
       });
 
       // Expedition modal
-      await page.evaluate(() => window.__CHENYUAN_V25__.openExpeditionSandboxModal());
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.openExpeditionSandboxModal());
       await page.waitForSelector("#modal-backdrop.open");
       await probeXss(page, "R2-7b-expedition");
       await page.keyboard.press("Escape");
 
       // Hall of Lives modal (also confirms null entry in hallOfLives did not crash)
-      await page.evaluate(() => window.__CHENYUAN_V25__.openHallOfLivesModal());
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.openHallOfLivesModal());
       await page.waitForSelector("#modal-backdrop.open .hall-life-card");
       await probeXss(page, "R2-7b-hall");
       await page.keyboard.press("Escape");
@@ -3438,7 +3438,7 @@ try {
         return {
           hudName: document.getElementById("hud-name")?.textContent || "",
           toastTxt: document.getElementById("toast-container")?.textContent || "",
-          hasWriteErr: !!window.__CHENYUAN_V25__.getPersistenceState().storageWriteError,
+          hasWriteErr: !!window.__CHENYUAN_DEBUG__.getPersistenceState().storageWriteError,
           v10Intact: !!localStorage.getItem("chenyuan_wendao_v10_save")
         };
       });
@@ -3494,7 +3494,7 @@ try {
       await pageMal.click("#btn-continue-save");
       await pageMal.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
       const malState = await pageMal.evaluate(() => {
-        const st = window.__CHENYUAN_V25__.getState();
+        const st = window.__CHENYUAN_DEBUG__.getState();
         const g = st.game;
         return {
           protoIsObject: Object.getPrototypeOf(g) === Object.prototype,
@@ -3542,9 +3542,9 @@ try {
         const modalTxt = document.getElementById("modal-backdrop")?.classList.contains("open")
           ? (document.getElementById("modal-content")?.textContent || "")
           : "";
-        const pers = window.__CHENYUAN_V25__.getPersistenceState();
+        const pers = window.__CHENYUAN_DEBUG__.getPersistenceState();
         // Force overwrite should still write a finite positive integer saveRev (never null)
-        window.__CHENYUAN_V25__.saveGame({ forceOverwrite: true });
+        window.__CHENYUAN_DEBUG__.saveGame({ forceOverwrite: true });
         const afterSave = JSON.parse(localStorage.getItem(sk) || "{}");
         return {
           modalShowsInfinity: modalTxt.includes("vInfinity") || modalTxt.includes("Infinity"),
@@ -3562,7 +3562,7 @@ try {
     {
       const { ctx, page } = await startCleanGamePage(browser, "R2-7c-CloudXSS", true);
       const cloudCode = await page.evaluate((pFull) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.name = pFull;
         api.saveGame();
         const pImg = '<img src=x onerror="window.__xss=21">';
@@ -3620,9 +3620,9 @@ try {
       await page.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
 
       const afterImport = await page.evaluate(() => {
-        const st = window.__CHENYUAN_V25__.getState();
-        const m = window.__CHENYUAN_V25__.getMetaState();
-        const v22 = window.__CHENYUAN_V22__.getState();
+        const st = window.__CHENYUAN_DEBUG__.getState();
+        const m = window.__CHENYUAN_DEBUG__.getMetaState();
+        const v22 = window.__CHENYUAN_DEBUG__.getState();
         return {
           name: st.game.name,
           hudStones: (document.getElementById("hud-stones")?.textContent || "").trim(),
@@ -3669,12 +3669,12 @@ try {
       await probeXss(page, "R2-7c-proto-relic-endgame");
       await page.keyboard.press("Escape");
 
-      await page.evaluate(() => window.__CHENYUAN_V25__.openBossRushModal());
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.openBossRushModal());
       await page.waitForSelector("#modal-backdrop.open");
       await probeXss(page, "R2-7c-bossrush");
       await page.keyboard.press("Escape");
 
-      await page.evaluate(() => window.__CHENYUAN_V25__.openSanctumUpgradeModal());
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.openSanctumUpgradeModal());
       await page.waitForSelector("#modal-backdrop.open");
       await probeXss(page, "R2-7c-sanctum");
       await page.keyboard.press("Escape");
@@ -3722,7 +3722,7 @@ try {
       await page.waitForTimeout(100);
       const failedReset = await page.evaluate((mk) => {
         Storage.prototype.setItem = window.__origSetMeta;
-        const p = window.__CHENYUAN_V25__.getPersistenceState();
+        const p = window.__CHENYUAN_DEBUG__.getPersistenceState();
         return {
           rawStillIntact: localStorage.getItem(mk),
           hasMetaReadErr: !!p.metaReadError,
@@ -3738,7 +3738,7 @@ try {
       await page.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
       await page.reload({ waitUntil: "domcontentloaded" });
       const afterMetaReload = await page.evaluate((mk) => ({
-        metaReadError: window.__CHENYUAN_V25__.getPersistenceState().metaReadError,
+        metaReadError: window.__CHENYUAN_DEBUG__.getPersistenceState().metaReadError,
         parsed: JSON.parse(localStorage.getItem(mk) || "null")
       }), META_KEY);
       assert.equal(afterMetaReload.metaReadError, null, "Reload after meta reset must have metaReadError === null");
@@ -3758,7 +3758,7 @@ try {
           }
           return orig.call(this, k, v);
         };
-        const ok = window.__CHENYUAN_V25__.saveMeta();
+        const ok = window.__CHENYUAN_DEBUG__.saveMeta();
         Storage.prototype.setItem = orig;
         const alertEl = document.getElementById("hud-save-alert");
         return {
@@ -3778,7 +3778,7 @@ try {
       const afterRetryMeta = await page.evaluate(() => {
         const alertEl = document.getElementById("hud-save-alert");
         return {
-          metaWriteError: window.__CHENYUAN_V25__.getPersistenceState().metaWriteError,
+          metaWriteError: window.__CHENYUAN_DEBUG__.getPersistenceState().metaWriteError,
           alertHidden: !alertEl || getComputedStyle(alertEl).display === "none"
         };
       });
@@ -3796,8 +3796,8 @@ try {
         return {
           visible: !!alertEl && getComputedStyle(alertEl).display !== "none",
           text: alertEl ? alertEl.textContent : "",
-          hasMetaReadErr: !!window.__CHENYUAN_V25__.getPersistenceState().metaReadError,
-          saveMetaRet: window.__CHENYUAN_V25__.saveMeta(),
+          hasMetaReadErr: !!window.__CHENYUAN_DEBUG__.getPersistenceState().metaReadError,
+          saveMetaRet: window.__CHENYUAN_DEBUG__.saveMeta(),
           storageUnchanged: localStorage.getItem(mk)
         };
       }, META_KEY);
@@ -3822,7 +3822,7 @@ try {
 
       // G-T6a: no-op flushSaveOnLifecycle MUST NOT increment saveRev; visibilitychange hidden flushes real mutation
       const lifecycleCheck = await tabA.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.openingChoice = "help";
         api.saveGame();
         const rev0 = api.getPersistenceState().loadedSaveRev;
@@ -3864,7 +3864,7 @@ try {
       await tabB.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
 
       const validCodeForConflict = await tabB.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.stones = 999;
         api.saveGame();
         return api.exportFullCloudSaveCode();
@@ -3872,8 +3872,8 @@ try {
       await tabA.waitForSelector('#modal-backdrop.open [data-action="stay-readonly-save"]');
 
       // Dismiss conflict modal WITHOUT entering read-only (stay in saveConflictState !== null, saveReadOnlyMode === false)
-      await tabA.evaluate(() => window.__CHENYUAN_V25__.closeModal());
-      const conflictFlags = await tabA.evaluate(() => window.__CHENYUAN_V25__.getPersistenceState());
+      await tabA.evaluate(() => window.__CHENYUAN_DEBUG__.closeModal());
+      const conflictFlags = await tabA.evaluate(() => window.__CHENYUAN_DEBUG__.getPersistenceState());
       assert.ok(conflictFlags.saveConflictState && !conflictFlags.saveReadOnlyMode, "Tab A must be in active non-readonly conflict state");
 
       // T4 UI cloud import while in conflict state MUST be rejected and NEVER show "成功"
@@ -3897,7 +3897,7 @@ try {
       assert.equal(conflictCloudRes.errVisible, true, "T4: UI cloud import in conflict state must show visible error");
       assert.ok(conflictCloudRes.errText.includes("导入失败") && !conflictCloudRes.errText.includes("成功"), `T4: conflict import error must be honest and never say 成功, got: ${conflictCloudRes.errText}`);
       assert.equal(conflictCloudRes.storedStones, 999, "T4: conflict import must not overwrite Tab B's save");
-      await tabA.evaluate(() => window.__CHENYUAN_V25__.closeModal());
+      await tabA.evaluate(() => window.__CHENYUAN_DEBUG__.closeModal());
 
       // T6 conflict state (non-readonly) rejects reset & reincarnate
       await tabA.evaluate(() => {
@@ -3911,7 +3911,7 @@ try {
       });
       const afterConflictDanger = await tabA.evaluate((sk) => ({
         storedStones: JSON.parse(localStorage.getItem(sk) || "{}")?.game?.stones,
-        hasGame: !!window.__CHENYUAN_V25__.getState().game
+        hasGame: !!window.__CHENYUAN_DEBUG__.getState().game
       }), STORAGE_KEY);
       assert.equal(afterConflictDanger.storedStones, 999, "T6: conflict state must reject reset & reincarnate without deleting storage");
       assert.equal(afterConflictDanger.hasGame, true, "T6: conflict state must preserve active game");
@@ -3951,7 +3951,7 @@ try {
       await tabB.waitForTimeout(120);
       const idleFreshRes = await tabB.evaluate((sk) => ({
         revNow: JSON.parse(localStorage.getItem(sk)).saveRev,
-        tabBConflict: window.__CHENYUAN_V25__.getPersistenceState().saveConflictState
+        tabBConflict: window.__CHENYUAN_DEBUG__.getPersistenceState().saveConflictState
       }), STORAGE_KEY);
       assert.equal(idleFreshRes.revNow, revFresh0, `G-T6a fresh idle rAF must NOT bump saveRev (${revFresh0} -> ${idleFreshRes.revNow})`);
       assert.equal(idleFreshRes.tabBConflict, null, "G-T6a fresh idle rAF must NOT trigger false conflict in Tab B");
@@ -3968,7 +3968,7 @@ try {
       await tabS1.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
       await dismissOpeningScroll(tabS1);
       const revBeforeSanctumContinue = await tabS1.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const g = api.getState().game;
         g.realm = "nascent";
         g.openingChoice = "help";
@@ -3988,8 +3988,8 @@ try {
       await tabS1.waitForTimeout(300);
 
       const tickCheck = await tabS1.evaluate((sk) => ({
-        tickTimer: window.__CHENYUAN_V25__.getState().game.expeditions.tickTimer,
-        sanctumMode: window.__CHENYUAN_V25__.getState().arena.sanctumMode,
+        tickTimer: window.__CHENYUAN_DEBUG__.getState().game.expeditions.tickTimer,
+        sanctumMode: window.__CHENYUAN_DEBUG__.getState().arena.sanctumMode,
         revAfterContinue: JSON.parse(localStorage.getItem(sk)).saveRev
       }), STORAGE_KEY);
       assert.equal(tickCheck.sanctumMode, true, "Resumed save should be in Sanctum Hub");
@@ -4017,16 +4017,16 @@ try {
       await tabS1.waitForTimeout(120);
       const sanctumIdleRes = await tabS1.evaluate((sk) => ({
         revNow: JSON.parse(localStorage.getItem(sk)).saveRev,
-        s1Conf: window.__CHENYUAN_V25__.getPersistenceState().saveConflictState
+        s1Conf: window.__CHENYUAN_DEBUG__.getPersistenceState().saveConflictState
       }), STORAGE_KEY);
-      const s2Conf = await tabS2.evaluate(() => window.__CHENYUAN_V25__.getPersistenceState().saveConflictState);
+      const s2Conf = await tabS2.evaluate(() => window.__CHENYUAN_DEBUG__.getPersistenceState().saveConflictState);
       assert.equal(sanctumIdleRes.revNow, revBeforeSanctumContinue, `G-T6a Sanctum active expedition idle rAF must NOT bump saveRev (${revBeforeSanctumContinue} -> ${sanctumIdleRes.revNow})`);
       assert.equal(sanctumIdleRes.s1Conf, null, "Tab S1 must NOT enter false conflict on idle tab switch");
       assert.equal(s2Conf, null, "Tab S2 must NOT enter false conflict on idle tab switch");
 
       // Genuine mutation (stones += 10) MUST flush on visibilitychange(hidden)
       await tabS1.evaluate(() => {
-        window.__CHENYUAN_V25__.getState().game.stones += 10;
+        window.__CHENYUAN_DEBUG__.getState().game.stones += 10;
         const origDesc = Object.getOwnPropertyDescriptor(Document.prototype, "visibilityState");
         Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
         document.dispatchEvent(new Event("visibilitychange"));
@@ -4039,7 +4039,7 @@ try {
       // Sub-check 2b: In active non-Sanctum combat (Nascent + bonded shen + live enemy), expedition tickTimer MUST decrement (< 8.5), while idle tab hide still does NOT bump saveRev
       await tabS2.close();
       const revBeforeCombatTick = await tabS1.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.expeditions.tickTimer = 8.5;
         api.initArenaStage(0, false);
@@ -4058,7 +4058,7 @@ try {
         if (origDesc) Object.defineProperty(document, "visibilityState", origDesc);
         else delete document.visibilityState;
         return {
-          tickTimer: window.__CHENYUAN_V25__.getState().game.expeditions.tickTimer,
+          tickTimer: window.__CHENYUAN_DEBUG__.getState().game.expeditions.tickTimer,
           revNow: JSON.parse(localStorage.getItem(sk)).saveRev
         };
       }, STORAGE_KEY);
@@ -4073,7 +4073,7 @@ try {
 
       // G-T3a: open AffixEngrave modal from button inside #jade-panel -> Escape -> focus returns to exact trigger button inside #jade-panel
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const g = api.getState().game;
         g.realm = "foundation";
         g.stones = 333;
@@ -4120,7 +4120,7 @@ try {
       await page.keyboard.press("Escape");
       await page.waitForFunction(() => !document.getElementById("jade-panel").classList.contains("drawer-open"));
       // Restore stones to 333 after engrave spent 35
-      await page.evaluate(() => { window.__CHENYUAN_V25__.getState().game.stones = 333; window.__CHENYUAN_V25__.saveGame(); });
+      await page.evaluate(() => { window.__CHENYUAN_DEBUG__.getState().game.stones = 333; window.__CHENYUAN_DEBUG__.saveGame(); });
 
       // G-T1a Case 1: reincarnate-now under metaReadError aborts & preserves primary save
       await page.evaluate((mk) => {
@@ -4133,8 +4133,8 @@ try {
       }, META_KEY);
       const gt1aCase1 = await page.evaluate((sk) => ({
         storedStones: JSON.parse(localStorage.getItem(sk) || "{}")?.game?.stones,
-        hasGame: !!window.__CHENYUAN_V25__.getState().game,
-        hasMetaReadErr: !!window.__CHENYUAN_V25__.getPersistenceState().metaReadError
+        hasGame: !!window.__CHENYUAN_DEBUG__.getState().game,
+        hasMetaReadErr: !!window.__CHENYUAN_DEBUG__.getPersistenceState().metaReadError
       }), STORAGE_KEY);
       assert.equal(gt1aCase1.storedStones, 333, "G-T1a: reincarnate-now under metaReadError must NOT delete primary save");
       assert.equal(gt1aCase1.hasGame, true, "G-T1a: reincarnate-now under metaReadError must NOT null game");
@@ -4148,7 +4148,7 @@ try {
 
       // G-T1a Case 2: reincarnate-now under meta write quota failure aborts, rolls back metaState & lifeRecorded, and preserves primary save
       const gt1aCase2 = await page.evaluate(({ sk, mk }) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const g = api.getState().game;
         g.status = "ascended";
         g.ending = "sword_saint";
@@ -4191,7 +4191,7 @@ try {
       const corruptGuardRes = await page.evaluate(({ sk, raw }) => {
         localStorage.setItem(sk, raw);
         window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: raw }));
-        const hadReadErr = !!window.__CHENYUAN_V25__.getPersistenceState().storageReadError;
+        const hadReadErr = !!window.__CHENYUAN_DEBUG__.getPersistenceState().storageReadError;
         for (const act of ["confirm-reset-save", "execute-reset-save", "reincarnate-now"]) {
           const btn = document.createElement("button");
           btn.setAttribute("data-action", act);
@@ -4202,7 +4202,7 @@ try {
         return {
           hadReadErr,
           rawAfter: localStorage.getItem(sk),
-          hasGameAfter: !!window.__CHENYUAN_V25__.getState().game
+          hasGameAfter: !!window.__CHENYUAN_DEBUG__.getState().game
         };
       }, { sk: STORAGE_KEY, raw: corruptPrimaryRaw });
       assert.equal(corruptGuardRes.hadReadErr, true, "Corrupt primary storage event must activate storageReadError");
@@ -4228,11 +4228,11 @@ try {
       await page.waitForSelector("#save-status-banner", { state: "visible" });
       await page.waitForSelector("#welcome-perk-grid .perk-card", { state: "attached" });
       const n1BootRealm = await page.evaluate(() => ({
-        v25: !!window.__CHENYUAN_V25__,
+        v25: !!window.__CHENYUAN_DEBUG__,
         perkCount: document.querySelectorAll("#welcome-perk-grid .perk-card").length,
         bannerVisible: getComputedStyle(document.getElementById("save-status-banner")).display === "flex",
         continueHidden: getComputedStyle(document.getElementById("btn-continue-save")).display === "none",
-        hallName: window.__CHENYUAN_V25__?.getMetaState?.().hallOfLives?.[0]?.name || ""
+        hallName: window.__CHENYUAN_DEBUG__?.getMetaState?.().hallOfLives?.[0]?.name || ""
       }));
       assert.equal(n1BootRealm.v25, true, "N1: META_KEY poisoned hallOfLives name must not kill page boot");
       assert.ok(n1BootRealm.perkCount > 0, "N1: welcome screen perk grid must render cleanly");
@@ -4281,7 +4281,7 @@ try {
         return {
           rawAfter: localStorage.getItem(sk),
           toastTxt: document.getElementById("toast-container")?.textContent || "",
-          hasWriteErr: !!window.__CHENYUAN_V25__.getPersistenceState().storageWriteError
+          hasWriteErr: !!window.__CHENYUAN_DEBUG__.getPersistenceState().storageWriteError
         };
       }, STORAGE_KEY);
       assert.equal(corruptOverwriteCheck.rawAfter, corruptRawBeforeOverwrite, "Failed corrupt overwrite must preserve original raw payload");
@@ -4305,7 +4305,7 @@ try {
       await pageN235.click("#btn-continue-save");
       await pageN235.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
       const n235State = await pageN235.evaluate(() => {
-        const g = window.__CHENYUAN_V25__.getState().game;
+        const g = window.__CHENYUAN_DEBUG__.getState().game;
         return {
           hudName: (document.getElementById("hud-name")?.textContent || "").trim(),
           hudAge: (document.getElementById("hud-age-school")?.textContent || "").trim(),
@@ -4329,7 +4329,7 @@ try {
       assert.equal(n235State.pityOwnProto, false, "N5: pity must not retain own __proto__ key");
 
       // N3 UI check: open Karma Dilemma modal cleanly even if karmaEventsDone is mutated to 1.5 in memory
-      await pageN235.evaluate(() => { window.__CHENYUAN_V25__.getState().game.karmaEventsDone = 1.5; });
+      await pageN235.evaluate(() => { window.__CHENYUAN_DEBUG__.getState().game.karmaEventsDone = 1.5; });
       await pageN235.click("#nav-btn-story");
       await pageN235.waitForSelector('#jade-panel.drawer-open [data-action="open-karma-dilemma"]');
       await pageN235.click('#jade-panel [data-action="open-karma-dilemma"]');
@@ -4367,7 +4367,7 @@ try {
     // 1. Fresh start: verify all 6 REALM_BOSS_GATE boundaries block until stage boss defeated, and #btn-trib-goto-boss navigates cleanly
     const { ctx, page } = await startCleanGamePage(browser, "R3-1", true);
     const gateMatrix = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       const realms = ["mortal", "qi", "foundation", "golden", "nascent", "spirit"];
       const out = [];
@@ -4406,7 +4406,7 @@ try {
 
     // Verify clicking #btn-trib-goto-boss actually enters the target stage cleanly
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "qi";
       s.game.xp = api.getState().realmSpec.xpCap;
@@ -4419,7 +4419,7 @@ try {
     await page.click("#btn-trib-goto-boss");
     await page.waitForTimeout(200);
     await dismissActiveCutscene(page);
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.stageIdx), 1, "#btn-trib-goto-boss for qi must navigate to Stage 1");
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.stageIdx), 1, "#btn-trib-goto-boss for qi must navigate to Stage 1");
     await ctx.close();
 
     // 2. Legacy eb0ea67 high-realm save migration + reload + quota fail + multi-tab conflict (5-scenario matrix)
@@ -4440,7 +4440,7 @@ try {
     await tabA.click("#btn-continue-save");
     await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
     const migState = await tabA.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       return {
         realm: g.realm,
@@ -4457,13 +4457,13 @@ try {
     await tabA.waitForSelector("#btn-continue-save");
     await tabA.click("#btn-continue-save");
     await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-    assert.equal(await tabA.evaluate(() => window.__CHENYUAN_V25__.getState().game.realm), "golden");
+    assert.equal(await tabA.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.realm), "golden");
 
     // QuotaExceededError check
     const quotaFail = await tabA.evaluate(() => {
       const orig = Storage.prototype.setItem;
       Storage.prototype.setItem = function () { throw new DOMException("Quota full", "QuotaExceededError"); };
-      const ok = window.__CHENYUAN_V25__.saveGame();
+      const ok = window.__CHENYUAN_DEBUG__.saveGame();
       Storage.prototype.setItem = orig;
       return { ok, alertVisible: getComputedStyle(document.getElementById("hud-save-alert")).display !== "none" };
     });
@@ -4480,20 +4480,20 @@ try {
     await tabB.click("#btn-continue-save");
     await tabB.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
     await tabB.evaluate(() => {
-      window.__CHENYUAN_V25__.getState().game.stones = 888;
-      window.__CHENYUAN_V25__.saveGame();
+      window.__CHENYUAN_DEBUG__.getState().game.stones = 888;
+      window.__CHENYUAN_DEBUG__.saveGame();
     });
     await tabA.waitForSelector('#modal-backdrop.open [data-action="load-latest-save"]');
     await tabA.click('[data-action="load-latest-save"]');
     await tabA.waitForTimeout(160);
-    assert.equal(await tabA.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones), 888);
+    assert.equal(await tabA.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.stones), 888);
     await ctxMig.close();
   });
 
   await runSuite("R3-2", "M3 S2 如实飞升终章与诚实评分 + S5 全通后终局目标指引", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "R3-2", true);
     const evalRes = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       const g = s.game;
       // 0-star ascended character with no bonded companions
@@ -4556,7 +4556,7 @@ try {
   await runSuite("R3-3", "M3 S6 红尘问心不误满槽 + G3 单击45%上限、Boss压力带与三模式境界缩放", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "R3-3", true);
     const res = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       // 1. S6 Karma choice without fillIntent must not fill bondSynergy, astralEnergy, or swordIntent to 100
       s.arena.bondSynergy = 12;
@@ -4621,7 +4621,7 @@ try {
     // Scenario 1: Fresh start expedition mechanics
     const { ctx, page } = await startCleanGamePage(browser, "R4-1", true);
     const econCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       const g = s.game;
       g.realm = "nascent";
@@ -4675,23 +4675,23 @@ try {
 
     // Sanctum pause vs live combat tick
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.expeditions.tickTimer = 8.5;
       api.enterSanctumHub();
     });
     await page.waitForTimeout(260);
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.expeditions.tickTimer), 8.5, "Expedition must pause in Sanctum Hub");
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.expeditions.tickTimer), 8.5, "Expedition must pause in Sanctum Hub");
 
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       api.initArenaStage(0, false);
       s.arena.paused = false;
       if (!s.arena.enemies.some(e => e.hp > 0 && !e.isDummy && !e.isTreasure)) api.spawnSingleEnemy("wolf", 920, 460, 1.0, false);
     });
     await page.waitForTimeout(300);
-    assert.ok(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.expeditions.tickTimer < 8.5), "Expedition must tick during active non-Sanctum combat");
+    assert.ok(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.expeditions.tickTimer < 8.5), "Expedition must tick during active non-Sanctum combat");
     await ctx.close();
 
     // Scenarios 2-5: Legacy expedition migration, reload persistence, QuotaExceededError alert+retry, multi-tab contention
@@ -4723,7 +4723,7 @@ try {
     await tabA.click("#btn-continue-save");
     await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
     const migExp = await tabA.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       return {
         qinglan: g.expeditions?.assignments?.qinglan_vein || null,
@@ -4741,7 +4741,7 @@ try {
 
     // Scenario 3: Reload persistence
     await tabA.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.getState().game.expeditions.bankedStones = 145;
       api.saveGame();
     });
@@ -4750,7 +4750,7 @@ try {
     await tabA.click("#btn-continue-save");
     await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
     const afterReloadExp = await tabA.evaluate(() => {
-      const g = window.__CHENYUAN_V25__.getState().game;
+      const g = window.__CHENYUAN_DEBUG__.getState().game;
       return { qinglan: g.expeditions?.assignments?.qinglan_vein || null, bankedStones: g.expeditions?.bankedStones };
     });
     assert.equal(afterReloadExp.qinglan, "shen", "Expedition assignment must persist across reload");
@@ -4764,8 +4764,8 @@ try {
         if (k === sk) throw new DOMException("Quota full", "QuotaExceededError");
         return orig.call(this, k, v);
       };
-      window.__CHENYUAN_V25__.getState().game.expeditions.bankedStones = 210;
-      const ok = window.__CHENYUAN_V25__.saveGame();
+      window.__CHENYUAN_DEBUG__.getState().game.expeditions.bankedStones = 210;
+      const ok = window.__CHENYUAN_DEBUG__.saveGame();
       Storage.prototype.setItem = orig;
       return {
         ok,
@@ -4788,13 +4788,13 @@ try {
     await tabB.click("#btn-continue-save");
     await tabB.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
     await tabB.evaluate(() => {
-      window.__CHENYUAN_V25__.getState().game.expeditions.bankedStones = 333;
-      window.__CHENYUAN_V25__.saveGame();
+      window.__CHENYUAN_DEBUG__.getState().game.expeditions.bankedStones = 333;
+      window.__CHENYUAN_DEBUG__.saveGame();
     });
     await tabA.waitForSelector('#modal-backdrop.open [data-action="load-latest-save"]');
     await tabA.click('[data-action="load-latest-save"]');
     await tabA.waitForTimeout(160);
-    assert.equal(await tabA.evaluate(() => window.__CHENYUAN_V25__.getState().game.expeditions?.bankedStones), 333, "Loading latest save in multi-tab conflict must sync Tab B expedition state");
+    assert.equal(await tabA.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.expeditions?.bankedStones), 333, "Loading latest save in multi-tab conflict must sync Tab B expedition state");
     await ctxExp.close();
   });
 
@@ -4802,7 +4802,7 @@ try {
     const { ctx, page } = await startCleanGamePage(browser, "R4-2", true);
     // 1. G2: Collecting all 15 Dao Laws disables jade wager / prevents net stone profit
     const jadeRes = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       const g = s.game;
       g.realm = "nascent";
@@ -4818,7 +4818,7 @@ try {
     await page.click("#nav-btn-alchemy");
     await page.waitForTimeout(160);
     const gambleDisabled = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const btn = document.querySelector('#panel-scroll-body [data-action="gamble-jade"]');
       return {
         allDone: api.isAllDaoLawsCollected(api.getState().game),
@@ -4832,7 +4832,7 @@ try {
 
     // 2. G4: Boss Rush Bout 6 skip & Celestial Spire Floor 9 skip run in practice mode with 0 rewards/records
     const practiceRes = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "nascent";
       s.game.rushBestGrade = "";
@@ -4857,7 +4857,7 @@ try {
     // 1. G5 Caps + G11a Boss Rush Grading
     const { ctx, page } = await startCleanGamePage(browser, "R4-3", true);
     const capsAndGrade = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "golden";
       const caps = api.getPermGrowthCaps(s.game);
@@ -4879,7 +4879,7 @@ try {
 
     // 2. G6 Sandbox hard isolation across reload
     const beforeSandbox = await page.evaluate((sk) => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.getState().game.stones = 321;
       api.saveGame();
       return { liveSave: localStorage.getItem(sk), metaRaw: localStorage.getItem("chenyuan_wendao_v11_meta") };
@@ -4893,7 +4893,7 @@ try {
     await page.click("#btn-confirm-enter-sandbox");
     await page.waitForTimeout(180);
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.getState().game.stones = 999999;
       api.saveGame();
     });
@@ -4902,8 +4902,8 @@ try {
     await page.click("#btn-continue-save");
     await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
     const afterReload = await page.evaluate(() => ({
-      isSandbox: window.__CHENYUAN_V25__.isSandboxMode(),
-      stones: window.__CHENYUAN_V25__.getState().game.stones
+      isSandbox: window.__CHENYUAN_DEBUG__.isSandboxMode(),
+      stones: window.__CHENYUAN_DEBUG__.getState().game.stones
     }));
     assert.equal(afterReload.isSandbox, false, "Reload must exit sandbox back to real save");
     assert.equal(afterReload.stones, 321, "Sandbox mutations must NEVER leak into live save across reload");
@@ -4914,7 +4914,7 @@ try {
     const { ctx, page } = await startCleanGamePage(browser, "R4-4", true);
     // 1. Bag 24/24 queues explicit overflow modal without auto-smelting
     const overflowCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.stones = 200;
       s.game.gearBag = [];
@@ -4948,7 +4948,7 @@ try {
 
     // 2. Alchemy missing-material stone cost breakdown & real UI confirm modal (#btn-confirm-alchemy-buy)
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "qi";
       s.game.stones = 800;
@@ -4956,19 +4956,19 @@ try {
       api.updateHud();
     });
     const breakdown = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       return api.computeRecipeCostBreakdown(api.getState().game, api.RECIPES.foundation);
     });
     assert.ok(breakdown.missingItems.length > 0 && breakdown.matBuyCost > 0, "Missing alchemy materials must compute itemized matBuyCost");
     await page.click("#nav-btn-alchemy");
     await page.waitForSelector('#panel-scroll-body [data-quick-craft="foundation"]');
-    const stonesBeforeCraft = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones);
+    const stonesBeforeCraft = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.stones);
     await page.click('#panel-scroll-body [data-quick-craft="foundation"]');
     await page.waitForSelector("#modal-backdrop.open #btn-confirm-alchemy-buy");
     const modalTextAlchemy = await page.textContent("#modal-content");
     assert.ok(modalTextAlchemy.includes("购入缺料"), "Alchemy confirm modal must itemize 购入缺料 cost");
     assert.equal(
-      await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones),
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.stones),
       stonesBeforeCraft,
       "Opening alchemy confirm modal must NOT deduct stones before user confirms"
     );
@@ -4977,11 +4977,11 @@ try {
 
     // 3. Relic temper core-discount checkbox toggle in UI & cost diff
     await page.waitForSelector("#panel-scroll-body #chk-temper-use-core");
-    const temperBeforeToggle = await page.evaluate(() => window.__CHENYUAN_V25__.getTemperUseCoreDiscount());
+    const temperBeforeToggle = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getTemperUseCoreDiscount());
     await page.click("#panel-scroll-body #chk-temper-use-core");
     await page.waitForTimeout(100);
     const temperCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       const noCore = api.getRelicTemperCost(g, 2, false);
       const withCore = api.getRelicTemperCost(g, 2, true);
@@ -4996,7 +4996,7 @@ try {
 
     // 4. Soul unlock prompts before equipping (kill serpent boss -> frost_phoenix queued -> keep current keeps blood_warden)
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "golden";
       s.game.equippedSoul = "blood_warden";
@@ -5011,8 +5011,8 @@ try {
     // Q1 F10: While wolf is still alive, soul unlock must defer (not auto-equip and not interrupt combat) and surface #btn-pending-rewards
     const soulDeferred = await page.evaluate(() => ({
       modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open")),
-      equipped: window.__CHENYUAN_V25__.getState().game.equippedSoul,
-      pendingSouls: window.__CHENYUAN_V25__.getPendingSoulUnlockCount()
+      equipped: window.__CHENYUAN_DEBUG__.getState().game.equippedSoul,
+      pendingSouls: window.__CHENYUAN_DEBUG__.getPendingSoulUnlockCount()
     }));
     assert.equal(soulDeferred.modalOpen, false, "Soul unlock with live wolf remaining must NOT open modal mid-combat");
     assert.equal(soulDeferred.equipped, "blood_warden", "Soul unlock must NOT auto-equip before player chooses");
@@ -5021,14 +5021,14 @@ try {
     await page.click("#btn-pending-rewards");
     await page.waitForSelector("#modal-backdrop.open #btn-soul-keep-current");
     const soulBeforeClick = await page.evaluate(() => ({
-      equipped: window.__CHENYUAN_V25__.getState().game.equippedSoul,
+      equipped: window.__CHENYUAN_DEBUG__.getState().game.equippedSoul,
       hasEquipBtn: Boolean(document.getElementById("btn-soul-equip-new"))
     }));
     assert.equal(soulBeforeClick.equipped, "blood_warden", "Unlocking new soul must NOT auto-equip before player chooses");
     assert.equal(soulBeforeClick.hasEquipBtn, true, "Soul unlock modal must expose #btn-soul-equip-new");
     await page.click("#btn-soul-keep-current");
     await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.equippedSoul), "blood_warden");
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.equippedSoul), "blood_warden");
     await ctx.close();
   });
 
@@ -5039,7 +5039,7 @@ try {
     // Scenario 1: Fresh start navigation terminology & canonical step IDs
     const { ctx, page } = await startCleanGamePage(browser, "R5-1", true);
     const navCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const storyBtn = document.getElementById("nav-btn-story");
       const ch4 = api.CHAPTERS.find(c => c.index === 4);
       return {
@@ -5071,17 +5071,17 @@ try {
     await pageLeg.waitForSelector("#btn-continue-save");
     await pageLeg.click("#btn-continue-save");
     await pageLeg.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-    const migratedClaimed = await pageLeg.evaluate(() => window.__CHENYUAN_V25__.getState().game.claimedStepIds || []);
+    const migratedClaimed = await pageLeg.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.claimedStepIds || []);
     assert.ok(migratedClaimed.includes("s4_puppet"), `Legacy s4_npc must migrate into claimedStepIds as s4_puppet, got: ${JSON.stringify(migratedClaimed)}`);
     assert.equal(migratedClaimed.includes("s4_npc"), false, `Migrated claimedStepIds must not retain legacy s4_npc, got: ${JSON.stringify(migratedClaimed)}`);
 
     // Scenario 3: Reload persistence of migrated s4_puppet
-    await pageLeg.evaluate(() => window.__CHENYUAN_V25__.saveGame());
+    await pageLeg.evaluate(() => window.__CHENYUAN_DEBUG__.saveGame());
     await pageLeg.reload({ waitUntil: "domcontentloaded" });
     await pageLeg.waitForSelector("#btn-continue-save");
     await pageLeg.click("#btn-continue-save");
     await pageLeg.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-    const reloadedClaimed = await pageLeg.evaluate(() => window.__CHENYUAN_V25__.getState().game.claimedStepIds || []);
+    const reloadedClaimed = await pageLeg.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.claimedStepIds || []);
     assert.ok(reloadedClaimed.includes("s4_puppet") && !reloadedClaimed.includes("s4_npc"), `Migrated s4_puppet must persist cleanly across reload, got: ${JSON.stringify(reloadedClaimed)}`);
 
     // Scenario 4: QuotaExceededError write-fail alert + preserve + retry recovery
@@ -5092,9 +5092,9 @@ try {
         if (k === sk) throw new DOMException("Quota full", "QuotaExceededError");
         return orig.call(this, k, v);
       };
-      const g = window.__CHENYUAN_V25__.getState().game;
+      const g = window.__CHENYUAN_DEBUG__.getState().game;
       if (!g.claimedStepIds.includes("s4_relic")) g.claimedStepIds.push("s4_relic");
-      const ok = window.__CHENYUAN_V25__.saveGame();
+      const ok = window.__CHENYUAN_DEBUG__.saveGame();
       Storage.prototype.setItem = orig;
       return {
         ok,
@@ -5118,14 +5118,14 @@ try {
     await pageLegB.click("#btn-continue-save");
     await pageLegB.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
     await pageLegB.evaluate(() => {
-      const g = window.__CHENYUAN_V25__.getState().game;
+      const g = window.__CHENYUAN_DEBUG__.getState().game;
       if (!g.claimedStepIds.includes("s4_break")) g.claimedStepIds.push("s4_break");
-      window.__CHENYUAN_V25__.saveGame();
+      window.__CHENYUAN_DEBUG__.saveGame();
     });
     await pageLeg.waitForSelector('#modal-backdrop.open [data-action="load-latest-save"]');
     await pageLeg.click('[data-action="load-latest-save"]');
     await pageLeg.waitForTimeout(160);
-    const syncedClaimed = await pageLeg.evaluate(() => window.__CHENYUAN_V25__.getState().game.claimedStepIds || []);
+    const syncedClaimed = await pageLeg.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.claimedStepIds || []);
     assert.ok(syncedClaimed.includes("s4_puppet") && syncedClaimed.includes("s4_break"), `Multi-tab sync must preserve s4_puppet and pull s4_break, got: ${JSON.stringify(syncedClaimed)}`);
     await ctxLeg.close();
   });
@@ -5135,9 +5135,9 @@ try {
     const { ctx, page } = await startCleanGamePage(browser, "R5-2-S8", false, { dismissOpening: false });
     await page.waitForSelector("#story-dialogue-bar.open");
     const scrollInfo = await page.evaluate(() => ({
-      linesCount: (window.__CHENYUAN_V25__.CHAPTER_CUTSCENES.opening_scroll || []).length,
-      hasBossPre0: Boolean(window.__CHENYUAN_V25__.CHAPTER_CUTSCENES.boss_pre_stage0),
-      allChaptersHaveDesc: window.__CHENYUAN_V25__.CHAPTERS.every(c => typeof c.desc === "string" && c.desc.length > 0)
+      linesCount: (window.__CHENYUAN_DEBUG__.CHAPTER_CUTSCENES.opening_scroll || []).length,
+      hasBossPre0: Boolean(window.__CHENYUAN_DEBUG__.CHAPTER_CUTSCENES.boss_pre_stage0),
+      allChaptersHaveDesc: window.__CHENYUAN_DEBUG__.CHAPTERS.every(c => typeof c.desc === "string" && c.desc.length > 0)
     }));
     assert.equal(scrollInfo.linesCount, 5, "opening_scroll must have 5 narrative lines");
     assert.equal(scrollInfo.hasBossPre0, true, "boss_pre_stage0 cutscene must exist");
@@ -5159,7 +5159,7 @@ try {
 
     // 2. S7: Normal campaign stage clear persists immediately BEFORE recap modal, and spawns portal ONLY after #btn-volume-recap-confirm
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "qi";
       s.game.defeatedStageBosses = {};
@@ -5177,21 +5177,21 @@ try {
     await dismissActiveCutscene(page);
     await page.waitForSelector("#modal-backdrop.open #btn-volume-recap-confirm");
     assert.equal(
-      await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.props.some(p => p.id === "portal_next")),
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.props.some(p => p.id === "portal_next")),
       false,
       "portal_next must NOT spawn before #btn-volume-recap-confirm"
     );
     await page.click("#btn-volume-recap-confirm");
     await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
     assert.equal(
-      await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.props.some(p => p.id === "portal_next")),
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.props.some(p => p.id === "portal_next")),
       true,
       "portal_next must spawn immediately after confirming #btn-volume-recap-confirm"
     );
 
     // Sandbox bypasses volume-end recap modal and spawns portal directly
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.enterSandboxMode();
       const s = api.getState();
       api.initArenaStage(1, false);
@@ -5203,7 +5203,7 @@ try {
     const sandboxBypass = await page.evaluate(() => ({
       modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open")),
       recapOpen: Boolean(document.querySelector("#modal-backdrop.open #btn-volume-recap-confirm")),
-      portalSpawned: window.__CHENYUAN_V25__.getState().arena.props.some(p => p.id === "portal_next")
+      portalSpawned: window.__CHENYUAN_DEBUG__.getState().arena.props.some(p => p.id === "portal_next")
     }));
     assert.equal(sandboxBypass.modalOpen, false, "Sandbox mode must not open modal on stage clear");
     assert.equal(sandboxBypass.recapOpen, false, "Sandbox mode must bypass volume-end recap modal");
@@ -5214,7 +5214,7 @@ try {
   await runSuite("R5-3", "M5 S9 故人11段列传与动态过场分支 + S10 九段红尘问心去重与耗尽兜底", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "R5-3", true);
     const res = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       const g = s.game;
       g.realm = "spirit";
@@ -5265,7 +5265,7 @@ try {
   await runSuite("R6-1", "M6 S11+G7 五境分阶解封矩阵、非阻塞 #new-unlock-card 与旧档防刷屏", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "R6-1", true);
     const matrix = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const { game } = api.getState();
       const checkRealm = (r) => {
         game.realm = r;
@@ -5300,7 +5300,7 @@ try {
 
     // Queue & display non-blocking #new-unlock-card -> Q1 F10 defers during hot combat, displays on calm, dismiss persists into seenUnlockIds across reload
     const unlockHotDeferred = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       g.realm = "qi";
       g.seenUnlockIds = [];
@@ -5312,23 +5312,23 @@ try {
     assert.equal(unlockHotDeferred.flushedHot, false, "flushNewUnlockCard must defer while combat-hot");
     assert.ok(unlockHotDeferred.pendingLen >= 1, "Earned unlock cards must remain queued while combat-hot");
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.enterSanctumHub();
       api.flushNewUnlockCard();
     });
     await page.waitForSelector("#new-unlock-card #btn-unlock-dismiss");
-    const activeIdBeforeDismiss = await page.evaluate(() => window.__CHENYUAN_V25__.getActiveUnlockCardId());
+    const activeIdBeforeDismiss = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getActiveUnlockCardId());
     assert.ok(activeIdBeforeDismiss, "Active unlock card ID must be set when #new-unlock-card is visible");
     await page.click("#btn-unlock-dismiss");
     await page.waitForTimeout(120);
-    const seenNow = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.seenUnlockIds || []);
+    const seenNow = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.seenUnlockIds || []);
     assert.ok(seenNow.includes(activeIdBeforeDismiss), "Dismissing #new-unlock-card must persist card ID into seenUnlockIds");
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.waitForSelector("#btn-continue-save");
     await page.click("#btn-continue-save");
     await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-    const seenAfterReload = await page.evaluate(() => window.__CHENYUAN_V25__.getState().game.seenUnlockIds || []);
+    const seenAfterReload = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.seenUnlockIds || []);
     assert.ok(seenAfterReload.includes(activeIdBeforeDismiss), "seenUnlockIds must persist across page reload");
     await ctx.close();
   });
@@ -5336,7 +5336,7 @@ try {
   await runSuite("R6-2", "M6 G8 寿元流逝、单阶效率衰减、延寿解厄与二次确认兵解转世守卫", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "R6-2", true);
     const lifeCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       g.realm = "mortal"; // maxMonths = 744 (62y)
       g.startAgeMonths = 216;
@@ -5371,7 +5371,7 @@ try {
     assert.ok(lifeCheck.xpGainExh > 0 && lifeCheck.xpGainExh < 100, `100% exhausted lifespan must decay XP without soft-locking (gain=${lifeCheck.xpGainExh})`);
 
     // Open 100% Lifespan Exhausted modal -> verify stay option & 2-step 兵解转世 flow
-    await page.evaluate(() => window.__CHENYUAN_V25__.openLifespanExhaustedModal(false));
+    await page.evaluate(() => window.__CHENYUAN_DEBUG__.openLifespanExhaustedModal(false));
     await page.waitForSelector("#modal-backdrop.open #btn-lifespan-stay");
     await page.waitForSelector("#modal-backdrop.open #btn-lifespan-bingjie");
     await page.click("#btn-lifespan-bingjie");
@@ -5380,14 +5380,14 @@ try {
     await page.waitForSelector("#modal-backdrop.open #btn-lifespan-stay");
     await page.click("#btn-lifespan-stay");
     await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.isLifespanExhaustedDismissed()), true, "Clicking 暂留延寿 must dismiss exhausted prompt cleanly");
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.isLifespanExhaustedDismissed()), true, "Clicking 暂留延寿 must dismiss exhausted prompt cleanly");
     await ctx.close();
   });
 
   await runSuite("R6-3", "M6 G10 分阶灵宠投喂与Lv3/Lv5技能择选 + G11b 名录统一 + G12 安全区打坐吸物 + 沙盒屏蔽", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "R6-3", true);
     const petAndMagnet = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       const g = s.game;
       g.realm = "qi";
@@ -5457,7 +5457,7 @@ try {
 
     // Open Lv.3 pet skill choice modal and explicitly select a skill
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       g.realm = "qi";
       g.pet = { id: "fox", level: 3, skills: {} };
@@ -5468,7 +5468,7 @@ try {
     await page.click(`#modal-backdrop.open [data-pick-pet-skill="${chosenSkillId}"]`);
     await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
     assert.equal(
-      await page.evaluate((sid) => window.__CHENYUAN_V25__.hasPetSkill(window.__CHENYUAN_V25__.getState().game, sid), chosenSkillId),
+      await page.evaluate((sid) => window.__CHENYUAN_DEBUG__.hasPetSkill(window.__CHENYUAN_DEBUG__.getState().game, sid), chosenSkillId),
       true,
       `Picking Lv.3 pet skill ${chosenSkillId} must activate hasPetSkill`
     );
@@ -5501,7 +5501,7 @@ try {
 
     // 2. Dismiss cutscene via keyboard Space -> focus also lands on #visual-stage
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       if (g && g.seenCutscenes) delete g.seenCutscenes.opening_scroll;
       api.playCutscene("opening_scroll");
@@ -5518,7 +5518,7 @@ try {
 
     // 3. Enter near interactive prop interacts with prop instead of opening Settings
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const st = api.getState();
       st.arena.enemies = [];
       st.arena.paused = false;
@@ -5526,7 +5526,7 @@ try {
       st.arena.props.push(prop);
     });
     await page.waitForFunction(() => {
-      const st = window.__CHENYUAN_V25__.getState();
+      const st = window.__CHENYUAN_DEBUG__.getState();
       return !!(st.arena.nearbyProp && st.arena.nearbyProp.id === "q0_test_merchant");
     }, { timeout: 3000 });
     await page.keyboard.press("Enter");
@@ -5559,7 +5559,7 @@ try {
 
     // Remove test prop so canvas click hits empty battlefield and returns focus cleanly to #visual-stage
     await page.evaluate(() => {
-      const st = window.__CHENYUAN_V25__.getState();
+      const st = window.__CHENYUAN_DEBUG__.getState();
       st.arena.props = st.arena.props.filter(p => p && p.id !== "q0_test_merchant");
       st.arena.nearbyProp = null;
     });
@@ -5570,7 +5570,7 @@ try {
 
     // 5. Modal-over-Cutscene: Tab traps inside #modal-content and Escape closes modal FIRST without dismissing cutscene
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       if (g && g.seenCutscenes) delete g.seenCutscenes.opening_scroll;
       api.playCutscene("opening_scroll");
@@ -5609,7 +5609,7 @@ try {
     // 5b. Stage-transition cutscene via World Map (#btn-world-map -> data-map-node="stg_1" -> enter_sect)
     //     must return focus cleanly to #visual-stage on dismissal instead of leaking back to #btn-world-map
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const st = api.getState();
       st.game.realm = "qi";
       if (st.game.seenCutscenes) delete st.game.seenCutscenes.enter_sect;
@@ -5632,7 +5632,7 @@ try {
 
     // 6. #hud-hp-txt, #hud-mp-txt, #hud-xp-txt stay synchronized with live stats
     const hudSync = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const st = api.getState();
       st.game.realm = "foundation";
       const stats = api.getCombatStats(st.game);
@@ -5662,8 +5662,8 @@ try {
   await runSuite("Q0-2", "F06 共享 COMBAT_RULE_PARAMS 与技能/法则/天象/天时/气候/道韵/键位文案-实效一致性验证", async () => {
     const { ctx, page } = await startCleanGamePage(browser, "Q0-2", true);
     const audit = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
-      const v23 = window.__CHENYUAN_V23__;
+      const api = window.__CHENYUAN_DEBUG__;
+      const v23 = window.__CHENYUAN_DEBUG__;
       const P = api.getCombatRuleParams();
       const s = api.getState();
       const g = s.game;
@@ -5934,7 +5934,7 @@ try {
 
     // 1. Bag 24/24 with live wolves + hostile projectile -> acquire 3 gear items -> no pause, no modal, 3 persisted pendingRewards, badge shows 3
     const hotCheck = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.stones = 200;
       s.game.gearBag = Array.from({ length: api.GEAR_BAG_LIMIT }, () => api.rollGearItem(1, 0, "weapon"));
@@ -5967,7 +5967,7 @@ try {
     await page.waitForSelector("#btn-continue-save");
     await page.click("#btn-continue-save");
     await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-    const afterReloadCount = await page.evaluate(() => window.__CHENYUAN_V25__.getPendingRewards().length);
+    const afterReloadCount = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getPendingRewards().length);
     assert.equal(afterReloadCount, 3, "All 3 pendingRewards must survive page reload");
 
     await page.click("#btn-open-settings");
@@ -5978,12 +5978,12 @@ try {
     await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display !== "none");
     await page.click("#btn-continue-save");
     await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
-    const afterTitleReturn = await page.evaluate(() => window.__CHENYUAN_V25__.getPendingRewards().length);
+    const afterTitleReturn = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getPendingRewards().length);
     assert.equal(afterTitleReturn, 3, "All 3 pendingRewards must survive return-title-safe without being wiped");
 
     // 3. Sandbox isolation: entering sandbox, acquiring overflow, exiting sandbox must preserve formal 3 pendingRewards intact
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.enterSandboxMode();
       const s = api.getState();
       s.game.gearBag = Array.from({ length: api.GEAR_BAG_LIMIT }, () => api.rollGearItem(1, 0, "weapon"));
@@ -5991,9 +5991,9 @@ try {
       api.exitSandboxMode();
     });
     const afterSandbox = await page.evaluate(() => ({
-      sandbox: window.__CHENYUAN_V25__.isSandboxMode(),
-      pendingLen: window.__CHENYUAN_V25__.getPendingRewards().length,
-      stones: window.__CHENYUAN_V25__.getState().game.stones
+      sandbox: window.__CHENYUAN_DEBUG__.isSandboxMode(),
+      pendingLen: window.__CHENYUAN_DEBUG__.getPendingRewards().length,
+      stones: window.__CHENYUAN_DEBUG__.getState().game.stones
     }));
     assert.equal(afterSandbox.sandbox, false);
     assert.equal(afterSandbox.pendingLen, 3, "Sandbox mode must NEVER corrupt or leak into formal game.pendingRewards");
@@ -6001,7 +6001,7 @@ try {
 
     // 4. Clearing enemies while hostile projectile still exists keeps calm=false; once projectile clears + 0.8s grace, modal opens!
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.arena.enemies = [];
       s.arena.projectiles = [{ x: 650, y: 420, vx: 0, vy: 0, r: 8, dmg: 12, friendly: false, life: 4 }];
@@ -6009,8 +6009,8 @@ try {
     });
     await page.waitForTimeout(300);
     const blockedByHazard = await page.evaluate(() => ({
-      calm: window.__CHENYUAN_V25__.isCombatCalm(),
-      hasHazards: window.__CHENYUAN_V25__.hasHostileHazards(),
+      calm: window.__CHENYUAN_DEBUG__.isCombatCalm(),
+      hasHazards: window.__CHENYUAN_DEBUG__.hasHostileHazards(),
       modalOpen: Boolean(document.getElementById("modal-backdrop")?.classList.contains("open"))
     }));
     assert.equal(blockedByHazard.hasHazards, true);
@@ -6018,7 +6018,7 @@ try {
     assert.equal(blockedByHazard.modalOpen, false, "Lingering hostile projectile must keep modal deferred");
 
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.arena.projectiles = [];
       s.arena.calmT = 0;
@@ -6038,10 +6038,10 @@ try {
     await page.click("#btn-overflow-smelt-new");
     await page.waitForTimeout(150);
     const afterWriteFail = await page.evaluate(() => ({
-      stones: window.__CHENYUAN_V25__.getState().game.stones,
-      pendingLen: window.__CHENYUAN_V25__.getPendingRewards().length,
+      stones: window.__CHENYUAN_DEBUG__.getState().game.stones,
+      pendingLen: window.__CHENYUAN_DEBUG__.getPendingRewards().length,
       alertVisible: document.getElementById("hud-save-alert")?.style.display !== "none",
-      writeErr: Boolean(window.__CHENYUAN_V25__.getPersistenceState().storageWriteError)
+      writeErr: Boolean(window.__CHENYUAN_DEBUG__.getPersistenceState().storageWriteError)
     }));
     assert.equal(afterWriteFail.stones, 200, "Failed save commit must roll back stone reward");
     assert.equal(afterWriteFail.pendingLen, 3, "Failed save commit must preserve all 3 pendingRewards for retry");
@@ -6057,8 +6057,8 @@ try {
     await page.click("#btn-overflow-smelt-new");
     await page.waitForTimeout(150);
     const afterRetry = await page.evaluate(() => ({
-      stones: window.__CHENYUAN_V25__.getState().game.stones,
-      pendingLen: window.__CHENYUAN_V25__.getPendingRewards().length
+      stones: window.__CHENYUAN_DEBUG__.getState().game.stones,
+      pendingLen: window.__CHENYUAN_DEBUG__.getPendingRewards().length
     }));
     assert.ok(afterRetry.stones > 200, "Retrying after storage recovery must grant smelt stones");
     assert.equal(afterRetry.pendingLen, 2, "Retrying one item must decrement pendingRewards from 3 to 2");
@@ -6070,7 +6070,7 @@ try {
 
     // 1. Nested overlays: drawer + modal + photo mode never prematurely unpause until ALL tokens release
     const tokenRes = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       // Open drawer -> 1 token
       document.getElementById("nav-btn-cultivate").click();
@@ -6102,7 +6102,7 @@ try {
     // 2. N0 preemption of N1 (lifespan_exhausted) reverts status to "pending" WITHOUT setting lifespanExhaustedPromptDismissed,
     //    and lower-priority N1 cannot overwrite active N0 (defeat / save_conflict)!
     const priRes = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       api.enterSanctumHub();
       s.game.realm = "mortal";
@@ -6144,7 +6144,7 @@ try {
     const { ctx, page } = await startCleanGamePage(browser, "Q1-3", true);
 
     const res = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       // Dirty all side-mode flags + bladeClash, then enterSanctumHub -> all must clear and calm must become true!
       s.arena.cloudFlight = { active: true, progress: 30, deflectedCount: 0, barrelRolls: 0 };
@@ -6215,7 +6215,7 @@ try {
 
     // 1. enter_sect: enemies MUST be 0 while cutscene is open; skipping spawns wave ONCE
     const enterSectDuring = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.openingChoice = "help";
       s.game.realm = "qi";
@@ -6236,7 +6236,7 @@ try {
     });
     await page.waitForTimeout(180);
     const enterSectAfter = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return {
         dlgOpen: Boolean(document.getElementById("story-dialogue-bar")?.classList.contains("open")),
         enemiesAfterSkip: s.arena.enemies.length
@@ -6247,7 +6247,7 @@ try {
 
     // 2. boss_pre_stage0: Boss MUST NOT spawn while boss_pre_stage0 cutscene is open; spawns ONCE after skip
     const bossPreDuring = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.openingChoice = "help";
       if (s.game.seenCutscenes) delete s.game.seenCutscenes.boss_pre_stage0;
@@ -6270,7 +6270,7 @@ try {
     await page.click("#btn-dlg-skip");
     await page.waitForTimeout(180);
     const bossPreAfter = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return {
         bossCount: s.arena.enemies.filter(e => e.isBoss).length,
         totalEnemies: s.arena.enemies.length
@@ -6280,7 +6280,7 @@ try {
 
     // 3. Stage epoch guard: switching to Sanctum while an unseen enter_secret cutscene is open must cancel stale wave spawn!
     const staleGuard = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "foundation";
       if (s.game.seenCutscenes) delete s.game.seenCutscenes.enter_secret;
@@ -6304,7 +6304,7 @@ try {
 
     // 1. Compare card hidden during combat-hot, revealed on calm with 250ms reveal click-guard, and smelt requires 2-step confirmation
     const cmpHot = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.stones = 100;
       const item = api.rollGearItem(2, 2, "weapon");
@@ -6322,7 +6322,7 @@ try {
 
     // Clear combat & trigger calm reveal (non-sanctum so 250ms click-guard activates!)
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.arena.enemies = [];
       s.arena.projectiles = [];
@@ -6333,14 +6333,14 @@ try {
     // Immediate click within 250ms click-guard must NOT arm or destroy item
     const immediateSmeltCheck = await page.evaluate(() => {
       const btn = document.querySelector('#gear-compare-card [data-action="compare-smelt-new"]');
-      const guardBefore = window.__CHENYUAN_V25__.getCompareCardGuardState();
+      const guardBefore = window.__CHENYUAN_DEBUG__.getCompareCardGuardState();
       if (btn) btn.click();
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return {
         hadGuard: guardBefore.guardUntil > performance.now() - 50,
         stones: s.game.stones,
         bagHasItem: s.game.gearBag.some(i => i.name === "玄品·测试赤霄剑"),
-        confirmArmed: Boolean(window.__CHENYUAN_V25__.getCompareCardGuardState().confirm)
+        confirmArmed: Boolean(window.__CHENYUAN_DEBUG__.getCompareCardGuardState().confirm)
       };
     });
     assert.equal(immediateSmeltCheck.stones, 100, "250ms click-guard must block premature click-through");
@@ -6353,7 +6353,7 @@ try {
     const afterFirstClick = await page.evaluate(() => {
       const btn = document.querySelector('#gear-compare-card [data-action="compare-smelt-new"]');
       const cardTxt = document.getElementById("gear-compare-card")?.textContent || "";
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return {
         btnClass: btn ? btn.className : "",
         btnText: btn ? btn.textContent : "",
@@ -6370,7 +6370,7 @@ try {
     // 2nd click confirms and smelts!
     await page.click('#gear-compare-card [data-action="compare-smelt-new"]');
     const afterSecondClick = await page.evaluate(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return {
         stones: s.game.stones,
         bagHasItem: s.game.gearBag.some(i => i.name === "玄品·测试赤霄剑")
@@ -6381,7 +6381,7 @@ try {
 
     // 2. Digit7/8/9 require 2.5s double-tap arming during combat-hot, and open immediately when calm
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "spirit";
       api.spawnSingleEnemy("wolf", 920, 460, 1.0, false);
@@ -6403,7 +6403,7 @@ try {
 
     // Clear enemies -> Digit7 opens immediately on single press when calm!
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.arena.enemies = [];
       api.requestCalmReevaluation({ immediate: true });
@@ -6424,21 +6424,21 @@ try {
     await page.waitForSelector("#btn-notice-level-minimal");
     await page.click("#btn-notice-level-minimal");
     await page.waitForTimeout(100);
-    assert.equal(await page.evaluate(() => window.__CHENYUAN_V25__.getState().a11ySettings.combatNoticeLevel), "minimal");
+    assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().a11ySettings.combatNoticeLevel), "minimal");
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.waitForSelector("#btn-continue-save");
     await page.click("#btn-continue-save");
     await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
     assert.equal(
-      await page.evaluate(() => window.__CHENYUAN_V25__.getState().a11ySettings.combatNoticeLevel),
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().a11ySettings.combatNoticeLevel),
       "minimal",
       "combatNoticeLevel='minimal' must persist across reload"
     );
 
     // 2. Minimal mode preserves critical N0 save alerts & Boss perilous banners, suppresses pickup floats, throttles C12, and summarizes combatInbox on calm
     const noticeRes = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.arena.floats = [];
       // Material pickup float suppressed in minimal, Boss perilous preserved!
@@ -6502,7 +6502,7 @@ try {
 
     // 4. Clearing combat triggers combatInbox concise calm summary toast and resets unread counter
     const calmSummary = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.arena.enemies = [];
       s.arena.projectiles = [];
@@ -6605,7 +6605,7 @@ try {
 
       // Open Defeat modal (critical tier) + reduced-motion suppression check
       const defeatShell = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         document.documentElement.classList.add("reduced-motion");
         api.openDefeatDecisionModal(false);
         const box = document.getElementById("modal-content");
@@ -6642,7 +6642,7 @@ try {
     try {
       // Unlock Qi realm so stg_1 is unlocked while stg_4 stays locked
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "qi";
         if (s.game.seenCutscenes) s.game.seenCutscenes.enter_sect = true;
@@ -6652,7 +6652,7 @@ try {
       // Open World Map via #btn-world-map (M)
       await page.click("#btn-world-map");
       await page.waitForSelector('#modal-backdrop.open [data-map-node="stg_1"]');
-      const beforeStage = await page.evaluate(() => window.__CHENYUAN_V25__.getState().arena.stageIdx);
+      const beforeStage = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.stageIdx);
 
       // Click stg_1 node -> MUST preview ONLY without traveling or closing modal
       await page.click('#modal-backdrop.open [data-map-node="stg_1"]');
@@ -6661,7 +6661,7 @@ try {
         const enterBtn = document.getElementById("btn-map-enter-node");
         return {
           modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
-          stageIdx: window.__CHENYUAN_V25__.getState().arena.stageIdx,
+          stageIdx: window.__CHENYUAN_DEBUG__.getState().arena.stageIdx,
           previewNode: strip?.getAttribute("data-preview-node"),
           enterTarget: enterBtn?.getAttribute("data-map-enter"),
           enterDisabled: !!enterBtn?.disabled
@@ -6692,14 +6692,14 @@ try {
       await page.click('#modal-backdrop.open [data-map-enter="stg_1"]');
       const afterEnter = await page.evaluate(() => ({
         modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
-        stageIdx: window.__CHENYUAN_V25__.getState().arena.stageIdx
+        stageIdx: window.__CHENYUAN_DEBUG__.getState().arena.stageIdx
       }));
       assert.equal(afterEnter.modalOpen, false);
       assert.equal(afterEnter.stageIdx, 1, "Explicit [data-map-enter='stg_1'] must travel to stage 1");
 
       // Verify Ch5 narrative marker, priority ordering in findNextMainlineStep, and Objectives unified tabs + claim refresh bugfix
       const navCheck = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const ch5 = api.KYUSHU_MAP_NODES.find(n => n.id === "ch5_resonance");
         const allHaveMeta = api.KYUSHU_MAP_NODES.every(n => n.tier && n.shape && Array.isArray(n.links));
@@ -6744,7 +6744,7 @@ try {
       await page.waitForSelector('#modal-backdrop.open [data-action="challenge-tower"]');
       await page.click('#modal-backdrop.open [data-action="challenge-tower"]');
       const afterTowerLaunch = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         return {
           towerMode: !!s.arena.towerMode,
@@ -6760,7 +6760,7 @@ try {
 
       // Verify allDone contract still returns { allDone: true, step: null }
       const allDoneCheck = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "ascended";
         s.game.status = "ascended";
@@ -6820,7 +6820,7 @@ try {
 
       // 3. Golden realm Cultivate: 3 <details> groups, collection collapsed by default, toggling advanced persists across re-render
       const goldenCult = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "golden";
         api.renderDrawerContent();
@@ -6842,9 +6842,9 @@ try {
 
       // Toggle advanced closed via summary click and wait for async <details> toggle persistence before re-render
       await page.click('details[data-cultivate-group="advanced"] > summary');
-      await page.waitForFunction(() => window.__CHENYUAN_V25__.getCultivateGroupState().advanced === false);
+      await page.waitForFunction(() => window.__CHENYUAN_DEBUG__.getCultivateGroupState().advanced === false);
       const advPersist = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.renderDrawerContent();
         return {
           stateOpen: api.getCultivateGroupState().advanced,
@@ -6889,7 +6889,7 @@ try {
     const { ctx, page } = await startCleanGamePage(browser, "Q2-4", true);
     try {
       const previewAndTier = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "qi";
         s.game.stones = 250;
@@ -6932,7 +6932,7 @@ try {
       const jumpState = await page.evaluate(() => ({
         panelVisible: !!document.getElementById("drawer-mat-source-panel"),
         modalStacked: document.getElementById("modal-backdrop").classList.contains("open"),
-        activeJump: window.__CHENYUAN_V25__.getActiveMatSourceJump(),
+        activeJump: window.__CHENYUAN_DEBUG__.getActiveMatSourceJump(),
         focusedId: document.activeElement?.id || ""
       }));
       assert.equal(jumpState.panelVisible, true, "Material source jump must open inline #drawer-mat-source-panel");
@@ -6946,7 +6946,7 @@ try {
         const panel = document.getElementById("jade-panel");
         return {
           panelClosed: !document.getElementById("drawer-mat-source-panel"),
-          activeJump: window.__CHENYUAN_V25__.getActiveMatSourceJump(),
+          activeJump: window.__CHENYUAN_DEBUG__.getActiveMatSourceJump(),
           focusInDrawer: Boolean(panel && panel.contains(document.activeElement))
         };
       });
@@ -6966,7 +6966,7 @@ try {
     try {
       // Setup Qi realm with stones & herbs for batch tests
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "qi";
         s.game.stones = 600;
@@ -6988,7 +6988,7 @@ try {
       await page.click('#modal-backdrop.open [data-modal-close="1"]');
 
       const afterCancelCraft = await page.evaluate(() => {
-        const s = window.__CHENYUAN_V25__.getState().game;
+        const s = window.__CHENYUAN_DEBUG__.getState().game;
         return { stones: s.stones, months: s.elapsedMonths, pills: s.inventory.healing_pill };
       });
       assert.equal(afterCancelCraft.stones, 600, "Canceling batch craft must deduct 0 stones");
@@ -6999,13 +6999,13 @@ try {
       await page.waitForSelector("#btn-confirm-batch-craft");
       await page.click('#modal-backdrop.open [data-batch-craft-qty="3"]');
       const expectedBatchCost = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState().game;
         return api.computeUpgradePreview(s, "alchemy_craft", "healing", { qty: 3 }).breakdown;
       });
       await page.click("#btn-confirm-batch-craft");
       const afterConfirmCraft = await page.evaluate(() => {
-        const s = window.__CHENYUAN_V25__.getState().game;
+        const s = window.__CHENYUAN_DEBUG__.getState().game;
         return { stones: s.stones, months: s.elapsedMonths, pills: s.inventory.healing_pill, herb: s.inventory.herb };
       });
       assert.equal(afterConfirmCraft.stones, 600 - expectedBatchCost.totalStoneCost);
@@ -7017,7 +7017,7 @@ try {
       await page.click("#nav-btn-cultivate");
       await page.waitForSelector('[data-open-batch-enhance="weapon"]');
       const preEnh = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState().game;
         return {
           stones: s.stones,
@@ -7029,8 +7029,8 @@ try {
       await page.waitForSelector("#btn-confirm-batch-enhance");
       await page.click('#modal-backdrop.open [data-modal-close="1"]');
       const afterCancelEnh = await page.evaluate(() => ({
-        stones: window.__CHENYUAN_V25__.getState().game.stones,
-        lvl: window.__CHENYUAN_V25__.getState().game.equippedGear.weapon.lvl || 0
+        stones: window.__CHENYUAN_DEBUG__.getState().game.stones,
+        lvl: window.__CHENYUAN_DEBUG__.getState().game.equippedGear.weapon.lvl || 0
       }));
       assert.equal(afterCancelEnh.stones, preEnh.stones);
       assert.equal(afterCancelEnh.lvl, preEnh.lvl);
@@ -7039,15 +7039,15 @@ try {
       await page.waitForSelector("#btn-confirm-batch-enhance");
       await page.click("#btn-confirm-batch-enhance");
       const afterConfirmEnh = await page.evaluate(() => ({
-        stones: window.__CHENYUAN_V25__.getState().game.stones,
-        lvl: window.__CHENYUAN_V25__.getState().game.equippedGear.weapon.lvl || 0
+        stones: window.__CHENYUAN_DEBUG__.getState().game.stones,
+        lvl: window.__CHENYUAN_DEBUG__.getState().game.equippedGear.weapon.lvl || 0
       }));
       assert.equal(afterConfirmEnh.lvl, preEnh.lvl + 3);
       assert.equal(afterConfirmEnh.stones, preEnh.stones - preEnh.preview.totalCost);
 
       // 3. Invalid quantity rejection & atomic rollback on QuotaExceededError (both batch craft crossing lifespan_exhausted AND batch enhance)
       const rollbackRes = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState().game;
         const stonesBeforeInvalid = s.stones;
         const lvlBeforeInvalid = s.equippedGear.weapon.lvl || 0;
@@ -7117,7 +7117,7 @@ try {
 
       // 4. Data-driven Defeat Review Case A (real combat hit) + navigation-only suggestion
       const defeatCaseA = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         api.closeDrawer();
         api.resetEncounterTelemetry();
@@ -7138,7 +7138,7 @@ try {
 
       await page.click('#modal-backdrop.open [data-defeat-nav="alchemy"]');
       const afterDefeatNav = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         return {
           sanctumMode: !!s.arena.sanctumMode,
@@ -7158,7 +7158,7 @@ try {
 
       // 5. Data-driven Defeat Review Case B (direct HP=0 injection / 0 hits -> neutral fallback)
       const defeatCaseB = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         api.closeDrawer();
         api.resetEncounterTelemetry();
@@ -7179,7 +7179,7 @@ try {
     // Part A: P11 — Objectives modal open-state immediate refresh & closed-state HUD claim safety
     const { ctx: ctxA, page: pageA } = await startCleanGamePage(browser, "R7-1-Objectives", true);
     await pageA.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       g.realm = "spirit";
       g.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true };
@@ -7210,7 +7210,7 @@ try {
     await pageA.click('#modal-backdrop.open [data-claim-step="s3_serpent"]');
     await pageA.waitForTimeout(80);
     const afterS3 = await pageA.evaluate(() => {
-      const g = window.__CHENYUAN_V25__.getState().game;
+      const g = window.__CHENYUAN_DEBUG__.getState().game;
       return {
         claimed: g.claimedStepIds.includes("s3_serpent"),
         healingPill: g.inventory.healing_pill,
@@ -7225,7 +7225,7 @@ try {
 
     // Open modal -> data-claim-step (s6_pacts, pillQty: 2)
     await pageA.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       g.claimedStepIds.push("s3_break", "s4_relic", "s4_puppet", "s4_break", "s5_laws", "s5_break");
       api.openObjectivesModal("mainline");
@@ -7234,7 +7234,7 @@ try {
     await pageA.click('#modal-backdrop.open [data-claim-step="s6_pacts"]');
     await pageA.waitForTimeout(80);
     const afterS6 = await pageA.evaluate(() => {
-      const g = window.__CHENYUAN_V25__.getState().game;
+      const g = window.__CHENYUAN_DEBUG__.getState().game;
       return {
         claimed: g.claimedStepIds.includes("s6_pacts"),
         spiritPill: g.inventory.spirit_pill,
@@ -7251,13 +7251,13 @@ try {
     await pageA.click('#modal-backdrop.open [data-goal-tab="bounties"]');
     await pageA.waitForSelector('#modal-backdrop.open [data-claim-bounty="slay"]');
     const beforeBounty = await pageA.evaluate(() => {
-      const g = window.__CHENYUAN_V25__.getState().game;
+      const g = window.__CHENYUAN_DEBUG__.getState().game;
       return { stones: g.stones, core: g.inventory.core || 0 };
     });
     await pageA.click('#modal-backdrop.open [data-claim-bounty="slay"]');
     await pageA.waitForTimeout(80);
     const afterBounty = await pageA.evaluate(() => {
-      const g = window.__CHENYUAN_V25__.getState().game;
+      const g = window.__CHENYUAN_DEBUG__.getState().game;
       return {
         tier: g.bountyTiers.slay,
         stones: g.stones,
@@ -7274,11 +7274,11 @@ try {
 
     // Open modal -> data-claim-star-chest (star_3)
     await pageA.waitForSelector('#modal-backdrop.open [data-claim-star-chest="star_3"]');
-    const stonesBeforeChest = await pageA.evaluate(() => window.__CHENYUAN_V25__.getState().game.stones);
+    const stonesBeforeChest = await pageA.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.stones);
     await pageA.click('#modal-backdrop.open [data-claim-star-chest="star_3"]');
     await pageA.waitForTimeout(80);
     const afterChest = await pageA.evaluate(() => {
-      const g = window.__CHENYUAN_V25__.getState().game;
+      const g = window.__CHENYUAN_DEBUG__.getState().game;
       return {
         claimed: g.claimedStarChests.includes("star_3"),
         stones: g.stones,
@@ -7296,7 +7296,7 @@ try {
 
     // Closed modal: HUD quest-tracker claims MUST NOT open Objectives modal
     await pageA.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       g.claimedStepIds = ["s1_open", "s1_wolf", "s1_break", "s2_pet", "s2_lu", "s2_warden", "s2_break", "s3_npc", "s3_serpent"];
       g.goalStats = { kills: 0, techBreaks: 50, craftOrLoot: 0 };
@@ -7307,7 +7307,7 @@ try {
     await pageA.click('#quest-tracker-hud [data-claim-step="s3_break"]');
     await pageA.waitForTimeout(80);
     const hudStepRes = await pageA.evaluate(() => ({
-      claimed: window.__CHENYUAN_V25__.getState().game.claimedStepIds.includes("s3_break"),
+      claimed: window.__CHENYUAN_DEBUG__.getState().game.claimedStepIds.includes("s3_break"),
       modalOpen: document.getElementById("modal-backdrop").classList.contains("open")
     }));
     assert.equal(hudStepRes.claimed, true, "HUD click on s3_break must claim reward");
@@ -7317,7 +7317,7 @@ try {
     await pageA.click('#quest-tracker-hud [data-claim-bounty="tech"]');
     await pageA.waitForTimeout(80);
     const hudBountyRes = await pageA.evaluate(() => ({
-      tier: window.__CHENYUAN_V25__.getState().game.bountyTiers.tech,
+      tier: window.__CHENYUAN_DEBUG__.getState().game.bountyTiers.tech,
       modalOpen: document.getElementById("modal-backdrop").classList.contains("open")
     }));
     assert.equal(hudBountyRes.tier, 2, "HUD click on tech bounty must advance tier 1 -> 2");
@@ -7369,7 +7369,7 @@ try {
     await triggerCorruptQuotaFailure();
 
     const quotaFailedState = await pageB.evaluate((sk) => {
-      const ps = window.__CHENYUAN_V25__.getPersistenceState();
+      const ps = window.__CHENYUAN_DEBUG__.getPersistenceState();
       const alertEl = document.getElementById("hud-save-alert");
       const actions = Array.from(alertEl.querySelectorAll("[data-action]")).map(b => b.getAttribute("data-action"));
       return {
@@ -7399,14 +7399,14 @@ try {
 
     // DEFECT-R2-1: Persistent-quota within-6s click on #hud-save-alert [data-action="overwrite-with-current-save"] MUST emit immediate failure toast (not throttled) and preserve off-BODY focus
     await pageB.evaluate(() => {
-      window.__CHENYUAN_V25__.enterSanctumHub({ skipSave: true });
+      window.__CHENYUAN_DEBUG__.enterSanctumHub({ skipSave: true });
       const tc = document.getElementById("toast-container");
       if (tc) tc.innerHTML = "";
     });
     await pageB.click('#hud-save-alert [data-action="overwrite-with-current-save"]');
     await pageB.waitForTimeout(60);
     const persistentQuotaOverwrite = await pageB.evaluate((sk) => {
-      const ps = window.__CHENYUAN_V25__.getPersistenceState();
+      const ps = window.__CHENYUAN_DEBUG__.getPersistenceState();
       const alertEl = document.getElementById("hud-save-alert");
       const ae = document.activeElement;
       return {
@@ -7434,7 +7434,7 @@ try {
       Storage.prototype.setItem = window.__r7OrigSetItem;
     });
     const postRestoreGuards = await pageB.evaluate((sk) => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const tc = document.getElementById("toast-container");
       if (tc) tc.innerHTML = "";
       const synthRetry = document.createElement("button");
@@ -7474,7 +7474,7 @@ try {
     await pageB.waitForSelector("#save-status-banner", { state: "visible" });
     const afterReloadCorrupt = await pageB.evaluate((sk) => ({
       raw: localStorage.getItem(sk),
-      hasReadErr: Boolean(window.__CHENYUAN_V25__.getPersistenceState().storageReadError)
+      hasReadErr: Boolean(window.__CHENYUAN_DEBUG__.getPersistenceState().storageReadError)
     }), STORAGE_KEY);
     assert.equal(afterReloadCorrupt.raw, corruptRaw, "Reload after failed overwrite must still preserve corrupt raw");
     assert.equal(afterReloadCorrupt.hasReadErr, true, "Reload after failed overwrite must still report storageReadError");
@@ -7485,7 +7485,7 @@ try {
     await pageB.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
     await dismissOpeningScroll(pageB);
     const welcomeRecovered = await pageB.evaluate((sk) => {
-      const ps = window.__CHENYUAN_V25__.getPersistenceState();
+      const ps = window.__CHENYUAN_DEBUG__.getPersistenceState();
       const parsed = JSON.parse(localStorage.getItem(sk));
       return {
         readErr: ps.storageReadError,
@@ -7501,13 +7501,13 @@ try {
     await triggerCorruptQuotaFailure();
     await pageB.evaluate(() => {
       Storage.prototype.setItem = window.__r7OrigSetItem;
-      window.__CHENYUAN_V25__.getState().game.stones = 456;
+      window.__CHENYUAN_DEBUG__.getState().game.stones = 456;
     });
     await pageB.waitForSelector('#hud-save-alert [data-action="overwrite-with-current-save"]');
     await pageB.click('#hud-save-alert [data-action="overwrite-with-current-save"]');
     await pageB.waitForFunction(() => getComputedStyle(document.getElementById("hud-save-alert")).display === "none", null, { timeout: 3000 });
     const inGameRecovered = await pageB.evaluate((sk) => {
-      const ps = window.__CHENYUAN_V25__.getPersistenceState();
+      const ps = window.__CHENYUAN_DEBUG__.getPersistenceState();
       const parsed = JSON.parse(localStorage.getItem(sk));
       return {
         readErr: ps.storageReadError,
@@ -7528,7 +7528,7 @@ try {
 
     // DEFECT-R2-1: Pure storageWriteError within-6s retry-save-now failure (immediate toast + off-BODY focus) AND recovery focus restoration
     await pageB.evaluate((sk) => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.enterSanctumHub({ skipSave: true });
       window.__r7OrigSetItemPure = Storage.prototype.setItem;
       Storage.prototype.setItem = function (k, v) {
@@ -7547,7 +7547,7 @@ try {
     await pageB.click('#hud-save-alert [data-action="retry-save-now"]');
     await pageB.waitForTimeout(60);
     const pureRetryFail = await pageB.evaluate(() => {
-      const ps = window.__CHENYUAN_V25__.getPersistenceState();
+      const ps = window.__CHENYUAN_DEBUG__.getPersistenceState();
       const alertEl = document.getElementById("hud-save-alert");
       const ae = document.activeElement;
       return {
@@ -7572,7 +7572,7 @@ try {
     await pageB.click('#hud-save-alert [data-action="retry-save-now"]');
     await pageB.waitForFunction(() => getComputedStyle(document.getElementById("hud-save-alert")).display === "none", null, { timeout: 3000 });
     const pureRetryRecovered = await pageB.evaluate(() => {
-      const ps = window.__CHENYUAN_V25__.getPersistenceState();
+      const ps = window.__CHENYUAN_DEBUG__.getPersistenceState();
       const ae = document.activeElement;
       return {
         writeErr: ps.storageWriteError,
@@ -7596,12 +7596,12 @@ try {
     await pageB2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
     await dismissOpeningScroll(pageB2);
     await pageB2.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.getState().game.stones = 777;
       api.saveGame();
     });
     await pageB.waitForFunction(() => {
-      const ps = window.__CHENYUAN_V25__.getPersistenceState();
+      const ps = window.__CHENYUAN_DEBUG__.getPersistenceState();
       return Boolean(ps.saveConflictState || ps.saveReadOnlyMode);
     }, { timeout: 3000 });
     await pageB.waitForSelector('#modal-backdrop.open [data-action="overwrite-with-current-save"]', { timeout: 3000 });
@@ -7621,7 +7621,7 @@ try {
     await pageB.click('#modal-backdrop.open [data-action="overwrite-with-current-save"]');
     await pageB.waitForTimeout(60);
     const conflictQuotaFail = await pageB.evaluate((sk) => {
-      const ps = window.__CHENYUAN_V25__.getPersistenceState();
+      const ps = window.__CHENYUAN_DEBUG__.getPersistenceState();
       const alertEl = document.getElementById("hud-save-alert");
       const alertActions = Array.from(alertEl.querySelectorAll("[data-action]")).map(b => b.getAttribute("data-action"));
       const modalBackdrop = document.getElementById("modal-backdrop");
@@ -7658,7 +7658,7 @@ try {
     await pageB.click('#hud-save-alert [data-action="overwrite-with-current-save"]');
     await pageB.waitForTimeout(60);
     const readonlyQuotaFail = await pageB.evaluate((sk) => {
-      const ps = window.__CHENYUAN_V25__.getPersistenceState();
+      const ps = window.__CHENYUAN_DEBUG__.getPersistenceState();
       const alertEl = document.getElementById("hud-save-alert");
       const alertActions = Array.from(alertEl.querySelectorAll("[data-action]")).map(b => b.getAttribute("data-action"));
       const ae = document.activeElement;
@@ -7685,7 +7685,7 @@ try {
       Storage.prototype.setItem = window.__r7OrigSetItemConflict;
     });
     const contention = await pageB.evaluate((sk) => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const savedFromStale = api.saveGame();
       const diskStones = JSON.parse(localStorage.getItem(sk)).game.stones;
       return { savedFromStale, diskStones };
@@ -7713,7 +7713,7 @@ try {
     await page.keyboard.press("Escape");
     await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
     const afterEscSandbox = await page.evaluate(() => ({
-      sandbox: window.__CHENYUAN_V25__.isSandboxMode(),
+      sandbox: window.__CHENYUAN_DEBUG__.isSandboxMode(),
       activeId: document.activeElement?.id || ""
     }));
     assert.equal(afterEscSandbox.sandbox, false, "Pressing Escape must not enter sandbox mode");
@@ -7727,7 +7727,7 @@ try {
     await page.click('#modal-backdrop.open [data-modal-close="1"]');
     await page.waitForFunction(() => !document.getElementById("modal-backdrop")?.classList.contains("open"));
     const afterCancelSandbox = await page.evaluate(() => ({
-      sandbox: window.__CHENYUAN_V25__.isSandboxMode(),
+      sandbox: window.__CHENYUAN_DEBUG__.isSandboxMode(),
       activeId: document.activeElement?.id || ""
     }));
     assert.equal(afterCancelSandbox.sandbox, false, "Clicking Cancel must not enter sandbox mode");
@@ -7750,7 +7750,7 @@ try {
 
     // FINDING-2: Real click on #btn-pavilion-menu -> #btn-toggle-bgm during active #story-dialogue-bar.open closes popover AND keeps focus inside #story-dialogue-bar (never BODY)
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       if (g.seenCutscenes) delete g.seenCutscenes.opening_scroll;
       api.playCutscene("opening_scroll");
@@ -7779,7 +7779,7 @@ try {
 
     // P9: Early-return popover buttons ([data-action="open-celestial-spire"] & #btn-boss-rush) close popover immediately & Escape returns focus to #btn-pavilion-menu
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       g.realm = "nascent";
       api.enterSanctumHub();
@@ -7800,7 +7800,7 @@ try {
 
     // Part B: P7 — [data-temper-relic="frost_sword"] preserves focus inside #jade-panel
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       g.realm = "foundation";
       g.stones = 500;
@@ -7820,7 +7820,7 @@ try {
       const panel = document.getElementById("jade-panel");
       const ae = document.activeElement;
       return {
-        stars: window.__CHENYUAN_V25__.getState().game.relicStars.frost_sword,
+        stars: window.__CHENYUAN_DEBUG__.getState().game.relicStars.frost_sword,
         inPanel: Boolean(panel && panel.contains(ae)),
         temperAttr: ae ? ae.getAttribute("data-temper-relic") : null
       };
@@ -7833,7 +7833,7 @@ try {
 
     // Part C: P7 & P8 — longevity_pill focus preservation (cultivate alert-clear + bag remaining/last pill) + general drawer re-render focus fallback
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       g.realm = "mortal";
       g.lifespanBonusMonths = 0;
@@ -7848,7 +7848,7 @@ try {
     await page.click('#jade-panel.drawer-open [data-use-item="longevity_pill"]');
     await page.waitForTimeout(80);
     const afterCultivatePill = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const panel = document.getElementById("jade-panel");
       const ae = document.activeElement;
       return {
@@ -7872,7 +7872,7 @@ try {
       const panel = document.getElementById("jade-panel");
       const ae = document.activeElement;
       return {
-        qty: window.__CHENYUAN_V25__.getState().game.inventory.longevity_pill,
+        qty: window.__CHENYUAN_DEBUG__.getState().game.inventory.longevity_pill,
         inPanel: Boolean(panel && panel.contains(ae)),
         useItemAttr: ae ? ae.getAttribute("data-use-item") : null
       };
@@ -7887,7 +7887,7 @@ try {
       const panel = document.getElementById("jade-panel");
       const ae = document.activeElement;
       return {
-        qty: window.__CHENYUAN_V25__.getState().game.inventory.longevity_pill,
+        qty: window.__CHENYUAN_DEBUG__.getState().game.inventory.longevity_pill,
         inPanel: Boolean(panel && panel.contains(ae)),
         activeTag: ae ? ae.tagName : ""
       };
@@ -7914,7 +7914,7 @@ try {
 
     // Part D: P5 — Confirmed 2-step 兵解转世 welcome CTA focus + 0 leaked pauseTokens + M2 meta guards
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
       g.realm = "mortal";
       g.lifespanBonusMonths = 0;
@@ -7926,7 +7926,7 @@ try {
 
     // M2 saveMeta QuotaExceededError rollback check
     const metaQuotaRes = await page.evaluate(({ sk, mk }) => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const ptsBefore = api.getMetaState().reincarnationPoints;
       const saveBefore = localStorage.getItem(sk);
       const origSet = Storage.prototype.setItem;
@@ -7959,7 +7959,7 @@ try {
 
     // M2 metaReadError abort check + explicit corrupt-meta reset
     const metaCorruptRes = await page.evaluate(({ sk, mk }) => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const saveBefore = localStorage.getItem(sk);
       const badMeta = "{CORRUPT_META_R72";
       localStorage.setItem(mk, badMeta);
@@ -7979,11 +7979,11 @@ try {
     await page.click('#hud-save-alert [data-action="prompt-reset-corrupt-meta"]');
     await page.waitForSelector('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
     await page.click('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
-    await page.waitForFunction(() => !window.__CHENYUAN_V25__.getPersistenceState().metaReadError);
+    await page.waitForFunction(() => !window.__CHENYUAN_DEBUG__.getPersistenceState().metaReadError);
 
     // Real 2-step UI 兵解转世 -> welcome screen CTA focus + 0 leaked pauseTokens
     const beforeReinc = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const m = api.getMetaState();
       return { pts: m.reincarnationPoints, asc: m.ascensions };
     });
@@ -7995,7 +7995,7 @@ try {
     await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "flex");
 
     const afterReinc = await page.evaluate((sk) => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const m = api.getMetaState();
       return {
         saveRemoved: localStorage.getItem(sk) === null,
@@ -8023,10 +8023,10 @@ try {
     attachErrorListeners(tabA, "R7-2-CRDT-TabA");
     attachErrorListeners(tabB, "R7-2-CRDT-TabB");
     await tabA.goto(targetUrl, { waitUntil: "domcontentloaded" });
-    await tabA.waitForFunction(() => Boolean(window.__CHENYUAN_V25__));
-    await tabA.evaluate(() => { localStorage.clear(); window.__CHENYUAN_V25__.saveMeta(); });
+    await tabA.waitForFunction(() => Boolean(window.__CHENYUAN_DEBUG__));
+    await tabA.evaluate(() => { localStorage.clear(); window.__CHENYUAN_DEBUG__.saveMeta(); });
     await tabB.goto(targetUrl, { waitUntil: "domcontentloaded" });
-    await tabB.waitForFunction(() => Boolean(window.__CHENYUAN_V25__));
+    await tabB.waitForFunction(() => Boolean(window.__CHENYUAN_DEBUG__));
 
     // D1: bestCalamityTier / cloudSeaClears / taixuTrailUnlocked / karmaAscensions
     await tabB.waitForFunction((mk) => {
@@ -8039,7 +8039,7 @@ try {
     }, META_KEY, { timeout: 4000 });
     const d1StaleRaw = await tabB.evaluate((mk) => localStorage.getItem(mk), META_KEY);
     const d1BaseRev = await tabA.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const m = api.getMetaState();
       m.bestCalamityTier = 2;
       m.cloudSeaClears = 3;
@@ -8083,9 +8083,9 @@ try {
       }
     }, { mk: META_KEY, staleRev: d1StaleRev }, { timeout: 4000 });
     await tabA.reload({ waitUntil: "domcontentloaded" });
-    await tabA.waitForFunction(() => Boolean(window.__CHENYUAN_V25__));
+    await tabA.waitForFunction(() => Boolean(window.__CHENYUAN_DEBUG__));
     const d1AfterReload = await tabA.evaluate(() => {
-      const m = window.__CHENYUAN_V25__.getMetaState();
+      const m = window.__CHENYUAN_DEBUG__.getMetaState();
       return {
         bestCalamityTier: m.bestCalamityTier,
         cloudSeaClears: m.cloudSeaClears,
@@ -8104,7 +8104,7 @@ try {
 
     // D2: hallOfLives 19th newer life preserved at 18-entry cap
     const d2InitRev = await tabA.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const m = api.getMetaState();
       m.hallOfLives = Array.from({ length: 18 }, (_, i) => ({
         lifeNum: 18 - i,
@@ -8130,7 +8130,7 @@ try {
     }, { mk: META_KEY, minRev: d2InitRev }, { timeout: 4000 });
     const d2StaleRaw = await tabB.evaluate((mk) => localStorage.getItem(mk), META_KEY);
     const d2BaseRev = await tabA.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const m = api.getMetaState();
       m.hallOfLives = [
         {
@@ -8177,9 +8177,9 @@ try {
       }
     }, { mk: META_KEY, staleRev: d2StaleRev }, { timeout: 4000 });
     await tabA.reload({ waitUntil: "domcontentloaded" });
-    await tabA.waitForFunction(() => Boolean(window.__CHENYUAN_V25__));
+    await tabA.waitForFunction(() => Boolean(window.__CHENYUAN_DEBUG__));
     const d2AfterReload = await tabA.evaluate(() => {
-      const m = window.__CHENYUAN_V25__.getMetaState();
+      const m = window.__CHENYUAN_DEBUG__.getMetaState();
       return { len: m.hallOfLives.length, topRecordedAt: m.hallOfLives[0]?.recordedAt, topLifeNum: m.hallOfLives[0]?.lifeNum };
     });
     assert.equal(d2AfterReload.len, 18, "CRDT D2: hallOfLives must stay capped at 18 entries");
@@ -8188,7 +8188,7 @@ try {
 
     // D3: seenEnemies duplicate-length set union (["wolf","wolf"] vs ["wolf","jade_serpent"])
     const d3BaseRev = await tabA.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const m = api.getMetaState();
       m.seenEnemies = ["wolf", "jade_serpent"];
       api.saveMeta();
@@ -8223,13 +8223,13 @@ try {
       }
     }, { mk: META_KEY, staleRev: d3StaleRev }, { timeout: 4000 });
     await tabA.reload({ waitUntil: "domcontentloaded" });
-    await tabA.waitForFunction(() => Boolean(window.__CHENYUAN_V25__));
-    const d3AfterReload = await tabA.evaluate(() => window.__CHENYUAN_V25__.getMetaState().seenEnemies);
+    await tabA.waitForFunction(() => Boolean(window.__CHENYUAN_DEBUG__));
+    const d3AfterReload = await tabA.evaluate(() => window.__CHENYUAN_DEBUG__.getMetaState().seenEnemies);
     assert.equal(d3AfterReload.includes("jade_serpent"), true, `CRDT D3: seenEnemies must preserve jade_serpent against duplicate-length remote write, got: ${JSON.stringify(d3AfterReload)}`);
 
     // D4: Zero redundant META_KEY writes on 3 stale behind StorageEvents when live storage already holds converged state
     const d4Res = await tabA.evaluate((mk) => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       api.saveMeta();
       const liveConverged = JSON.parse(localStorage.getItem(mk));
       let metaWriteCount = 0;
@@ -8276,14 +8276,14 @@ try {
     await tabA.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none", null, { timeout: 4000 });
     await dismissOpeningScroll(tabA);
     await tabA.evaluate(() => {
-      window.__CHENYUAN_V25__.enterSanctumHub({ skipSave: true });
+      window.__CHENYUAN_DEBUG__.enterSanctumHub({ skipSave: true });
     });
     for (const writerCase of [
       { label: "active-writer", isWriter: true, corruptRaw: "{CORRUPT_LIVE_META_R2D1_WRITER###" },
       { label: "non-writer", isWriter: false, corruptRaw: "{CORRUPT_LIVE_META_R2D1_NONWRITER###" }
     ]) {
       const r2d1Res = await tabA.evaluate(({ mk, isWriter, corruptRaw }) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const m = api.getMetaState();
         m.ascensions = 5;
         if (isWriter) {
@@ -8356,7 +8356,7 @@ try {
 
     // Part A: P1 — All 6 meditation-interrupt keys + bonus openTribulationPrepModal flush meditateAgedDirty -> localStorage
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       const g = s.game;
       g.realm = "foundation";
@@ -8376,13 +8376,13 @@ try {
     // A1: Live 3s meditation tick -> KeyZ (triggerSkyJump) flushes elapsedMonths to localStorage
     await page.keyboard.press("KeyB");
     await page.waitForFunction(() => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       return s.arena.player.meditating === true && s.game.elapsedMonths >= 101 && s.arena.player.meditateAgedDirty === true;
     }, null, { timeout: 6000 });
     await page.keyboard.press("KeyZ");
     await page.waitForTimeout(80);
     const afterKeyZ = await page.evaluate((sk) => {
-      const s = window.__CHENYUAN_V25__.getState();
+      const s = window.__CHENYUAN_DEBUG__.getState();
       const stored = JSON.parse(localStorage.getItem(sk));
       return {
         meditating: s.arena.player.meditating,
@@ -8407,7 +8407,7 @@ try {
     ];
     for (const [keyCode, fnLabel] of otherInterrupts) {
       const monthsBefore = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const p = s.arena.player;
         p.z = 0; p.vz = 0; p.dashTimer = 0; p.slashCd = 0; p.jumpCd = 0; p.dashCd = 0; p.blinkCd = 0;
@@ -8420,29 +8420,29 @@ try {
         return s.game.elapsedMonths;
       });
       await page.keyboard.press("KeyB");
-      await page.waitForFunction(() => window.__CHENYUAN_V25__.getState().arena.player.meditating === true, null, { timeout: 2500 }).catch(async (e) => {
+      await page.waitForFunction(() => window.__CHENYUAN_DEBUG__.getState().arena.player.meditating === true, null, { timeout: 2500 }).catch(async (e) => {
         const diag = await page.evaluate(() => {
-          const api = window.__CHENYUAN_V25__;
+          const api = window.__CHENYUAN_DEBUG__;
           const s = api.getState();
           return { meditating: s.arena.player.meditating, paused: s.arena.paused, tokens: api.getPauseTokens(), hitStop: s.arena.hitStop, xp: s.game.xp, xpCap: s.realmSpec?.xpCap, modal: document.getElementById("modal-backdrop")?.classList.contains("open"), activeId: document.activeElement?.id, activeTag: document.activeElement?.tagName };
         });
         throw new Error(`R7-3 A2 [${keyCode}/${fnLabel}] wait meditating failed: ${e.message} diag=${JSON.stringify(diag)}`);
       });
       await page.evaluate(() => {
-        window.__CHENYUAN_V25__.getState().arena.player.meditateAgeTick = 3.01;
+        window.__CHENYUAN_DEBUG__.getState().arena.player.meditateAgeTick = 3.01;
       });
       await page.waitForFunction((mb) => {
-        const s = window.__CHENYUAN_V25__.getState();
+        const s = window.__CHENYUAN_DEBUG__.getState();
         return s.game.elapsedMonths >= mb + 1 && s.arena.player.meditateAgedDirty === true;
       }, monthsBefore, { timeout: 2500 }).catch(async (e) => {
         const diag = await page.evaluate(() => {
-          const s = window.__CHENYUAN_V25__.getState();
+          const s = window.__CHENYUAN_DEBUG__.getState();
           return { meditating: s.arena.player.meditating, ageTick: s.arena.player.meditateAgeTick, dirty: s.arena.player.meditateAgedDirty, months: s.game.elapsedMonths, paused: s.arena.paused };
         });
         throw new Error(`R7-3 A2 [${keyCode}/${fnLabel}] wait age failed: ${e.message} diag=${JSON.stringify(diag)}`);
       });
       const beforeInterrupt = await page.evaluate((sk) => {
-        const s = window.__CHENYUAN_V25__.getState();
+        const s = window.__CHENYUAN_DEBUG__.getState();
         const stored = JSON.parse(localStorage.getItem(sk));
         return { mem: s.game.elapsedMonths, stored: stored?.game?.elapsedMonths };
       }, STORAGE_KEY);
@@ -8451,7 +8451,7 @@ try {
       await page.keyboard.press(keyCode);
       await page.waitForTimeout(80);
       const afterInterrupt = await page.evaluate((sk) => {
-        const s = window.__CHENYUAN_V25__.getState();
+        const s = window.__CHENYUAN_DEBUG__.getState();
         const stored = JSON.parse(localStorage.getItem(sk));
         return {
           meditating: s.arena.player.meditating,
@@ -8470,7 +8470,7 @@ try {
     // A3: Bonus P1 — Pressing KeyB at full XP while meditating opens tribulation prep modal AND flushes meditateAgedDirty
     for (const bossDefeated of [false, true]) {
       const monthsBefore = await page.evaluate((defeated) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.realm = "foundation";
         s.game.xp = 0;
@@ -8481,37 +8481,37 @@ try {
         return s.game.elapsedMonths;
       }, bossDefeated);
       await page.keyboard.press("KeyB");
-      await page.waitForFunction(() => window.__CHENYUAN_V25__.getState().arena.player.meditating === true, null, { timeout: 2500 }).catch(async (e) => {
+      await page.waitForFunction(() => window.__CHENYUAN_DEBUG__.getState().arena.player.meditating === true, null, { timeout: 2500 }).catch(async (e) => {
         const diag = await page.evaluate(() => {
-          const api = window.__CHENYUAN_V25__;
+          const api = window.__CHENYUAN_DEBUG__;
           const s = api.getState();
           return { meditating: s.arena.player.meditating, paused: s.arena.paused, tokens: api.getPauseTokens(), hitStop: s.arena.hitStop, xp: s.game.xp, xpCap: s.realmSpec?.xpCap, modal: document.getElementById("modal-backdrop")?.classList.contains("open"), activeId: document.activeElement?.id, activeTag: document.activeElement?.tagName };
         });
         throw new Error(`R7-3 A3 [bossDefeated=${bossDefeated}] wait meditating failed: ${e.message} diag=${JSON.stringify(diag)}`);
       });
       await page.evaluate(() => {
-        window.__CHENYUAN_V25__.getState().arena.player.meditateAgeTick = 3.01;
+        window.__CHENYUAN_DEBUG__.getState().arena.player.meditateAgeTick = 3.01;
       });
       await page.waitForFunction((mb) => {
-        const s = window.__CHENYUAN_V25__.getState();
+        const s = window.__CHENYUAN_DEBUG__.getState();
         return s.game.elapsedMonths >= mb + 1 && s.arena.player.meditateAgedDirty === true;
       }, monthsBefore, { timeout: 2500 }).catch(async (e) => {
         const diag = await page.evaluate(() => {
-          const s = window.__CHENYUAN_V25__.getState();
+          const s = window.__CHENYUAN_DEBUG__.getState();
           return { meditating: s.arena.player.meditating, ageTick: s.arena.player.meditateAgeTick, dirty: s.arena.player.meditateAgedDirty, months: s.game.elapsedMonths, paused: s.arena.paused };
         });
         throw new Error(`R7-3 A3 [bossDefeated=${bossDefeated}] wait age failed: ${e.message} diag=${JSON.stringify(diag)}`);
       });
       // Fill XP while still meditating, then press KeyB -> openTribulationPrepModal
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.xp = s.realmSpec.xpCap;
       });
       await page.keyboard.press("KeyB");
       await page.waitForSelector("#modal-backdrop.open", { timeout: 3000 });
       const afterTribPrep = await page.evaluate((sk) => {
-        const s = window.__CHENYUAN_V25__.getState();
+        const s = window.__CHENYUAN_DEBUG__.getState();
         const stored = JSON.parse(localStorage.getItem(sk));
         return {
           meditating: s.arena.player.meditating,
@@ -8531,7 +8531,7 @@ try {
 
     // Part B: P2 — startCelestialSpireRun enforces nascent realm gate
     const spireGateRes = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "golden";
       s.game.bestSpireFloor = 0;
@@ -8549,7 +8549,7 @@ try {
 
     // Part C: P3 — Expedition tickTimer === 0 immediately fires thunder support & respects 600 stones / 5 stars cap
     await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.game.realm = "nascent";
       s.game.bondTiers = { shen: 1 };
@@ -8575,9 +8575,9 @@ try {
         liveFoe.timer = 99;
       }
     });
-    await page.waitForFunction(() => (window.__CHENYUAN_V25__.getState().game.expeditions?.supportThunderCount || 0) >= 1, null, { timeout: 3000 });
+    await page.waitForFunction(() => (window.__CHENYUAN_DEBUG__.getState().game.expeditions?.supportThunderCount || 0) >= 1, null, { timeout: 3000 });
     const expZeroRes = await page.evaluate(() => {
-      const ex = window.__CHENYUAN_V25__.getState().game.expeditions;
+      const ex = window.__CHENYUAN_DEBUG__.getState().game.expeditions;
       return {
         bankedStones: ex.bankedStones,
         bankedStars: ex.bankedStars,
@@ -8590,7 +8590,7 @@ try {
 
     // Part D: P6 — arena.hitStop = 0 reset in enterSanctumHub & initArenaStage
     const hitStopRes = await page.evaluate(() => {
-      const api = window.__CHENYUAN_V25__;
+      const api = window.__CHENYUAN_DEBUG__;
       const s = api.getState();
       s.arena.hitStop = 0.45;
       api.enterSanctumHub();
@@ -8612,7 +8612,7 @@ try {
     const { ctx, page } = await startCleanGamePage(browser, "Q3-1", true);
     try {
       const res = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const g = s.game;
         const a = s.arena;
@@ -8736,7 +8736,7 @@ try {
 
       // 4. Mortal Cultivate <details id="stat-breakdown-details"> renders with 0 extra <button> elements (<= 14 total)
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const fresh = api.createFreshGame("凡境测试", "sword_bone", 0);
         Object.assign(s.game, fresh);
@@ -8770,7 +8770,7 @@ try {
     try {
       // 1. Outside Sanctum/Sandbox: #dojo-training-hud hidden, D02 prototype rejected, Mortal HUD buttons <= 14
       const formalCheck = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const protoDeny = api.setSandboxSlotPrototype(true);
         const btnProto = document.getElementById("btn-sandbox-slot-proto");
@@ -8831,7 +8831,7 @@ try {
 
       // 2. Sanctum Dojo: 3 focused drills advance 0 -> 3/3 (grade S) & guard prevents formal stone/bounty farming
       const dojoCheck = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.game.stones = 100;
         s.game.goalStats = { techBreaks: 0 };
@@ -8902,7 +8902,7 @@ try {
       // 2b. Additive Q3-2 checks: live drill trigger wiring, standalone updateBossBannerAndRecallOrb consistency,
       //     Sanctum Dojo glutton_pill & KeyR ach_coop non-farming, and formal Sect Defense parry rewards
       const dojoExtra = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
 
         // Live drill wiring: detonate -> drill_mark_detonate, parry -> drill_dodge_counter, morph -> drill_morph_combo
@@ -9011,10 +9011,10 @@ try {
       await page.click("#btn-toggle-arcana-all");
       await page.waitForSelector("#modal-backdrop.open #btn-confirm-enter-sandbox");
       await page.click("#btn-confirm-enter-sandbox");
-      await page.waitForFunction(() => Boolean(window.__CHENYUAN_V25__.getState().game?.unlockAllArcana) === true);
+      await page.waitForFunction(() => Boolean(window.__CHENYUAN_DEBUG__.getState().game?.unlockAllArcana) === true);
 
       const sbProto = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.enterSanctumHub({ skipSave: true });
         const btn = document.getElementById("btn-sandbox-slot-proto");
         const visibleInSandbox = Boolean(btn && btn.style.display !== "none");
@@ -9030,9 +9030,9 @@ try {
       await page.click("#btn-pavilion-menu");
       await page.waitForSelector("#pavilion-popover.open #btn-toggle-arcana-all");
       await page.click("#btn-toggle-arcana-all");
-      await page.waitForFunction(() => Boolean(window.__CHENYUAN_V25__.getState().game?.unlockAllArcana) === false);
+      await page.waitForFunction(() => Boolean(window.__CHENYUAN_DEBUG__.getState().game?.unlockAllArcana) === false);
       const afterExit = await page.evaluate(() => ({
-        proto: window.__CHENYUAN_V25__.getSandboxSlotPrototype(),
+        proto: window.__CHENYUAN_DEBUG__.getSandboxSlotPrototype(),
         dockHasClass: document.getElementById("action-skill-dock")?.classList.contains("sandbox-slot-proto-active"),
         btnHidden: document.getElementById("btn-sandbox-slot-proto")?.style.display === "none"
       }));
@@ -9051,7 +9051,7 @@ try {
     const { ctx, page } = await startCleanGamePage(browser, "Q3-3", true);
     try {
       const matrixProbe = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const realms = ["mortal", "qi", "foundation", "golden", "nascent", "spirit"];
         const curve = realms.map(rid => {
           const gSw = api.createFreshGame("剑修", "sword_bone", 0);
@@ -9118,7 +9118,7 @@ try {
     const { ctx, page } = await startCleanGamePage(browser, "Q3-4", true);
     try {
       const f22 = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         // Deterministic Mulberry32 PRNG for 1,000-roll outlier replay
         let seed = 20261124;
         const rng = () => {
@@ -9220,8 +9220,8 @@ try {
     const { ctx, page } = await startCleanGamePage(browser, "Q3-5", true);
     try {
       const f23 = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        const v23 = window.__CHENYUAN_V23__;
+        const api = window.__CHENYUAN_DEBUG__;
+        const v23 = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const g = s.game;
 
@@ -9339,8 +9339,8 @@ try {
 
       // 4. Additive Q3-5 checks: Spirit lifespan .toFixed(3) deadzone (5036->5037->5040), multi-band jump (73.9%->91.4%), and Taixu Round 2 preview refresh
       const f23Edge = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        const v23 = window.__CHENYUAN_V23__;
+        const api = window.__CHENYUAN_DEBUG__;
+        const v23 = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const g = s.game;
 
@@ -9408,7 +9408,7 @@ try {
     const { ctx, page } = await startCleanGamePage(browser, "Q4-1", true);
     try {
       const rigCheck = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const p = s.arena.player;
         const anchors = api.SPRITE_ANCHORS;
@@ -9477,7 +9477,7 @@ try {
 
       // Verify Wolf facing lock + shared rect telegraph/corridor hitbox + recover state
       const enemyCheck = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const p = s.arena.player;
         s.arena.enemies = [];
@@ -9589,7 +9589,7 @@ try {
     try {
       // Move player off-center and wait for renderArenaCanvas to write unified #stage-bg-img transform
       const parallaxCheck = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.arena.player.x = 1080;
         s.arena.player.y = 540;
@@ -9597,7 +9597,7 @@ try {
       });
       await page.waitForTimeout(120);
       const afterFrame = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const bgEl = document.getElementById("stage-bg-img");
         const st = api.getVisualLayersState();
         const shenProp = api.getState().arena.props.find(pr => pr.id === "shen_rescue");
@@ -9615,7 +9615,7 @@ try {
 
       // Check Sanctum living NPCs vs ritual shrines
       const sanctumCheck = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.enterSanctumHub();
         const props = api.getState().arena.props;
         const livingIds = ["hub_shen", "hub_lu", "hub_pei", "hub_yan"];
@@ -9636,16 +9636,16 @@ try {
       await page.waitForSelector("#btn-a11y-visual-layers");
       await page.click("#btn-a11y-visual-layers");
       await page.waitForTimeout(80);
-      const offState = await page.evaluate(() => window.__CHENYUAN_V25__.getVisualLayersState());
+      const offState = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getVisualLayersState());
       assert.equal(offState.enabled, false, "Clicking #btn-a11y-visual-layers must disable enhancedVisualLayers");
 
       await page.reload({ waitUntil: "domcontentloaded" });
-      const persistedOff = await page.evaluate(() => window.__CHENYUAN_V25__.getVisualLayersState().enabled);
+      const persistedOff = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getVisualLayersState().enabled);
       assert.equal(persistedOff, false, "enhancedVisualLayers toggle must persist across reload in A11Y_STORAGE_KEY");
 
       // Re-enable layers, enable reducedMotion -> parallax & foreground offset must freeze to 0
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.setVisualLayersEnabled(true);
       });
       await page.click("#btn-continue-save");
@@ -9657,12 +9657,12 @@ try {
       await page.keyboard.press("Escape");
       await page.waitForTimeout(120);
       const rmFrozen = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().arena.player.x = 1120;
         return api.getVisualLayersState();
       });
       await page.waitForTimeout(100);
-      const rmFrozenAfter = await page.evaluate(() => window.__CHENYUAN_V25__.getVisualLayersState());
+      const rmFrozenAfter = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getVisualLayersState());
       assert.equal(rmFrozenAfter.reducedMotion, true);
       assert.equal(rmFrozenAfter.bgParallaxX, 0, "Parallax X must freeze to 0 under reducedMotion");
       assert.equal(rmFrozenAfter.fgOffsetX, 0, "Foreground parallax offset must freeze to 0 under reducedMotion");
@@ -9696,9 +9696,9 @@ try {
     // 2. Verify all 115 inline ART images genuinely decode with naturalWidth/naturalHeight matching RIFF/WEBP headers in 1440x900 Chromium
     const { ctx, page } = await startCleanGamePage(browser, "Q4-3", true);
     try {
-      await page.waitForFunction(() => window.__CHENYUAN_V25__.getArtDecodeSummary().decodedCount === 115, { timeout: 10000 });
+      await page.waitForFunction(() => window.__CHENYUAN_DEBUG__.getArtDecodeSummary().decodedCount === 115, { timeout: 10000 });
       const decodeCheck = await page.evaluate((expectedDims) => {
-        const summary = window.__CHENYUAN_V25__.getArtDecodeSummary();
+        const summary = window.__CHENYUAN_DEBUG__.getArtDecodeSummary();
         const dimMismatches = [];
         for (const item of summary.decoded) {
           const exp = expectedDims[item.key];
@@ -9732,7 +9732,7 @@ try {
       // 1. Verify real Chromium user activation -> Sound.ctx creation, first-cue audible, 7-tier Sound cue layering, and GainNode suppression on stem=0 / muted=true
       await page.mouse.click(720, 450);
       const audioCheck = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const hasBeenActive = Boolean(navigator.userActivation && navigator.userActivation.hasBeenActive);
         if (api.Sound.ctx && typeof api.Sound.ctx.close === "function") {
           try { api.Sound.ctx.close(); } catch (e) {}
@@ -9832,7 +9832,7 @@ try {
 
       // 2. Verify 400ms semantic ink-wash scene transition & #region-cinema-card "show" dismissal when boss appears
       const transCheck = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.transitionStageScene("arena_sanctum_hub", "hub");
         const stMid = api.getSceneTransitionState();
         const veilActive = document.getElementById("scene-transition-veil")?.classList.contains("active");
@@ -9842,7 +9842,7 @@ try {
       assert.equal(transCheck.stMid.durMs, 400);
       await page.waitForTimeout(260);
       const transDone = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const veilStill = document.getElementById("scene-transition-veil")?.classList.contains("active");
         const cardShowBefore = document.getElementById("region-cinema-card")?.classList.contains("show");
         // Spawn a boss and call updateBossBannerAndRecallOrb -> MUST remove "show" (fixing old "active" bug!)
@@ -9857,16 +9857,16 @@ try {
 
       // 3. Verify complete reducedMotion suppression (impactFrames, radialBurst, flash, camZoom, veil instant)
       const rmCheck = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         s.arena.shake = 14;
         s.arena.flash = 0.5;
         s.arena.camZoom = 1.12;
-        window.__CHENYUAN_V18__.triggerImpactFrame(3, "#e62e2d");
+        window.__CHENYUAN_DEBUG__.triggerImpactFrame(3, "#e62e2d");
         // Enable reducedMotion via Accessibility UI
         s.a11ySettings.reducedMotion = true;
         api.clearTransientMotionEffects();
-        window.__CHENYUAN_V18__.triggerImpactFrame(3, "#e62e2d");
+        window.__CHENYUAN_DEBUG__.triggerImpactFrame(3, "#e62e2d");
         api.transitionStageScene("arena_wilderness", "stg_0");
         const ts = api.getSceneTransitionState();
         return {
@@ -9890,7 +9890,7 @@ try {
       // 4. Verify unclamped perf telemetry & graceful degradation preserving combat telegraphs
       await page.waitForTimeout(180);
       const perfCheck = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const stats = api.getPerfStats();
         api.setPerfDegradeOverride(2);
         const degStats = api.getPerfStats();
@@ -9926,7 +9926,7 @@ try {
     try {
       // 2. Prologue -> Pedestal choice ("trade" string signature) -> Layer 0 Mortal clean wolves (0 tactical squad, 0 locked-key hint)
       const vol1Flow = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const phaseStart = api.getVol1JourneyPhase();
         const visibleHudBtns = Array.from(document.querySelectorAll("button")).filter(el => {
@@ -10038,9 +10038,9 @@ try {
       });
 
       // Wait for real 580ms boss clear timer (preserving E2E-T4-01 timing!)
-      await page.waitForFunction(() => window.__CHENYUAN_V25__.isStageBossDefeated(window.__CHENYUAN_V25__.getState().game, 0), { timeout: 2500 });
+      await page.waitForFunction(() => window.__CHENYUAN_DEBUG__.isStageBossDefeated(window.__CHENYUAN_DEBUG__.getState().game, 0), { timeout: 2500 });
       const tribFlow = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         // Skip clear_stage0 cutscene if open, close recap modal if open
         const skipBtn = document.getElementById("btn-dlg-skip");
@@ -10121,8 +10121,8 @@ try {
     }
   });
 
-  // ==================== Q5 (F30–F33): MODULAR SOURCE, STANDALONE BUILD, FILE:// PARITY & ESM CROSS-CHECK ====================
-  await runSuite("Q5-1", "Q5 F30/F32 模块化构建校验、382项V18–V25全量契约、__CHENYUAN_DEBUG__兼容门面与零外链", async () => {
+  // ==================== Q5 (F30–F33 / D06): MODULAR SOURCE, STANDALONE BUILD, FILE:// PARITY & ESM CROSS-CHECK ====================
+  await runSuite("Q5-1", "Q5/D06 模块化构建校验、统一__CHENYUAN_DEBUG__(d06-unified-1)契约、旧钩子清零与零外链", async () => {
     const buildCheckOut = execFileSync(process.execPath, [path.join(REPO_ROOT, "scripts", "build-playable.mjs"), "--check"], {
       cwd: REPO_ROOT,
       encoding: "utf8"
@@ -10143,41 +10143,37 @@ try {
 
       await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
       await page.waitForSelector("#btn-start-new");
-      await page.waitForFunction(() => window.__CHENYUAN_V25__.getArtDecodeSummary().decodedCount === 115, { timeout: 10000 });
+      await page.waitForFunction(() => window.__CHENYUAN_DEBUG__.getArtDecodeSummary().decodedCount === 115, { timeout: 10000 });
 
       const contract = await page.evaluate(() => {
         const scripts = Array.from(document.querySelectorAll("script"));
         const scriptAttrs = scripts.map((s) => Array.from(s.attributes).map((a) => a.name));
-        const nsNames = ["V18", "V19", "V20", "V21", "V22", "V23", "V24", "V25"];
-        const nsCounts = {};
-        let totalKeys = 0;
-        for (const n of nsNames) {
-          const obj = window[`__CHENYUAN_${n}__`];
-          const count = obj && typeof obj === "object" ? Object.keys(obj).length : -1;
-          nsCounts[n] = count;
-          if (count > 0) totalKeys += count;
-        }
+        const legacyNames = ["V18", "V19", "V20", "V21", "V22", "V23", "V24", "V25"].map((v) => "__CHENYUAN_" + v + "__");
+        const legacyDefined = legacyNames.filter((k) => window[k] !== undefined);
         const dbg = window.__CHENYUAN_DEBUG__;
-        const artSummary = window.__CHENYUAN_V25__.getArtDecodeSummary();
+        const topLevelKeys = dbg && typeof dbg === "object" ? Object.keys(dbg) : [];
+        const artSummary = dbg.getArtDecodeSummary();
         const noticeState = dbg && dbg.telemetry ? dbg.telemetry.getNoticeState() : null;
         const framePerf = dbg && dbg.telemetry ? dbg.telemetry.getFramePerfSnapshot() : null;
         const perfStats = dbg && dbg.telemetry ? dbg.telemetry.getPerfStats() : null;
         const pendingRewards = dbg && dbg.telemetry ? dbg.telemetry.getPendingRewards() : null;
         const pauseTokens = dbg && dbg.telemetry ? dbg.telemetry.getPauseTokens() : null;
         const encounterTel = dbg && dbg.telemetry ? dbg.telemetry.getEncounterTelemetry() : undefined;
+        const unifiedState = dbg ? dbg.getState() : null;
         return {
           scriptCount: scripts.length,
           scriptAttrs,
-          nsCounts,
-          totalKeys,
+          legacyDefined,
+          topLevelKeyCount: topLevelKeys.length,
           debugVersion: dbg ? dbg.version : null,
-          debugSameV25: Boolean(dbg && dbg.getNamespace("v25") === window.__CHENYUAN_V25__),
-          debugSameV18: Boolean(dbg && dbg.getNamespace("v18") === window.__CHENYUAN_V18__),
-          debugProtoNull: Boolean(dbg && dbg.getNamespace("constructor") === null && dbg.getNamespace("__proto__") === null && dbg.getNamespace("toString") === null),
+          hasNamespacesProp: Boolean(dbg && dbg.namespaces !== undefined),
+          hasGetNamespaceProp: Boolean(dbg && dbg.getNamespace !== undefined),
+          unifiedStateKeys: unifiedState ? Object.keys(unifiedState) : [],
           debugNoticeOk: Boolean(noticeState && noticeState.inbox && Array.isArray(noticeState.inbox.items) && Array.isArray(noticeState.pendingUnlockCards)),
           debugPerfOk: Boolean(framePerf && perfStats && Number.isFinite(framePerf.p50Ms) && Number.isFinite(framePerf.maxFrameMs) && Number.isFinite(framePerf.totalFrames) && framePerf.totalFrames === perfStats.totalFrames),
           debugTelemetryArraysOk: Boolean(Array.isArray(pendingRewards) && Array.isArray(pauseTokens) && (encounterTel === null || typeof encounterTel === "object")),
           debugRuleKeys: dbg && dbg.rules ? Object.keys(dbg.rules) : [],
+          debugQ6Keys: dbg && dbg.q6 ? Object.keys(dbg.q6) : [],
           debugPersistKeys: dbg && dbg.persistence ? Object.keys(dbg.persistence) : [],
           debugArtCount: dbg && dbg.art ? dbg.art.getCount() : 0,
           artDecoded: artSummary.decodedCount,
@@ -10188,16 +10184,19 @@ try {
       assert.equal(externalRequests.length, 0, `Expected 0 external network requests, got: ${externalRequests.join(", ")}`);
       assert.equal(contract.scriptCount, 1, `Expected strictly 1 <script> tag, got ${contract.scriptCount}`);
       assert.deepEqual(contract.scriptAttrs, [[]], `Expected bare <script> with 0 attributes, got ${JSON.stringify(contract.scriptAttrs)}`);
-      assert.deepEqual(contract.nsCounts, { V18: 5, V19: 8, V20: 8, V21: 11, V22: 12, V23: 14, V24: 11, V25: 313 });
-      assert.equal(contract.totalKeys, 382, `Expected 382 preserved V18-V25 keys, got ${contract.totalKeys}`);
-      assert.equal(contract.debugVersion, "q5-compat-1");
-      assert.equal(contract.debugSameV25, true);
-      assert.equal(contract.debugSameV18, true);
-      assert.equal(contract.debugProtoNull, true);
+      assert.deepEqual(contract.legacyDefined, [], `Legacy globals must all be undefined, got: ${contract.legacyDefined.join(", ")}`);
+      assert.equal(contract.debugVersion, "d06-unified-1");
+      assert.equal(contract.hasNamespacesProp, false, "namespaces must be removed in d06-unified-1");
+      assert.equal(contract.hasGetNamespaceProp, false, "getNamespace must be removed in d06-unified-1");
+      assert.equal(contract.topLevelKeyCount, 370, `Expected 370 unified top-level keys on __CHENYUAN_DEBUG__, got ${contract.topLevelKeyCount}`);
+      for (const reqField of ["game", "arena", "pity", "drawerOpen", "realmSpec", "persistence", "a11ySettings", "photoMode", "artCount", "activeHero", "sixAspect", "workshopState", "audioStems", "celestialPhase", "coop2P", "sanqing", "shanhe", "warship", "customSeq", "expeditions"]) {
+        assert.ok(contract.unifiedStateKeys.includes(reqField), `Unified getState() missing field: ${reqField}`);
+      }
       assert.equal(contract.debugNoticeOk, true);
       assert.equal(contract.debugPerfOk, true);
       assert.equal(contract.debugTelemetryArraysOk, true);
       assert.ok(contract.debugRuleKeys.includes("computeCombatStatLedger") && contract.debugRuleKeys.includes("applySingleHitCap"));
+      assert.ok(contract.debugQ6Keys.includes("VOLUME_CAMPAIGN_GUIDE") && contract.debugQ6Keys.includes("buildVol5ResonanceSnapshot"));
       assert.ok(contract.debugPersistKeys.includes("parseAndValidateSaveRaw") && contract.debugPersistKeys.includes("mergeMetaStates"));
       assert.equal(contract.debugArtCount, 115);
       assert.equal(contract.artDecoded, 115);
@@ -10224,23 +10223,26 @@ try {
 
       await filePage.goto(fileUrl, { waitUntil: "domcontentloaded" });
       await filePage.waitForSelector("#btn-start-new");
-      await filePage.waitForFunction(() => window.__CHENYUAN_V25__.getArtDecodeSummary().decodedCount === 115, { timeout: 10000 });
+      await filePage.waitForFunction(() => window.__CHENYUAN_DEBUG__.getArtDecodeSummary().decodedCount === 115, { timeout: 10000 });
       await filePage.click("#btn-start-new");
       await filePage.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
       await dismissOpeningScroll(filePage);
       await filePage.waitForTimeout(160);
 
       const fileCheck = await filePage.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
-        const st = v25.getState();
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const legacyNames = ["V18", "V19", "V20", "V21", "V22", "V23", "V24", "V25"].map((v) => "__CHENYUAN_" + v + "__");
+        const legacyDefined = legacyNames.filter((k) => window[k] !== undefined);
+        const st = dbg.getState();
         const beforeX = st.arena.player.x;
-        v25.stepArena(0.05);
+        dbg.stepArena(0.05);
         return {
           protocol: window.location.protocol,
-          artDecoded: v25.getArtDecodeSummary().decodedCount,
+          artDecoded: dbg.getArtDecodeSummary().decodedCount,
           hasGame: Boolean(st.game),
           realm: st.game ? st.game.realm : null,
-          debugVer: window.__CHENYUAN_DEBUG__ ? window.__CHENYUAN_DEBUG__.version : null,
+          debugVer: dbg ? dbg.version : null,
+          legacyDefined,
           playerAlive: Boolean(st.arena && st.arena.player && st.game.hp > 0),
           beforeX
         };
@@ -10251,7 +10253,8 @@ try {
       assert.equal(fileCheck.artDecoded, 115);
       assert.equal(fileCheck.hasGame, true);
       assert.equal(fileCheck.realm, "mortal");
-      assert.equal(fileCheck.debugVer, "q5-compat-1");
+      assert.equal(fileCheck.debugVer, "d06-unified-1");
+      assert.deepEqual(fileCheck.legacyDefined, [], `file:// must have zero legacy globals, got: ${fileCheck.legacyDefined.join(", ")}`);
       assert.equal(fileCheck.playerAlive, true);
     } finally {
       await fileCtx.close();
@@ -10312,8 +10315,8 @@ try {
       await page.waitForTimeout(160);
 
       const httpCompat = await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
-        const v24 = window.__CHENYUAN_V24__;
+        const v25 = window.__CHENYUAN_DEBUG__;
+        const v24 = window.__CHENYUAN_DEBUG__;
         const dbg = window.__CHENYUAN_DEBUG__;
         const g = v25.getState().game;
         const wpn = g.equippedGear.weapon;
@@ -10394,7 +10397,7 @@ try {
       };
 
       const browserResult = await page.evaluate((gearArg) => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const dbg = window.__CHENYUAN_DEBUG__;
         v25.enterSanctumHub({ skipSave: true });
         const st = v25.getState();
@@ -10420,7 +10423,7 @@ try {
           stones: 20,
           months: 6
         });
-        const celestialPhase = window.__CHENYUAN_V23__.getState().celestialPhase;
+        const celestialPhase = window.__CHENYUAN_DEBUG__.getState().celestialPhase;
         return {
           gameSnap: JSON.parse(JSON.stringify(g)),
           arenaSnap: {
@@ -10475,7 +10478,7 @@ try {
     const { ctx, page } = await startCleanGamePage(browser, "Q6-1", true);
     try {
       const f34Res = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const q6 = window.__CHENYUAN_DEBUG__.q6;
         const { game, arena } = api.getState();
         game.realm = "spirit";
@@ -10595,7 +10598,7 @@ try {
 
       // 1. Vol 5 Narrative Bridge: Nascent enter_terrace_vol5, Vol 5 Recap vs Vol 6 Recap, ch5_resonance modal, Tribulation Vol 5->6 note, Ascend Gate toast
       const vol5Check = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const q6 = window.__CHENYUAN_DEBUG__.q6;
         const { game } = api.getState();
         game.realm = "nascent";
@@ -10657,7 +10660,7 @@ try {
 
       // 1b. Objectives Vol 5 CTA with enter_vol5_resonance unseen must close #modal-backdrop so #story-dialogue-bar is unobstructed
       const objIntroState = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const { game } = api.getState();
         game.realm = "nascent";
         delete game.seenCutscenes.enter_vol5_resonance;
@@ -10677,11 +10680,11 @@ try {
       assert.equal(objIntroState.dialogueOpen, true, "enter_vol5_resonance cutscene dialogue bar must be visible and unobstructed");
       await page.click("#btn-dlg-skip");
       await page.waitForSelector("#modal-backdrop.open #vol5-resonance-modal-body", { timeout: 4000 });
-      await page.evaluate(() => window.__CHENYUAN_V25__.closeModal());
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.closeModal());
 
       // 2. Five Endgame Mode Bugfixes
       const modeFixes = await page.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const q6 = window.__CHENYUAN_DEBUG__.q6;
         const { game, arena } = api.getState();
         game.realm = "spirit";
@@ -10714,8 +10717,8 @@ try {
 
         // Fix 1: Custom Seed Workshop temp curio isolation in saveGame() + cloud export + victory modal restore
         game.spireCurios = {};
-        const validSeed = window.__CHENYUAN_V22__.encodeWorkshopSeed({ boss1: 0, boss2: 7, affixes: 0, curioIdx: 1, hazards: 0 });
-        window.__CHENYUAN_V22__.launchCustomSeedEncounter(validSeed);
+        const validSeed = window.__CHENYUAN_DEBUG__.encodeWorkshopSeed({ boss1: 0, boss2: 7, affixes: 0, curioIdx: 1, hazards: 0 });
+        window.__CHENYUAN_DEBUG__.launchCustomSeedEncounter(validSeed);
         const tempDuring = q6.getActiveCustomSeedTempCurio();
         const curioLvDuring = tempDuring ? (game.spireCurios[tempDuring.cid] || 0) : 0;
         api.saveGame({ forceOverwrite: true });
@@ -10743,7 +10746,7 @@ try {
       }, STORAGE_KEY);
       await page.waitForSelector("#modal-backdrop.open #btn-ws-victory-replay", { timeout: 4000 });
       const afterWsVictory = await page.evaluate(({ cid, sk }) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const q6 = window.__CHENYUAN_DEBUG__.q6;
         const persist = window.__CHENYUAN_DEBUG__.persistence;
         const g = api.getState().game;
@@ -10753,8 +10756,8 @@ try {
 
         // Cross-save safety: launching Custom Seed with temp curio and resolving a multi-tab conflict via load-latest-save must NOT delete legitimate curio on loaded save
         g.spireCurios = {};
-        const seed2 = window.__CHENYUAN_V22__.encodeWorkshopSeed({ boss1: 0, boss2: 7, affixes: 0, curioIdx: 1, hazards: 0 });
-        window.__CHENYUAN_V22__.launchCustomSeedEncounter(seed2);
+        const seed2 = window.__CHENYUAN_DEBUG__.encodeWorkshopSeed({ boss1: 0, boss2: 7, affixes: 0, curioIdx: 1, hazards: 0 });
+        window.__CHENYUAN_DEBUG__.launchCustomSeedEncounter(seed2);
         const curRaw = JSON.parse(localStorage.getItem(sk) || "{}");
         const externalGame = JSON.parse(JSON.stringify(curRaw.game || g));
         externalGame.spireCurios = Object.assign({}, externalGame.spireCurios || {}, { [cid]: 2 });
@@ -10793,7 +10796,7 @@ try {
 
       // Fix 3 + Expedition stage resonance: Sect Defense wave-3 victory modal & Expedition modal synergy tags
       const sdAndExp = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const q6 = window.__CHENYUAN_DEBUG__.q6;
         const { game, arena } = api.getState();
         game.realm = "spirit";
@@ -10856,7 +10859,7 @@ try {
       await legacyPage.click("#btn-continue-save");
       await legacyPage.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
       const resumed = await legacyPage.evaluate(() => {
-        const g = window.__CHENYUAN_V25__.getState().game;
+        const g = window.__CHENYUAN_DEBUG__.getState().game;
         const snap = window.__CHENYUAN_DEBUG__.q6.buildVol5ResonanceSnapshot(g);
         return { realm: g.realm, stones: g.stones, s5LawsDone: snap.s5LawsDone };
       });
@@ -10866,7 +10869,7 @@ try {
 
       // Scenario B: Write failure keeps prior save intact & surfaces HUD alert
       const writeFail = await legacyPage.evaluate((sk) => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const prevRaw = localStorage.getItem(sk);
         const origSet = Storage.prototype.setItem;
         Storage.prototype.setItem = function () { throw new Error("QuotaExceededError"); };
@@ -10895,12 +10898,12 @@ try {
       await tabB.click("#btn-continue-save");
       await tabB.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
       await tabB.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.stones = 888;
         api.saveGame({ forceOverwrite: true });
       });
       await legacyPage.waitForTimeout(250);
-      const tabAConflict = await legacyPage.evaluate(() => Boolean(window.__CHENYUAN_V25__.getPersistenceState().saveConflictState));
+      const tabAConflict = await legacyPage.evaluate(() => Boolean(window.__CHENYUAN_DEBUG__.getPersistenceState().saveConflictState));
       assert.equal(tabAConflict, true, "Tab A must detect multi-tab race conflict on Vol 5 legacy save");
       await tabB.close();
       await legacyPage.close();
@@ -10914,8 +10917,8 @@ try {
     try {
       // 1. Mortal realm: coop_2p & celestial_time locked via API, hotkeys, and UI; setCelestialTimePhase still works!
       const mortalD07 = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        const v23 = window.__CHENYUAN_V23__;
+        const api = window.__CHENYUAN_DEBUG__;
+        const v23 = window.__CHENYUAN_DEBUG__;
         const { game, arena } = api.getState();
         game.realm = "mortal";
         api.syncProgressiveSkillVisibility();
@@ -10954,7 +10957,7 @@ try {
 
       // 2. Digit8 during active combat at Mortal must show realm lock BEFORE combat arming toast!
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.initArenaStage(0, false);
         const box = document.getElementById("toast-container");
         if (box) box.innerHTML = "";
@@ -10966,8 +10969,8 @@ try {
 
       // 3. Golden Core: unlock coop_2p & celestial_time, bond-aware 2P roster, paused key guard, Star Chart celestial toggle
       const goldenD07 = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        const v23 = window.__CHENYUAN_V23__;
+        const api = window.__CHENYUAN_DEBUG__;
+        const v23 = window.__CHENYUAN_DEBUG__;
         const q6 = window.__CHENYUAN_DEBUG__.q6;
         const { game, arena } = api.getState();
         game.realm = "golden";
@@ -11018,29 +11021,29 @@ try {
 
       // Paused keydown guard: BracketRight / Backslash must NOT fire while modal is open (arena.paused === true)
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
-        window.__CHENYUAN_V23__.setCelestialTimePhase(0, true);
+        const api = window.__CHENYUAN_DEBUG__;
+        window.__CHENYUAN_DEBUG__.setCelestialTimePhase(0, true);
         api.openStarChartModal();
       });
       await page.keyboard.press("BracketRight");
       await page.keyboard.press("Backslash");
       const pausedGuard = await page.evaluate(() => ({
-        coopActive: Boolean(window.__CHENYUAN_V25__.getState().arena.coop2P?.active),
+        coopActive: Boolean(window.__CHENYUAN_DEBUG__.getState().arena.coop2P?.active),
         celId: document.body.getAttribute("data-celestial-phase")
       }));
       assert.equal(pausedGuard.coopActive, false, "BracketRight must not activate 2P while paused/modal open");
       assert.equal(pausedGuard.celId, "dawn", "Backslash must not cycle celestial phase while paused/modal open");
-      await page.evaluate(() => window.__CHENYUAN_V25__.closeModal());
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.closeModal());
 
       // 4. Sandbox mode: 2P activates with all 4 partners; exitSandboxMode resets arena.coop2P.active = false!
       await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.realm = "mortal";
         api.enterSandboxMode();
-        window.__CHENYUAN_V23__.toggleLocalCoop2P(true);
+        window.__CHENYUAN_DEBUG__.toggleLocalCoop2P(true);
       });
       const sandbox2P = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const q6 = window.__CHENYUAN_DEBUG__.q6;
         const activeInSandbox = Boolean(api.getState().arena.coop2P?.active);
         const sandboxRosterLen = q6.getUnlockedCoop2PRoster(api.getState().game).length;
@@ -11054,7 +11057,7 @@ try {
 
       // 5. Roadmap 3-group strip + 6-pillar Mastery Resonance + EXACT 14 .roadmap-sys-btn preserved!
       const roadmapUi = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const g = api.getState().game;
         g.realm = "mortal";
         api.openAscensionRoadmapModal();
@@ -11085,7 +11088,7 @@ try {
     const { ctx, page } = await startCleanGamePage(browser, "Q6-4", true);
     try {
       const f37Dom = await page.evaluate(() => {
-        const api = window.__CHENYUAN_V25__;
+        const api = window.__CHENYUAN_DEBUG__;
         const g = api.getState().game;
         g.realm = "spirit";
         g.stones = 2000;
@@ -11108,6 +11111,179 @@ try {
       assert.equal(f37Dom.sweepBtns, 0, "D08/F37: zero auto-sweep or auto-deduct controls allowed in runtime");
       assert.ok(f37Dom.batchTriggerCount >= 1, "D08: explicit batch craft triggers must remain available");
       assert.equal(f37Dom.hasExplicitConfirmBtn, true, "D08: explicit batch confirm modal (#btn-confirm-batch-craft) must remain preserved");
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // ==================== R3-M1 (D06): MODULAR RUNTIME SPLIT, UNIFIED __CHENYUAN_DEBUG__ & RESCUED TAIL LISTENERS ====================
+  await runSuite("R3-D06-1", "R3-M1 D06 旧钩子全清零、无副作用统一__CHENYUAN_DEBUG__门面及3处尾部DOM监听回归", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "R3-D06-1", true);
+    try {
+      // (a) Verify all 8 legacy hooks are strictly undefined & unified facade contract
+      // (b) Verify non-mutating getState() & representative methods across former V18-V25
+      const facadeCheck = await page.evaluate(() => {
+        const legacyNames = ["V18", "V19", "V20", "V21", "V22", "V23", "V24", "V25"].map((v) => "__CHENYUAN_" + v + "__");
+        const legacyDefined = legacyNames.filter((k) => window[k] !== undefined);
+        const dbg = window.__CHENYUAN_DEBUG__;
+
+        // Clear optional lazily-initialized sub-objects to prove getState() is strictly non-mutating
+        const initial = dbg.getState();
+        const g = initial.game;
+        const a = initial.arena;
+        delete a.coop2P;
+        delete a.sanqingState;
+        delete g.primordialCrafts;
+        delete g.customComboSeq;
+        delete g.expeditions;
+
+        const snap = dbg.getState();
+        const mutatedAfterGetState = {
+          coop2P: a.coop2P !== undefined,
+          sanqingState: a.sanqingState !== undefined,
+          primordialCrafts: g.primordialCrafts !== undefined,
+          customComboSeq: g.customComboSeq !== undefined,
+          expeditions: g.expeditions !== undefined
+        };
+
+        // Exercise representative methods unified from former V18-V25
+        dbg.triggerImpactFrame(2, "#ffd166");
+        const styleSpec = dbg.getStyleRankSpec(120);
+        const splinePts = dbg.buildBladeSplineSamples(0, 0, 50, 0, 100, 0, 4);
+        const seedCode = dbg.encodeWorkshopSeed({ boss1: 1, boss2: 2, affixes: 0, curioIdx: 1, hazards: 1 });
+        const decodedSeed = dbg.decodeWorkshopSeed(seedCode);
+        dbg.setCelestialTimePhase(1, true);
+        const cloudCode = dbg.exportFullCloudSaveCode();
+        const ledger = dbg.computeCombatStatLedger(g);
+
+        return {
+          legacyDefined,
+          version: dbg.version,
+          namespaces: dbg.namespaces,
+          getNamespace: dbg.getNamespace,
+          topLevelKeyCount: Object.keys(dbg).length,
+          snapHasAllFields: Boolean(
+            snap.game && snap.arena && snap.pity && snap.persistence && snap.a11ySettings &&
+            snap.photoMode && snap.artCount === 115 && snap.activeHero && snap.sixAspect &&
+            snap.workshopState && snap.audioStems && snap.celestialPhase && snap.craftMinigame &&
+            snap.coop2P === null && snap.sanqing === null && snap.primordialCrafts === null &&
+            snap.customSeq === null && snap.expeditions === null
+          ),
+          mutatedAfterGetState,
+          styleRankOk: Boolean(styleSpec && typeof styleSpec.rank === "string"),
+          splineOk: Array.isArray(splinePts) && splinePts.length >= 4,
+          workshopRoundTripOk: Boolean(decodedSeed && decodedSeed.boss1 === 1 && decodedSeed.boss2 === 2),
+          celestialPhaseId: dbg.getState().celestialPhase ? dbg.getState().celestialPhase.id : null,
+          cloudPrefixOk: typeof cloudCode === "string" && cloudCode.startsWith("CY24SAVE-"),
+          ledgerAtkOk: Boolean(ledger && ledger.totals && ledger.totals.atk > 0),
+          hasWrapperFns: typeof dbg.startColossalTitanRaid === "function" && typeof dbg.executeSixAspectAwakeningSkill === "function"
+        };
+      });
+
+      assert.deepEqual(facadeCheck.legacyDefined, [], `Expected all legacy hooks undefined, got: ${facadeCheck.legacyDefined.join(", ")}`);
+      assert.equal(facadeCheck.version, "d06-unified-1");
+      assert.equal(facadeCheck.namespaces, undefined);
+      assert.equal(facadeCheck.getNamespace, undefined);
+      assert.equal(facadeCheck.topLevelKeyCount, 370);
+      assert.equal(facadeCheck.snapHasAllFields, true, "Unified getState() missing required fields or returned non-null for absent lazy state");
+      assert.deepEqual(facadeCheck.mutatedAfterGetState, {
+        coop2P: false,
+        sanqingState: false,
+        primordialCrafts: false,
+        customComboSeq: false,
+        expeditions: false
+      }, "Unified getState() must be strictly non-mutating");
+      assert.equal(facadeCheck.styleRankOk, true);
+      assert.equal(facadeCheck.splineOk, true);
+      assert.equal(facadeCheck.workshopRoundTripOk, true);
+      assert.equal(typeof facadeCheck.celestialPhaseId, "string");
+      assert.equal(facadeCheck.cloudPrefixOk, true);
+      assert.equal(facadeCheck.ledgerAtkOk, true);
+      assert.equal(facadeCheck.hasWrapperFns, true);
+
+      // (c-1) Rescued tail `document.addEventListener("input", ...)` listener: a11y shake slider & audio stem slider
+      await page.click("#btn-open-settings");
+      await page.waitForSelector('[data-sys-tab="accessibility"]');
+      await page.click('[data-sys-tab="accessibility"]');
+      await page.waitForSelector("#rng-a11y-shake");
+      const inputListenerRes = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const shakeEl = document.getElementById("rng-a11y-shake");
+        shakeEl.value = "60";
+        shakeEl.dispatchEvent(new Event("input", { bubbles: true }));
+        const stemEl = document.getElementById("rng-stem-guqin");
+        stemEl.value = "75";
+        stemEl.dispatchEvent(new Event("input", { bubbles: true }));
+        const st = dbg.getState();
+        const res = {
+          shakeScale: st.a11ySettings.shakeScale,
+          shakeLbl: document.getElementById("lbl-a11y-shake")?.textContent || "",
+          guqinStem: st.audioStems.guqin,
+          guqinLbl: document.getElementById("lbl-stem-guqin")?.textContent || ""
+        };
+        dbg.closeModal();
+        return res;
+      });
+      assert.equal(inputListenerRes.shakeScale, 0.6, "Rescued input listener must update a11ySettings.shakeScale");
+      assert.equal(inputListenerRes.shakeLbl, "60%");
+      assert.equal(inputListenerRes.guqinStem, 0.75, "Rescued input listener must update Sound.stems.guqin");
+      assert.equal(inputListenerRes.guqinLbl, "75%");
+
+      // (c-2) Rescued tail `panelScrollBodyEl.addEventListener("toggle", ..., true)` listener for cultivate <details>
+      await page.evaluate(() => {
+        window.__CHENYUAN_DEBUG__.toggleDrawer("cultivate");
+      });
+      await page.waitForSelector('#panel-scroll-body details[data-cultivate-group="collection"] > summary');
+      const toggleBefore = await page.evaluate(() => window.__CHENYUAN_DEBUG__.getCultivateGroupState().collection);
+      await page.click('#panel-scroll-body details[data-cultivate-group="collection"] > summary');
+      await page.waitForTimeout(80);
+      const toggleAfter = await page.evaluate(() => {
+        const grpState = window.__CHENYUAN_DEBUG__.getCultivateGroupState().collection;
+        const domOpen = document.querySelector('#panel-scroll-body details[data-cultivate-group="collection"]')?.open;
+        window.__CHENYUAN_DEBUG__.closeDrawer();
+        return { grpState, domOpen };
+      });
+      assert.equal(toggleAfter.domOpen, !toggleBefore, "Clicking cultivate <details> summary must toggle DOM open state");
+      assert.equal(toggleAfter.grpState, toggleAfter.domOpen, "Rescued panelScrollBodyEl toggle listener must sync cultivateGroupOpen");
+
+      // (c-3) Rescued tail `document.addEventListener("change", ...)` listener: workshop select & temper core discount checkbox
+      const changeListenerRes = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        g.realm = "spirit";
+        g.inventory.core = 3;
+        dbg.openCustomWorkshopModal();
+        const selBoss1 = document.getElementById("sel-ws-boss1");
+        const nextBossVal = selBoss1 && selBoss1.value === "2" ? "3" : "2";
+        if (selBoss1) {
+          selBoss1.value = nextBossVal;
+          selBoss1.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        const wsBoss1 = dbg.getState().workshopState.boss1;
+        const seedInputVal = document.getElementById("inp-workshop-seed")?.value || "";
+        const expectedSeed = dbg.encodeWorkshopSeed(dbg.getState().workshopState);
+        dbg.closeModal();
+
+        // Also verify data-temper-core-toggle branch inside change listener
+        dbg.toggleDrawer("bag");
+        const chk = document.getElementById("chk-temper-use-core");
+        let temperChanged = false;
+        let temperAfter = null;
+        if (chk && !chk.disabled) {
+          const prev = dbg.getTemperUseCoreDiscount();
+          chk.checked = !prev;
+          chk.dispatchEvent(new Event("change", { bubbles: true }));
+          temperAfter = dbg.getTemperUseCoreDiscount();
+          temperChanged = temperAfter === !prev;
+        }
+        dbg.closeDrawer();
+        return { nextBossNum: Number(nextBossVal), wsBoss1, seedInputVal, expectedSeed, hasTemperChk: Boolean(chk), temperChanged, temperAfter };
+      });
+      assert.equal(changeListenerRes.wsBoss1, changeListenerRes.nextBossNum, "Rescued change listener must update workshopState.boss1");
+      assert.equal(changeListenerRes.seedInputVal, changeListenerRes.expectedSeed, "Rescued change listener must sync #inp-workshop-seed");
+      if (changeListenerRes.hasTemperChk) {
+        assert.equal(changeListenerRes.temperChanged, true, "Rescued change listener must toggle temperUseCoreDiscount");
+      }
     } finally {
       await ctx.close();
     }

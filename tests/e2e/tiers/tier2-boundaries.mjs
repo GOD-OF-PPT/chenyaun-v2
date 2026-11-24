@@ -98,8 +98,8 @@ export const tests = [
 
       // Trigger meta write & check metaRev upgrade
       await page.evaluate(() => {
-        window.__CHENYUAN_V25__.saveMeta();
-        window.__CHENYUAN_V25__.saveGame();
+        window.__CHENYUAN_DEBUG__.saveMeta();
+        window.__CHENYUAN_DEBUG__.saveGame();
       });
       await page.waitForTimeout(150);
 
@@ -135,7 +135,7 @@ export const tests = [
 
       // Mutate progress via normal game state + save
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.realm = "qi";
         game.stones = 432;
@@ -184,9 +184,9 @@ export const tests = [
         Storage.prototype.setItem = function () {
           throw new DOMException("QuotaExceededError", "QuotaExceededError");
         };
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.stones += 10;
-        window.__CHENYUAN_V25__.saveGame();
+        window.__CHENYUAN_DEBUG__.saveGame();
       });
       await page.waitForTimeout(200);
 
@@ -248,9 +248,9 @@ export const tests = [
 
       // Page A advances and saves
       await pageA.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         game.stones = 654;
-        window.__CHENYUAN_V25__.saveGame();
+        window.__CHENYUAN_DEBUG__.saveGame();
       });
       await waitForCrossTabConflict(pageB, 2500);
 
@@ -265,7 +265,7 @@ export const tests = [
       // Now inject invalid payload into STORAGE_KEY from Page A and verify Page B warns instead of silently ignoring
       await pageB.evaluate(() => {
         if (document.querySelector("#modal-backdrop.open")) {
-          window.__CHENYUAN_V25__.closeModal();
+          window.__CHENYUAN_DEBUG__.closeModal();
         }
       });
       await pageA.evaluate((k) => {
@@ -363,7 +363,7 @@ export const tests = [
 
       for (const b of boundaries) {
         await page.evaluate(({ realm, xpCap }) => {
-          const v25 = window.__CHENYUAN_V25__;
+          const v25 = window.__CHENYUAN_DEBUG__;
           const { game } = v25.getState();
           game.realm = realm;
           game.xp = xpCap;
@@ -401,7 +401,7 @@ export const tests = [
 
       // Set lifespan to 100% (寿尽)
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.realm = "qi";
         const info = v25.getLifespanInfo(game);
@@ -436,7 +436,7 @@ export const tests = [
 
       // Precondition: nascent realm (M6 vein_expedition unlock), shen bonded, idle in safe hub
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.realm = "nascent";
         game.stones = 500;
@@ -455,7 +455,7 @@ export const tests = [
       // Idle in safe hub: expedition bank must NOT accrue AFK stones and claim button stays disabled when bank is empty
       await page.waitForTimeout(350);
       const emptyBankState = await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const btn = document.getElementById("btn-claim-expedition");
         const directEmptyClaim = v25.claimExpeditionRewards();
         return {
@@ -471,7 +471,7 @@ export const tests = [
       // Seed real banked stones -> first UI claim pays out cleanly, then button disables and immediate second claim yields 0
       const stonesBeforeClaim = (await getHudState(page)).stones;
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         v25.getState().game.expeditions.bankedStones = 25;
         v25.openExpeditionSandboxModal();
       });
@@ -486,7 +486,7 @@ export const tests = [
       );
       const secondClaimState = await page.evaluate(() => {
         const btn = document.getElementById("btn-claim-expedition");
-        const secondRes = window.__CHENYUAN_V25__.claimExpeditionRewards();
+        const secondRes = window.__CHENYUAN_DEBUG__.claimExpeditionRewards();
         return {
           btnDisabled: Boolean(btn && btn.disabled),
           secondGained: secondRes?.gainedStones || 0
@@ -545,7 +545,7 @@ export const tests = [
       await env.startFreshGame(page);
 
       await page.evaluate(() => {
-        const v25 = window.__CHENYUAN_V25__;
+        const v25 = window.__CHENYUAN_DEBUG__;
         const { game } = v25.getState();
         game.realm = "qi";
         game.pet = { id: "fox", level: 2 };
@@ -564,7 +564,7 @@ export const tests = [
 
       const drawerAfter = await getDrawerText(page);
       const petAfter = await page.evaluate(() => {
-        const { game } = window.__CHENYUAN_V25__.getState();
+        const { game } = window.__CHENYUAN_DEBUG__.getState();
         return {
           level: game.pet?.level,
           herb: game.inventory?.herb
