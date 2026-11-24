@@ -33,7 +33,7 @@
   - `drill_mark_detonate`（叠印爆剑：≥3 层剑印爆剑碎盾 ×3）
   - `drill_dodge_counter`（危招识破：金芒/红危交替完成识破或凝时 ×3）
   - `drill_morph_combo`（连招派生：左键连招窗内右键六象派生 ×3）
-- **演武零套利守卫**：`triggerDashParry`、`triggerSkyJump`、`recallAndDetonateSwords`、`damageEnemy` 统一校验 `!isPracticeModeActive() && !arena.sanctumMode`，禁止通过演武木桩刷取正式灵石、破招悬赏计数或成就。
+- **演武零套利守卫**：通过共享判定 `isSanctumDojoActive()`（`arena.sanctumMode && !(arena.sectDefense && arena.sectDefense.active)`），在 `triggerDashParry`、`triggerSkyJump`、`recallAndDetonateSwords`、`bumpCombo`、`summonAllyCoop`、`useQuickHealingPill`、`performExecution`、`damageEnemy` 与 `handleEnemyDeath` 中统一校验 `!isPracticeModeActive() && !isSanctumDojoActive()`（同时 `sky_cleave` 守卫 `!other.isDummy`），禁止在和平演武木桩刷取正式灵石、永久丹道属性、破招悬赏计数、击杀掉落或成就，同时保留正式【护山大阵】（`sectDefense.active`）的全部战斗收益。
 
 ## 4. 真实规则评测矩阵（F21）
 

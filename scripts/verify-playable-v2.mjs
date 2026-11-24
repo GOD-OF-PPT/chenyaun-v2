@@ -7446,6 +7446,112 @@ try {
       assert.equal(dojoCheck.techBreaksAfter, 0, "Sanctum Dojo must NOT farm formal techBreaks");
       assert.equal(dojoCheck.achievementsAfter.includes("ach_break"), false, "Sanctum Dojo must NOT unlock formal achievements");
 
+      // 2b. Additive Q3-2 checks: live drill trigger wiring, standalone updateBossBannerAndRecallOrb consistency,
+      //     Sanctum Dojo glutton_pill & KeyR ach_coop non-farming, and formal Sect Defense parry rewards
+      const dojoExtra = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+
+        // Live drill wiring: detonate -> drill_mark_detonate, parry -> drill_dodge_counter, morph -> drill_morph_combo
+        api.enterSanctumHub({ skipSave: true });
+        api.setDojoMode("drill_mark_detonate");
+        const dm1 = s.arena.enemies.find(e => e.isDummy);
+        if (dm1) dm1.swordMarks = 4;
+        s.arena.player.recallCd = 0;
+        s.arena.player.comboWindow = 0;
+        api.recallAndDetonateSwords();
+        const liveDetonateProg = api.getDojoTrainingState().progress;
+
+        api.setDojoMode("drill_dodge_counter");
+        const dm2 = s.arena.enemies.find(e => e.isDummy);
+        if (dm2) {
+          dm2.state = "windup";
+          dm2.perilous = false;
+          dm2.timer = 0.25;
+          s.arena.player.x = dm2.x - 40;
+          s.arena.player.y = dm2.y;
+        }
+        s.arena.player.dashCd = 0;
+        api.triggerDashParry();
+        const liveParryProg = api.getDojoTrainingState().progress;
+
+        api.setDojoMode("drill_morph_combo");
+        s.arena.player.comboWindow = 0.9;
+        s.arena.morphCd = 0;
+        s.arena.player.recallCd = 0;
+        api.recallAndDetonateSwords();
+        const liveMorphProg = api.getDojoTrainingState().progress;
+
+        // Standalone updateBossBannerAndRecallOrb() must NOT overwrite #lbl-recall-marks when idle
+        s.arena.player.comboWindow = 0;
+        s.arena.enemies.forEach(e => { e.swordMarks = 0; });
+        api.updateHud();
+        api.updateBossBannerAndRecallOrb();
+        const lblAfterStandaloneBanner = document.getElementById("lbl-recall-marks")?.textContent || "";
+
+        // Sanctum Dojo glutton_pill + KeyR summonAllyCoop must NOT farm permanent stats or ach_coop
+        s.game.realm = "golden";
+        s.game.mp = 200;
+        s.game.destinyFruits = ["glutton_pill"];
+        s.game.atkFlatBonus = 0;
+        s.game.maxHpBonus = 0;
+        s.game.achievements = [];
+        s.game.gourd = { charges: 5, maxCharges: 5, soaks: ["iron_lotus"], parryChargeProg: 0 };
+        api.useQuickHealingPill();
+        const dojoGluttonAtk = s.game.atkFlatBonus;
+        const dojoGluttonHp = s.game.maxHpBonus;
+        s.arena.player.allyCd = 0;
+        api.summonAllyCoop();
+        const dojoCoopAch = s.game.achievements.includes("ach_coop");
+
+        // Formal Sect Defense (sectDefense.active === true) MUST keep formal parry stones, techBreaks & ach_break
+        s.game.stones = 100;
+        s.game.goalStats = { techBreaks: 0 };
+        s.game.achievements = [];
+        api.startSectDefenseSiege();
+        const dojoActiveInSectDefense = api.isSanctumDojoActive();
+        const siegeEnemy = s.arena.enemies.find(e => e.hp > 0 && !e.isDummy) || s.arena.enemies[0];
+        if (siegeEnemy) {
+          siegeEnemy.state = "windup";
+          siegeEnemy.perilous = false;
+          siegeEnemy.timer = 0.25;
+          s.arena.player.x = siegeEnemy.x - 40;
+          s.arena.player.y = siegeEnemy.y;
+        }
+        s.arena.player.dashCd = 0;
+        api.triggerDashParry();
+        const sdStones = s.game.stones;
+        const sdTechBreaks = s.game.goalStats.techBreaks;
+        const sdAchBreak = s.game.achievements.includes("ach_break");
+        if (s.arena.sectDefense) s.arena.sectDefense.active = false;
+        api.enterSanctumHub({ skipSave: true });
+
+        return {
+          liveDetonateProg,
+          liveParryProg,
+          liveMorphProg,
+          lblAfterStandaloneBanner,
+          dojoGluttonAtk,
+          dojoGluttonHp,
+          dojoCoopAch,
+          dojoActiveInSectDefense,
+          sdStones,
+          sdTechBreaks,
+          sdAchBreak
+        };
+      });
+      assert.ok(dojoExtra.liveDetonateProg >= 1, `Live recallAndDetonateSwords must advance drill_mark_detonate, got ${dojoExtra.liveDetonateProg}`);
+      assert.ok(dojoExtra.liveParryProg >= 1, `Live triggerDashParry must advance drill_dodge_counter, got ${dojoExtra.liveParryProg}`);
+      assert.ok(dojoExtra.liveMorphProg >= 1, `Live morph strike must advance drill_morph_combo, got ${dojoExtra.liveMorphProg}`);
+      assert.equal(dojoExtra.lblAfterStandaloneBanner, "爆剑", `Standalone updateBossBannerAndRecallOrb must not overwrite idle #lbl-recall-marks, got ${dojoExtra.lblAfterStandaloneBanner}`);
+      assert.equal(dojoExtra.dojoGluttonAtk, 0, "Sanctum Dojo glutton_pill must NOT farm permanent ATK");
+      assert.equal(dojoExtra.dojoGluttonHp, 0, "Sanctum Dojo glutton_pill must NOT farm permanent HP");
+      assert.equal(dojoExtra.dojoCoopAch, false, "Sanctum Dojo summonAllyCoop must NOT unlock ach_coop");
+      assert.equal(dojoExtra.dojoActiveInSectDefense, false, "isSanctumDojoActive() must be false during formal Sect Defense");
+      assert.equal(dojoExtra.sdStones, 112, `Sect Defense parry must still award +12 stones, got ${dojoExtra.sdStones}`);
+      assert.ok(dojoExtra.sdTechBreaks >= 1, `Sect Defense parry must still increment techBreaks, got ${dojoExtra.sdTechBreaks}`);
+      assert.equal(dojoExtra.sdAchBreak, true, "Sect Defense parry must still unlock ach_break");
+
       // 3. Sandbox-only D02 slot prototype toggle & auto-reset on sandbox exit
       await page.click("#btn-pavilion-menu");
       await page.waitForSelector("#pavilion-popover.open #btn-toggle-arcana-all");
@@ -7777,6 +7883,68 @@ try {
       assert.ok(f23.tribAbortTxt.includes("18 月") && f23.tribAbortTxt.includes("1.5 载"), "Path 7b: Tribulation abort must preview 18m (1.5y) lifespan penalty");
       assert.equal(f23.beforeTipFlag, false);
       assert.equal(f23.afterTipFlag, true, "First-time 75% lifespan crossing must set game.seenLifespan75Tip");
+
+      // 4. Additive Q3-5 checks: Spirit lifespan .toFixed(3) deadzone (5036->5037->5040), multi-band jump (73.9%->91.4%), and Taixu Round 2 preview refresh
+      const f23Edge = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const v23 = window.__CHENYUAN_V23__;
+        const s = api.getState();
+        const g = s.game;
+
+        // 4a. Spirit deadzone: 5036 -> 5037 (rawRatio < 0.75, rounded === 0.75) -> 5040 (exact 0.75)
+        Object.assign(g, api.createFreshGame("化神寿元边界", "sword_bone", 0));
+        g.realm = "spirit";
+        g.seenLifespan75Tip = false;
+        g.elapsedMonths = 5036 - (g.startAgeMonths || 216);
+        const prev5036to5037 = api.previewLifespanImpact(g, 1);
+        api.advanceLifespanMonths(1, "deadzone_step1");
+        const tipAfter5037 = Boolean(g.seenLifespan75Tip);
+        const prev5037to5040 = api.previewLifespanImpact(g, 3);
+        api.advanceLifespanMonths(3, "deadzone_step2");
+        const tipAfter5040 = Boolean(g.seenLifespan75Tip);
+
+        // 4b. Multi-band jump: Mortal 73.9% -> 91.4% must still set seenLifespan75Tip === true
+        Object.assign(g, api.createFreshGame("跨阈测试", "sword_bone", 0));
+        g.realm = "mortal";
+        g.seenLifespan75Tip = false;
+        g.elapsedMonths = 550 - (g.startAgeMonths || 216); // 550/744 = 73.92%
+        api.advanceLifespanMonths(130, "multi_band_jump"); // 680/744 = 91.40%
+        const multiJumpInfo = api.getLifespanInfo(g);
+        const multiJumpTip = Boolean(g.seenLifespan75Tip);
+
+        // 4c. Taixu Round 2 #taixu-craft-lifespan-preview refresh (qi: 851 -> 854, Round 2 crosses 75% = 855)
+        Object.assign(g, api.createFreshGame("太虚二轮测试", "sword_bone", 0));
+        g.realm = "qi";
+        g.elapsedMonths = 851 - (g.startAgeMonths || 216);
+        v23.openTaixuCraftMinigameModal("alchemy");
+        const r1PrevTxt = document.getElementById("taixu-craft-lifespan-preview")?.textContent || "";
+        v23.strikeTaixuCraftMinigame(true);
+        v23.strikeTaixuCraftMinigame(true);
+        v23.strikeTaixuCraftMinigame(true);
+        const r2PrevTxt = document.getElementById("taixu-craft-lifespan-preview")?.textContent || "";
+        const r2PrevHasWarn = document.getElementById("taixu-craft-lifespan-preview")?.classList.contains("warn") || false;
+        api.closeModal();
+
+        return {
+          prev5036to5037Crossed: prev5036to5037.crossedThresholds,
+          tipAfter5037,
+          prev5037to5040Crossed: prev5037to5040.crossedThresholds,
+          tipAfter5040,
+          multiJumpStatus: multiJumpInfo.status,
+          multiJumpTip,
+          r1PrevTxt,
+          r2PrevTxt,
+          r2PrevHasWarn
+        };
+      });
+      assert.deepEqual(f23Edge.prev5036to5037Crossed, [], "Spirit 5036->5037 must NOT false-positive on 75% threshold");
+      assert.equal(f23Edge.tipAfter5037, false, "Spirit 5036->5037 must NOT trigger seenLifespan75Tip prematurely");
+      assert.ok(f23Edge.prev5037to5040Crossed.includes(75), "Spirit 5037->5040 preview must report crossing 75%");
+      assert.equal(f23Edge.tipAfter5040, true, "Spirit 5037->5040 must trigger seenLifespan75Tip");
+      assert.equal(f23Edge.multiJumpStatus, "critical");
+      assert.equal(f23Edge.multiJumpTip, true, "Jumping 73.9%->91.4% in one step must still set seenLifespan75Tip");
+      assert.equal(f23Edge.r1PrevTxt.includes("75%"), false, "Taixu Round 1 at 851/1140 should not warn 75% yet");
+      assert.ok(f23Edge.r2PrevTxt.includes("75%") && f23Edge.r2PrevHasWarn, `Taixu Round 2 at 854/1140 must refresh #taixu-craft-lifespan-preview with 75% warning, got: ${f23Edge.r2PrevTxt}`);
     } finally {
       await ctx.close();
     }

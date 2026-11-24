@@ -68,15 +68,27 @@ function runAudit(opts) {
   });
 
   // 2. Buy / Sell / Smelt Arbitrage Checks
-  // 2a. ITEMS direct price check (no item sells for >= buy price)
+  // 2a. ITEMS direct price check (no sellable item sells for >= buy or worst-case discounted buy)
   const itemPriceChecks = [];
+  let itemsWithBuy = 0;
+  const totalItemsCount = Object.keys(v25.ITEMS).length;
   Object.values(v25.ITEMS).forEach(it => {
-    const price = Number(it.price || 0);
-    const sell = Number(it.sell || Math.floor(price * 0.45));
-    const ok = price <= 0 || sell < price;
-    itemPriceChecks.push({ id: it.id, name: it.name, price, sell, ok });
-    if (!ok) violations.push(`ITEM_ARBITRAGE:${it.id}:sell(${sell})>=price(${price})`);
+    const hasBuy = typeof it.buy === "number" && Number.isFinite(it.buy) && it.buy > 0;
+    if (hasBuy) itemsWithBuy += 1;
+    const buy = hasBuy ? Number(it.buy) : 0;
+    const discountedBuy = Math.round(buy * 0.8 * 0.9); // worst-case fair omen (0.8) + righteous (0.9)
+    const hasSell = it.sell != null && Number.isFinite(Number(it.sell));
+    const sell = hasSell ? Number(it.sell) : null;
+    const ok = hasBuy && (!hasSell || (sell < buy && sell < discountedBuy));
+    itemPriceChecks.push({ id: it.id, name: it.name, buy, discountedBuy, sell, ok });
+    if (!hasBuy) violations.push(`ITEM_BUY_SCHEMA_MISSING:${it.id}`);
+    else if (hasSell && !(sell < buy && sell < discountedBuy)) {
+      violations.push(`ITEM_ARBITRAGE:${it.id}:sell(${sell})>=discountedBuy(${discountedBuy})/buy(${buy})`);
+    }
   });
+  if (itemsWithBuy !== totalItemsCount) {
+    violations.push(`ITEMS_BUY_SCHEMA_DRIFT:${itemsWithBuy}/${totalItemsCount}`);
+  }
 
   // 2b. Generated gear market price vs smelt/sell across 300 seeded rolls (rarities 0..4, stages 0..4)
   let gearRollsChecked = 0;
@@ -116,7 +128,7 @@ function runAudit(opts) {
     for (const sp of specials) {
       const entry = { karmaMode: modeLabel, id: sp.id, costUnderFair: sp.cost, kind: sp.kind };
       if (sp.id === "km_demon_core") {
-        // Check worst-case buy -> smelt weapon resale under fair omen
+        // Check worst-case buy -> smelt weapon + nominal 3x core bundle resale under fair omen
         game.stones = 1000;
         game.realm = "spirit";
         game.equippedGear = { weapon: null, armor: null, ring: null };
@@ -126,15 +138,19 @@ function runAudit(opts) {
         const paid = beforeStones - game.stones;
         const pendingWpn = v25.getPendingCompareGear() || game.equippedGear.weapon || game.gearBag[game.gearBag.length - 1];
         const wpnSell = pendingWpn ? Number(pendingWpn.sell || 0) : 0;
+        const bundledCoresSell = 3 * Number((v25.ITEMS.core && v25.ITEMS.core.sell) || 0);
+        const totalBundleResale = wpnSell + bundledCoresSell;
         const sellCap = Math.floor(sp.cost * 0.45);
         entry.paid = paid;
         entry.bundledWeaponSell = wpnSell;
+        entry.bundledCoresSell = bundledCoresSell;
+        entry.totalBundleResale = totalBundleResale;
         entry.sellCap = sellCap;
         entry.preservesVampBlade = Boolean(pendingWpn && pendingWpn.affix === "vamp_blade");
         entry.preservesAtk = Boolean(pendingWpn && pendingWpn.atk > 0);
-        entry.noArbitrage = Boolean(okBuy && wpnSell <= sellCap && wpnSell < sp.cost && sp.cost >= Math.round(220 * 0.8));
+        entry.noArbitrage = Boolean(okBuy && wpnSell <= sellCap && wpnSell < sp.cost && totalBundleResale < sp.cost && sp.cost >= Math.round(220 * 0.8));
         if (!entry.noArbitrage) {
-          violations.push(`KM_DEMON_CORE_ARBITRAGE:cost=${sp.cost},wpnSell=${wpnSell},cap=${sellCap}`);
+          violations.push(`KM_DEMON_CORE_ARBITRAGE:cost=${sp.cost},wpnSell=${wpnSell},bundleResale=${totalBundleResale},cap=${sellCap}`);
         }
         if (!entry.preservesVampBlade || !entry.preservesAtk) {
           violations.push(`KM_DEMON_CORE_COMBAT_IDENTITY_BROKEN`);
@@ -147,7 +163,7 @@ function runAudit(opts) {
   // 3. Material Reachability & Recipe Audit
   const materialSources = {};
   ["herb", "dew", "core", "jade", "lotus", "soul", "dao"].forEach(m => {
-    materialSources[m] = { stageDrops: [], bossDrops: [], buyPrice: v25.ITEMS[m] ? v25.ITEMS[m].price : 0 };
+    materialSources[m] = { stageDrops: [], bossDrops: [], buyPrice: v25.ITEMS[m] ? Number(v25.ITEMS[m].buy || 0) : 0 };
   });
   v25.CAMPAIGN_ACTS.forEach(act => {
     (act.matDrops || []).forEach(m => { if (materialSources[m]) materialSources[m].stageDrops.push(act.actLabel); });
@@ -169,7 +185,7 @@ function runAudit(opts) {
       id: rec.id,
       name: rec.name,
       output: rec.output,
-      outputPrice: outItem ? outItem.price : 0,
+      outputPrice: outItem ? Number(outItem.buy || 0) : 0,
       baseStones: rec.stones,
       months: rec.months,
       reqCauldronLv: rec.reqCauldronLv || 1,
@@ -222,6 +238,7 @@ function runAudit(opts) {
     volumes,
     arbitrage: {
       itemsChecked: itemPriceChecks.length,
+      itemsWithBuy,
       gearRollsChecked,
       gearBudgetFailures,
       maxGearSellToFairPriceRatio: Number(maxGearSellToPriceRatio.toFixed(3)),
