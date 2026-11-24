@@ -11359,24 +11359,47 @@ try {
         const s4SpiritBoss = arena.enemies[arena.enemies.length - 1];
         const s4SpiritSnap = { hp: s4SpiritBoss.hp, atk: s4SpiritBoss.atk, delta: s4SpiritBoss.realmScaledDelta };
 
-        // Non-double-scaling guard in side modes (Endless Tower, Boss Rush, Sect Defense, Celestial Spire)
-        arena.towerMode = true;
-        arena.enemies = [];
-        dbg.spawnSingleEnemy("wolf", 600, 420, 1.0, false);
-        const towerDelta = arena.enemies[arena.enemies.length - 1].realmScaledDelta;
-        arena.towerMode = false;
+        // Non-double-scaling guard via real end-to-end launchers for ALL 6 non-mainline side modes at stageIdx=0, realm="spirit"
+        const snapEnemies = () => arena.enemies.map(e => ({
+          id: e.id,
+          name: e.name,
+          hp: e.hp,
+          atk: e.atk,
+          realmScaledDelta: e.realmScaledDelta,
+          realmStoneMult: e.realmStoneMult
+        }));
+        game.realm = "spirit";
 
-        arena.bossRush = { active: true, bout: 1, maxBouts: 7 };
-        arena.enemies = [];
-        dbg.spawnSingleEnemy("wolf", 600, 420, 1.0, true);
-        const rushDelta = arena.enemies[arena.enemies.length - 1].realmScaledDelta;
-        arena.bossRush = null;
+        arena.stageIdx = 0;
+        dbg.initArenaStage(0, true);
+        const sideTower = snapEnemies();
 
-        arena.sectDefense = { active: true, wave: 1, maxWaves: 3, coreHp: 1000, maxCoreHp: 1000, coreX: 700, coreY: 450, towers: [] };
-        arena.enemies = [];
-        dbg.spawnSingleEnemy("wolf", 600, 420, 1.0, false);
-        const sectDelta = arena.enemies[arena.enemies.length - 1].realmScaledDelta;
-        arena.sectDefense = null;
+        arena.stageIdx = 0;
+        dbg.startBossRushGauntlet(1);
+        const sideRush = snapEnemies();
+
+        arena.stageIdx = 0;
+        dbg.startSectDefenseSiege();
+        const sideSect = snapEnemies();
+
+        arena.stageIdx = 0;
+        dbg.startCloudSeaAerialStage();
+        const sideCloud = snapEnemies();
+
+        arena.stageIdx = 0;
+        dbg.startCelestialSpireRun(1);
+        const sideSpire = snapEnemies();
+
+        arena.stageIdx = 0;
+        dbg.launchCustomSeedEncounter("CY22-16-00-00-DF");
+        const sideCustomDF = snapEnemies();
+
+        arena.stageIdx = 0;
+        dbg.launchCustomSeedEncounter("CY22-23-00-00-CB");
+        const sideCustomCB = snapEnemies();
+
+        // Restore clean mainline Stage 0 before World Map & unified checks
+        dbg.initArenaStage(0, false);
 
         // World Map dynamic scaling indicator & unified grade badge
         game.stageStars = { 0: 3, 1: 2, 2: 1, 3: 0, 4: 0 };
@@ -11390,7 +11413,15 @@ try {
           spiritCh1WolfXp: qiDrop ? qiDrop.val : 999,
           spiritCh1WolfStones: stoneDrop ? stoneDrop.val : 0,
           s4NascentSnap, s4SpiritSnap,
-          towerDelta, rushDelta, sectDelta,
+          sideModes: {
+            tower: sideTower,
+            bossRush: sideRush,
+            sectDefense: sideSect,
+            cloudSea: sideCloud,
+            celestialSpire: sideSpire,
+            customSeedDF: sideCustomDF,
+            customSeedCB: sideCustomCB
+          },
           mapScalingTxt, mapPreviewTxt
         };
       });
@@ -11405,9 +11436,15 @@ try {
       assert.equal(scalingCheck.s4SpiritSnap.delta, 1);
       const s4Ratio = scalingCheck.s4SpiritSnap.hp / Math.max(1, scalingCheck.s4NascentSnap.hp);
       assert.ok(Math.abs(s4Ratio - 1.407) < 0.01, `Expected Stage 4 Spirit boss HP ratio ~1.407, got ${s4Ratio.toFixed(4)}`);
-      assert.equal(scalingCheck.towerDelta, 0, "Endless Tower must NOT double-scale via mainline scaling");
-      assert.equal(scalingCheck.rushDelta, 0, "Boss Rush must NOT double-scale via mainline scaling");
-      assert.equal(scalingCheck.sectDelta, 0, "Sect Defense must NOT double-scale via mainline scaling");
+      for (const [modeName, list] of Object.entries(scalingCheck.sideModes)) {
+        assert.ok(list.length >= 1, `Side mode "${modeName}" must spawn at least 1 enemy`);
+        for (const e of list) {
+          assert.equal(e.realmScaledDelta, 0, `Side mode "${modeName}" enemy "${e.name}" must NOT double-scale (realmScaledDelta=${e.realmScaledDelta})`);
+          assert.equal(e.realmStoneMult, 1, `Side mode "${modeName}" enemy "${e.name}" must keep realmStoneMult=1 (got ${e.realmStoneMult})`);
+        }
+      }
+      assert.equal(scalingCheck.sideModes.customSeedDF.length, 2, "Custom Seed CY22-16-00-00-DF must spawn 2 workshop bosses");
+      assert.equal(scalingCheck.sideModes.customSeedCB.length, 2, "Custom Seed CY22-23-00-00-CB must spawn 2 workshop bosses");
       assert.ok(scalingCheck.mapScalingTxt.includes("动态同步") && scalingCheck.mapScalingTxt.includes("灵石 ×"), `World Map must show scaling badge, got "${scalingCheck.mapScalingTxt}"`);
       assert.ok(scalingCheck.mapPreviewTxt.includes("S 级 (★★★)"), `World Map preview must show unified stage grade S 级 (★★★), got "${scalingCheck.mapPreviewTxt}"`);
 
@@ -11560,7 +11597,7 @@ try {
       assert.equal(writeFailRes.afterBj, writeFailRes.beforeBj);
       assert.equal(writeFailRes.saveIntact, true);
 
-      // Scenario E: multi-tab CRDT race on new schema (bingjieCount & unified bestRushGrade S > A)
+      // Scenario E: competing two-tab CRDT race on new schema (tab2 writes bingjieCount=4/bestRushGrade="S", page performs competing stale saveMeta with bingjieCount=2/bestRushGrade="A"/bestTower=9)
       const tab2 = await ctx.newPage();
       attachErrorListeners(tab2, "R3-D05-1-Tab2");
       await tab2.goto(targetUrl, { waitUntil: "domcontentloaded" });
@@ -11579,10 +11616,25 @@ try {
           return cur.bingjieCount === 4 && cur.bestRushGrade === "S";
         } catch { return false; }
       }, META_KEY, { timeout: 5000 });
-      const raceMerged = await page.evaluate((mk) => JSON.parse(localStorage.getItem(mk) || "{}"), META_KEY);
-      assert.equal(raceMerged.bingjieCount, 4);
-      assert.equal(raceMerged.bestRushGrade, "S");
-      assert.equal(Object.prototype.hasOwnProperty.call(raceMerged, "reincarnationPoints"), false);
+      // Competing stale write from page: holds stale bingjieCount=2 & bestRushGrade="A" while advancing bestTower=9
+      await page.evaluate(() => {
+        const m = window.__CHENYUAN_DEBUG__.getMetaState();
+        m.bingjieCount = 2;
+        m.bestRushGrade = "A";
+        m.bestTower = 9;
+        window.__CHENYUAN_DEBUG__.saveMeta();
+      });
+      const raceMerged = await page.evaluate((mk) => ({
+        disk: JSON.parse(localStorage.getItem(mk) || "{}"),
+        mem: window.__CHENYUAN_DEBUG__.getMetaState()
+      }), META_KEY);
+      assert.equal(raceMerged.disk.bingjieCount, 4, "Competing stale saveMeta must retain monotonic max bingjieCount=4");
+      assert.equal(raceMerged.disk.bestRushGrade, "S", "Competing stale saveMeta must retain unified max bestRushGrade=S");
+      assert.equal(raceMerged.disk.bestTower, 9, "Competing saveMeta must merge page's bestTower=9");
+      assert.equal(raceMerged.mem.bingjieCount, 4, "In-memory metaState must reconcile to bingjieCount=4 after CRDT merge");
+      assert.equal(raceMerged.mem.bestRushGrade, "S", "In-memory metaState must reconcile to bestRushGrade=S after CRDT merge");
+      assert.equal(raceMerged.mem.bestTower, 9, "In-memory metaState must retain bestTower=9 after CRDT merge");
+      assert.equal(Object.prototype.hasOwnProperty.call(raceMerged.disk, "reincarnationPoints"), false);
       await tab2.close();
     } finally {
       await ctx.close();

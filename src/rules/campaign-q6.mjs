@@ -185,8 +185,9 @@ export const VOL5_RESONANCE_PILLARS = [
     summary: "完整通关万剑冢七阵取得正式评级",
     check: (g) => {
       const grade = (g && typeof g.rushBestGrade === "string") ? g.rushBestGrade.trim() : "";
-      const active = Boolean((grade && grade !== "未挑战") || (g && g.taixuTrailUnlocked));
-      return { active, progressText: active ? (grade || "已证剑尊") : "待通七阵" };
+      const validGrade = ["C", "B", "A", "S"].includes(grade);
+      const active = Boolean(validGrade || (g && g.taixuTrailUnlocked));
+      return { active, progressText: active ? (validGrade ? grade : "已证剑尊") : "待通七阵" };
     }
   },
   {

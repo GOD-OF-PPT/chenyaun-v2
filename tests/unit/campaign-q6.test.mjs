@@ -159,6 +159,15 @@ test("computeEndgameMasteryResonance yields 0 bonus at 0 pillars and scales clea
   const sdPillar = r6.pillars.find(p => p.id === "sect_defense");
   assert.equal(sdPillar.short, "护阵破劫");
   assert.equal(sdPillar.active, true);
+
+  const rushPillar = VOL5_RESONANCE_PILLARS[4];
+  assert.equal(rushPillar.id, "sword_tomb_rush");
+  assert.equal(rushPillar.check({ rushBestGrade: "未挑战" }).active, false);
+  assert.equal(rushPillar.check({ rushBestGrade: "D" }).active, false);
+  assert.equal(rushPillar.check({ rushBestGrade: "invalid" }).active, false);
+  assert.equal(rushPillar.check({ rushBestGrade: "C" }).active, true);
+  assert.equal(rushPillar.check({ rushBestGrade: "S" }).active, true);
+  assert.deepEqual(rushPillar.check({ rushBestGrade: "invalid", taixuTrailUnlocked: true }), { active: true, progressText: "已证剑尊" });
 });
 
 test("buildVol5ResonanceSnapshot accurately evaluates D01/D04 conservative Vol 5 progress", () => {

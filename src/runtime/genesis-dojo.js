@@ -2406,7 +2406,7 @@
     inv.dew = effectivePerk === "medicine_sage" ? 3 : 1;
     if (effectivePerk === "calamity_phoenix") inv.longevity_pill = 1;
     const laws = effectivePerk === "immortal_echo" ? ["void_haste"] : [];
-    const legacyStones = Math.min(240, (metaState.ascensions || 0) * 45 + (metaState.bingjieCount || 0) * 40);
+    const legacyStones = Math.min(240, Math.max(0, (metaState.ascensions || 0) * 45 + (metaState.bingjieCount || 0) * 40));
 
     const starterSword = effectivePerk === "primordial_sage"
       ? {

@@ -715,7 +715,8 @@
         partHp: eyeHp, maxPartHp: eyeHp, weakpointExposed: true, partSevered: false,
         atk: Math.max(20, Math.round(st.maxHp * 0.13)), heavy: Math.max(32, Math.round(st.maxHp * 0.21)),
         state: "chase", timer: 1.1, windupDur: 0.95, aimX: arena.player.x, aimY: arena.player.y, attackType: "slam",
-        hitFlash: 0, swordMarks: 0, chillTimer: 0, burnTimer: 0, airborneZ: 0, airborneVz: 0
+        hitFlash: 0, swordMarks: 0, chillTimer: 0, burnTimer: 0, airborneZ: 0, airborneVz: 0,
+        realmScaledDelta: 0, realmStoneMult: 1
       };
       arena.lockedTitanPart = "left_claw";
       arena.enemies.push(titan);
@@ -736,7 +737,8 @@
         weakpointExposed: true, partSevered: false,
         atk: Math.max(18, Math.round(st.maxHp * 0.12)), heavy: Math.max(28, Math.round(st.maxHp * 0.20)),
         state: "chase", timer: 0.95, windupDur: 0.88, aimX: arena.player.x, aimY: arena.player.y, attackType: "charge",
-        hitFlash: 0, swordMarks: 0, chillTimer: 0, burnTimer: 0, airborneZ: 0, airborneVz: 0
+        hitFlash: 0, swordMarks: 0, chillTimer: 0, burnTimer: 0, airborneZ: 0, airborneVz: 0,
+        realmScaledDelta: 0, realmStoneMult: 1
       };
       arena.enemies.push(demon);
       return demon;
@@ -894,6 +896,16 @@
       }
     }
 
+    arena.customSeedRun = {
+      active: true,
+      seed: activeSeed,
+      startedAt: Date.now(),
+      elapsedSec: 0,
+      hitsTaken: 0,
+      bosses: [],
+      tempCurioRestore
+    };
+
     const spawnedBossNames = [];
     const b1 = spawnWorkshopBossBySpecIdx(workshopState.boss1, w * 0.68, h * 0.46, 1.5);
     if (b1 && b1.name) spawnedBossNames.push(b1.name);
@@ -901,16 +913,7 @@
       const b2 = spawnWorkshopBossBySpecIdx(workshopState.boss2, w * 0.58, h * 0.62, 1.35);
       if (b2 && b2.name) spawnedBossNames.push(b2.name);
     }
-
-    arena.customSeedRun = {
-      active: true,
-      seed: activeSeed,
-      startedAt: Date.now(),
-      elapsedSec: 0,
-      hitsTaken: 0,
-      bosses: spawnedBossNames,
-      tempCurioRestore
-    };
+    arena.customSeedRun.bosses = spawnedBossNames;
     const dojoBar = document.getElementById("dojo-control-bar");
     if (dojoBar) dojoBar.classList.remove("active");
 
