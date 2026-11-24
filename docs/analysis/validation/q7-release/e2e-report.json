@@ -1,0 +1,817 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "timestamp": "2026-11-24T12:20:36.943Z",
+  "durationMs": 283357,
+  "viewport": "1440x900",
+  "browser": "/usr/bin/google-chrome",
+  "cli": {
+    "tier": "all",
+    "filter": "",
+    "timeoutMs": 25000,
+    "failFast": false
+  },
+  "summary": {
+    "total": 56,
+    "passed": 56,
+    "failed": 0,
+    "runtimeErrorCount": 0
+  },
+  "byTier": {
+    "1": {
+      "total": 31,
+      "passed": 31,
+      "failed": 0,
+      "durationMs": 145150
+    },
+    "2": {
+      "total": 12,
+      "passed": 12,
+      "failed": 0,
+      "durationMs": 52344
+    },
+    "3": {
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "durationMs": 64054
+    },
+    "4": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "durationMs": 21243
+    }
+  },
+  "results": [
+    {
+      "id": "E2E-T1-01",
+      "tier": 1,
+      "title": "T1: Corrupted meta save is preserved with warning banner & explicit reset",
+      "features": [
+        "T1"
+      ],
+      "ok": true,
+      "durationMs": 4009,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-02",
+      "tier": 1,
+      "title": "T2: Global shortcuts (P, F3, [, ], `) are suppressed inside text inputs",
+      "features": [
+        "T2"
+      ],
+      "ok": true,
+      "durationMs": 5161,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-03",
+      "tier": 1,
+      "title": "T3: Modal and drawer trap Tab/Shift+Tab focus and restore focus on Escape",
+      "features": [
+        "T3"
+      ],
+      "ok": true,
+      "durationMs": 3946,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-04",
+      "tier": 1,
+      "title": "T4: Cloud save import shows preview & confirmation before overwriting current save",
+      "features": [
+        "T4"
+      ],
+      "ok": true,
+      "durationMs": 4394,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-05",
+      "tier": 1,
+      "title": "T5: Meta save uses monotonic metaRev and merges across tabs without regression",
+      "features": [
+        "T5"
+      ],
+      "ok": true,
+      "durationMs": 6788,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-06",
+      "tier": 1,
+      "title": "T6: Reset/reincarnate guarded in read-only mode & pagehide flushes save",
+      "features": [
+        "T6"
+      ],
+      "ok": true,
+      "durationMs": 11596,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-07",
+      "tier": 1,
+      "title": "T7: prefers-reduced-motion respected, Tab does not hijack HUD focus, no duplicate pad bindings",
+      "features": [
+        "T7"
+      ],
+      "ok": true,
+      "durationMs": 3423,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-08",
+      "tier": 1,
+      "title": "T8 & T9: package.json, .gitignore, art manifest & verification script exist and pass",
+      "features": [
+        "T8",
+        "T9"
+      ],
+      "ok": true,
+      "durationMs": 1000,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-09",
+      "tier": 1,
+      "title": "S1: Realm breakthrough is blocked until current chapter boss is defeated",
+      "features": [
+        "S1"
+      ],
+      "ok": true,
+      "durationMs": 3567,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-10",
+      "tier": 1,
+      "title": "S2: Ascension epilogue & grade reflect actual cleared stages and bonded companions",
+      "features": [
+        "S2"
+      ],
+      "ok": true,
+      "durationMs": 4306,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-11",
+      "tier": 1,
+      "title": "S3: Terminology unified to 卷 (no 幕/七卷 mismatch) and right-rail button renamed to 故人",
+      "features": [
+        "S3"
+      ],
+      "ok": true,
+      "durationMs": 3341,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-12",
+      "tier": 1,
+      "title": "S4: Canonical names/titles consistent across story drawer, cutscenes, and boss labels",
+      "features": [
+        "S4"
+      ],
+      "ok": true,
+      "durationMs": 5458,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-13",
+      "tier": 1,
+      "title": "S5: Quest tracker shows post-completion endgame goal instead of stale s7_trial",
+      "features": [
+        "S5"
+      ],
+      "ok": true,
+      "durationMs": 3313,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-14",
+      "tier": 1,
+      "title": "S6: Karma dilemma choice without fillIntent must not fill astral/bond meters to 100%",
+      "features": [
+        "S6"
+      ],
+      "ok": true,
+      "durationMs": 3835,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-15",
+      "tier": 1,
+      "title": "S7: Defeating stage boss plays clear_stage cutscene and displays volume-end recap card",
+      "features": [
+        "S7"
+      ],
+      "ok": true,
+      "durationMs": 5332,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-16",
+      "tier": 1,
+      "title": "S8: Starting a new game plays 4-6 line opening premise scroll before combat",
+      "features": [
+        "S8"
+      ],
+      "ok": true,
+      "durationMs": 2093,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-17",
+      "tier": 1,
+      "title": "S9: Companion arc appears in tracker, enter_secret branches on pei_meet, enter_terrace is distinct",
+      "features": [
+        "S9"
+      ],
+      "ok": true,
+      "durationMs": 3668,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-18",
+      "tier": 1,
+      "title": "S10: Karma dilemmas track completed IDs and do not repeat in a modulo loop",
+      "features": [
+        "S10"
+      ],
+      "ok": true,
+      "durationMs": 8237,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-19",
+      "tier": 1,
+      "title": "S11+G7: Golden realm does not dump all 7 keys + 4 modes at once; unlock shows 2-line notice",
+      "features": [
+        "S11+G7"
+      ],
+      "ok": true,
+      "durationMs": 4552,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-20",
+      "tier": 1,
+      "title": "G1: Expedition blocks unbonded/duplicate assignments and double-claim yields 0 stones",
+      "features": [
+        "G1"
+      ],
+      "ok": true,
+      "durationMs": 4370,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-21",
+      "tier": 1,
+      "title": "G2: Jade gamble cannot produce net stone profit after all Dao Laws are owned",
+      "features": [
+        "G2"
+      ],
+      "ok": true,
+      "durationMs": 3960,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-22",
+      "tier": 1,
+      "title": "G3: Stage 4 boss HP retuned (~40-50k) and single heavy hit cannot one-shot nascent player",
+      "features": [
+        "G3"
+      ],
+      "ok": true,
+      "durationMs": 3525,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-23",
+      "tier": 1,
+      "title": "G4: Boss Rush bout-7 skip and Spire floor-9 skip act as practice mode with no rewards/records",
+      "features": [
+        "G4"
+      ],
+      "ok": true,
+      "durationMs": 4685,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-24",
+      "tier": 1,
+      "title": "G5: Blood-fury pill purchase is capped per realm (no unlimited permanent stat stacking)",
+      "features": [
+        "G5"
+      ],
+      "ok": true,
+      "durationMs": 5241,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-25",
+      "tier": 1,
+      "title": "G6: Enabling 全神通演武 requires confirmation, shows HUD sandbox badge, and isolates live save",
+      "features": [
+        "G6"
+      ],
+      "ok": true,
+      "durationMs": 4453,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-26",
+      "tier": 1,
+      "title": "G8: Alchemy crafting advances lifespan age according to RECIPES.months",
+      "features": [
+        "G8"
+      ],
+      "ok": true,
+      "durationMs": 6601,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-27",
+      "tier": 1,
+      "title": "G9: Bag-full prompts choice, alchemy itemizes missing mats, temper has core toggle, soul unlock confirms",
+      "features": [
+        "G9"
+      ],
+      "ok": true,
+      "durationMs": 4409,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-28",
+      "tier": 1,
+      "title": "G10: Pet feeding uses tiered materials (herb -> core -> jade) and offers Lv.3/Lv.5 skill choices",
+      "features": [
+        "G10"
+      ],
+      "ok": true,
+      "durationMs": 5681,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-29",
+      "tier": 1,
+      "title": "G11a: Baseline full Boss Rush completion awards A (not automatic SS)",
+      "features": [
+        "G11a"
+      ],
+      "ok": true,
+      "durationMs": 4718,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-30",
+      "tier": 1,
+      "title": "G11b: Ascension roadmap pet names match SPIRIT_PETS canonically",
+      "features": [
+        "G11b"
+      ],
+      "ok": true,
+      "durationMs": 4040,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T1-31",
+      "tier": 1,
+      "title": "G12: Meditating in active combat does not vacuum distant (320px) loot drops",
+      "features": [
+        "G12"
+      ],
+      "ok": true,
+      "durationMs": 5448,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T2-01",
+      "tier": 2,
+      "title": "Save Scenario 1: Fresh start hides continue, shows opening scroll, writes valid envelope v2",
+      "features": [
+        "T1",
+        "S8"
+      ],
+      "ok": true,
+      "durationMs": 2587,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T2-02",
+      "tier": 2,
+      "title": "Save Scenario 2: Legacy eb0ea67 save continues without regression, clamps inflated stats, upgrades metaRev",
+      "features": [
+        "S1",
+        "G5",
+        "T1"
+      ],
+      "ok": true,
+      "durationMs": 3760,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T2-03",
+      "tier": 2,
+      "title": "Save Scenario 3: Reload preserves stones, realm, pet, and claimed progress identically",
+      "features": [
+        "T6"
+      ],
+      "ok": true,
+      "durationMs": 5819,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T2-04",
+      "tier": 2,
+      "title": "Save Scenario 4: QuotaExceededError surfaces #hud-save-alert, preserves save, and recovers on retry",
+      "features": [
+        "T1",
+        "T6"
+      ],
+      "ok": true,
+      "durationMs": 4468,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T2-05",
+      "tier": 2,
+      "title": "Save Scenario 5: Multi-tab conflict blocks silent overwrite & invalid cross-tab storage event warns user",
+      "features": [
+        "T5",
+        "T6"
+      ],
+      "ok": true,
+      "durationMs": 7634,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T2-06",
+      "tier": 2,
+      "title": "T1: Simultaneously corrupted primary & meta saves are both reported and preserved intact",
+      "features": [
+        "T1"
+      ],
+      "ok": true,
+      "durationMs": 2699,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T2-07",
+      "tier": 2,
+      "title": "T4: Invalid or tampered cloud save code is rejected cleanly without mutating save",
+      "features": [
+        "T4"
+      ],
+      "ok": true,
+      "durationMs": 4551,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T2-08",
+      "tier": 2,
+      "title": "S1: Every realm breakthrough boundary (mortal->qi through spirit->ascended) enforces boss gate",
+      "features": [
+        "S1"
+      ],
+      "ok": true,
+      "durationMs": 6170,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T2-09",
+      "tier": 2,
+      "title": "G8: Lifespan >=90% shows progressive decay and 100% opens optional 兵解转世 modal (cancel preserves save)",
+      "features": [
+        "G8"
+      ],
+      "ok": true,
+      "durationMs": 3881,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T2-10",
+      "tier": 2,
+      "title": "G1: Expedition bank does not accrue uncapped AFK stones in safe hub",
+      "features": [
+        "G1"
+      ],
+      "ok": true,
+      "durationMs": 4338,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T2-11",
+      "tier": 2,
+      "title": "T2: Welcome screen name input suppresses P, F3, [, ] global shortcuts",
+      "features": [
+        "T2"
+      ],
+      "ok": true,
+      "durationMs": 2231,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T2-12",
+      "tier": 2,
+      "title": "G10: Feeding Lv.2 pet with only herbs (0 core, 0 jade) is rejected and preserves herbs",
+      "features": [
+        "G10"
+      ],
+      "ok": true,
+      "durationMs": 4206,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T3-01",
+      "tier": 3,
+      "title": "T4 × T6: Cloud save import in read-only conflict mode reports honest failure & preserves Tab A save",
+      "features": [
+        "T4",
+        "T6"
+      ],
+      "ok": true,
+      "durationMs": 10641,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T3-02",
+      "tier": 3,
+      "title": "T2 × T3 × T7: Settings modal traps Tab, typing 'p' inside input suppresses photo mode, Escape restores focus",
+      "features": [
+        "T2",
+        "T3",
+        "T7"
+      ],
+      "ok": true,
+      "durationMs": 5618,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T3-03",
+      "tier": 3,
+      "title": "G6 × Save: Sandbox mode changes do not pollute official save slot across reload",
+      "features": [
+        "G6"
+      ],
+      "ok": true,
+      "durationMs": 6105,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T3-04",
+      "tier": 3,
+      "title": "S1 × G3 × S7 × S11+G7: Boss defeat plays volume-end cutscene/card, unlocks tribulation & shows unlock notice",
+      "features": [
+        "S1",
+        "G3",
+        "S7",
+        "S11+G7"
+      ],
+      "ok": true,
+      "durationMs": 4904,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T3-05",
+      "tier": 3,
+      "title": "G8 × G5: Blood-fury pill hits per-realm cap and longevity pill restores lifespan warning",
+      "features": [
+        "G8",
+        "G5"
+      ],
+      "ok": true,
+      "durationMs": 5905,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T3-06",
+      "tier": 3,
+      "title": "S10 × S6 × S2: Non-repeating karma dilemmas do not leak astral 100% and feed truthful ending",
+      "features": [
+        "S10",
+        "S6",
+        "S2"
+      ],
+      "ok": true,
+      "durationMs": 4938,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T3-07",
+      "tier": 3,
+      "title": "G9 × G8: Alchemy itemizes missing-material stone cost and advances lifespan on craft",
+      "features": [
+        "G9",
+        "G8"
+      ],
+      "ok": true,
+      "durationMs": 9909,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T3-08",
+      "tier": 3,
+      "title": "G1 × S9: Unbonded Pei Zhao is locked in expedition until bonded, and double-claim pays 0",
+      "features": [
+        "G1",
+        "S9"
+      ],
+      "ok": true,
+      "durationMs": 3820,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T3-09",
+      "tier": 3,
+      "title": "G4 × G11a: Boss Rush bout-7 skip grants 0 payout/record while full run rebases baseline grade",
+      "features": [
+        "G4",
+        "G11a"
+      ],
+      "ok": true,
+      "durationMs": 4893,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T3-10",
+      "tier": 3,
+      "title": "G12: Active combat meditation blocks 320px loot magnet while close-range / safe-hub pickup works",
+      "features": [
+        "G12"
+      ],
+      "ok": true,
+      "durationMs": 7321,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T4-01",
+      "tier": 4,
+      "title": "Journey 1: New player opening scroll -> terminology -> boss-gated Vol.1 clear -> first breakthrough & reload",
+      "features": [
+        "S8",
+        "S3",
+        "S1",
+        "S7",
+        "S11+G7",
+        "G3",
+        "T7"
+      ],
+      "ok": true,
+      "durationMs": 3828,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T4-02",
+      "tier": 4,
+      "title": "Journey 2: Multi-tab conflict -> read-only guards -> QuotaExceeded recovery -> corrupt meta preservation -> cloud restore",
+      "features": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6"
+      ],
+      "ok": true,
+      "durationMs": 12426,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    },
+    {
+      "id": "E2E-T4-03",
+      "tier": 4,
+      "title": "Journey 3: Late-game roadmap -> pet depth -> expedition & jade economy -> lifespan -> boss-gated truthful ascension",
+      "features": [
+        "S1",
+        "S2",
+        "S5",
+        "S6",
+        "S9",
+        "S10",
+        "G1",
+        "G2",
+        "G3",
+        "G8",
+        "G9",
+        "G10",
+        "G11b"
+      ],
+      "ok": true,
+      "durationMs": 4989,
+      "error": null,
+      "errorKind": null,
+      "runtimeErrors": []
+    }
+  ]
+}

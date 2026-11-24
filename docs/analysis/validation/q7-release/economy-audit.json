@@ -1,0 +1,82 @@
+{
+  "meta": {
+    "tool": "scripts/audit-economy.mjs",
+    "commit": "5115b8e",
+    "seed": 20261124,
+    "generatedAt": "2026-11-24T12:06:29.279Z"
+  },
+  "passed": true,
+  "violations": [],
+  "warnings": [
+    "NOTE: golden pill (结金丹) requires lotus×1, reachable from Vol 3 Boss (寒潭玄蛇), Vol 4 mobs, or explicit buy-missing stones; optional per D01 (defiant tribulation preserved)."
+  ],
+  "arbitrage": {
+    "itemsChecked": 16,
+    "itemsWithBuy": 16,
+    "gearRollsChecked": 300,
+    "gearBudgetFailures": 0,
+    "maxGearSellToFairPriceRatio": 0.583,
+    "karmaSpecials": [
+      {
+        "karmaMode": "neutral",
+        "id": "km_neutral_tea",
+        "costUnderFair": 36,
+        "kind": "bundle_neutral"
+      },
+      {
+        "karmaMode": "righteous",
+        "id": "km_longevity",
+        "costUnderFair": 68,
+        "kind": "item"
+      },
+      {
+        "karmaMode": "righteous",
+        "id": "km_lotus_bundle",
+        "costUnderFair": 37,
+        "kind": "bundle_right"
+      },
+      {
+        "karmaMode": "demonic",
+        "id": "km_blood_pill",
+        "costUnderFair": 88,
+        "kind": "item"
+      },
+      {
+        "karmaMode": "demonic",
+        "id": "km_demon_core",
+        "costUnderFair": 176,
+        "kind": "bundle_demon",
+        "paid": 176,
+        "bundledWeaponSell": 79,
+        "bundledCoresSell": 54,
+        "totalBundleResale": 133,
+        "sellCap": 79,
+        "preservesVampBlade": true,
+        "preservesAtk": true,
+        "noArbitrage": true
+      }
+    ]
+  },
+  "lifespan": {
+    "thresholdsPct": [
+      75,
+      90,
+      95,
+      100
+    ],
+    "meditationMonthsPer3Sec": 1,
+    "mortalMaxYears": 62,
+    "preview75Ok": true,
+    "preview100NonLethalEfficiency": 0.25
+  },
+  "reincarnationAudit": {
+    "field": "metaState.reincarnationPoints",
+    "currentValue": 0,
+    "sources": [
+      "Ascension completion (recordPastLifeInHall)",
+      "Lifespan exhausted Bingjie reincarnation (+40 pts)"
+    ],
+    "currentSinkStatus": "Displayed in Hall of Lives (openHallOfLivesModal) as cross-life progression counter; no currency removed per D05 conservative baseline.",
+    "d05Compliant": true
+  }
+}

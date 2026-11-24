@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "tool": "scripts/eval-combat-matrix.mjs",
+    "commit": "5115b8e",
+    "seed": 20261124,
+    "generatedAt": "2026-11-24T12:06:28.942Z",
+    "realmsEvaluated": [
+      "mortal",
+      "qi",
+      "foundation",
+      "golden",
+      "nascent",
+      "spirit"
+    ],
+    "schoolsEvaluated": [
+      "sword",
+      "talisman"
+    ],
+    "totalScenarios": 84,
+    "configSnapshot": {
+      "passiveSoftCapKnee": 0.95,
+      "passiveSoftCapMax": 1.65,
+      "activeMultCap": 1.95,
+      "singleHitCapRatio": 0.45,
+      "stageScaling": [
+        1,
+        1.65,
+        2.5,
+        3.6,
+        4.7
+      ],
+      "gearEnhanceStepPct": 0.08
+    }
+  },
+  "summary": {
+    "allGearBudgetOk": true,
+    "mobMedianTtkSec": 0.15,
+    "bossMedianTtkSec": 2.6,
+    "bossWinRate": 1,
+    "swordMedianBossTtkSec": 2.45,
+    "talismanMedianBossTtkSec": 2.58,
+    "minHeavyHitsSurvivable": 2.39,
+    "afkZeroWins": true,
+    "outliers": []
+  }
+}
