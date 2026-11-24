@@ -11,6 +11,22 @@
 
 ---
 
+## Q7 — 阶段二全量测试环境验证、遗留边界收口与发布证据包（F38）
+
+- **7 项 Q1–Q5 遗留边界打磨收口**：
+  - `startSectDefenseSiege()` 清理演武坪残留 `isDojoProp`（阵眼柱/玄冰晶）与 `waterPools`/`fireZones`；`spawnDojoDummy()` 非法模式回退 `"static"`。
+  - 寒池正道延寿选项（`karma_r_spring`）脱离大限后同步重置 `lifespanExhaustedPromptDismissed` 与 `pendingLifespanExhaustedPrompt`。
+  - `load-latest-save` 失败分支仅在 `save_conflict`/`save_corrupt` 弹窗打开时关闭，避免误关无关弹窗。
+  - `closeDrawer()` 移除抽屉残留隐藏 `#btn-mat-source-return`，洞府多建筑材料来源返焦优先匹配 `data-source-origin`。
+  - 对齐 `DAO_LAWS.wanjian` / `LAW_SHORT_BADGE.wanjian` 文案为 `+1`（与 `getSwordCount()` 一致）；`formatGearStats()` 增加 `num()` 守卫；`scripts/build-playable.mjs` 收紧 ESM `import` 正则并显式拒绝裸副作用 `import`（补入 `tests/unit/build-parity.test.mjs`）。
+- **1440×900 桌面 Chromium 阶段二全量实测证据（[validation/q7-release/SUMMARY.md](analysis/validation/q7-release/SUMMARY.md)）**：
+  - `npm run build:check` PASS、`npm run art:manifest:check` PASS、`npm run test:unit` **32/32 PASS**。
+  - 静态 HTTP 全量回归 **77/77 PASS**（0 运行时错误）+ 全量 E2E Tier 1–4 **56/56 PASS**（0 运行时错误）。
+  - 直接 `file://` 入口启动（`firstInteractiveMs = 1197ms`，0 运行时错误）与无头 `eval-combat-matrix`（84/84 PASS）/`audit-economy`（0 违规）全部通过。
+  - 诚实边界保留：`F29 = NOT_RUN`（`0 / 5~8` 真人试玩）、`F37 = DEFERRED`（D08）。
+
+---
+
 ## Q6 — 后续卷次品质、第五卷共鸣与高阶模式整合（F34–F36；F37=`DEFERRED`）
 
 - **F34 后续卷次（2–6 卷）叙事、敌招读招、分层景深与故人回响**：

@@ -117,14 +117,14 @@ Project: 《尘缘问道 · 剑阵万象》体验收敛与品质迭代
 
 | 编号 | 范围 | 依赖 | 建议分支 | 出口 | 状态 |
 |---|---|---|---|---|---|
-| Q0 | F01–F06 | 当前基线 | codex/quality-baseline | 失败分类与修复有结果，历史关键动态债补齐，Enter 和说明正确 | PLANNED |
-| Q1 | F07–F13 | Q0 | codex/combat-calm | 延期权益安全、调度/暂停/焦点一致，自动打断明显减少 | PLANNED |
-| Q2 | F14–F18 | Q1 | codex/navigation-hierarchy | 当前目标和常用操作可找到，入口迁移无丢失 | PLANNED |
-| Q3 | F19–F23 | Q2 | codex/combat-growth-slice | 两流派自然配置有证据，预算和经济可解释 | PLANNED |
-| Q4 | F24–F29 | Q3 | codex/first-volume-polish | 动作/美术/音效/首卷联合验证，试玩问题完成闭环 | PLANNED |
-| Q5 | F30–F33 | Q4；D06明确本次拆分范围 | codex/modular-source | 可重复生成独立发行包，兼容与对比结果通过 | PLANNED |
-| Q6 | F34–F37 | Q5；涉及的 D 项关闭或明确采用保守基线 | codex/campaign-quality | 后续品质覆盖；不选的扩展明确为 DEFERRED，不假记完成 | PLANNED |
-| Q7 | F38 | Q0–Q6选定范围验收 | codex/quality-release | 最终证据包和回退包完整，未决范围如实列出 | PLANNED |
+| Q0 | F01–F06 | 当前基线 | codex/q0-infra-and-tests、codex/q0-focus-and-copy（PR #20、#21） | 失败分类与修复有结果，历史关键动态债补齐，Enter 和说明正确 | VERIFIED |
+| Q1 | F07–F13 | Q0 | codex/combat-calm（PR #22） | 延期权益安全、调度/暂停/焦点一致，自动打断明显减少 | VERIFIED |
+| Q2 | F14–F18 | Q1 | codex/navigation-hierarchy（PR #23） | 当前目标和常用操作可找到，入口迁移无丢失 | VERIFIED |
+| Q3 | F19–F23 | Q2 | codex/combat-growth-slice（PR #24） | 两流派自然配置有证据，预算和经济可解释 | VERIFIED |
+| Q4 | F24–F29 | Q3 | codex/first-volume-polish（PR #26） | 动作/美术/音效/首卷联合验证；F29 真人试玩待招募（0/5~8） | F24–F28 VERIFIED / F29 NOT_RUN |
+| Q5 | F30–F33 | Q4；D06 保守基线 | codex/modular-source（PR #27） | 可重复生成独立发行包，兼容与对比结果通过 | VERIFIED |
+| Q6 | F34–F37 | Q5；D01/D04/D05/D07/D08 保守基线 | codex/campaign-quality（PR #28） | 后续品质覆盖；F37 按 D08 明确为 DEFERRED，不假记完成 | F34–F36 VERIFIED / F37 DEFERRED |
+| Q7 | F38 | Q0–Q6 选定范围验收 | codex/quality-release（PR #29） | 最终自动化与双入口证据包及回退说明完整，未决范围如实列出 | 自动化 VERIFIED / 真人试玩 NOT_RUN |
 
 建议先从 Q0 的“清单与 CI、运行器、测试适配、真实输入回归”逐项执行，再做 Q1 的“持久化→暂停归属→静默调度→通知表现”。原型和素材调研可提前开展；不得让延长奖励等待时间的 UI 先于 F07 上线。
 
@@ -274,6 +274,14 @@ E2E 入口恢复后再运行 `rtk proxy npm run test:e2e` 及经实现核实的�
 **10. Status Log 与更新方式**
 
 - 2026-11-23：完成三份报告与根历史计划的阅读、交叉分析及定向源码核对；生成 overview.md 与本规划稿。游戏代码、历史报告、根 PROJECT.md 未修改；未新增游戏动态验证，未创建实施分支或发布 PR。
-- Q0–Q7：均为 PLANNED。D01–D08：均为待评估。没有功能因写入本文件而被标记为完成。
+- 2026-11-23 / Q0-A（F01–F04）/ 稳定美术清单与 CI、隔离 continue-on-failure 回归 runner、11 项历史漂移修复、补齐 R3–R6 与 56 项 Tier 1–4 E2E / PR #20（`28d02e2`）/ GitHub Actions CI `45222529884` 100/100 PASS（44 回归 + 56 E2E）/ 无 / 可按合并提交回退 / `VERIFIED`
+- 2026-11-23 / Q0-B（F05–F06）/ 战场焦点/Enter 恢复、`modalOpen` 压制过场优先级、`#hud-hp-txt` 同步与 `COMBAT_RULE_PARAMS` 文案对齐 / PR #21（`292b7b1`）/ GitHub Actions CI `45232356299` 102/102 PASS（46 回归 + 56 E2E）/ 无 / 可按合并提交回退 / `VERIFIED`
+- 2026-11-23 / Q1（F07–F13）/ 持久化 `game.pendingRewards`、实例化 `pauseTokens` 与弹窗优先级、战斗静默调度、战前过场顺序、防误触与通知总线 / PR #22（`dfbbd38`）/ GitHub Actions CI `45263926151` 108/108 PASS（52 回归 + 56 E2E）/ 2 处低优先级存档提示微调结转 Q7 / 保留新权益字段兼容 / `VERIFIED`
+- 2026-11-24 / Q2（F14–F18）/ UI 语义双编码规范、统一导航层级、抽屉收束、分级提醒/升级预览与显式数量批量 QoL / PR #23（`6946074`）/ GitHub Actions CI `45289881132` 113/113 PASS（57 回归 + 56 E2E）/ 2 处低优先级焦点微调结转 Q7 / 保留旧入口路由兼容 / `VERIFIED`
+- 2026-11-24 / Q3（F19–F23）/ 收益账本与配置说明、双流派与演武练习、真实规则战斗矩阵与经济寿元闭环（融合外部 PR #25）/ PR #24（`fc9004f`）/ GitHub Actions CI `45331690603` 121/121 PASS（65 回归 + 56 E2E）+ `eval-combat-matrix` 84/84 + `audit-economy` PASS / 少许文案/清理微调结转 Q7 / D05 旧装备无损兼容 / `VERIFIED`
+- 2026-11-24 / Q4（F24–F29）/ 首卷动作与景深精修、115 张 WebP 与 5 张 RGBA 二进制质检、音效/转场反馈、首卷闭环与 `playtest-protocol-v1.md` / PR #26（`4b86533`）/ GitHub Actions CI `45348220517` 126/126 PASS（70 回归 + 56 E2E）/ **F29 真人观察式试玩尚未招募（0 / 5~8，标记 `NOT_RUN`）** / 保留原图与视觉层降级开关 / `F24–F28 VERIFIED`；`F29 NOT_RUN`
+- 2026-11-24 / Q5（F30–F33 · D06 保守基线）/ 提取 115 张运行 WebP、零依赖确定性构建 `scripts/build-playable.mjs`、拆分 9 个 ESM 模块、27 项纯 Node 单测与 `__CHENYUAN_DEBUG__` 兼容门面 / PR #27（`df5efda`）/ GitHub Actions CI `45363598891` 156/156 PASS（27 单元 + 73 回归 + 56 E2E + `build:check` + `art:manifest:check`）/ 无 / 产物与编辑源双向哈希核验 / `VERIFIED`
+- 2026-11-24 / Q6（F34–F37 · D01/D04/D05/D07/D08 保守基线）/ 2–6 卷覆盖、第五卷法则共鸣桥接与 5 项终局修复、高阶模式三分组与 D07 解锁一致、`q6-decisions-and-boundary.md` / PR #28（`5115b8e`）/ GitHub Actions CI `45388426786` 165/165 PASS（32 单元 + 77 回归 + 56 E2E + `build:check` + `art:manifest:check`）/ **F37 按 D08 登记 `DEFERRED`** / 保守基线不回退旧进度 / `F34–F36 VERIFIED`；`F37 DEFERRED`
+- 2026-11-24 / Q7（F38）/ 收口 7 项 Q1–Q5 遗留边界打磨，完成 1440×900 桌面 Chromium 阶段二全量测试环境验证（静态 HTTP 77/77 回归 + 56/56 E2E + 32/32 单测 + 直接 `file://` 启动与帧时间基线 + 84/84 战斗矩阵 + 经济审计，0 运行时错误）并沉淀 `docs/analysis/validation/q7-release/` 证据包 / `codex/quality-release`（PR #29）/ 见 [validation/q7-release/SUMMARY.md](validation/q7-release/SUMMARY.md) / **F29 真人试玩 `NOT_RUN`（0/5~8）；F37 `DEFERRED`；D01–D08 均沿用保守基线待产品另行拍板** / 可按合并提交回退至 `main @ 5115b8e` 且保持存档字段兼容 / `自动化 VERIFIED / 真人试玩 NOT_RUN`
 
 后续每项记录采用：`日期 / F或D编号 / 变更与选择 / commit或PR / 已执行验证及证据 / 未决问题 / 回退方式 / 状态`。允许状态为 PLANNED、IN_PROGRESS、IMPLEMENTED、VERIFIED、NEEDS_DECISION、DEFERRED；只有实际达到对应出口且证据齐全才使用 VERIFIED。DEFERRED 必须说明范围及责任，不能等同完成。

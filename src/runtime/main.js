@@ -1539,9 +1539,9 @@
     if (it.atk) parts.push(`攻+${effectiveGearVal(it, "atk")}`);
     if (it.hp) parts.push(`血+${effectiveGearVal(it, "hp")}`);
     if (it.dr) parts.push(`减伤+${effectiveGearVal(it, "dr")}`);
-    if (it.crit) parts.push(`暴+${Math.round(it.crit * 100)}%`);
-    if (it.spd) parts.push(`速+${Math.round(it.spd * 100)}%`);
-    if (it.bonusSword) parts.push(`飞剑+${it.bonusSword}`);
+    if (num(it.crit, 0)) parts.push(`暴+${Math.round(num(it.crit, 0) * 100)}%`);
+    if (num(it.spd, 0)) parts.push(`速+${Math.round(num(it.spd, 0) * 100)}%`);
+    if (num(it.bonusSword, 0)) parts.push(`飞剑+${Math.floor(num(it.bonusSword, 0))}`);
     if (it.affix) {
       const af = SACRED_AFFIXES.find(a => a.id === it.affix);
       if (af) parts.push(`【${af.name}】`);
@@ -2125,7 +2125,7 @@
   }
 
   const LAW_SHORT_BADGE = {
-    wanjian: "飞剑 +2", yinyang: "雷火链电", crit_lotus: `暴击 +${Math.round(COMBAT_RULE_PARAMS.laws.crit_lotus.crit * 100)}%`,
+    wanjian: "飞剑 +1", yinyang: "雷火链电", crit_lotus: `暴击 +${Math.round(COMBAT_RULE_PARAMS.laws.crit_lotus.crit * 100)}%`,
     stagger_surge: "破势绞杀+", pill_fire: "服丹震爆", nine_pill: "双倍仙丹",
     wealth_power: "灵石增威", thunder_body: "周身落雷", eternal_spring: "常驻回血",
     void_haste: "幻影剑分身", beast_soul: "灵兽狂暴", relic_awake: "大招减CD",
@@ -5296,7 +5296,9 @@
     resetEncounterTelemetry();
     // Convert Sanctum into High-Stakes 3-Wave Night-Parade Defense Siege!
     arena.enemies = [];
-    arena.props = arena.props.filter(pr => !pr.isDummy);
+    arena.props = arena.props.filter(pr => !pr.isDummy && !pr.isDojoProp);
+    arena.waterPools = [];
+    arena.fireZones = [];
     const dojoBar = document.getElementById("dojo-control-bar");
     if (dojoBar) dojoBar.classList.remove("active");
 
@@ -10530,7 +10532,7 @@
   // Sanctum Sword-Trial Dojo (`演武论剑坪 · 机关试剑木人桩`)
   function spawnDojoDummy(mode = null) {
     if (mode) {
-      arena.dojoMode = hasOwn(DOJO_MODE_META, mode) ? mode : mode;
+      arena.dojoMode = hasOwn(DOJO_MODE_META, mode) ? mode : "static";
       if (!arena.dojoSession || arena.dojoSession.mode !== arena.dojoMode) {
         arena.dojoSession = createFreshDojoSession(arena.dojoMode);
       }
@@ -25713,7 +25715,11 @@
 
   function closeDrawer() {
     clearTransientInputs();
-    if (activeMatSourceJump && !activeMatSourceJump.inModal) activeMatSourceJump = null;
+    if (activeMatSourceJump && !activeMatSourceJump.inModal) {
+      activeMatSourceJump = null;
+      const staleDrawerRet = document.querySelector("#jade-panel #btn-mat-source-return");
+      if (staleDrawerRet) staleDrawerRet.remove();
+    }
     const wasOpen = drawerOpen;
     furnaceGame.active = false;
     drawerOpen = false;
@@ -28927,7 +28933,10 @@
         showToast("最新存档读取异常，保留本页只读态！");
         saveReadOnlyMode = true;
         saveConflictState = null;
-        closeModal();
+        const modalBd = document.getElementById("modal-backdrop");
+        if (modalBd && modalBd.classList.contains("open") && (activeModalKind === "save_conflict" || activeModalKind === "save_corrupt")) {
+          closeModal();
+        }
         renderHudSaveAlert();
         return;
       }
@@ -30393,7 +30402,7 @@
         };
         openSanctumUpgradeModal();
         if (box) box.scrollTop = 0;
-        const retBtn = document.getElementById("btn-mat-source-return");
+        const retBtn = box ? box.querySelector("#btn-mat-source-return") : document.getElementById("btn-mat-source-return");
         if (retBtn && isElementFocusable(retBtn)) {
           try { retBtn.focus({ preventScroll: true }); } catch (e) {}
         }
@@ -30408,7 +30417,7 @@
         };
         renderDrawerContent();
         if (bodyEl) bodyEl.scrollTop = 0;
-        const retBtn = document.getElementById("btn-mat-source-return");
+        const retBtn = bodyEl ? bodyEl.querySelector("#btn-mat-source-return") : document.getElementById("btn-mat-source-return");
         if (retBtn && isElementFocusable(retBtn)) {
           try { retBtn.focus({ preventScroll: true }); } catch (e) {}
         }
@@ -30424,6 +30433,17 @@
         if (box) {
           box.scrollTop = prev.scrollTop || 0;
           let orig = prev.originSelector ? box.querySelector(prev.originSelector) : null;
+          if (!orig || !isElementFocusable(orig)) {
+            if (prev.matId && prev.originSelector) {
+              const chips = box.querySelectorAll(`[data-mat-source="${prev.matId}"]`);
+              for (const ch of chips) {
+                if (ch.getAttribute("data-source-origin") === prev.originSelector && isElementFocusable(ch)) {
+                  orig = ch;
+                  break;
+                }
+              }
+            }
+          }
           if (!orig || !isElementFocusable(orig)) {
             orig = prev.matId ? box.querySelector(`[data-mat-source="${prev.matId}"]`) : null;
           }
@@ -30566,7 +30586,13 @@
         if (kOpt.longevityPill) game.inventory.longevity_pill = (game.inventory.longevity_pill || 0) + kOpt.longevityPill;
         if (kOpt.healPills) game.inventory.healing_pill = (game.inventory.healing_pill || 0) + kOpt.healPills;
         if (kOpt.cores) game.inventory.core = (game.inventory.core || 0) + kOpt.cores;
-        if (kOpt.lifespanMonths) game.lifespanBonusMonths = (game.lifespanBonusMonths || 0) + kOpt.lifespanMonths;
+        if (kOpt.lifespanMonths) {
+          game.lifespanBonusMonths = (game.lifespanBonusMonths || 0) + kOpt.lifespanMonths;
+          if (!getLifespanInfo(game).isExhausted) {
+            game.lifespanExhaustedPromptDismissed = false;
+            pendingLifespanExhaustedPrompt = false;
+          }
+        }
         if (kOpt.fillIntent) arena.swordIntent = 100;
         if (kOpt.fullHeal) { const st2 = getCombatStats(game); game.hp = st2.maxHp; game.mp = st2.maxMp; }
         if (kOpt.bond) {
