@@ -7151,6 +7151,636 @@ try {
       await ctx.close();
     }
   });
+
+  // ============================================================================
+  // Q3-1 (F19): STAT/YIELD LEDGER, EFFECTIVE GEAR PARITY & COPY ALIGNMENT
+  // ============================================================================
+  await runSuite("Q3-1", "F19 computeCombatStatLedger parity, 0.08 gear step, aligned copy & <details> breakdown within Mortal <=14 button budget", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q3-1", true);
+    try {
+      const res = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        const g = s.game;
+        const a = s.arena;
+
+        // 1. Ledger totals === getCombatStats exact parity + soft-cap M2-4 invariant
+        g.realm = "golden";
+        g.stones = 2500;
+        g.laws = ["wealth_power", "age_might", "karma_resonance"];
+        g.elapsedMonths = 720;
+        g.choices = { c1: "a", c2: "b", c3: "c", c4: "d", c5: "e", c6: "f" };
+        g.karmaScore = -50;
+        g.statMultBonus = 1.6;
+        const ledger = api.computeCombatStatLedger(g);
+        const stats = api.getCombatStats(g);
+        const parity = (
+          ledger.totals.atk === stats.atk &&
+          ledger.totals.maxHp === stats.maxHp &&
+          ledger.totals.maxMp === stats.maxMp &&
+          ledger.totals.dmgReduce === stats.dmgReduce &&
+          ledger.totals.crit === stats.crit &&
+          ledger.totals.critMult === stats.critMult &&
+          ledger.totals.atkHaste === stats.atkHaste &&
+          ledger.totals.speed === stats.speed &&
+          ledger.totals.statBreakdown.baseAtk === stats.statBreakdown.baseAtk &&
+          ledger.totals.statBreakdown.rawPassivePct === stats.statBreakdown.rawPassivePct &&
+          ledger.totals.statBreakdown.cappedPassivePct === stats.statBreakdown.cappedPassivePct &&
+          ledger.totals.statBreakdown.activeMult === stats.statBreakdown.activeMult
+        );
+
+        // 2. Unified 0.08 gear enhancement step (effectiveGearVal vs getGearTotals vs formatGearStats)
+        const testWpn = { slot: "weapon", rarity: 3, name: "测试剑", atk: 50, lvl: 5 };
+        const effVal = api.effectiveGearVal(testWpn, "atk", 5);
+        const expectedVal = Math.round(50 * (1 + 5 * api.GEAR_ENHANCE_STEP_PCT));
+        g.equippedGear = { weapon: testWpn, armor: null, ring: null };
+        const totals = api.getGearTotals(g);
+        const fmtStr = api.formatGearStats(testWpn);
+
+        // 3. Copy-vs-engine alignment checks (DESTINY_FRUITS, SACRED_AFFIXES, GOURD_SOAKS, PERKS, PRIMORDIAL_AWAKENINGS, posture, boss banner)
+        const perksById = Object.fromEntries(api.PERKS.map(p => [p.id, p.desc]));
+        const affixesById = Object.fromEntries(api.SACRED_AFFIXES.map(af => [af.id, af]));
+        a.weaponPosture = "qinglian";
+        api.updateHud();
+        const postureSub = document.getElementById("posture-sub-txt")?.textContent || "";
+
+        // Boss banner reversed domain & stun copy
+        a.enemies = [];
+        api.spawnSingleEnemy("wolf", 700, 480, 1.0, true, "雾隐狼王");
+        a.reversedDomainTimer = 5;
+        api.updateHud();
+        const bossRevTxt = document.getElementById("boss-banner-state")?.textContent || "";
+        a.reversedDomainTimer = 0;
+        if (a.enemies[0]) a.enemies[0].state = "stun";
+        g.laws = [];
+        api.updateHud();
+        const bossStunBaseTxt = document.getElementById("boss-banner-state")?.textContent || "";
+        g.laws = ["stagger_surge"];
+        api.updateHud();
+        const bossStunLawTxt = document.getElementById("boss-banner-state")?.textContent || "";
+
+        // Story tab Karma copy check
+        g.karmaScore = -40;
+        document.getElementById("nav-btn-story").click();
+        const karmaDemonicHtml = document.getElementById("panel-scroll-body")?.textContent || "";
+        g.karmaScore = 40;
+        api.renderDrawerContent();
+        const karmaRighteousHtml = document.getElementById("panel-scroll-body")?.textContent || "";
+
+        return {
+          parity,
+          entryCount: ledger.entries.length,
+          rawPassive: stats.statBreakdown.rawPassivePct,
+          cappedPassive: stats.statBreakdown.cappedPassivePct,
+          activeMult: stats.statBreakdown.activeMult,
+          stepPct: api.GEAR_ENHANCE_STEP_PCT,
+          effVal,
+          expectedVal,
+          totalsAtk: totals.atk,
+          fmtStr,
+          fruits: api.DESTINY_FRUITS,
+          affixesById,
+          soaks: api.GOURD_SOAKS,
+          perksById,
+          primArmor: api.PRIMORDIAL_AWAKENINGS.armor.desc,
+          postureSub,
+          bossRevTxt,
+          bossStunBaseTxt,
+          bossStunLawTxt,
+          karmaDemonicHtml,
+          karmaRighteousHtml
+        };
+      });
+
+      assert.equal(res.parity, true, "computeCombatStatLedger().totals must strictly match getCombatStats()");
+      assert.ok(res.entryCount >= 5, `Expected structured ledger entries, got ${res.entryCount}`);
+      assert.ok(res.cappedPassive < res.rawPassive && res.cappedPassive < 1.66, "Soft-cap passive pool must stay strictly bounded");
+      assert.ok(res.activeMult <= 1.95, `activeMult must stay <= 1.95, got ${res.activeMult}`);
+      assert.equal(res.stepPct, 0.08);
+      assert.equal(res.effVal, res.expectedVal, "effectiveGearVal must use 0.08 per level (not drifted 0.14)");
+      assert.equal(res.totalsAtk, res.expectedVal, "getGearTotals must match effectiveGearVal");
+      assert.ok(res.fmtStr.includes(`攻+${res.expectedVal}`), `formatGearStats must match unified 0.08 step: ${res.fmtStr}`);
+
+      assert.ok(res.fruits.sword_twin.desc.includes("+2") && !res.fruits.sword_twin.desc.includes("+3"));
+      assert.ok(res.fruits.lotus_body.desc.includes("+35%") && !res.fruits.lotus_body.desc.includes("+65%"));
+      assert.ok(res.fruits.glutton_pill.desc.includes("+6") && res.fruits.glutton_pill.desc.includes("+18"));
+      assert.ok(res.fruits.eternal_pine.desc.includes("+10%") && res.fruits.eternal_pine.desc.includes("+3%") && res.fruits.eternal_pine.desc.includes("+32%"));
+      assert.ok(res.affixesById.wind_rider.desc.includes("+10%") && !res.affixesById.wind_rider.desc.includes("+12%"));
+      assert.ok(res.affixesById.vamp_blade.desc.includes("3") && res.affixesById.vamp_blade.desc.includes("1.5%"));
+      assert.ok(res.soaks.iron_lotus.desc.includes("48%"));
+      assert.ok(res.soaks.wind_feather.desc.includes("+22%") && !res.soaks.wind_feather.desc.includes("+30%"));
+      assert.ok(res.soaks.crimson_vine.desc.includes("+18%") && !res.soaks.crimson_vine.desc.includes("+25%"));
+      assert.ok(res.perksById.sword_bone.includes("+5") && res.perksById.sword_bone.includes("+8%"));
+      assert.ok(res.perksById.sword_sovereign.includes("+12") && res.perksById.sword_sovereign.includes("+18%"));
+      assert.ok(res.perksById.calamity_phoenix.includes("+18") && res.perksById.calamity_phoenix.includes("+22%"));
+      assert.ok(res.perksById.primordial_sage.includes("+10%"));
+      assert.ok(res.primArmor.includes("25%") && !res.primArmor.includes("30%"));
+      assert.ok(res.postureSub.includes("+14%") && !res.postureSub.includes("+28%"));
+      assert.ok(res.bossRevTxt.includes("+20%") && !res.bossRevTxt.includes("+30%"));
+      assert.ok(res.bossStunBaseTxt.includes("1.45×") && res.bossStunLawTxt.includes("1.65×") && !res.bossStunBaseTxt.includes("200%"));
+      assert.ok(res.karmaDemonicHtml.includes("+18%") && res.karmaDemonicHtml.includes("+22%") && !res.karmaDemonicHtml.includes("+26%"));
+      assert.ok(res.karmaRighteousHtml.includes("+6%") && res.karmaRighteousHtml.includes("+12"));
+
+      // 4. Mortal Cultivate <details id="stat-breakdown-details"> renders with 0 extra <button> elements (<= 14 total)
+      await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        const fresh = api.createFreshGame("凡境测试", "sword_bone", 0);
+        Object.assign(s.game, fresh);
+        api.updateHud();
+      });
+      await page.click("#nav-btn-cultivate");
+      await page.waitForSelector("#stat-breakdown-details");
+      const cultCheck = await page.evaluate(() => {
+        const det = document.getElementById("stat-breakdown-details");
+        const body = document.getElementById("panel-scroll-body");
+        const visibleBtns = Array.from(body.querySelectorAll("button")).filter(b => getComputedStyle(b).display !== "none").length;
+        const innerBtns = det ? det.querySelectorAll("button").length : -1;
+        return { hasDetails: Boolean(det), innerBtns, visibleBtns };
+      });
+      assert.equal(cultCheck.hasDetails, true);
+      assert.equal(cultCheck.innerBtns, 0, "Stat ledger <details> must add 0 <button> elements");
+      assert.ok(cultCheck.visibleBtns <= 14, `Mortal Cultivate visible buttons must stay <= 14, got ${cultCheck.visibleBtns}`);
+      await page.click("#stat-breakdown-details > summary");
+      const openRows = await page.locator("#stat-breakdown-details[open] .stat-ledger-row").count();
+      assert.ok(openRows >= 1, "Opening #stat-breakdown-details must display active stat ledger rows");
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // ============================================================================
+  // Q3-2 (F20): SCHOOL IDENTITY, 6-ASPECT HUD, DOJO DRILLS, NON-FARMING GUARD & D02 SANDBOX PROTOTYPE
+  // ============================================================================
+  await runSuite("Q3-2", "F20 6-aspect HUD sync, 3 Dojo drills, Sanctum non-farming guard & sandbox-only D02 slot prototype", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q3-2", true);
+    try {
+      // 1. Outside Sanctum/Sandbox: #dojo-training-hud hidden, D02 prototype rejected, Mortal HUD buttons <= 14
+      const formalCheck = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        const protoDeny = api.setSandboxSlotPrototype(true);
+        const btnProto = document.getElementById("btn-sandbox-slot-proto");
+        const dojoHud = document.getElementById("dojo-training-hud");
+        const btns = Array.from(document.querySelectorAll("button")).filter(el => {
+          if (el.closest("#welcome-screen, #side-panel, #modal-backdrop, #pavilion-popover, #story-dialogue-bar, #ending-overlay")) return false;
+          const cs = getComputedStyle(el);
+          const r = el.getBoundingClientRect();
+          return cs.display !== "none" && cs.visibility !== "hidden" && Number(cs.opacity) > 0 && r.width > 2 && r.height > 2;
+        });
+
+        // Verify right-click label syncs dynamically to getCurrentSixAspectSpec() (never stale 挑月斩/十字斩)
+        s.game.weaponForm = "spear";
+        s.arena.weaponPosture = "xuanzhong";
+        s.arena.player.comboWindow = 0.9;
+        s.arena.morphCd = 0;
+        api.updateHud();
+        const specSpearHeavy = api.getCurrentSixAspectSpec();
+        const lblMorph = document.getElementById("lbl-recall-marks")?.textContent || "";
+        const morphAttr = document.getElementById("orb-recall")?.getAttribute("data-morph-state") || "";
+
+        s.arena.player.comboWindow = 0;
+        s.arena.enemies = [];
+        api.updateHud();
+        const lblIdle = document.getElementById("lbl-recall-marks")?.textContent || "";
+        const idleAttr = document.getElementById("orb-recall")?.getAttribute("data-morph-state") || "";
+
+        // Build positioning summary differs cleanly between sword and talisman
+        s.game.school = "sword";
+        const posSword = api.getBuildPositioningSummary(s.game);
+        s.game.school = "talisman";
+        const posTal = api.getBuildPositioningSummary(s.game);
+
+        return {
+          protoDeny,
+          protoBtnHidden: !btnProto || getComputedStyle(btnProto).display === "none",
+          dojoHudHidden: !dojoHud || getComputedStyle(dojoHud).display === "none",
+          mortalHudBtnCount: btns.length,
+          specSpearHeavyShort: specSpearHeavy.short,
+          lblMorph,
+          morphAttr,
+          lblIdle,
+          idleAttr,
+          posSword,
+          posTal
+        };
+      });
+      assert.equal(formalCheck.protoDeny.active, false);
+      assert.equal(formalCheck.protoDeny.reason, "sandbox_only");
+      assert.equal(formalCheck.protoBtnHidden, true, "#btn-sandbox-slot-proto must remain hidden outside sandbox");
+      assert.equal(formalCheck.dojoHudHidden, true, "#dojo-training-hud must remain hidden outside Sanctum");
+      assert.ok(formalCheck.mortalHudBtnCount <= 14, `Mortal HUD visible buttons must stay <= 14, got ${formalCheck.mortalHudBtnCount}`);
+      assert.equal(formalCheck.lblMorph, formalCheck.specSpearHeavyShort, "Right-click label must sync to active 6-aspect spec");
+      assert.equal(formalCheck.morphAttr, "morph");
+      assert.equal(formalCheck.lblIdle, "爆剑");
+      assert.equal(formalCheck.idleAttr, "idle");
+      assert.notEqual(formalCheck.posSword.roleTitle, formalCheck.posTal.roleTitle);
+
+      // 2. Sanctum Dojo: 3 focused drills advance 0 -> 3/3 (grade S) & guard prevents formal stone/bounty farming
+      const dojoCheck = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.stones = 100;
+        s.game.goalStats = { techBreaks: 0 };
+        s.game.achievements = [];
+        api.enterSanctumHub({ skipSave: true });
+        const hudVisible = document.getElementById("dojo-training-hud")?.classList.contains("active");
+
+        // Drill 1: drill_mark_detonate (needs >=3 marks per detonate; <3 should not advance)
+        api.setDojoMode("drill_mark_detonate");
+        api.recordDojoDrillEvent("detonate", 2);
+        const d1Under = api.getDojoTrainingState().progress;
+        api.recordDojoDrillEvent("detonate", 3);
+        api.recordDojoDrillEvent("detonate", 4);
+        api.recordDojoDrillEvent("detonate", 3);
+        const d1Done = api.getDojoTrainingState();
+
+        // Drill 2: drill_dodge_counter
+        api.setDojoMode("drill_dodge_counter");
+        api.recordDojoDrillEvent("parry");
+        api.recordDojoDrillEvent("dodge");
+        api.recordDojoDrillEvent("parry");
+        const d2Done = api.getDojoTrainingState();
+
+        // Drill 3: drill_morph_combo
+        api.setDojoMode("drill_morph_combo");
+        api.recordDojoDrillEvent("morph", "万剑游龙刺");
+        api.recordDojoDrillEvent("morph", "万剑游龙刺");
+        api.recordDojoDrillEvent("morph", "万剑游龙刺");
+        const d3Done = api.getDojoTrainingState();
+
+        // Trigger real parry & detonate in Sanctum to verify ZERO formal stones / techBreaks / ach_combo farmed
+        const dummy = s.arena.enemies.find(e => e.isDummy);
+        if (dummy) {
+          dummy.swordMarks = 4;
+          dummy.state = "windup";
+          dummy.perilous = false;
+          dummy.timer = 0.2;
+          s.arena.player.x = dummy.x - 40;
+          s.arena.player.y = dummy.y;
+        }
+        s.arena.player.dashCd = 0;
+        api.triggerDashParry();
+        s.arena.player.recallCd = 0;
+        s.arena.player.comboWindow = 0;
+        api.recallAndDetonateSwords();
+
+        return {
+          hudVisible,
+          d1Under,
+          d1Done,
+          d2Done,
+          d3Done,
+          stonesAfter: s.game.stones,
+          techBreaksAfter: s.game.goalStats.techBreaks,
+          achievementsAfter: s.game.achievements.slice()
+        };
+      });
+      assert.equal(dojoCheck.hudVisible, true);
+      assert.equal(dojoCheck.d1Under, 0, "Detonating <3 marks must not advance drill_mark_detonate");
+      assert.equal(dojoCheck.d1Done.completed, true);
+      assert.equal(dojoCheck.d1Done.grade, "S");
+      assert.equal(dojoCheck.d2Done.completed, true);
+      assert.equal(dojoCheck.d3Done.completed, true);
+      assert.equal(dojoCheck.stonesAfter, 100, "Sanctum Dojo parry/detonate must NOT farm formal stones");
+      assert.equal(dojoCheck.techBreaksAfter, 0, "Sanctum Dojo must NOT farm formal techBreaks");
+      assert.equal(dojoCheck.achievementsAfter.includes("ach_break"), false, "Sanctum Dojo must NOT unlock formal achievements");
+
+      // 3. Sandbox-only D02 slot prototype toggle & auto-reset on sandbox exit
+      await page.click("#btn-pavilion-menu");
+      await page.waitForSelector("#pavilion-popover.open #btn-toggle-arcana-all");
+      await page.click("#btn-toggle-arcana-all");
+      await page.waitForSelector("#modal-backdrop.open #btn-confirm-enter-sandbox");
+      await page.click("#btn-confirm-enter-sandbox");
+      await page.waitForFunction(() => Boolean(window.__CHENYUAN_V25__.getState().game?.unlockAllArcana) === true);
+
+      const sbProto = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        api.enterSanctumHub({ skipSave: true });
+        const btn = document.getElementById("btn-sandbox-slot-proto");
+        const visibleInSandbox = Boolean(btn && btn.style.display !== "none");
+        const onRes = api.setSandboxSlotPrototype(true);
+        const dockHasClass = document.getElementById("action-skill-dock")?.classList.contains("sandbox-slot-proto-active");
+        return { visibleInSandbox, onRes, dockHasClass };
+      });
+      assert.equal(sbProto.visibleInSandbox, true);
+      assert.equal(sbProto.onRes.active, true);
+      assert.equal(sbProto.dockHasClass, true);
+
+      // Exit sandbox -> prototype must reset automatically
+      await page.click("#btn-pavilion-menu");
+      await page.waitForSelector("#pavilion-popover.open #btn-toggle-arcana-all");
+      await page.click("#btn-toggle-arcana-all");
+      await page.waitForFunction(() => Boolean(window.__CHENYUAN_V25__.getState().game?.unlockAllArcana) === false);
+      const afterExit = await page.evaluate(() => ({
+        proto: window.__CHENYUAN_V25__.getSandboxSlotPrototype(),
+        dockHasClass: document.getElementById("action-skill-dock")?.classList.contains("sandbox-slot-proto-active"),
+        btnHidden: document.getElementById("btn-sandbox-slot-proto")?.style.display === "none"
+      }));
+      assert.equal(afterExit.proto.active, false);
+      assert.equal(afterExit.dockHasClass, false);
+      assert.equal(afterExit.btnHidden, true);
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // ============================================================================
+  // Q3-3 (F21): REAL COMBAT CURVE, SCHOOL PARITY & EVALUATION HOOKS
+  // ============================================================================
+  await runSuite("Q3-3", "F21 real combat evaluation hooks, 6-realm monotonic curve & Sword vs Talisman identity", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q3-3", true);
+    try {
+      const matrixProbe = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const realms = ["mortal", "qi", "foundation", "golden", "nascent", "spirit"];
+        const curve = realms.map(rid => {
+          const gSw = api.createFreshGame("剑修", "sword_bone", 0);
+          gSw.realm = rid; gSw.school = "sword";
+          const gTl = api.createFreshGame("符修", "sword_bone", 0);
+          gTl.realm = rid; gTl.school = "talisman";
+          const stSw = api.getCombatStats(gSw);
+          const stTl = api.getCombatStats(gTl);
+          return {
+            realm: rid,
+            swAtk: stSw.atk,
+            swHp: stSw.maxHp,
+            swHaste: stSw.atkHaste,
+            swCritMult: stSw.critMult,
+            tlHaste: stTl.atkHaste,
+            tlMpRegen: stTl.schoolSpec.mpRegenMult,
+            tlSkillMult: stTl.schoolSpec.skillDmgMult,
+            swMpRegen: stSw.schoolSpec.mpRegenMult,
+            swSkillMult: stSw.schoolSpec.skillDmgMult
+          };
+        });
+
+        // Verify live engine slash + stepArena deals real damage on a spawned enemy
+        const s = api.getState();
+        s.arena.sanctumMode = false;
+        s.arena.paused = false;
+        s.arena.enemies = [];
+        api.spawnSingleEnemy("wolf", s.arena.player.x + 65, s.arena.player.y, 1.0, false);
+        const startHp = s.arena.enemies[0].hp;
+        document.dispatchEvent(new PointerEvent("pointermove", { clientX: s.arena.enemies[0].x, clientY: s.arena.enemies[0].y }));
+        s.arena.player.slashCd = 0;
+        api.fireManualSlash();
+        api.stepArena(0.05);
+        api.stepArena(0.05);
+        const endHp = s.arena.enemies[0] ? s.arena.enemies[0].hp : 0;
+
+        return {
+          curve,
+          singleHitCap: api.SINGLE_HIT_CAP_RATIO,
+          stageScalingLen: api.STAGE_SCALING.length,
+          dealtDamage: startHp - endHp
+        };
+      });
+
+      assert.equal(matrixProbe.singleHitCap, 0.45);
+      assert.equal(matrixProbe.stageScalingLen, 5);
+      assert.ok(matrixProbe.dealtDamage > 0, `Live fireManualSlash + stepArena must deal real damage, got ${matrixProbe.dealtDamage}`);
+      for (let i = 1; i < matrixProbe.curve.length; i++) {
+        assert.ok(matrixProbe.curve[i].swAtk > matrixProbe.curve[i - 1].swAtk, `ATK must grow monotonically from ${matrixProbe.curve[i - 1].realm} to ${matrixProbe.curve[i].realm}`);
+        assert.ok(matrixProbe.curve[i].swHp > matrixProbe.curve[i - 1].swHp, `MaxHP must grow monotonically`);
+      }
+      const mid = matrixProbe.curve[2];
+      assert.ok(mid.swHaste > mid.tlHaste && mid.swCritMult > 1.48, "Sword school must retain higher haste/critMult");
+      assert.ok(mid.tlMpRegen > mid.swMpRegen && mid.tlSkillMult > mid.swSkillMult, "Talisman school must retain higher MP regen & skillDmgMult");
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // ============================================================================
+  // Q3-4 (F22): AFFIX BUDGET, 1000-ROLL BOUNDS, D05 LEGACY GEAR PRESERVATION & ENGRAVE TAGS
+  // ============================================================================
+  await runSuite("Q3-4", "F22 GEAR_BUDGET_BY_RARITY 1000-roll bounds, deterministic pity, D05 legacy gear preservation & engrave build tags", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q3-4", true);
+    try {
+      const f22 = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        // Deterministic Mulberry32 PRNG for 1,000-roll outlier replay
+        let seed = 20261124;
+        const rng = () => {
+          seed = (seed + 0x6D2B79F5) >>> 0;
+          let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+
+        let violations = 0;
+        const r3Powers = [];
+        const slots = ["weapon", "armor", "ring"];
+        for (let i = 0; i < 1000; i++) {
+          const stage = i % 5;
+          const minR = Math.floor(i / 200); // 0..4
+          const slot = slots[i % 3];
+          const it = api.rollGearItem(stage, minR, slot, { usePity: false, rng });
+          const check = api.computeGearAffixBudget(it);
+          if (!check.withinBudget) violations += 1;
+          if (it.rarity === 3 && stage === 2 && slot === "weapon") r3Powers.push(it.power);
+        }
+        r3Powers.sort((a, b) => a - b);
+        const p10 = r3Powers[Math.floor(r3Powers.length * 0.1)] || 1;
+        const p90 = r3Powers[Math.floor(r3Powers.length * 0.9)] || 1;
+
+        // Deterministic pity verification (4th epic >=3, 8th mythic >=4)
+        const pityGame = api.createFreshGame("保底测试", "sword_bone", 0);
+        const lowRng = () => 0.01;
+        const pityRarities = [];
+        for (let k = 0; k < 8; k++) {
+          const it = api.rollGearItem(0, 0, "weapon", { usePity: true, rng: lowRng, game: pityGame });
+          pityRarities.push(it.rarity);
+        }
+
+        // D05 Legacy Gear Preservation: over-budget owned gear MUST NOT be clamped by normalizeLoadedGame
+        const legacyWeapon = {
+          uid: "legacy_god_sword",
+          slot: "weapon",
+          name: "旧档神剑",
+          rarity: 2,
+          lvl: 3,
+          atk: 999,
+          crit: 0.55,
+          spd: 0.45,
+          bonusSword: 3,
+          affix: "vamp_blade",
+          sell: 88,
+          price: 200
+        };
+        const legacyRing = Object.assign({}, legacyWeapon, { uid: "legacy_bag_ring", slot: "ring", name: "旧档神佩" });
+        const loaded = api.normalizeLoadedGame({
+          name: "旧档老玩家",
+          realm: "golden",
+          equippedGear: { weapon: legacyWeapon, armor: null, ring: null },
+          gearBag: [legacyRing]
+        });
+
+        // Open Affix Engrave modal and inspect build tags
+        const s = api.getState();
+        s.game.realm = "foundation";
+        s.game.school = "talisman";
+        s.game.stones = 200;
+        if (!s.game.equippedGear.weapon) {
+          s.game.equippedGear.weapon = api.rollGearItem(1, 2, "weapon", { usePity: false, rng });
+        }
+        api.openAffixEngraveModal("weapon");
+        const modalTxt = document.getElementById("modal-content")?.textContent || "";
+        api.closeModal();
+
+        return {
+          violations,
+          p10,
+          p90,
+          pityRarities,
+          loadedWpn: loaded.equippedGear.weapon,
+          loadedBag0: loaded.gearBag[0],
+          modalTxt
+        };
+      });
+
+      assert.equal(f22.violations, 0, `1,000 seeded gear rolls must have 0 budget violations, got ${f22.violations}`);
+      assert.ok(f22.p90 / Math.max(1, f22.p10) < 3.0, `Power spread p90/p10 must be tightly bounded (${f22.p10}..${f22.p90})`);
+      assert.ok(f22.pityRarities[3] >= 3, `4th roll must trigger Epic pity (>=3), got ${JSON.stringify(f22.pityRarities)}`);
+      assert.ok(f22.pityRarities[7] >= 4, `8th roll must trigger Mythic pity (>=4), got ${JSON.stringify(f22.pityRarities)}`);
+      assert.equal(f22.loadedWpn.atk, 999, "D05: normalizeLoadedGame must NOT clamp legacy equipped weapon atk");
+      assert.equal(f22.loadedWpn.crit, 0.55, "D05: normalizeLoadedGame must NOT clamp legacy equipped weapon crit");
+      assert.equal(f22.loadedWpn.bonusSword, 3, "D05: normalizeLoadedGame must NOT clamp legacy equipped weapon bonusSword");
+      assert.equal(f22.loadedBag0.atk, 999, "D05: normalizeLoadedGame must NOT clamp legacy gearBag item");
+      assert.ok(f22.modalTxt.includes("御剑推荐") && f22.modalTxt.includes("雷符推荐") && f22.modalTxt.includes("生存推荐"), "Affix engrave modal must display build recommendation tags");
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // ============================================================================
+  // Q3-5 (F23): KM_DEMON_CORE ANTI-ARBITRAGE & 7-PATH PRE-ACTION LIFESPAN PREVIEW
+  // ============================================================================
+  await runSuite("Q3-5", "F23 km_demon_core anti-arbitrage, 7-path pre-action lifespan previews & first-time 75% warning explanation", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "Q3-5", true);
+    try {
+      const f23 = await page.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const v23 = window.__CHENYUAN_V23__;
+        const s = api.getState();
+        const g = s.game;
+
+        // 1. km_demon_core anti-arbitrage under demonic karma + 0.8x fair omen discount
+        const fairIdx = api.CELESTIAL_OMENS.findIndex(o => o.id === "fair");
+        g.realm = "spirit";
+        g.karmaScore = -45;
+        g.omenIndex = fairIdx >= 0 ? fairIdx : 0;
+        g.karmaMarketBought = {};
+        g.stones = 600;
+        g.equippedGear = { weapon: null, armor: null, ring: null };
+        g.gearBag = [];
+        const specials = api.getKarmaMarketSpecials(g);
+        const demonSpec = specials.find(sp => sp.id === "km_demon_core");
+        const boughtOk = api.buyKarmaSpecialItem("km_demon_core");
+        const wpn = api.getPendingCompareGear() || g.equippedGear.weapon || g.gearBag[g.gearBag.length - 1];
+
+        // 2. Verify all 7 lifespan-consuming pre-action previews
+        // Reset to Mortal near 75% threshold so previews show threshold crossing clearly
+        const fresh = api.createFreshGame("寿元测试", "sword_bone", 0);
+        Object.assign(g, fresh);
+        g.realm = "qi";
+        g.stones = 500;
+        g.inventory.herb = 10;
+        g.inventory.dew = 10;
+        g.inventory.blood_fury_pill = 1;
+        const lfBase = api.getLifespanInfo(g);
+        // Set 2 months below 75% warning line
+        g.elapsedMonths = Math.max(0, Math.floor(lfBase.maxMonths * 0.75) - (g.startAgeMonths || 216) - 2);
+        api.updateHud();
+
+        // Path 1: Alchemy Quick Craft tile + warning
+        document.getElementById("nav-btn-alchemy").click();
+        const alchemyDrawerTxt = document.getElementById("panel-scroll-body")?.textContent || "";
+
+        // Path 2: Batch Craft modal (#batch-craft-lifespan-preview + keep ×5 / 15月 on #btn-confirm-batch-craft)
+        api.openBatchCraftModal("healing", 5);
+        const batchPrevTxt = document.getElementById("batch-craft-lifespan-preview")?.textContent || "";
+        const batchBtnTxt = document.getElementById("btn-confirm-batch-craft")?.textContent || "";
+        api.closeModal();
+
+        // Path 3: Taixu Bagua Minigame (#taixu-craft-lifespan-preview showing 3 月)
+        v23.openTaixuCraftMinigameModal("alchemy");
+        const taixuPrevTxt = document.getElementById("taixu-craft-lifespan-preview")?.textContent || "";
+        api.closeModal();
+
+        // Path 4: Furnace Minigame (records lifespanPreview for rec.months)
+        api.startFurnaceMinigame("healing");
+        const furnacePrev = api.getFurnaceState().lifespanPreview;
+
+        // Path 5: Meditation (#orb-meditate tip + #wave-sub-tag rate)
+        s.arena.sanctumMode = false;
+        s.arena.player.meditating = true;
+        api.updateHud();
+        const medTip = document.getElementById("orb-meditate")?.getAttribute("data-tip") || "";
+        const waveSub = document.getElementById("wave-sub-tag")?.textContent || "";
+        s.arena.player.meditating = false;
+
+        // Path 6: Blood Fury Pill in Bag (⏳-2载)
+        document.getElementById("nav-btn-bag").click();
+        const bagTxt = document.getElementById("panel-scroll-body")?.textContent || "";
+        api.closeDrawer();
+
+        // Path 7: Tribulation Prep (12月/18月) & Tribulation Abort (18月 / 1.5载)
+        g.defeatedStageBosses = { 0: true, 1: true };
+        g.xp = api.REALMS[g.realm].xpCap;
+        api.openTribulationPrepModal();
+        const tribPrepTxt = document.getElementById("trib-prep-lifespan-preview")?.textContent || "";
+        api.closeModal();
+        api.openDefeatDecisionModal(true);
+        const tribAbortTxt = document.getElementById("trib-abort-lifespan-preview")?.textContent || "";
+        api.closeModal();
+
+        // 3. First-time 75% crossing explanation sets seenLifespan75Tip === true
+        const beforeTipFlag = g.seenLifespan75Tip;
+        api.advanceLifespanMonths(6, "test_75");
+        const afterTipFlag = g.seenLifespan75Tip;
+
+        return {
+          demonCost: demonSpec ? demonSpec.cost : 0,
+          boughtOk,
+          wpnSell: wpn ? wpn.sell : 9999,
+          wpnAtk: wpn ? wpn.atk : 0,
+          wpnAffix: wpn ? wpn.affix : null,
+          alchemyDrawerTxt,
+          batchPrevTxt,
+          batchBtnTxt,
+          taixuPrevTxt,
+          furnaceMonths: furnacePrev ? furnacePrev.deltaMonths : 0,
+          medTip,
+          waveSub,
+          bagTxt,
+          tribPrepTxt,
+          tribAbortTxt,
+          beforeTipFlag,
+          afterTipFlag
+        };
+      });
+
+      assert.equal(f23.boughtOk, true);
+      assert.ok(f23.demonCost >= Math.round(220 * 0.8), `km_demon_core cost under fair omen must be >= 176, got ${f23.demonCost}`);
+      assert.ok(f23.wpnSell <= Math.floor(f23.demonCost * 0.45) && f23.wpnSell < f23.demonCost, `km_demon_core weapon sell (${f23.wpnSell}) must be <= 45% of cost (${f23.demonCost})`);
+      assert.ok(f23.wpnAtk > 0 && f23.wpnAffix === "vamp_blade", "km_demon_core must preserve combat ATK and vamp_blade affix");
+
+      assert.ok(f23.alchemyDrawerTxt.includes("⏳"), "Path 1: Alchemy drawer must show lifespan cost chip");
+      assert.ok(f23.batchPrevTxt.includes("15 月") && f23.batchBtnTxt.includes("×5") && f23.batchBtnTxt.includes("15月"), "Path 2: Batch craft must show #batch-craft-lifespan-preview and preserve Q2-5 button copy");
+      assert.ok(f23.taixuPrevTxt.includes("3 月"), `Path 3: Taixu minigame must show 3-month lifespan preview, got: ${f23.taixuPrevTxt}`);
+      assert.equal(f23.furnaceMonths, 3, "Path 4: Furnace minigame must record rec.months lifespan preview");
+      assert.ok(f23.medTip.includes("每 3 秒耗 1 月") && f23.waveSub.includes("每3秒耗1月寿元"), "Path 5: Meditation tooltip and #wave-sub-tag must show 1m/3s lifespan rate");
+      assert.ok(f23.bagTxt.includes("⏳-2载"), "Path 6: Blood Fury Pill bag tile must show ⏳-2载");
+      assert.ok(f23.tribPrepTxt.includes("12 月") && f23.tribPrepTxt.includes("18 月"), "Path 7a: Tribulation prep must preview 12m/18m lifespan");
+      assert.ok(f23.tribAbortTxt.includes("18 月") && f23.tribAbortTxt.includes("1.5 载"), "Path 7b: Tribulation abort must preview 18m (1.5y) lifespan penalty");
+      assert.equal(f23.beforeTipFlag, false);
+      assert.equal(f23.afterTipFlag, true, "First-time 75% lifespan crossing must set game.seenLifespan75Tip");
+    } finally {
+      await ctx.close();
+    }
+  });
 } finally {
   await browser.close();
   if (staticServer) staticServer.close();
