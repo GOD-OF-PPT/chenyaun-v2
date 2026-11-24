@@ -453,12 +453,12 @@
     metaState.ascensions = Math.max(0, Math.floor(num(metaState.ascensions, 0)));
     metaState.bestScore = Math.max(0, num(metaState.bestScore, 0));
     metaState.bestTower = Math.max(0, Math.floor(num(metaState.bestTower, 0)));
-    metaState.bestRushGrade = hasOwn(RUSH_GRADE_RANK, metaState.bestRushGrade) ? metaState.bestRushGrade : null;
+    metaState.bestRushGrade = isValidUnifiedGrade(metaState.bestRushGrade) ? metaState.bestRushGrade : null;
     metaState.bestRushTime = Math.max(0, num(metaState.bestRushTime, 0));
     metaState.bestSpireFloor = Math.max(0, Math.floor(num(metaState.bestSpireFloor, 0)));
     metaState.bestCalamityTier = Math.max(0, Math.floor(num(metaState.bestCalamityTier, 0)));
     metaState.cloudSeaClears = Math.max(0, Math.floor(num(metaState.cloudSeaClears, 0)));
-    metaState.reincarnationPoints = Math.max(0, Math.floor(num(metaState.reincarnationPoints, 0)));
+    metaState.bingjieCount = Math.max(0, Math.floor(num(metaState.bingjieCount, 0)));
     metaState.taixuTrailUnlocked = Boolean(metaState.taixuTrailUnlocked);
     metaState.lastEnding = (typeof metaState.lastEnding === "string" && metaState.lastEnding) ? metaState.lastEnding : null;
     return metaState;
@@ -477,10 +477,10 @@
     if (Math.max(0, Math.floor(num(tgt.bestSpireFloor, 0))) > Math.max(0, Math.floor(num(cand.bestSpireFloor, 0)))) return true;
     if (Math.max(0, Math.floor(num(tgt.bestCalamityTier, 0))) > Math.max(0, Math.floor(num(cand.bestCalamityTier, 0)))) return true;
     if (Math.max(0, Math.floor(num(tgt.cloudSeaClears, 0))) > Math.max(0, Math.floor(num(cand.cloudSeaClears, 0)))) return true;
-    if (Math.max(0, Math.floor(num(tgt.reincarnationPoints, 0))) > Math.max(0, Math.floor(num(cand.reincarnationPoints, 0)))) return true;
+    if (Math.max(0, Math.floor(num(tgt.bingjieCount, 0))) > Math.max(0, Math.floor(num(cand.bingjieCount, 0)))) return true;
     if (Boolean(tgt.taixuTrailUnlocked) && !Boolean(cand.taixuTrailUnlocked)) return true;
-    const rTgt = hasOwn(RUSH_GRADE_RANK, tgt.bestRushGrade) ? RUSH_GRADE_RANK[tgt.bestRushGrade] : 0;
-    const rCand = hasOwn(RUSH_GRADE_RANK, cand.bestRushGrade) ? RUSH_GRADE_RANK[cand.bestRushGrade] : 0;
+    const rTgt = isValidUnifiedGrade(tgt.bestRushGrade) ? UNIFIED_GRADE_RANK[tgt.bestRushGrade] : 0;
+    const rCand = isValidUnifiedGrade(cand.bestRushGrade) ? UNIFIED_GRADE_RANK[cand.bestRushGrade] : 0;
     if (rTgt > rCand) return true;
     const tTgt = Math.max(0, num(tgt.bestRushTime, 0));
     const tCand = Math.max(0, num(cand.bestRushTime, 0));

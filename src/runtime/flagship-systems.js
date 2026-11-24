@@ -32,7 +32,7 @@
       { id: "golden_lotus",     name: "九霄金莲", req: "asc_1",    unlockText: "飞升 1 世解锁",         desc: "【轮回幻化】九瓣鎏金莲光环身旋转，飞剑镀金流虹", col: "#ffe28a", accent: "#fff6cc" },
       { id: "crimson_calamity", name: "劫火赤渊", req: "calamity", unlockText: "劫火周目/魔心证道解锁", desc: "【轮回幻化】赤红劫焰缠绕剑脊与斩痕，煞气凌空", col: "#ff5768", accent: "#ffb399" },
       { id: "starlight_void",   name: "周天星河", req: "stars_8",  unlockText: "飞升 2 世/点亮 8 星宿", desc: "【轮回幻化】靛紫双环星轨曳动星尘，剑阵如银河", col: "#a892ff", accent: "#80ecff" },
-      { id: "primordial_chaos", name: "混沌太初", req: "asc_3",    unlockText: "飞升 3 世/万剑冢 S+ 级", desc: "【至高幻化】紫金青三色太初道轮流转，裂空剑意", col: "#ff9eff", accent: "#ffe28a" }
+      { id: "primordial_chaos", name: "混沌太初", req: "asc_3",    unlockText: "飞升 3 世/万剑冢 S 级", desc: "【至高幻化】紫金青三色太初道轮流转，裂空剑意", col: "#ff9eff", accent: "#ffe28a" }
     ]
   };
 
@@ -794,7 +794,7 @@
     }
   }
 
-  // ==================== V19 HALL-OF-FAME SYSTEMS: SOUL AVATARS, BLADE CLASH, 3-STATE EXECUTIONS, SSS STYLE METER, GHOST DOJO & 28-STAR ASTROLABE ====================
+  // ==================== V19 HALL-OF-FAME SYSTEMS: SOUL AVATARS, BLADE CLASH, 3-STATE EXECUTIONS, S-RANK STYLE METER, GHOST DOJO & 28-STAR ASTROLABE ====================
   const SOUL_SPIRITS = {
     blood_warden: {
       id: "blood_warden", shortLbl: "石卫印", name: "守山石卫 · 裂地狂锤", art: "enemy_warden", elem: "fire", cd: 6.2,
@@ -916,7 +916,7 @@
     return ["weapon", "armor", "ring"].some(sl => g.equippedGear[sl] && g.equippedGear[sl].awakenedAffix === awId);
   }
 
-  // Real-Time Sword Style & Variety Meter (`剑道风华评级仪 D -> C -> B -> A -> S -> SSS`)
+  // Real-Time Sword Style & Variety Meter (`剑道风华评级仪 C -> B -> A -> S`)
 
   function registerStyleAction(moveType, basePts = 65) {
     const hist = arena.recentMoveHistory || [];

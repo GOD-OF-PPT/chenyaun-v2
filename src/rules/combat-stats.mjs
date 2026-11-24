@@ -1,6 +1,6 @@
 // Pure combat stat ledger, single-hit cap, school specialization, and Dao bonus rules.
 import { num, hasOwn, softCapPct } from "./utils.mjs";
-import { COMBAT_RULE_PARAMS, SINGLE_HIT_CAP_RATIO, PERM_GROWTH_CAPS } from "../config/combat-params.mjs";
+import { COMBAT_RULE_PARAMS, SINGLE_HIT_CAP_RATIO, PERM_GROWTH_CAPS, REALM_COMBAT_BASELINE } from "../config/combat-params.mjs";
 import { REALM_ORDER, REALMS, CELESTIAL_OMENS } from "../config/realms-items.mjs";
 import { RELICS } from "../config/progression-data.mjs";
 import { getGearTotals, getActiveSetBonus, hasDestinyFruit, getSanctumBonuses } from "./gear-rules.mjs";
@@ -9,6 +9,35 @@ import { computeEndgameMasteryResonance } from "./campaign-q6.mjs";
 export function rankOf(r) {
   const idx = REALM_ORDER.indexOf(r);
   return idx >= 0 ? idx : 0;
+}
+
+export function computeMainlineRealmScaling(stageIdx, realmId, isBoss = false) {
+  const stageRank = Math.min(4, Math.max(0, Math.floor(num(stageIdx, 0))));
+  const playerRank = rankOf(realmId);
+  const delta = playerRank - stageRank;
+  if (delta <= 0) {
+    return { active: false, delta: 0, hpMult: 1, atkMult: 1, postureMult: 1, stoneMult: 1 };
+  }
+  const baseRealm = REALM_ORDER[stageRank] || "mortal";
+  const curRealm = REALM_ORDER[playerRank] || baseRealm;
+  const baseRb = REALM_COMBAT_BASELINE[baseRealm] || REALM_COMBAT_BASELINE.mortal;
+  const curRb = REALM_COMBAT_BASELINE[curRealm] || baseRb;
+  const rawHpRatio = isBoss
+    ? (curRb.bossHp / Math.max(1, baseRb.bossHp))
+    : (curRb.mobHp / Math.max(1, baseRb.mobHp));
+  const rawAtkRatio = curRb.atk / Math.max(1, baseRb.atk);
+  const hpEase = stageRank === 4
+    ? (delta === 1 ? 1.0 : 0.90)
+    : Math.max(0.65, 0.85 - (delta - 1) * 0.05);
+  const atkEase = (stageRank === 4 && delta === 1) ? 1.0 : Math.min(0.82, hpEase);
+  return {
+    active: true,
+    delta,
+    hpMult: Math.max(1.0, Number((1 + (rawHpRatio - 1) * hpEase).toFixed(3))),
+    atkMult: Math.max(1.0, Number((1 + (rawAtkRatio - 1) * atkEase).toFixed(3))),
+    postureMult: Math.min(1.65, Number((1 + delta * 0.12).toFixed(3))),
+    stoneMult: Math.min(2.20, Number((1 + delta * 0.22).toFixed(3)))
+  };
 }
 
 export function hasLaw(g, id) {
@@ -56,20 +85,17 @@ export function getKarmaState(g) {
 }
 
 export function getComboTier(hits) {
-  if (hits >= 30) return { label: "万剑入神", rank: "SSS", spdBonus: 0.30, critDmgBonus: 0.38, color: "#ff9f43" };
-  if (hits >= 18) return { label: "剑仙临尘", rank: "S", spdBonus: 0.22, critDmgBonus: 0.26, color: "#ffe270" };
-  if (hits >= 10) return { label: "剑罡破军", rank: "A", spdBonus: 0.15, critDmgBonus: 0.18, color: "#70ffe6" };
+  if (hits >= 22) return { label: "万剑入神", rank: "S", spdBonus: 0.30, critDmgBonus: 0.38, color: "#ff9f43" };
+  if (hits >= 10) return { label: "剑罡破军", rank: "A", spdBonus: 0.18, critDmgBonus: 0.22, color: "#70ffe6" };
   if (hits >= 4) return { label: "灵剑初鸣", rank: "B", spdBonus: 0.08, critDmgBonus: 0.10, color: "#4ad2b8" };
   return { label: "凡剑试锋", rank: "C", spdBonus: 0, critDmgBonus: 0, color: "#9ab5b0" };
 }
 
 export function getStyleRankSpec(score = 0) {
-  if (score >= 850) return { rank: "SSS", title: "太虚剑神", color: "#ff9eff", haste: 0.30, critDmg: 0.42, intentMult: 1.60, dropPct: 45 };
-  if (score >= 580) return { rank: "S", title: "天人合一", color: "#ffe270", haste: 0.22, critDmg: 0.28, intentMult: 1.35, dropPct: 25 };
-  if (score >= 380) return { rank: "A", title: "剑道无双", color: "#70ffe6", haste: 0.15, critDmg: 0.18, intentMult: 1.20, dropPct: 15 };
-  if (score >= 210) return { rank: "B", title: "惊鸿掠影", color: "#4ad2b8", haste: 0.09, critDmg: 0.10, intentMult: 1.10, dropPct: 8 };
-  if (score >= 85) return { rank: "C", title: "剑心通明", color: "#a8e6dc", haste: 0.04, critDmg: 0.05, intentMult: 1.0, dropPct: 0 };
-  return { rank: "D", title: "凡铁试锋", color: "#9ab5b0", haste: 0, critDmg: 0, intentMult: 1.0, dropPct: 0 };
+  if (score >= 700) return { rank: "S", title: "太虚剑神", color: "#ff9eff", haste: 0.30, critDmg: 0.42, intentMult: 1.60, dropPct: 45 };
+  if (score >= 400) return { rank: "A", title: "剑道无双", color: "#70ffe6", haste: 0.18, critDmg: 0.22, intentMult: 1.25, dropPct: 20 };
+  if (score >= 180) return { rank: "B", title: "惊鸿掠影", color: "#4ad2b8", haste: 0.09, critDmg: 0.10, intentMult: 1.10, dropPct: 8 };
+  return { rank: "C", title: "凡剑试锋", color: "#9ab5b0", haste: 0, critDmg: 0, intentMult: 1.0, dropPct: 0 };
 }
 
 export function getDaoBonuses(g) {

@@ -1479,9 +1479,9 @@ try {
       s.game.ending = null;
       s.game.karmaScore = 70;
       s.game.towerBest = 7;
-      s.game.rushBestGrade = "S+";
+      s.game.rushBestGrade = "S";
       api.getMetaState().ascensions = 1;
-      api.getMetaState().bestRushGrade = "S+";
+      api.getMetaState().bestRushGrade = "S";
       api.saveMeta();
       api.openEndingModal();
     });
@@ -1512,11 +1512,11 @@ try {
     assert.equal(postAsc.livesCount, 1, "Past life chronicle must record exactly once without duplication");
     assert.equal(postAsc.life0.endingId, "mortal_guardian");
     assert.equal(postAsc.life0.towerBest, 7);
-    assert.equal(postAsc.life0.rushGrade, "S+");
+    assert.equal(postAsc.life0.rushGrade, "S");
     assert.equal(postAsc.echoUnlocked, true);
     assert.equal(postAsc.sovUnlocked, true);
     assert.equal(postAsc.lotusUnlocked, true);
-    assert.equal(postAsc.chaosUnlocked, true, "S+ rush grade must unlock primordial_chaos transmog");
+    assert.equal(postAsc.chaosUnlocked, true, "S rush grade must unlock primordial_chaos transmog");
 
     // Open Hall of Past Lives modal & equip golden_lotus swordAura transmog
     await page.click('#modal-content [data-action="open-hall-of-lives"]');
@@ -2794,12 +2794,12 @@ try {
         ascensions: 2,
         bestScore: 500,
         bestTower: 3,
-        bestRushGrade: "A",
+        bestRushGrade: "B",
         bestRushTime: 180,
         seenEnemies: ["wolf", "bandit"],
         seenLaws: ["fire"],
         unlockedEndings: ["sword_saint"],
-        reincarnationPoints: 40,
+        bingjieCount: 1,
         hallOfLives: [{ lifeNum: 1, name: "前世一", score: 500, endingId: "sword_saint", recordedAt: 1000 }]
       };
       localStorage.setItem(sk, JSON.stringify(legacyPrimary));
@@ -2818,12 +2818,12 @@ try {
     await tabB.click("#btn-continue-save");
     await tabB.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
 
-    // Tab A progresses ascensions=3, seenEnemies+=stone_golem, bestRushGrade="S", bestRushTime=120
+    // Tab A progresses ascensions=3, bingjieCount=3, seenEnemies+=stone_golem, bestRushGrade="A", bestRushTime=120
     await tabA.evaluate(() => {
       const m = window.__CHENYUAN_DEBUG__.getMetaState();
       m.ascensions = 3;
-      m.reincarnationPoints += 120;
-      m.bestRushGrade = "S";
+      m.bingjieCount = 3;
+      m.bestRushGrade = "A";
       m.bestRushTime = 120;
       m.seenEnemies.push("stone_golem");
       window.__CHENYUAN_DEBUG__.saveMeta();
@@ -2837,12 +2837,12 @@ try {
       } catch (e) { return false; }
     }, META_KEY, { timeout: 5000 });
 
-    // Tab B (explicitly keeping stale in-memory ascensions=2) progresses bestScore=999, seenEnemies+=jade_serpent, bestRushGrade="SS"
+    // Tab B (explicitly keeping stale in-memory ascensions=2) progresses bestScore=999, seenEnemies+=jade_serpent, bestRushGrade="S"
     await tabB.evaluate(() => {
       const m = window.__CHENYUAN_DEBUG__.getMetaState();
       m.ascensions = 2;
       m.bestScore = 999;
-      m.bestRushGrade = "SS";
+      m.bestRushGrade = "S";
       m.seenEnemies.push("jade_serpent");
       window.__CHENYUAN_DEBUG__.saveMeta();
     });
@@ -2858,8 +2858,9 @@ try {
     const mergedRaw = await tabA.evaluate((mk) => JSON.parse(localStorage.getItem(mk) || "{}"), META_KEY);
     assert.ok(mergedRaw.metaRev >= 2, `Expected metaRev >= 2, got ${mergedRaw.metaRev}`);
     assert.equal(mergedRaw.ascensions, 3, `Tab B must NOT regress ascensions from 3 to ${mergedRaw.ascensions}`);
+    assert.equal(mergedRaw.bingjieCount, 3, `Merged bingjieCount must take monotonic max (3), got ${mergedRaw.bingjieCount}`);
     assert.equal(mergedRaw.bestScore, 999, "Merged bestScore must take max (999)");
-    assert.equal(mergedRaw.bestRushGrade, "SS", "Merged bestRushGrade must take highest rank (SS > S > A)");
+    assert.equal(mergedRaw.bestRushGrade, "S", "Merged bestRushGrade must take highest unified rank (S > A > B)");
     assert.equal(mergedRaw.bestRushTime, 120, "Merged bestRushTime must take min positive (120)");
     assert.ok(mergedRaw.seenEnemies.includes("stone_golem") && mergedRaw.seenEnemies.includes("jade_serpent"), "Merged seenEnemies must be union of both tabs");
 
@@ -4542,8 +4543,8 @@ try {
         trackerText
       };
     });
-    assert.ok(!String(evalRes.zeroGrade).startsWith("SS") && !String(evalRes.zeroGrade).startsWith("S+"),
-      `0-star ascended character must NOT receive SS/S+ grade, got ${evalRes.zeroGrade} (score=${evalRes.zeroScore})`);
+    assert.ok(evalRes.zeroGrade !== "S" && ["C", "B"].includes(String(evalRes.zeroGrade)),
+      `0-star ascended character must be capped at C/B (never S), got ${evalRes.zeroGrade} (score=${evalRes.zeroScore})`);
     assert.notEqual(evalRes.zeroEpiStr, evalRes.fullEpiStr, "Truthful epilogue must differentiate 0-star unbonded vs cleared & bonded run");
     assert.ok(evalRes.fullEpiStr.includes("沈清禾") || evalRes.fullEpiStr.includes("陆玄松"), "Cleared epilogue must mention actual bonded companions (沈清禾/陆玄松)");
     assert.equal(evalRes.nextStep?.allDone, true, `When all mainline steps are completed and claimed, findNextMainlineStep must return allDone=true, got: ${JSON.stringify(evalRes.nextStep)}`);
@@ -4874,8 +4875,8 @@ try {
     assert.equal(capsAndGrade.bfQuota.max, 2, "Blood fury quota per realm must be capped at 2");
     assert.equal(capsAndGrade.clampedCurio, 3, "Spire curio stacks must be clamped to <= 3");
     assert.equal(capsAndGrade.caps.spireCurioMaxStack, 3);
-    assert.equal(capsAndGrade.baseGrade.shortGrade, "A", `Baseline Boss Rush run should grade A (not automatic SS), got ${capsAndGrade.baseGrade.shortGrade}`);
-    assert.ok(["SS", "S+"].includes(capsAndGrade.eliteGrade.shortGrade), `Elite technical no-hit Boss Rush should achieve SS/S+, got ${capsAndGrade.eliteGrade.shortGrade}`);
+    assert.equal(capsAndGrade.baseGrade.shortGrade, "A", `Baseline Boss Rush run should grade A (not automatic S), got ${capsAndGrade.baseGrade.shortGrade}`);
+    assert.equal(capsAndGrade.eliteGrade.shortGrade, "S", `Elite technical no-hit Boss Rush should achieve unified S, got ${capsAndGrade.eliteGrade.shortGrade}`);
 
     // 2. G6 Sandbox hard isolation across reload
     const beforeSandbox = await page.evaluate((sk) => {
@@ -7927,7 +7928,7 @@ try {
     // M2 saveMeta QuotaExceededError rollback check
     const metaQuotaRes = await page.evaluate(({ sk, mk }) => {
       const api = window.__CHENYUAN_DEBUG__;
-      const ptsBefore = api.getMetaState().reincarnationPoints;
+      const bingjieBefore = api.getMetaState().bingjieCount;
       const saveBefore = localStorage.getItem(sk);
       const origSet = Storage.prototype.setItem;
       Storage.prototype.setItem = function (k, v) {
@@ -7946,14 +7947,14 @@ try {
       }
       return {
         ok,
-        ptsAfter: api.getMetaState().reincarnationPoints,
-        ptsBefore,
+        bingjieAfter: api.getMetaState().bingjieCount,
+        bingjieBefore,
         savePreserved: localStorage.getItem(sk) === saveBefore,
         gameStillAlive: Boolean(api.getState().game)
       };
     }, { sk: STORAGE_KEY, mk: META_KEY });
     assert.equal(metaQuotaRes.ok, false, "executeReincarnation must abort when saveMeta hits QuotaExceededError");
-    assert.equal(metaQuotaRes.ptsAfter, metaQuotaRes.ptsBefore, "Failed saveMeta must roll back reincarnationPoints");
+    assert.equal(metaQuotaRes.bingjieAfter, metaQuotaRes.bingjieBefore, "Failed saveMeta must roll back bingjieCount");
     assert.equal(metaQuotaRes.savePreserved, true, "Failed saveMeta must preserve main save in STORAGE_KEY");
     assert.equal(metaQuotaRes.gameStillAlive, true, "Failed saveMeta must keep active game session intact");
 
@@ -7981,11 +7982,11 @@ try {
     await page.click('#modal-backdrop.open [data-action="confirm-reset-corrupt-meta"]');
     await page.waitForFunction(() => !window.__CHENYUAN_DEBUG__.getPersistenceState().metaReadError);
 
-    // Real 2-step UI 兵解转世 -> welcome screen CTA focus + 0 leaked pauseTokens
+    // Real 2-step UI 兵解转世 -> welcome screen CTA focus + 0 leaked pauseTokens + folded +40 stones in next life
     const beforeReinc = await page.evaluate(() => {
       const api = window.__CHENYUAN_DEBUG__;
       const m = api.getMetaState();
-      return { pts: m.reincarnationPoints, asc: m.ascensions };
+      return { bingjie: m.bingjieCount, asc: m.ascensions };
     });
     await page.click("#hud-lifespan-badge");
     await page.waitForSelector("#modal-backdrop.open #btn-lifespan-bingjie");
@@ -7997,10 +7998,12 @@ try {
     const afterReinc = await page.evaluate((sk) => {
       const api = window.__CHENYUAN_DEBUG__;
       const m = api.getMetaState();
+      const nextLifePreview = api.createFreshGame("轮回验证", "sword_bone", 0);
       return {
         saveRemoved: localStorage.getItem(sk) === null,
-        pts: m.reincarnationPoints,
+        bingjie: m.bingjieCount,
         asc: m.ascensions,
+        nextLifeStones: nextLifePreview.stones,
         pauseTokens: api.getPauseTokens().length,
         activeId: document.activeElement?.id || "",
         modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
@@ -8008,8 +8011,9 @@ try {
       };
     }, STORAGE_KEY);
     assert.equal(afterReinc.saveRemoved, true, "Confirmed 兵解转世 must remove main STORAGE_KEY save");
-    assert.equal(afterReinc.pts, beforeReinc.pts + 40, "Confirmed 兵解转世 must award +40 reincarnationPoints");
+    assert.equal(afterReinc.bingjie, beforeReinc.bingjie + 1, "Confirmed 兵解转世 must increment bingjieCount by +1");
     assert.equal(afterReinc.asc, beforeReinc.asc, "兵解转世 must not increment ascensions count");
+    assert.equal(afterReinc.nextLifeStones, 65 + Math.min(240, afterReinc.asc * 45 + afterReinc.bingjie * 40), "Next fresh life must fold bingjieCount (+40 stones/cycle, cap 240) into starting stones");
     assert.equal(afterReinc.pauseTokens, 0, "P5: executeReincarnation must leave 0 leaked pauseTokens");
     assert.equal(afterReinc.modalOpen, false, "P5: Modal must be closed after reincarnation");
     assert.equal(afterReinc.drawerOpen, false, "P5: Drawer must be closed after reincarnation");
@@ -10801,29 +10805,45 @@ try {
         const { game, arena } = api.getState();
         game.realm = "spirit";
         game.mp = 0; // Verify free initial defender arrival even at 0 MP
-        game.sectMerits = 0;
+        game.sectDefenseCleared = false;
+        game.sectDefenseBestGrade = null;
+        const stonesBefore = game.stones;
+        const coreBefore = game.inventory.core || 0;
+        const jadeBefore = game.inventory.jade || 0;
         api.startSectDefenseSiege();
         const freeAlliesSpawned = (arena.activeAllies || []).length;
         arena.sectDefense.wave = 3;
         arena.enemies = [];
         q6.stepSectDefenseSiege(0.05);
         const sdModalTxt = (document.getElementById("modal-content")?.textContent || "");
-        const sdMeritsAfter = game.sectMerits;
+        const sdClearedAfter = game.sectDefenseCleared;
+        const sdGradeAfter = game.sectDefenseBestGrade;
+        const sdStonesDelta = game.stones - stonesBefore;
+        const sdCoreDelta = (game.inventory.core || 0) - coreBefore;
+        const sdJadeDelta = (game.inventory.jade || 0) - jadeBefore;
         api.closeModal();
 
-        game.stageStars = [3, 1, 0, 0, 0];
+        game.stageStars = { 0: 3, 1: 1, 2: 0, 3: 0, 4: 0 };
         api.openExpeditionSandboxModal();
         const qinglanSynTxt = (document.querySelector('[data-exp-synergy="qinglan_vein"]')?.textContent || "").trim();
         const qingyunSynTxt = (document.querySelector('[data-exp-synergy="qingyun_peak"]')?.textContent || "").trim();
         const hasStarChartJump = Boolean(document.getElementById("btn-exp-goto-starchart"));
         api.closeModal();
-        return { freeAlliesSpawned, sdModalTxt, sdMeritsAfter, qinglanSynTxt, qingyunSynTxt, hasStarChartJump };
+        return {
+          freeAlliesSpawned, sdModalTxt, sdClearedAfter, sdGradeAfter,
+          sdStonesDelta, sdCoreDelta, sdJadeDelta,
+          qinglanSynTxt, qingyunSynTxt, hasStarChartJump
+        };
       });
       assert.ok(sdAndExp.freeAlliesSpawned >= 1, "Sect Defense must summon free initial defender(s) even at 0 MP");
       assert.ok(sdAndExp.sdModalTxt.includes("三波妖潮全歼"), `Sect Defense victory modal missing expected copy: ${sdAndExp.sdModalTxt}`);
-      assert.equal(sdAndExp.sdMeritsAfter, 1);
-      assert.ok(sdAndExp.qinglanSynTxt.includes("+30%"), `Expected 3-star +30% expedition tag, got: ${sdAndExp.qinglanSynTxt}`);
-      assert.ok(sdAndExp.qingyunSynTxt.includes("+15%"), `Expected 1-star +15% expedition tag, got: ${sdAndExp.qingyunSynTxt}`);
+      assert.equal(sdAndExp.sdClearedAfter, true, "Sect Defense victory must set game.sectDefenseCleared = true");
+      assert.ok(["C", "B", "A", "S"].includes(sdAndExp.sdGradeAfter), `Expected unified Sect Defense grade, got ${sdAndExp.sdGradeAfter}`);
+      assert.equal(sdAndExp.sdStonesDelta, 320, "Sect Defense victory must grant folded +320 stones");
+      assert.equal(sdAndExp.sdCoreDelta, 2, "Sect Defense victory must grant +2 core");
+      assert.ok(sdAndExp.sdJadeDelta >= 1 && sdAndExp.sdJadeDelta <= 2, "Sect Defense victory must grant +1..2 jade");
+      assert.ok(sdAndExp.qinglanSynTxt.includes("+30%"), `Expected 3-star +30% expedition tag with plain-object stageStars, got: ${sdAndExp.qinglanSynTxt}`);
+      assert.ok(sdAndExp.qingyunSynTxt.includes("+15%"), `Expected 1-star +15% expedition tag with plain-object stageStars, got: ${sdAndExp.qingyunSynTxt}`);
       assert.equal(sdAndExp.hasStarChartJump, true, "Expedition modal must provide direct Star Chart jump button");
 
       // 3. Legacy nascent/spirit save 5-scenario persistence (legacy resume, reload, write-fail, multi-tab race)
@@ -11287,6 +11307,335 @@ try {
       assert.equal(changeListenerRes.seedInputVal, changeListenerRes.expectedSeed, "Rescued change listener must sync #inp-workshop-seed");
       assert.equal(changeListenerRes.hasTemperChk, true, "Expected #chk-temper-use-core on alchemy drawer tab");
       assert.equal(changeListenerRes.temperChanged, true, "Rescued change listener must toggle temperUseCoreDiscount");
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  await runSuite("R3-D05-1", "D05 (V15): Mainline Realm Scaling, Side-Mode Isolation, Currency Streamlining, Unified S/A/B/C & New-Schema 5-Scenario Saves", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "R3-D05-1", true);
+    try {
+      // 1. Live mainline realm scaling (Stage 0 Mortal vs Spirit; Stage 4 Nascent vs Spirit; side-mode non-double-scaling; low-stage XP attenuation + stoneMult)
+      const scalingCheck = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const { game, arena } = dbg.getState();
+
+        // Stage 0 Mortal (at-realm: delta=0 => 1.0x)
+        game.realm = "mortal";
+        game.openingChoice = "help";
+        dbg.initArenaStage(0, false);
+        arena.enemies = [];
+        dbg.spawnSingleEnemy("wolf", 600, 420, 1.0, false);
+        const s0MortalMob = arena.enemies[arena.enemies.length - 1];
+        const s0MortalMobSnap = { hp: s0MortalMob.hp, atk: s0MortalMob.atk, maxPosture: s0MortalMob.maxPosture, delta: s0MortalMob.realmScaledDelta };
+
+        // Stage 0 Spirit (delta=5 => scaled HP/ATK/posture, stone drop multiplied, XP attenuated <= 15)
+        game.realm = "spirit";
+        dbg.initArenaStage(0, false);
+        arena.enemies = [];
+        arena.drops = [];
+        dbg.spawnSingleEnemy("wolf", 600, 420, 1.0, false);
+        const s0SpiritMob = arena.enemies[arena.enemies.length - 1];
+        const s0SpiritMobSnap = { hp: s0SpiritMob.hp, atk: s0SpiritMob.atk, maxPosture: s0SpiritMob.maxPosture, delta: s0SpiritMob.realmScaledDelta, stoneMult: s0SpiritMob.realmStoneMult };
+        const rsS0Spirit = dbg.rules.computeMainlineRealmScaling(0, "spirit", false);
+        // Kill the scaled Ch1 wolf at Spirit realm to verify XP attenuation <= 15 AND stoneMult > 1
+        s0SpiritMob.hp = 1;
+        dbg.damageEnemy(s0SpiritMob, 99999, false, 0, 0, 0, false);
+        const qiDrop = arena.drops.find(d => d.kind === "qi");
+        const stoneDrop = arena.drops.find(d => d.kind === "stone");
+
+        // Stage 4 Nascent (at-realm delta=0) vs Stage 4 Spirit (delta=1 => 1.407x Boss HP / 1.414x Boss ATK)
+        game.realm = "nascent";
+        dbg.initArenaStage(4, false);
+        arena.enemies = [];
+        dbg.spawnSingleEnemy("trial_gate", 620, 420, 4.70, true);
+        const s4NascentBoss = arena.enemies[arena.enemies.length - 1];
+        const s4NascentSnap = { hp: s4NascentBoss.hp, atk: s4NascentBoss.atk, delta: s4NascentBoss.realmScaledDelta };
+
+        game.realm = "spirit";
+        dbg.initArenaStage(4, false);
+        arena.enemies = [];
+        dbg.spawnSingleEnemy("trial_gate", 620, 420, 4.70, true);
+        const s4SpiritBoss = arena.enemies[arena.enemies.length - 1];
+        const s4SpiritSnap = { hp: s4SpiritBoss.hp, atk: s4SpiritBoss.atk, delta: s4SpiritBoss.realmScaledDelta };
+
+        // Non-double-scaling guard via real end-to-end launchers for ALL 6 non-mainline side modes at stageIdx=0, realm="spirit"
+        const snapEnemies = () => arena.enemies.map(e => ({
+          id: e.id,
+          name: e.name,
+          hp: e.hp,
+          atk: e.atk,
+          realmScaledDelta: e.realmScaledDelta,
+          realmStoneMult: e.realmStoneMult
+        }));
+        game.realm = "spirit";
+
+        arena.stageIdx = 0;
+        dbg.initArenaStage(0, true);
+        const sideTower = snapEnemies();
+
+        arena.stageIdx = 0;
+        dbg.startBossRushGauntlet(1);
+        const sideRush = snapEnemies();
+
+        arena.stageIdx = 0;
+        dbg.startSectDefenseSiege();
+        const sideSect = snapEnemies();
+
+        arena.stageIdx = 0;
+        dbg.startCloudSeaAerialStage();
+        const sideCloud = snapEnemies();
+
+        arena.stageIdx = 0;
+        dbg.startCelestialSpireRun(1);
+        const sideSpire = snapEnemies();
+
+        arena.stageIdx = 0;
+        dbg.launchCustomSeedEncounter("CY22-16-00-00-DF");
+        const sideCustomDF = snapEnemies();
+
+        arena.stageIdx = 0;
+        dbg.launchCustomSeedEncounter("CY22-23-00-00-CB");
+        const sideCustomCB = snapEnemies();
+
+        // Restore clean mainline Stage 0 before World Map & unified checks
+        dbg.initArenaStage(0, false);
+
+        // World Map dynamic scaling indicator & unified grade badge
+        game.stageStars = { 0: 3, 1: 2, 2: 1, 3: 0, 4: 0 };
+        dbg.openWorldMapModal("stage_0");
+        const mapScalingTxt = (document.getElementById("world-map-scaling-badge")?.textContent || "").trim();
+        const mapPreviewTxt = (document.getElementById("world-map-preview-strip")?.textContent || "").trim();
+        dbg.closeModal();
+
+        return {
+          s0MortalMobSnap, s0SpiritMobSnap, rsS0Spirit,
+          spiritCh1WolfXp: qiDrop ? qiDrop.val : 999,
+          spiritCh1WolfStones: stoneDrop ? stoneDrop.val : 0,
+          s4NascentSnap, s4SpiritSnap,
+          sideModes: {
+            tower: sideTower,
+            bossRush: sideRush,
+            sectDefense: sideSect,
+            cloudSea: sideCloud,
+            celestialSpire: sideSpire,
+            customSeedDF: sideCustomDF,
+            customSeedCB: sideCustomCB
+          },
+          mapScalingTxt, mapPreviewTxt
+        };
+      });
+
+      assert.equal(scalingCheck.s0MortalMobSnap.delta, 0);
+      assert.equal(scalingCheck.s0SpiritMobSnap.delta, 5);
+      assert.ok(scalingCheck.s0SpiritMobSnap.hp > scalingCheck.s0MortalMobSnap.hp * 10, `Expected Stage 0 Spirit mob HP to scale sharply, got ${scalingCheck.s0SpiritMobSnap.hp} vs ${scalingCheck.s0MortalMobSnap.hp}`);
+      assert.ok(scalingCheck.s0SpiritMobSnap.atk > scalingCheck.s0MortalMobSnap.atk * 5, `Expected Stage 0 Spirit mob ATK to scale sharply, got ${scalingCheck.s0SpiritMobSnap.atk} vs ${scalingCheck.s0MortalMobSnap.atk}`);
+      assert.ok(scalingCheck.spiritCh1WolfXp <= 15, `Low-stage XP attenuation must stay <= 15, got ${scalingCheck.spiritCh1WolfXp}`);
+      assert.ok(scalingCheck.spiritCh1WolfStones >= 18, `Scaled Ch1 wolf stones must reflect stoneMult (${scalingCheck.rsS0Spirit.stoneMult}x), got ${scalingCheck.spiritCh1WolfStones}`);
+      assert.equal(scalingCheck.s4NascentSnap.delta, 0);
+      assert.equal(scalingCheck.s4SpiritSnap.delta, 1);
+      const s4Ratio = scalingCheck.s4SpiritSnap.hp / Math.max(1, scalingCheck.s4NascentSnap.hp);
+      assert.ok(Math.abs(s4Ratio - 1.407) < 0.01, `Expected Stage 4 Spirit boss HP ratio ~1.407, got ${s4Ratio.toFixed(4)}`);
+      for (const [modeName, list] of Object.entries(scalingCheck.sideModes)) {
+        assert.ok(list.length >= 1, `Side mode "${modeName}" must spawn at least 1 enemy`);
+        for (const e of list) {
+          assert.equal(e.realmScaledDelta, 0, `Side mode "${modeName}" enemy "${e.name}" must NOT double-scale (realmScaledDelta=${e.realmScaledDelta})`);
+          assert.equal(e.realmStoneMult, 1, `Side mode "${modeName}" enemy "${e.name}" must keep realmStoneMult=1 (got ${e.realmStoneMult})`);
+        }
+      }
+      assert.equal(scalingCheck.sideModes.customSeedDF.length, 2, "Custom Seed CY22-16-00-00-DF must spawn 2 workshop bosses");
+      assert.equal(scalingCheck.sideModes.customSeedCB.length, 2, "Custom Seed CY22-23-00-00-CB must spawn 2 workshop bosses");
+      assert.ok(scalingCheck.mapScalingTxt.includes("动态同步") && scalingCheck.mapScalingTxt.includes("灵石 ×"), `World Map must show scaling badge, got "${scalingCheck.mapScalingTxt}"`);
+      assert.ok(scalingCheck.mapPreviewTxt.includes("S 级 (★★★)"), `World Map preview must show unified stage grade S 级 (★★★), got "${scalingCheck.mapPreviewTxt}"`);
+
+      // 2. Currency streamlining + unified S/A/B/C ratings across modes + plain-object stageStars synergy
+      const unifiedCheck = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const { game, arena } = dbg.getState();
+        const meta = dbg.getMetaState();
+        const fresh = dbg.createFreshGame("D05检验", "sword_bone", 0);
+        const allowed = new Set(["C", "B", "A", "S"]);
+
+        // Style meter + #combo-rank-seal.rank-s + Astral Form S-rank instant trigger
+        arena.comboCount = 24;
+        arena.styleScore = 760;
+        arena.styleDecayTimer = 4.0;
+        arena.paused = false;
+        dbg.stepArena(0.016);
+        const sealHasRankS = document.getElementById("combo-rank-seal")?.classList.contains("rank-s") || false;
+        const sealTxt = document.getElementById("combo-tier-txt")?.textContent || "";
+        game.realm = "nascent";
+        game.mp = 100;
+        arena.astralEnergy = 0;
+        arena.astralCd = 0;
+        arena.astralForm = null;
+        const astralTriggeredAtS = dbg.triggerAstralGiantForm();
+        arena.astralForm = null;
+
+        // Style/Combo/Score/BossRush/ModeGrade outputs strictly in {C,B,A,S}
+        const styleRanks = [0, 180, 400, 700, 1200].map(s => dbg.getStyleRankSpec(s).rank);
+        const scoreGrades = [0, 1000, 2200, 4200, 9999].map(s => dbg.getScoreGrade(s).grade);
+        const rushGrades = [
+          dbg.computeBossRushScoreAndGrade({ elapsed: 350, partBreaks: 0, parries: 0, hitsTaken: 12, damageTaken: 800 }, 1, 325, 2).shortGrade,
+          dbg.computeBossRushScoreAndGrade({ elapsed: 260, partBreaks: 0, parries: 0, hitsTaken: 8, damageTaken: 300 }, 1, 325, 0).shortGrade,
+          dbg.computeBossRushScoreAndGrade({ elapsed: 210, partBreaks: 0, parries: 0, hitsTaken: 3, damageTaken: 100 }, 1, 325, 0).shortGrade,
+          dbg.computeBossRushScoreAndGrade({ elapsed: 110, partBreaks: 6, parries: 6, hitsTaken: 0, damageTaken: 0 }, 1.2, 325, 0).shortGrade
+        ];
+        const starBijection = [0, 1, 2, 3].map(st => dbg.rules.stageStarsToGrade(st));
+
+        // Plain-object stageStars synergy check
+        const plainSyn = dbg.q6.getExpeditionNodeStageSynergy({ stageStars: { 2: 3 }, defeatedStageBosses: {} }, "zhaoying_lake");
+
+        // Legacy stones cap check (bingjieCount=10 + ascensions=5 must cap at 240)
+        const prevAsc = meta.ascensions;
+        const prevBj = meta.bingjieCount;
+        meta.ascensions = 5;
+        meta.bingjieCount = 10;
+        const capped = dbg.createFreshGame("上限检验", "sword_bone", 0);
+        meta.ascensions = prevAsc;
+        meta.bingjieCount = prevBj;
+
+        return {
+          noReincPts: !Object.prototype.hasOwnProperty.call(meta, "reincarnationPoints"),
+          noSectMerits: !Object.prototype.hasOwnProperty.call(fresh, "sectMerits"),
+          hasBingjieCount: typeof meta.bingjieCount === "number",
+          hasSectDefCleared: fresh.sectDefenseCleared === false && fresh.sectDefenseBestGrade === null,
+          cappedLegacyDelta: capped.stones - 65,
+          sealHasRankS,
+          sealTxt,
+          astralTriggeredAtS,
+          allStyleUnified: styleRanks.every(r => allowed.has(r)),
+          allScoreUnified: scoreGrades.every(r => allowed.has(r)),
+          allRushUnified: rushGrades.every(r => allowed.has(r)),
+          starBijection,
+          plainSynMult: plainSyn.mult
+        };
+      });
+
+      assert.equal(unifiedCheck.noReincPts, true, "reincarnationPoints must be absent from metaState");
+      assert.equal(unifiedCheck.noSectMerits, true, "sectMerits must be absent from fresh game");
+      assert.equal(unifiedCheck.hasBingjieCount, true, "bingjieCount must exist on metaState");
+      assert.equal(unifiedCheck.hasSectDefCleared, true, "sectDefenseCleared/sectDefenseBestGrade must be initialized on fresh game");
+      assert.equal(unifiedCheck.cappedLegacyDelta, 240, "legacyStones carryover must cap strictly at 240");
+      assert.equal(unifiedCheck.sealHasRankS, true, "#combo-rank-seal must toggle .rank-s at S style rank");
+      assert.ok(unifiedCheck.sealTxt.endsWith(" S"), `Expected S style label, got "${unifiedCheck.sealTxt}"`);
+      assert.equal(unifiedCheck.astralTriggeredAtS, true, "Astral Form must trigger immediately at S style rank even with 0 astralEnergy");
+      assert.equal(unifiedCheck.allStyleUnified, true);
+      assert.equal(unifiedCheck.allScoreUnified, true);
+      assert.equal(unifiedCheck.allRushUnified, true);
+      assert.deepEqual(unifiedCheck.starBijection, ["C", "B", "A", "S"]);
+      assert.equal(unifiedCheck.plainSynMult, 1.30, "Plain-object stageStars { 2: 3 } must receive +30% expedition synergy");
+
+      // 3. New-schema 5-scenario save checks (fresh start -> save & resume -> reload -> write-fail rollback -> multi-tab CRDT race)
+      // Scenario A+B+C: persist new D05 fields (sectDefenseCleared, sectDefenseBestGrade, cloudSeaBestGrade, bingjieCount, bestRushGrade="S"), reload & resume
+      await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const { game } = dbg.getState();
+        game.sectDefenseCleared = true;
+        game.sectDefenseBestGrade = "S";
+        game.cloudSeaCleared = true;
+        game.cloudSeaBestGrade = "A";
+        game.rushBestGrade = "S";
+        dbg.saveGame();
+        const m = dbg.getMetaState();
+        m.bingjieCount = 2;
+        m.bestRushGrade = "A";
+        dbg.saveMeta();
+      });
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.waitForSelector("#btn-continue-save");
+      await page.click("#btn-continue-save");
+      await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+      const resumed = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        const m = dbg.getMetaState();
+        return {
+          sdCleared: g.sectDefenseCleared,
+          sdGrade: g.sectDefenseBestGrade,
+          csGrade: g.cloudSeaBestGrade,
+          rushGrade: g.rushBestGrade,
+          bingjie: m.bingjieCount,
+          metaRush: m.bestRushGrade
+        };
+      });
+      assert.equal(resumed.sdCleared, true);
+      assert.equal(resumed.sdGrade, "S");
+      assert.equal(resumed.csGrade, "A");
+      assert.equal(resumed.rushGrade, "S");
+      assert.equal(resumed.bingjie, 2);
+      assert.equal(resumed.metaRush, "A");
+
+      // Scenario D: write failure preserves existing localStorage save & rolls back bingjieCount
+      const writeFailRes = await page.evaluate(({ sk, mk }) => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const beforeSave = localStorage.getItem(sk);
+        const beforeBj = dbg.getMetaState().bingjieCount;
+        const origSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function (k, v) {
+          if (k === mk) {
+            const err = new Error("D05 write fail probe");
+            err.name = "QuotaExceededError";
+            throw err;
+          }
+          return origSet.call(this, k, v);
+        };
+        let ok = true;
+        try {
+          ok = dbg.executeReincarnation({ source: "bingjie" });
+        } finally {
+          Storage.prototype.setItem = origSet;
+        }
+        return {
+          ok,
+          afterBj: dbg.getMetaState().bingjieCount,
+          beforeBj,
+          saveIntact: localStorage.getItem(sk) === beforeSave
+        };
+      }, { sk: STORAGE_KEY, mk: META_KEY });
+      assert.equal(writeFailRes.ok, false);
+      assert.equal(writeFailRes.afterBj, writeFailRes.beforeBj);
+      assert.equal(writeFailRes.saveIntact, true);
+
+      // Scenario E: competing two-tab CRDT race on new schema (tab2 writes bingjieCount=4/bestRushGrade="S", page performs competing stale saveMeta with bingjieCount=2/bestRushGrade="A"/bestTower=9)
+      const tab2 = await ctx.newPage();
+      attachErrorListeners(tab2, "R3-D05-1-Tab2");
+      await tab2.goto(targetUrl, { waitUntil: "domcontentloaded" });
+      await tab2.waitForSelector("#btn-continue-save");
+      await tab2.click("#btn-continue-save");
+      await tab2.waitForFunction(() => document.getElementById("welcome-screen")?.style.display === "none");
+      await tab2.evaluate(() => {
+        const m = window.__CHENYUAN_DEBUG__.getMetaState();
+        m.bingjieCount = 4;
+        m.bestRushGrade = "S";
+        window.__CHENYUAN_DEBUG__.saveMeta();
+      });
+      await page.waitForFunction((mk) => {
+        try {
+          const cur = JSON.parse(localStorage.getItem(mk) || "{}");
+          return cur.bingjieCount === 4 && cur.bestRushGrade === "S";
+        } catch { return false; }
+      }, META_KEY, { timeout: 5000 });
+      // Competing stale write from page: holds stale bingjieCount=2 & bestRushGrade="A" while advancing bestTower=9
+      await page.evaluate(() => {
+        const m = window.__CHENYUAN_DEBUG__.getMetaState();
+        m.bingjieCount = 2;
+        m.bestRushGrade = "A";
+        m.bestTower = 9;
+        window.__CHENYUAN_DEBUG__.saveMeta();
+      });
+      const raceMerged = await page.evaluate((mk) => ({
+        disk: JSON.parse(localStorage.getItem(mk) || "{}"),
+        mem: window.__CHENYUAN_DEBUG__.getMetaState()
+      }), META_KEY);
+      assert.equal(raceMerged.disk.bingjieCount, 4, "Competing stale saveMeta must retain monotonic max bingjieCount=4");
+      assert.equal(raceMerged.disk.bestRushGrade, "S", "Competing stale saveMeta must retain unified max bestRushGrade=S");
+      assert.equal(raceMerged.disk.bestTower, 9, "Competing saveMeta must merge page's bestTower=9");
+      assert.equal(raceMerged.mem.bingjieCount, 4, "In-memory metaState must reconcile to bingjieCount=4 after CRDT merge");
+      assert.equal(raceMerged.mem.bestRushGrade, "S", "In-memory metaState must reconcile to bestRushGrade=S after CRDT merge");
+      assert.equal(raceMerged.mem.bestTower, 9, "In-memory metaState must retain bestTower=9 after CRDT merge");
+      assert.equal(Object.prototype.hasOwnProperty.call(raceMerged.disk, "reincarnationPoints"), false);
+      await tab2.close();
     } finally {
       await ctx.close();
     }

@@ -10,7 +10,7 @@
  *      km_demon_core under demonic karma + 0.8x fair omen discount)
  *   3. Material reachability across all 7 materials & all alchemy recipes
  *   4. Lifespan budget, threshold ladder (75%/90%/95%/100%), and 7-path preview
- *   5. Reincarnation Dao Points (reincarnationPoints) audit under D05 baseline
+ *   5. D05 currency streamlining audit (reincarnationPoints/sectMerits removed, legacyStones <= 240 cap)
  *
  * Usage:
  *   node scripts/audit-economy.mjs [--seed 20261124] [--out path.json]
@@ -207,14 +207,29 @@ function runAudit(opts) {
     violations.push("LIFESPAN_PREVIEW_100_MISMATCH");
   }
 
-  // 5. Reincarnation Dao Points Audit (D05 Conservative Baseline)
+  // 5. D05 Currency Streamlining & Legacy Carryover Cap Audit
   const meta = debug.getMetaState();
-  const reincarnationAudit = {
-    field: "metaState.reincarnationPoints",
-    currentValue: Number(meta.reincarnationPoints || 0),
-    sources: ["Ascension completion (recordPastLifeInHall)", "Lifespan exhausted Bingjie reincarnation (+40 pts)"],
-    currentSinkStatus: "Displayed in Hall of Lives (openHallOfLivesModal) as cross-life progression counter; no currency removed per D05 conservative baseline.",
-    d05Compliant: true
+  const hasReincarnationPoints = Object.prototype.hasOwnProperty.call(meta, "reincarnationPoints");
+  const hasSectMerits = Object.prototype.hasOwnProperty.call(fresh, "sectMerits");
+  const prevAsc = meta.ascensions;
+  const prevBingjie = meta.bingjieCount;
+  meta.ascensions = 5;
+  meta.bingjieCount = 10;
+  const cappedFresh = debug.createFreshGame("传承上限审计", "sword_bone", 0);
+  const cappedLegacyStones = cappedFresh.stones - 65; // sword_bone base starting stones = 65
+  meta.ascensions = prevAsc;
+  meta.bingjieCount = prevBingjie;
+  if (hasReincarnationPoints) violations.push("D05_REMOVED_CURRENCY_PRESENT:metaState.reincarnationPoints");
+  if (hasSectMerits) violations.push("D05_REMOVED_CURRENCY_PRESENT:game.sectMerits");
+  if (cappedLegacyStones > 240) violations.push(`D05_LEGACY_STONES_CAP_BREACHED:${cappedLegacyStones}>240`);
+  const d05CurrencyAudit = {
+    reincarnationPointsAbsent: !hasReincarnationPoints,
+    sectMeritsAbsent: !hasSectMerits,
+    bingjieCountPresent: typeof meta.bingjieCount === "number",
+    sectDefenseClearedPresent: typeof fresh.sectDefenseCleared === "boolean",
+    legacyStonesCapTested: cappedLegacyStones,
+    legacyStonesCapMax: 240,
+    d05Compliant: !hasReincarnationPoints && !hasSectMerits && cappedLegacyStones <= 240
   };
 
   // 6. Sanctum & Relic Cost Ladder Summary
@@ -254,7 +269,7 @@ function runAudit(opts) {
       preview75Ok: prev75.crossedThresholds.includes(75),
       preview100NonLethalEfficiency: prev100.after.xpEfficiencyMult
     },
-    reincarnationAudit
+    d05CurrencyAudit
   };
   return report;
 }
@@ -275,7 +290,7 @@ if (isCli) {
       warnings: report.warnings,
       arbitrage: report.arbitrage,
       lifespan: report.lifespan,
-      reincarnationAudit: report.reincarnationAudit
+      d05CurrencyAudit: report.d05CurrencyAudit
     }, null, 2));
   }
   if (!report.passed) {

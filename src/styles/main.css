@@ -1363,7 +1363,7 @@
     box-shadow: 0 0 10px #ffffff;
   }
 
-  /* ================= V19 HALL-OF-FAME AAA: SOUL AVATAR, BLADE CLASH, SSS STYLE METER, GHOST DOJO & 28-STAR CHART ================= */
+  /* ================= V19 HALL-OF-FAME AAA: SOUL AVATAR, BLADE CLASH, S-RANK STYLE METER, GHOST DOJO & 28-STAR CHART ================= */
   #action-skill-dock {
     gap: 5.5px !important;
     padding: 6px 10px !important;
@@ -1432,14 +1432,14 @@
     box-shadow: 0 0 14px #70ffe6; transition: width 0.06s linear;
   }
 
-  /* Upgraded Real-Time Sword Style & Variety Meter (`剑道风华评级仪 D -> SSS`) */
+  /* Upgraded Real-Time Sword Style & Variety Meter (`剑道风华评级仪 C -> S`) */
   #combo-rank-seal {
     min-width: 178px;
   }
   body:has(#dojo-control-bar.active) #combo-rank-seal {
     top: 116px !important;
   }
-  #combo-rank-seal.rank-sss {
+  #combo-rank-seal.rank-s {
     border-color: #ff9eff !important;
     box-shadow: 0 12px 34px rgba(0,0,0,0.82), 0 0 26px rgba(255, 158, 255, 0.55) !important;
   }

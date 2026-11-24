@@ -995,6 +995,8 @@
     const totalStars = getTotalStageStars(game);
     const starIcons = `${"★".repeat(earned)}${"☆".repeat(3 - earned)}`;
     const bestIcons = `${"★".repeat(bestStars)}${"☆".repeat(3 - bestStars)}`;
+    const earnedGrade = stageStarsToGrade(earned);
+    const bestGrade = stageStarsToGrade(bestStars);
     const realmName = (REALMS[game.realm] && REALMS[game.realm].name) || "凡人";
     const nextObjective = computeVolumeEndNextObjective(stageIdx, game);
     const ksRecap = getKarmaState(game);
@@ -1014,11 +1016,11 @@
         <img src="${ART[act.arenaArt] || ART.arena_wilderness}" alt="${escapeHtml(meta.title)}" />
         <div class="drawer-mural-overlay">
           <div>
-            <span class="cinnabar-seal">${escapeHtml(meta.volEndLabel)}</span>
+            <span class="cinnabar-seal">${escapeHtml(meta.volEndLabel)} · ${earnedGrade} 级</span>
             <h2 style="font-family:var(--font-serif);font-size:21px;color:var(--gold-bright);margin-top:4px;">《${escapeHtml(meta.title)}》</h2>
             <div style="font-size:11.5px;color:#dffef8;margin-top:2px;">${escapeHtml(act.bossTitle)} · 已破</div>
           </div>
-          <span class="tag-chip ${newRecord ? "mythic" : "done"}">${newRecord ? "★ 星级刷新！" : `历史最高 ${bestIcons}`}</span>
+          <span class="tag-chip ${newRecord ? "mythic" : "done"}">${newRecord ? `★ 评级刷新 ${bestGrade} 级！` : `历史最高 ${bestGrade} 级 (${bestIcons})`}</span>
         </div>
       </div>
 
@@ -1037,8 +1039,8 @@
 
       <div class="jade-card" style="gap:7px;padding:10px 12px;">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-          <strong style="font-family:var(--font-serif);font-size:14px;color:var(--gold-bright);">★ 秘境星级评定</strong>
-          <span style="font-size:14px;color:#ffd970;font-weight:700;">本次 ${starIcons}（${earned}/3）· 最高 ${bestIcons}</span>
+          <strong style="font-family:var(--font-serif);font-size:14px;color:var(--gold-bright);">★ 秘境评级与星阶</strong>
+          <span style="font-size:14px;color:#ffd970;font-weight:700;">本次 ${earnedGrade} 级 (${starIcons}) · 最高 ${bestGrade} 级 (${bestIcons})</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;font-size:11.5px;">
           <div class="visual-tile equipped" style="padding:6px 8px;justify-content:center;"><span style="color:#ffd970;font-weight:700;">✓ 斩破镇守首领</span></div>
@@ -1071,6 +1073,7 @@
     const h = (canvas && canvas.height) || window.innerHeight || 900;
     const stg = STAGES[stageIdx] || STAGES[0];
     const earned = Math.max(1, Math.min(3, Math.floor(num(payload.earned, (game.stageStars && game.stageStars[stageIdx]) || 1))));
+    const earnedGrade = stageStarsToGrade(earned);
     const starStr = `${"★".repeat(earned)}${"☆".repeat(3 - earned)}`;
 
     if (stageIdx === STAGES.length - 1) {
@@ -1090,15 +1093,15 @@
           nextIdx: 3, toTower: true, x: towPos.x, y: towPos.y, r: 44, progress: 0
         });
         showToast(isSpirit
-          ? `${starStr} 天门道影已破！点击/Enter【九霄仙门】飞升证道！`
-          : `${starStr} 天门道影已破！元婴圆满后点击【九霄化神台】晋升化神，再登仙门飞升！`);
+          ? `${earnedGrade} 级 (${starStr}) 天门道影已破！点击/Enter【九霄仙门】飞升证道！`
+          : `${earnedGrade} 级 (${starStr}) 天门道影已破！元婴圆满后点击【九霄化神台】晋升化神，再登仙门飞升！`);
       }
       return;
     }
 
     if (!arena.props.some(p => p.kind === "portal")) {
-      addFloat(`${"★".repeat(earned)} 秘境荡平！(${stg.name})`, arena.player.x, arena.player.y - 72, "#ffe28a", 21, true);
-      showToast(`✦ 【${stg.name}】达成 ${starStr}！按 T 可开启星辉秘宝`);
+      addFloat(`${earnedGrade} 级 (${"★".repeat(earned)}) 秘境荡平！(${stg.name})`, arena.player.x, arena.player.y - 72, "#ffe28a", 21, true);
+      showToast(`✦ 【${stg.name}】达成 ${earnedGrade} 级 (${starStr})！按 T 可开启星辉秘宝`);
       renderStageDamageRecap(true);
       const nextIdx = Math.min(STAGES.length - 1, stageIdx + 1);
       const nextAct = CAMPAIGN_ACTS[nextIdx] || CAMPAIGN_ACTS[STAGES.length - 1];
@@ -1470,12 +1473,24 @@
     const calSpec = game ? getCalamityCycleSpec(game) : CALAMITY_CYCLES[0];
     const clim = getActiveDungeonClimate();
     const climAtkMult = (clim && clim.id === "blood_haze") ? COMBAT_RULE_PARAMS.climates.blood_haze.enemyAtkMult : 1.0;
+    const isMainlineScaled = Boolean(
+      game &&
+      !arena.towerMode &&
+      !(arena.bossRush && arena.bossRush.active) &&
+      !(arena.celestialSpire && arena.celestialSpire.active) &&
+      !(arena.sectDefense && arena.sectDefense.active) &&
+      !(arena.cloudFlight && arena.cloudFlight.active) &&
+      !(arena.customSeedRun && arena.customSeedRun.active)
+    );
+    const rs = isMainlineScaled
+      ? computeMainlineRealmScaling(arena.stageIdx, game.realm, isBoss)
+      : { active: false, delta: 0, hpMult: 1, atkMult: 1, postureMult: 1, stoneMult: 1 };
     const bossMultTable = [10.0, 10.5, 10.6, 9.0, 5.3];
     const effStage = arena.towerMode ? Math.min(4, Math.floor(Math.max(0, ((game && game.towerFloor) || 1) - 1) / 3)) : arena.stageIdx;
     const alphaWolfBonus = (isBoss && id === "wolf") ? 1.25 : 1.0;
     const bossHpMult = (bossMultTable[effStage] || 5.3) * alphaWolfBonus;
-    const hp = Math.round(spec.hp * mult * (isBoss ? bossHpMult : 1.0) * pactHpMult * calSpec.hpMult);
-    const maxPos = Math.round((isBoss ? (160 + effStage * 55) : (58 + effStage * 16)) * pactPosMult * calSpec.postureMult);
+    const hp = Math.round(spec.hp * mult * (isBoss ? bossHpMult : 1.0) * pactHpMult * calSpec.hpMult * rs.hpMult);
+    const maxPos = Math.round((isBoss ? (160 + effStage * 55) : (58 + effStage * 16)) * pactPosMult * calSpec.postureMult * rs.postureMult);
     const stageVariants = (!isBoss && !customName && !arena.towerMode) ? CHAPTER_ENEMY_VARIANTS[arena.stageIdx] : null;
     const vSpec = stageVariants ? (stageVariants[id] || null) : null;
     const hasWard = (id === "warden" && isBoss) || id === "sentinel" || id === "trial_gate" || !!(vSpec && vSpec.wardRatio && arena.stageIdx >= 1);
@@ -1492,6 +1507,8 @@
       variantColor: vSpec ? vSpec.auraColor : null,
       variantTrait: vSpec ? vSpec.trait : null,
       isBoss, isTreasure: false, enraged: !!(isBoss && game && hasPact(game, "blood_moon")), beamCd: 3.0,
+      realmScaledDelta: rs.delta,
+      realmStoneMult: rs.stoneMult,
       mech: hasWard ? "ward" : (vSpec && vSpec.trait === "mirror_pulse" ? "mirror" : spec.mech),
       wardHp: wardVal, maxWardHp: wardVal,
       mirrorTimer: 0,
@@ -1501,8 +1518,8 @@
       r: isBoss ? 48 : 31,
       hp, maxHp: hp,
       posture: maxPos, maxPosture: maxPos,
-      atk: Math.max(8, Math.round(spec.attack * atkScale * climAtkMult * calSpec.atkMult)),
-      heavy: Math.max(16, Math.round(spec.heavy * atkScale * bossHeavyAmp * climAtkMult * calSpec.atkMult)),
+      atk: Math.max(8, Math.round(spec.attack * atkScale * climAtkMult * calSpec.atkMult * rs.atkMult)),
+      heavy: Math.max(16, Math.round(spec.heavy * atkScale * bossHeavyAmp * climAtkMult * calSpec.atkMult * rs.atkMult)),
       state: "chase",
       timer: 0.65 + Math.random() * 0.65,
       windupDur: (isBoss ? 0.88 : 0.74) * (vSpec && vSpec.windupMult ? vSpec.windupMult : 1.0),

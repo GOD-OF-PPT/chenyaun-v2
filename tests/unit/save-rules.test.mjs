@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   STORAGE_KEY,
   META_KEY,
+  createDefaultMetaState,
+  sanitizeHallEntry,
   canonicalizeStepId,
   computeSaveChecksum,
   buildCanonicalSavePayload,
@@ -60,6 +62,10 @@ test("envelope v2 FNV-1a checksum & parseAndValidateSaveRaw accept valid saves a
 });
 
 test("mergeMetaStates performs monotonic CRDT merge across local & remote tabs without losing progress or polluting prototypes", () => {
+  const defMeta = createDefaultMetaState();
+  assert.equal(defMeta.bingjieCount, 0);
+  assert.equal(Object.prototype.hasOwnProperty.call(defMeta, "reincarnationPoints"), false);
+
   const local = {
     metaRev: 2,
     ascensions: 1,
@@ -76,15 +82,15 @@ test("mergeMetaStates performs monotonic CRDT merge across local & remote tabs w
     seenLaws: ["wanjian"],
     unlockedEndings: ["mortal_guardian"],
     karmaAscensions: { righteous: 1, neutral: 0, demonic: 0 },
-    reincarnationPoints: 40,
-    hallOfLives: [{ lifeNum: 1, name: "顾长青", endingId: "mortal_guardian", score: 3500, recordedAt: 1000 }]
+    bingjieCount: 1,
+    hallOfLives: [{ lifeNum: 1, name: "顾长青", endingId: "mortal_guardian", grade: "A", rushGrade: "A", score: 3500, recordedAt: 1000 }]
   };
   const remote = {
     metaRev: 5,
     ascensions: 2,
     bestScore: 2900,
     bestTower: 12,
-    bestRushGrade: "SS",
+    bestRushGrade: "S",
     bestRushTime: 112,
     bestSpireFloor: 7,
     bestCalamityTier: 2,
@@ -95,8 +101,8 @@ test("mergeMetaStates performs monotonic CRDT merge across local & remote tabs w
     seenLaws: ["crit_lotus"],
     unlockedEndings: ["sword_sovereign"],
     karmaAscensions: JSON.parse('{"righteous":0,"demonic":2,"__proto__":{"pwned":1}}'),
-    reincarnationPoints: 85,
-    hallOfLives: [{ lifeNum: 2, name: "顾长青", endingId: "sword_sovereign", score: 5200, recordedAt: 2000 }]
+    bingjieCount: 3,
+    hallOfLives: [{ lifeNum: 2, name: "顾长青", endingId: "sword_sovereign", grade: "S", rushGrade: "S", score: 5200, recordedAt: 2000 }]
   };
 
   const merged = mergeMetaStates(local, remote);
@@ -104,7 +110,7 @@ test("mergeMetaStates performs monotonic CRDT merge across local & remote tabs w
   assert.equal(merged.ascensions, 2);
   assert.equal(merged.bestScore, 3500);
   assert.equal(merged.bestTower, 12);
-  assert.equal(merged.bestRushGrade, "SS");
+  assert.equal(merged.bestRushGrade, "S");
   assert.equal(merged.bestRushTime, 112);
   assert.equal(merged.taixuTrailUnlocked, true);
   assert.equal(merged.lastEnding, "sword_sovereign");
@@ -113,9 +119,16 @@ test("mergeMetaStates performs monotonic CRDT merge across local & remote tabs w
   assert.deepEqual(merged.unlockedEndings, ["mortal_guardian", "sword_sovereign"]);
   assert.equal(merged.karmaAscensions.righteous, 1);
   assert.equal(merged.karmaAscensions.demonic, 2);
-  assert.equal(merged.reincarnationPoints, 85);
+  assert.equal(merged.bingjieCount, 3);
+  assert.equal(Object.prototype.hasOwnProperty.call(merged, "reincarnationPoints"), false);
   assert.equal(merged.hallOfLives.length, 2);
   assert.equal(({}).pwned, undefined);
+
+  // Non-whitelisted legacy/corrupt grades sanitize cleanly without shims
+  assert.equal(mergeMetaStates({ bestRushGrade: "SS" }, { bestRushGrade: "S+" }).bestRushGrade, null);
+  const badHall = sanitizeHallEntry({ lifeNum: 1, name: "测", grade: "SSS", rushGrade: "S+", score: 100 });
+  assert.equal(badHall.grade, "C");
+  assert.equal(badHall.rushGrade, "未挑战");
 
   const metaCheck = parseAndValidateMetaRaw(JSON.stringify(merged), META_KEY);
   assert.equal(metaCheck.ok, true);
