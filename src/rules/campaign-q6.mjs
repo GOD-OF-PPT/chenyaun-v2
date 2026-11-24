@@ -200,8 +200,9 @@ export const VOL5_RESONANCE_PILLARS = [
     summary: "击退三波百鬼夜行守卫护山大阵",
     check: (g) => {
       const grade = (g && typeof g.sectDefenseBestGrade === "string") ? g.sectDefenseBestGrade.trim() : "";
-      const active = Boolean(g && (g.sectDefenseCleared || (grade && ["C", "B", "A", "S"].includes(grade))));
-      return { active, progressText: active ? `${grade || "已破"} 级 ✓` : "待守阵" };
+      const validGrade = ["C", "B", "A", "S"].includes(grade);
+      const active = Boolean(g && (g.sectDefenseCleared || validGrade));
+      return { active, progressText: active ? (validGrade ? `${grade} 级 ✓` : "已破 ✓") : "待守阵" };
     }
   }
 ];
@@ -268,7 +269,7 @@ export function getExpeditionNodeStageSynergy(g, nodeId) {
   const idx = mapped.stageIdx;
   const rawStars = (g && g.stageStars && typeof g.stageStars === "object" && hasOwn(g.stageStars, String(idx))) ? num(g.stageStars[idx], 0) : 0;
   const stars = Math.max(0, Math.min(3, Math.floor(rawStars)));
-  const bossDefeated = Boolean(g && g.defeatedStageBosses && g.defeatedStageBosses[idx]);
+  const bossDefeated = Boolean(g && g.defeatedStageBosses && typeof g.defeatedStageBosses === "object" && hasOwn(g.defeatedStageBosses, String(idx)) && g.defeatedStageBosses[idx]);
   if (stars >= 3) {
     return { mult: 1.30, tier: "full_star", label: `${mapped.stageName}三星共鸣 +30%`, stageIdx: idx, stageName: mapped.stageName, stars };
   }

@@ -890,6 +890,7 @@
   let activeMatSourceJump = null;
   let pendingBatchCraft = null;
   let pendingBatchEnhance = null;
+  let pendingStageSweep = null;
 
   function createFreshEncounterTelemetry() {
     return {

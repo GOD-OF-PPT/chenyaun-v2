@@ -17,6 +17,7 @@
     lifespan_exhausted: 40,
     batch_craft: 40,
     batch_enhance: 40,
+    stage_sweep: 40,
     default: 20
   };
 
@@ -1432,33 +1433,42 @@
   }
 
   function acquireGearItem(item, opts = {}) {
-    if (!game || !item) return;
+    if (!game || !item) return { destination: null };
     if (game.goalStats) game.goalStats.craftOrLoot = (game.goalStats.craftOrLoot || 0) + 1;
     const cur = game.equippedGear[item.slot];
+    let destination = "bag";
     if (!cur) {
+      destination = "equipped";
       game.equippedGear[item.slot] = item;
       syncFlyingSwords();
       addFloat(`✦ ${item.name}↑`, arena.player.x, arena.player.y - 54, RARITIES[item.rarity].color, 14, true, { banner: false, kind: "gear" });
-      showToast(`★ 穿戴仙装【${item.name}】（${formatGearStats(item)}）`, { tier: 2, category: "gear" });
+      if (!opts.silentToast) {
+        showToast(`★ 穿戴仙装【${item.name}】（${formatGearStats(item)}）`, { tier: 2, category: "gear" });
+      }
     } else if (game.gearBag.length < GEAR_BAG_LIMIT) {
       // Never silently overwrite an occupied or enhanced slot! Store safely & show non-blocking compare card when calm.
+      destination = "bag";
       game.gearBag.unshift(item);
       pendingCompareGear = item;
       clearCompareSmeltConfirm();
-      renderGearCompareCard();
+      if (!opts.deferSave) renderGearCompareCard();
       addFloat(`✦ ${item.name}`, arena.player.x, arena.player.y - 48, RARITIES[item.rarity].color, 14, false, { banner: false, kind: "gear" });
       if (!opts.silentToast) {
         showToast(`✦ 拾获【${item.name}】已收入行囊（静默后可对比换装）`, { tier: 2, category: "gear" });
       }
     } else {
       // F07/F10/G9-1: Full bag (24/24) — NEVER auto-smelt! Persist in game.pendingRewards and defer modal until calm.
-      enqueuePendingReward({ kind: "gear_overflow", payload: { item }, persist: false });
+      destination = "overflow";
+      enqueuePendingReward({ kind: "gear_overflow", payload: { item }, persist: false, deferUi: Boolean(opts.deferSave) });
       if (!opts.silentToast) {
         showToast(`行囊已满 (${GEAR_BAG_LIMIT}/${GEAR_BAG_LIMIT})，【${item.name}】已记入待处置！`, { tier: 2, category: "gear" });
       }
     }
-    saveGame();
-    updateHud();
-    syncPendingRewardsBadge();
-    requestCalmReevaluation();
+    if (!opts.deferSave) {
+      saveGame();
+      updateHud();
+      syncPendingRewardsBadge();
+      requestCalmReevaluation();
+    }
+    return { destination };
   }

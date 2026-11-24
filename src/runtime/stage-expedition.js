@@ -49,7 +49,7 @@
     if (Array.isArray(arena.shockRings) && arena.shockRings.some(sr => sr && !sr.hitPlayer && (sr.r || 0) < (sr.maxR || 0))) return true;
     if (Array.isArray(arena.groundSweeps) && arena.groundSweeps.some(gs => gs && !gs.hitPlayer && !gs.vaulted && (gs.r || 0) < (gs.maxR || 0) && num(gs.dmg, 0) > 0)) return true;
     if (Array.isArray(arena.bossBeams) && arena.bossBeams.some(bm => bm && num(bm.t, 0) < num(bm.dur, 0))) return true;
-    if (arena.bladeClash) return true;
+    if (arena.bladeClash || arena.titanDualClash || arena.titanClimbCine) return true;
     return false;
   }
 

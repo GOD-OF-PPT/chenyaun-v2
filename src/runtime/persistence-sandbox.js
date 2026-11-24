@@ -242,7 +242,7 @@
     arena.cloudFlight = null;
     restoreCustomSeedTempCurio();
     arena.customSeedRun = null;
-    arena.bladeClash = null;
+    clearCinematicClashOverlays();
     if (arena.coop2P) arena.coop2P.active = false;
     syncV23EpochDock();
     arena.tribulation = null;
@@ -534,8 +534,12 @@
       el.classList.remove("readonly-mode");
       if (hadFocus) {
         const bd = document.getElementById("modal-backdrop");
-        if (!(bd && bd.classList.contains("open")) && !drawerOpen) {
-          restoreTriggerFocus(null);
+        if (!(bd && bd.classList.contains("open"))) {
+          if (drawerOpen) {
+            focusDialogSafely(document.getElementById("jade-panel"));
+          } else {
+            restoreTriggerFocus(null);
+          }
         }
       }
     };
@@ -551,10 +555,12 @@
       el.dataset.alertSig = nextHtml;
       if (hadFocus) {
         const bd = document.getElementById("modal-backdrop");
-        if (!(bd && bd.classList.contains("open")) && !drawerOpen) {
+        if (!(bd && bd.classList.contains("open"))) {
           const target = (prevAct && el.querySelector(`[data-action="${prevAct}"]`)) || el.querySelector("button:not([disabled])");
           if (target && isElementFocusable(target)) {
             try { target.focus({ preventScroll: true }); } catch (e) {}
+          } else if (drawerOpen) {
+            focusDialogSafely(document.getElementById("jade-panel"));
           } else {
             restoreTriggerFocus(null);
           }
@@ -1155,7 +1161,10 @@
   }
   window.addEventListener("pagehide", flushSaveOnLifecycle);
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") flushSaveOnLifecycle();
+    if (document.visibilityState === "hidden") {
+      if (typeof stopHoldProgression === "function") stopHoldProgression("window_blur");
+      flushSaveOnLifecycle();
+    }
   });
 
   function getClearedCampaignStageIndices(g) {

@@ -2520,6 +2520,7 @@
       destinyFruits: [],
       stageStars: {},
       defeatedStageBosses: {},
+      stageSweepState: {},
       claimedStepIds: [],
       claimedStarChests: [],
       bountyTiers: { slay: 1, tech: 1, craft: 1 },
@@ -2710,6 +2711,7 @@
       if (num(g.stageStars[idx], 0) >= 1) g.defeatedStageBosses[idx] = true;
     });
     if (g.trialCompleted === true) g.defeatedStageBosses[4] = true;
+    g.stageSweepState = sanitizeStageSweepState(raw.stageSweepState, STAGES.length);
     // Legacy save migration (S1): never regress a save whose realm already surpassed lower gates,
     // without minting fake stars in g.stageStars and without mutating g.trialCompleted.
     const migratedRank = rankOf(g.realm);

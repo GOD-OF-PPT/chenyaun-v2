@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P5 + R2–R7 + Q0–Q6 + R3-D06 + R3-D05 + T5 · 共 89 项）
+ * 《尘缘问道 · 剑阵万象》全量 1440×900 Chromium 自动化回归验收套件（M1–M4 + P1–P5 + R2–R7 + Q0–Q6 + R3-D06 + R3-D05 + R3-D08 + T5 · 共 91 项）
  *
  * 用法：
  *   node scripts/verify-playable-v2.mjs
@@ -11097,40 +11097,77 @@ try {
     }
   });
 
-  await runSuite("Q6-4", "Q6 F37/D08 非核心扩展边界核查（DEFERRED 文档、零自动扫荡/自动连扣与显式批量确认保留）", async () => {
+  await runSuite("Q6-4", "Q6/D08 最终边界核查（3★显式确认扫荡、长按防误扣、明确不做移动端、F29如实NOT_RUN与Q2批量保留）", async () => {
     const docPath = path.join(REPO_ROOT, "docs", "analysis", "q6-decisions-and-boundary.md");
     assert.ok(fs.existsSync(docPath), "Missing docs/analysis/q6-decisions-and-boundary.md");
     const docTxt = fs.readFileSync(docPath, "utf8");
-    assert.ok(docTxt.includes("DEFERRED"), "q6-decisions-and-boundary.md must explicitly record DEFERRED status for F37");
-    assert.ok(docTxt.includes("扫荡") && docTxt.includes("移动端") && docTxt.includes("长按"), "q6-decisions-and-boundary.md must enumerate all 3 deferred F37 items");
-    assert.ok(docTxt.includes("NOT_RUN") && docTxt.includes("F29"), "q6-decisions-and-boundary.md must preserve honest F29 = NOT_RUN status");
+    assert.ok(docTxt.includes("扫荡") && docTxt.includes("移动端") && docTxt.includes("长按"), "q6-decisions-and-boundary.md must document all 3 D08 scope items");
+    assert.ok(docTxt.includes("免耗寿") && docTxt.includes("显式确认") && docTxt.includes("1440×900"), "q6-decisions-and-boundary.md must record finalized D08 invariants (0-lifespan, explicit confirm, 1440x900 desktop-only)");
+    assert.ok(docTxt.includes("明确不做") && docTxt.includes("NOT_RUN") && docTxt.includes("F29"), "q6-decisions-and-boundary.md must record NO mobile adaptation and honest F29 = NOT_RUN status");
 
     const { ctx, page } = await startCleanGamePage(browser, "Q6-4", true);
     try {
-      const f37Dom = await page.evaluate(() => {
+      const d08Boundary = await page.evaluate(() => {
         const api = window.__CHENYUAN_DEBUG__;
         const g = api.getState().game;
         g.realm = "spirit";
         g.stones = 2000;
+        g.stageStars[0] = 3;
         Object.assign(g.inventory, { herb: 20, dew: 20, core: 20, jade: 20, lotus: 20, soul: 20, dao: 20 });
         api.openObjectivesModal("mainline");
-        const sweepBtns = document.querySelectorAll('[data-action*="sweep"], [data-action*="auto-deduct"], [id*="auto-sweep"]').length;
+        const silentAutoBtns = document.querySelectorAll('[data-action*="auto-sweep"], [data-action*="auto-deduct"], [id*="auto-sweep"], [id*="mobile-joystick"]').length;
         api.closeModal();
+
+        // Explicit confirm required for sweep (opening sweep modal mutates 0 state)
+        const stonesBeforeOpen = g.stones;
+        api.openWorldMapModal("stage_0");
+        const mapSweepBtn = document.getElementById("btn-map-sweep-stage");
+        let sweepRequiresConfirm = false;
+        let zeroMutationOnOpen = false;
+        if (mapSweepBtn) {
+          mapSweepBtn.click();
+          sweepRequiresConfirm = Boolean(document.getElementById("btn-confirm-stage-sweep"));
+          zeroMutationOnOpen = g.stones === stonesBeforeOpen && (!g.stageSweepState || !g.stageSweepState["0"] || !g.stageSweepState["0"].usedToday);
+          api.closeModal();
+        }
+
+        // Q2 F18 explicit batch craft & batch enhance modals remain preserved
         api.toggleDrawer("alchemy");
-        const batchBtns = document.querySelectorAll("[data-open-batch-craft]");
-        const batchTriggerCount = batchBtns.length;
-        let hasExplicitConfirmBtn = false;
-        if (batchBtns.length > 0) {
-          batchBtns[0].click();
-          hasExplicitConfirmBtn = Boolean(document.getElementById("btn-confirm-batch-craft"));
+        const batchCraftBtns = document.querySelectorAll("[data-open-batch-craft]");
+        let hasBatchCraftConfirm = false;
+        if (batchCraftBtns.length > 0) {
+          batchCraftBtns[0].click();
+          hasBatchCraftConfirm = Boolean(document.getElementById("btn-confirm-batch-craft"));
+          api.closeModal();
+        }
+        api.toggleDrawer("cultivate");
+        const batchEnhBtns = document.querySelectorAll("[data-open-batch-enhance]");
+        let hasBatchEnhConfirm = false;
+        if (batchEnhBtns.length > 0) {
+          batchEnhBtns[0].click();
+          hasBatchEnhConfirm = Boolean(document.getElementById("btn-confirm-batch-enhance"));
           api.closeModal();
         }
         api.closeDrawer();
-        return { sweepBtns, batchTriggerCount, hasExplicitConfirmBtn };
+        return {
+          silentAutoBtns,
+          sweepRequiresConfirm,
+          zeroMutationOnOpen,
+          batchCraftCount: batchCraftBtns.length,
+          hasBatchCraftConfirm,
+          batchEnhCount: batchEnhBtns.length,
+          hasBatchEnhConfirm,
+          viewportW: window.innerWidth,
+          viewportH: window.innerHeight
+        };
       });
-      assert.equal(f37Dom.sweepBtns, 0, "D08/F37: zero auto-sweep or auto-deduct controls allowed in runtime");
-      assert.ok(f37Dom.batchTriggerCount >= 1, "D08: explicit batch craft triggers must remain available");
-      assert.equal(f37Dom.hasExplicitConfirmBtn, true, "D08: explicit batch confirm modal (#btn-confirm-batch-craft) must remain preserved");
+      assert.equal(d08Boundary.silentAutoBtns, 0, "D08: zero silent auto-sweep, auto-deduct, or mobile joystick controls allowed");
+      assert.equal(d08Boundary.sweepRequiresConfirm, true, "D08: stage sweep must open explicit confirmation modal (#btn-confirm-stage-sweep)");
+      assert.equal(d08Boundary.zeroMutationOnOpen, true, "D08: opening stage sweep confirm modal must not mutate stones or sweep quota");
+      assert.ok(d08Boundary.batchCraftCount >= 1 && d08Boundary.hasBatchCraftConfirm, "D08: Q2 explicit batch craft modal must remain preserved");
+      assert.ok(d08Boundary.batchEnhCount >= 1 && d08Boundary.hasBatchEnhConfirm, "D08: Q2 explicit batch enhance modal must remain preserved");
+      assert.equal(d08Boundary.viewportW, 1440);
+      assert.equal(d08Boundary.viewportH, 900);
     } finally {
       await ctx.close();
     }
@@ -11636,6 +11673,732 @@ try {
       assert.equal(raceMerged.mem.bestTower, 9, "In-memory metaState must retain bestTower=9 after CRDT merge");
       assert.equal(Object.prototype.hasOwnProperty.call(raceMerged.disk, "reincarnationPoints"), false);
       await tab2.close();
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  // ==================== R3-M3 (D08): STAGE SWEEP (R3-F07) & LONG-PRESS CONTINUOUS PROGRESSION (R3-F08) ====================
+  await runSuite("R3-D08-1", "D08 (V16-Sweep): 3★/S-Rank Gate, Zero-Nested Buttons, Explicit Confirm/Cancel/Focus, 0 Lifespan, 24/24 Overflow, Cooldown/Cap/Day-Reset, Rollback & Multi-Tab Persistence", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "R3-D08-1", true);
+    try {
+      // 1. 0/1/2★ rejected in UI (World Map + Explore Drawer) and API; zero nested <button> in Explore Drawer
+      const gateCheck = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        g.realm = "spirit";
+        g.stones = 300;
+        g.elapsedMonths = 36;
+        g.stageStars = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 3 };
+        g.stageSweepState = {};
+        dbg.saveGame();
+
+        const apiRejects = [0, 1, 2].map(idx => dbg.q6.executeStageSweep(idx));
+
+        // World Map check for 2★ stage (stage 2)
+        dbg.openWorldMapModal("stage_2");
+        const mapBtn2 = document.getElementById("btn-map-sweep-stage");
+        const mapBtn2Disabled = Boolean(mapBtn2 && mapBtn2.disabled);
+        const mapBtn2Txt = mapBtn2 ? mapBtn2.textContent.trim() : "";
+        dbg.closeModal();
+
+        // Explore drawer check: zero nested buttons, 0/1/2★ disabled, 3★ enabled, data-warp-stage intact
+        dbg.toggleDrawer("explore");
+        const nestedButtons = document.querySelectorAll("#panel-scroll-body button button").length;
+        const warpBtnsCount = document.querySelectorAll("#panel-scroll-body [data-warp-stage]").length;
+        const sweepDisabledStates = [0, 1, 2, 3, 4].map(idx => {
+          const b = document.querySelector(`#panel-scroll-body [data-open-stage-sweep="${idx}"]`);
+          return { idx, exists: Boolean(b), disabled: Boolean(b && b.disabled), text: b ? b.textContent.trim() : "" };
+        });
+        dbg.closeDrawer();
+        return { apiRejects, mapBtn2Disabled, mapBtn2Txt, nestedButtons, warpBtnsCount, sweepDisabledStates };
+      });
+
+      assert.equal(gateCheck.nestedButtons, 0, "Explore drawer stage cards must contain ZERO nested <button> elements");
+      assert.ok(gateCheck.warpBtnsCount >= 5, "Explore drawer must retain [data-warp-stage] buttons for all 5 stages");
+      for (const r of gateCheck.apiRejects) {
+        assert.equal(r.ok, false);
+        assert.equal(r.reason, "requires_three_stars");
+      }
+      assert.equal(gateCheck.mapBtn2Disabled, true, "2★ stage must have disabled sweep button on World Map");
+      assert.ok(gateCheck.mapBtn2Txt.includes("三星") || gateCheck.mapBtn2Txt.includes("S级"));
+      assert.equal(gateCheck.sweepDisabledStates[0].disabled, true);
+      assert.equal(gateCheck.sweepDisabledStates[1].disabled, true);
+      assert.equal(gateCheck.sweepDisabledStates[2].disabled, true);
+      assert.equal(gateCheck.sweepDisabledStates[3].disabled, false);
+      assert.equal(gateCheck.sweepDisabledStates[4].disabled, false);
+
+      // 2. World Map explicit confirm modal + Escape focus return (0 state mutated)
+      await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        g.stageStars[0] = 3;
+        g.stageSweepState = {};
+        dbg.saveGame();
+        dbg.openWorldMapModal("stage_0");
+      });
+      await page.waitForSelector("#btn-map-sweep-stage:not([disabled])");
+      await page.click("#btn-map-sweep-stage");
+      await page.waitForSelector("#modal-backdrop.open #btn-confirm-stage-sweep");
+      const modalPreviewTxt = await page.textContent("#modal-content");
+      assert.ok(modalPreviewTxt.includes("免耗寿元") && modalPreviewTxt.includes("0 月"), "Confirm modal must prominently display 0-lifespan notice");
+      assert.ok(modalPreviewTxt.includes("S 级") && modalPreviewTxt.includes("★★★"));
+      await page.keyboard.press("Escape");
+      await page.waitForSelector("#btn-map-sweep-stage");
+      const afterMapEsc = await page.evaluate(() => {
+        const g = window.__CHENYUAN_DEBUG__.getState().game;
+        return {
+          activeId: document.activeElement ? document.activeElement.id : "",
+          stones: g.stones,
+          elapsedMonths: g.elapsedMonths,
+          used0: (g.stageSweepState && g.stageSweepState["0"] && g.stageSweepState["0"].usedToday) || 0
+        };
+      });
+      assert.equal(afterMapEsc.activeId, "btn-map-sweep-stage", "Pressing Escape on World Map sweep confirm must return focus to #btn-map-sweep-stage");
+      assert.equal(afterMapEsc.stones, 300);
+      assert.equal(afterMapEsc.elapsedMonths, 36);
+      assert.equal(afterMapEsc.used0, 0);
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.closeModal());
+
+      // 3. Explore Drawer Cancel focus return + Confirm Sweep execution (authentic drops, 0 lifespan, focus return)
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.toggleDrawer("explore"));
+      await page.waitForSelector('#panel-scroll-body [data-open-stage-sweep="0"]:not([disabled])');
+      await page.click('#panel-scroll-body [data-open-stage-sweep="0"]');
+      await page.waitForSelector("#modal-backdrop.open #btn-cancel-stage-sweep");
+      await page.click("#btn-cancel-stage-sweep");
+      await page.waitForTimeout(50);
+      const afterDrawerCancel = await page.evaluate(() => ({
+        modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+        focusedSweepAttr: document.activeElement ? document.activeElement.getAttribute("data-open-stage-sweep") : null,
+        used0: (window.__CHENYUAN_DEBUG__.getState().game.stageSweepState?.["0"]?.usedToday) || 0
+      }));
+      assert.equal(afterDrawerCancel.modalOpen, false);
+      assert.equal(afterDrawerCancel.focusedSweepAttr, "0", "Canceling drawer sweep modal must restore focus to [data-open-stage-sweep='0']");
+      assert.equal(afterDrawerCancel.used0, 0);
+
+      const preSweepSnap = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        return {
+          stones: g.stones,
+          xp: g.xp,
+          overflowXp: g.overflowXp || 0,
+          elapsedMonths: g.elapsedMonths,
+          core: g.inventory.core || 0,
+          dew: g.inventory.dew || 0,
+          gearCount: (g.gearBag ? g.gearBag.length : 0) + ["weapon", "armor", "ring"].filter(sl => g.equippedGear[sl]).length,
+          bonusStarPts: g.bonusStarPts || 0,
+          soulsLen: (g.unlockedSouls || []).length,
+          preview: dbg.rules.computeStageSweepPreview(g, 0)
+        };
+      });
+      await page.click('#panel-scroll-body [data-open-stage-sweep="0"]');
+      await page.waitForSelector("#modal-backdrop.open #btn-confirm-stage-sweep");
+      await page.click("#btn-confirm-stage-sweep");
+      await page.waitForTimeout(60);
+
+      const postSweepSnap = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        const ae = document.activeElement;
+        return {
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          focusedAttr: ae ? (ae.getAttribute("data-open-stage-sweep") || ae.getAttribute("data-warp-stage")) : null,
+          stones: g.stones,
+          xp: g.xp,
+          overflowXp: g.overflowXp || 0,
+          elapsedMonths: g.elapsedMonths,
+          core: g.inventory.core || 0,
+          dew: g.inventory.dew || 0,
+          gearCount: (g.gearBag ? g.gearBag.length : 0) + ["weapon", "armor", "ring"].filter(sl => g.equippedGear[sl]).length,
+          bonusStarPts: g.bonusStarPts || 0,
+          soulsLen: (g.unlockedSouls || []).length,
+          sweepEntry0: g.stageSweepState && g.stageSweepState["0"] ? Object.assign({}, g.stageSweepState["0"]) : null,
+          stage0Stars: g.stageStars[0],
+          sweepBtnAriaDisabled: document.querySelector('#panel-scroll-body [data-open-stage-sweep="0"]')?.getAttribute("aria-disabled")
+        };
+      });
+      assert.equal(postSweepSnap.modalOpen, false);
+      assert.equal(postSweepSnap.focusedAttr, "0", "Confirming drawer sweep must restore focus to refreshed stage 0 button");
+      assert.equal(postSweepSnap.elapsedMonths, preSweepSnap.elapsedMonths, "Stage sweep MUST deduct strictly 0 months of lifespan");
+      assert.equal(postSweepSnap.stones, preSweepSnap.stones + preSweepSnap.preview.stones, "Sweep stones must match exact authentic preview");
+      assert.ok((postSweepSnap.xp + postSweepSnap.overflowXp) > (preSweepSnap.xp + preSweepSnap.overflowXp), "Sweep must grant authentic realm XP");
+      assert.ok(postSweepSnap.core >= preSweepSnap.core + 3, "Sweep must grant guaranteed core materials");
+      assert.ok(postSweepSnap.dew >= preSweepSnap.dew + 2, "Sweep must grant guaranteed dew materials");
+      assert.equal(postSweepSnap.gearCount, preSweepSnap.gearCount + 1, "Sweep must grant 1 rolled boss gear");
+      assert.equal(postSweepSnap.bonusStarPts, preSweepSnap.bonusStarPts, "Sweep must NOT grant bonusStarPts");
+      assert.equal(postSweepSnap.soulsLen, preSweepSnap.soulsLen, "Sweep must NOT unlock soul spirits");
+      assert.equal(postSweepSnap.stage0Stars, 3);
+      assert.equal(postSweepSnap.sweepEntry0.usedToday, 1);
+      assert.equal(postSweepSnap.sweepBtnAriaDisabled, "true", "Sweep button must enter cooldown state after sweep");
+
+      // 4. Cooldown rejection -> clock-advance pass -> 24/24 full-bag gear_overflow -> 3/3 cap -> next-day reset -> QuotaExceededError atomic rollback
+      const lifecycleRes = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        const t1 = g.stageSweepState["0"].lastSweepAt;
+
+        // 60s cooldown check
+        const cdBlocked = dbg.q6.executeStageSweep(0, { nowMs: t1 + 30_000 });
+        const cdPassed = dbg.q6.executeStageSweep(0, { nowMs: t1 + 60_000 });
+
+        // 24/24 full bag sweep -> pendingRewards gear_overflow (never auto-smelted!)
+        ["weapon", "armor", "ring"].forEach(sl => {
+          if (!g.equippedGear[sl]) g.equippedGear[sl] = dbg.rollGearItem(0, 1, sl, { usePity: false, rng: () => 0.2 });
+        });
+        while (g.gearBag.length < dbg.GEAR_BAG_LIMIT) {
+          g.gearBag.push(dbg.rollGearItem(0, 1, "weapon", { usePity: false, rng: () => 0.3 }));
+        }
+        const overflowBefore = dbg.getPendingOverflowCount();
+        const stonesBeforeOverflow = g.stones;
+        const bagFullPreview = dbg.rules.computeStageSweepPreview(g, 0);
+        const sweep3 = dbg.q6.executeStageSweep(0, { nowMs: t1 + 125_000 });
+        const overflowAfter = dbg.getPendingOverflowCount();
+
+        // 3/3 daily cap rejection + next-day reset
+        const capBlocked = dbg.q6.executeStageSweep(0, { nowMs: t1 + 200_000 });
+        const nextDayStatus = dbg.rules.getStageSweepStatus(g, 0, t1 + 86_400_000 + 200_000);
+
+        // QuotaExceededError atomic rollback on Stage 3 (3★ ready)
+        g.stageStars[3] = 3;
+        const rbSnap = {
+          stones: g.stones,
+          xp: g.xp,
+          overflowXp: g.overflowXp,
+          elapsedMonths: g.elapsedMonths,
+          core: g.inventory.core || 0,
+          gearBagLen: g.gearBag.length,
+          pityJson: JSON.stringify(g.pity),
+          pendingLen: (g.pendingRewards || []).length,
+          sweep3State: JSON.stringify(g.stageSweepState["3"] || null),
+          journalLen: g.journal.length
+        };
+        const origSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function () {
+          const err = new Error("quota");
+          err.name = "QuotaExceededError";
+          throw err;
+        };
+        let rbRes;
+        try {
+          rbRes = dbg.q6.executeStageSweep(3, { nowMs: t1 + 300_000 });
+        } finally {
+          Storage.prototype.setItem = origSet;
+        }
+        const rbClean = (
+          g.stones === rbSnap.stones &&
+          g.xp === rbSnap.xp &&
+          g.overflowXp === rbSnap.overflowXp &&
+          g.elapsedMonths === rbSnap.elapsedMonths &&
+          (g.inventory.core || 0) === rbSnap.core &&
+          g.gearBag.length === rbSnap.gearBagLen &&
+          JSON.stringify(g.pity) === rbSnap.pityJson &&
+          (g.pendingRewards || []).length === rbSnap.pendingLen &&
+          JSON.stringify(g.stageSweepState["3"] || null) === rbSnap.sweep3State &&
+          g.journal.length === rbSnap.journalLen
+        );
+        // Save clean state for reload/multi-tab test
+        dbg.saveGame();
+        return {
+          cdBlocked,
+          cdPassed,
+          bagFull: bagFullPreview.bagFull,
+          sweep3,
+          overflowDelta: overflowAfter - overflowBefore,
+          stonesDeltaSweep3: g.stones - stonesBeforeOverflow,
+          capBlocked,
+          nextDayStatus,
+          rbRes,
+          rbClean,
+          elapsedMonthsFinal: g.elapsedMonths
+        };
+      });
+
+      assert.equal(lifecycleRes.cdBlocked.ok, false);
+      assert.equal(lifecycleRes.cdBlocked.reason, "on_cooldown");
+      assert.equal(lifecycleRes.cdPassed.ok, true);
+      assert.equal(lifecycleRes.cdPassed.remaining, 1);
+      assert.equal(lifecycleRes.bagFull, true);
+      assert.equal(lifecycleRes.sweep3.ok, true);
+      assert.equal(lifecycleRes.sweep3.gearDestination, "overflow");
+      assert.equal(lifecycleRes.overflowDelta, 1, "Full 24/24 bag sweep must queue gear_overflow into pendingRewards without auto-smelting");
+      assert.equal(lifecycleRes.stonesDeltaSweep3, lifecycleRes.sweep3.stones, "Full-bag sweep must NOT auto-smelt rolled gear for extra stones");
+      assert.equal(lifecycleRes.capBlocked.ok, false);
+      assert.equal(lifecycleRes.capBlocked.reason, "quota_exhausted");
+      assert.equal(lifecycleRes.nextDayStatus.canSweep, true);
+      assert.equal(lifecycleRes.nextDayStatus.remaining, 3);
+      assert.equal(lifecycleRes.rbRes.ok, false);
+      assert.equal(lifecycleRes.rbRes.rolledBack, true);
+      assert.equal(lifecycleRes.rbRes.reason, "save_failed");
+      assert.equal(lifecycleRes.rbClean, true, "QuotaExceededError during sweep must atomically roll back all state including pity, inventory, pendingRewards & sweep quota");
+      assert.equal(lifecycleRes.elapsedMonthsFinal, 36, "All sweeps combined must still consume strictly 0 months of lifespan");
+
+      // 5. Reload persistence & Multi-Tab save competition for stageSweepState
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.waitForSelector("#btn-continue-save");
+      await page.click("#btn-continue-save");
+      await page.waitForTimeout(80);
+      const afterReload = await page.evaluate(() => {
+        const g = window.__CHENYUAN_DEBUG__.getState().game;
+        return {
+          used0: g.stageSweepState && g.stageSweepState["0"] ? g.stageSweepState["0"].usedToday : 0,
+          total0: g.stageSweepState && g.stageSweepState["0"] ? g.stageSweepState["0"].totalSweeps : 0,
+          elapsedMonths: g.elapsedMonths
+        };
+      });
+      assert.equal(afterReload.used0, 3, "stageSweepState.usedToday must persist across reload");
+      assert.equal(afterReload.total0, 3, "stageSweepState.totalSweeps must persist across reload");
+      assert.equal(afterReload.elapsedMonths, 36);
+
+      const tab2 = await ctx.newPage();
+      attachErrorListeners(tab2, "R3-D08-1-Tab2");
+      await tab2.goto(page.url(), { waitUntil: "domcontentloaded" });
+      await tab2.waitForSelector("#btn-continue-save");
+      await tab2.click("#btn-continue-save");
+      await tab2.waitForTimeout(80);
+      const multiTabRes = await tab2.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        const loadedUsed0 = g.stageSweepState && g.stageSweepState["0"] ? g.stageSweepState["0"].usedToday : 0;
+        const tab2Sweep3 = dbg.q6.executeStageSweep(3);
+        return { loadedUsed0, tab2Sweep3Ok: Boolean(tab2Sweep3 && tab2Sweep3.ok) };
+      });
+      assert.equal(multiTabRes.loadedUsed0, 3, "Tab 2 must load persisted stageSweepState from shared storage");
+      assert.equal(multiTabRes.tab2Sweep3Ok, true, "Tab 2 sweeping stage 3 must persist cleanly");
+
+      // Stale Tab 1 trying to sweep stage 4 should detect multi-tab conflict and roll back atomically!
+      const staleTab1Res = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const res = dbg.q6.executeStageSweep(4);
+        const persist = dbg.getPersistenceState();
+        const diskRaw = localStorage.getItem(dbg.persistence.STORAGE_KEY);
+        const diskParsed = JSON.parse(diskRaw);
+        return {
+          res,
+          hasConflict: Boolean(persist.saveConflictState),
+          diskStage3Used: diskParsed.game.stageSweepState && diskParsed.game.stageSweepState["3"] ? diskParsed.game.stageSweepState["3"].usedToday : 0,
+          diskStage4Used: diskParsed.game.stageSweepState && diskParsed.game.stageSweepState["4"] ? diskParsed.game.stageSweepState["4"].usedToday : 0
+        };
+      });
+      assert.equal(staleTab1Res.res.ok, false);
+      assert.equal(staleTab1Res.res.rolledBack, true, "Stale Tab 1 sweep under multi-tab conflict must roll back atomically");
+      assert.equal(staleTab1Res.hasConflict, true, "Multi-tab race must trigger saveConflictState");
+      assert.equal(staleTab1Res.diskStage3Used, 1, "Tab 2's saved stage 3 sweep must be preserved on disk");
+      assert.equal(staleTab1Res.diskStage4Used, 0, "Conflicting Tab 1 sweep must not overwrite disk");
+      await tab2.close();
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  await runSuite("R3-D08-2", "D08 (V16-Hold): Long-Press Enhance & Alchemy, Cost Prompt, Short Tap = 1 Step, Pointer & Keyboard Across DOM Rebuild, Full 11-Condition Stop Matrix, Rollback & Q2 Batch Parity", async () => {
+    const { ctx, page } = await startCleanGamePage(browser, "R3-D08-2", true);
+    try {
+      // 1. Setup cultivate drawer & verify per-step cost prompt + short tap (<380ms) = exact 1 step
+      await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        g.realm = "qi";
+        g.stones = 2500;
+        g.equippedGear.weapon.lvl = 0;
+        g.inventory.herb = 40;
+        g.inventory.dew = 40;
+        g.inventory.healing_pill = 1;
+        g.elapsedMonths = 12;
+        dbg.saveGame();
+        dbg.toggleDrawer("cultivate");
+      });
+      await page.waitForSelector('#panel-scroll-body [data-enhance-slot="weapon"]');
+      const enhHintTxt = await page.textContent('[data-hold-hint="enhance_weapon"]');
+      assert.ok(enhHintTxt.includes("长按连淬") && enhHintTxt.includes("灵石"), `Expected enhance per-step cost prompt, got: ${enhHintTxt}`);
+      assert.ok(await page.$('[data-open-batch-enhance="weapon"]'), "Q2 F18 batch enhance button must remain visible");
+
+      // Short click = exact +1 step
+      await page.click('#panel-scroll-body [data-enhance-slot="weapon"]');
+      await page.waitForTimeout(60);
+      assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.equippedGear.weapon.lvl), 1, "Short tap (<380ms) must execute exactly +1 enhance step");
+
+      // 2. Pointer long-press across renderDrawerContent() DOM replacement + live status bar + zero trailing click double-spend
+      const wpnBox = await page.locator('#panel-scroll-body [data-enhance-slot="weapon"]').boundingBox();
+      await page.mouse.move(wpnBox.x + wpnBox.width / 2, wpnBox.y + wpnBox.height / 2);
+      await page.mouse.down();
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return h.active && h.didRepeat && h.steps >= 2;
+      }, null, { timeout: 3000 });
+      const midHold = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const statusEl = document.getElementById("hold-progression-status");
+        const activeBtn = document.querySelector('#panel-scroll-body [data-enhance-slot="weapon"]');
+        return {
+          holdState: dbg.q6.getHoldProgressionState(),
+          statusHidden: statusEl ? statusEl.hidden : true,
+          statusText: statusEl ? statusEl.textContent : "",
+          btnHasHoldingCls: Boolean(activeBtn && activeBtn.classList.contains("is-holding")),
+          lvl: dbg.getState().game.equippedGear.weapon.lvl
+        };
+      });
+      assert.equal(midHold.holdState.active, true, "Hold controller must stay active across renderDrawerContent() DOM replacement");
+      assert.ok(midHold.holdState.steps >= 2, `Expected >=2 hold steps during active hold, got ${midHold.holdState.steps}`);
+      assert.equal(midHold.statusHidden, false, "#hold-progression-status must be visible during active hold");
+      assert.ok(midHold.statusText.includes("长按连淬中") && midHold.statusText.includes("松手即停"));
+      assert.equal(midHold.btnHasHoldingCls, true, "Refreshed button must retain .is-holding class after DOM rebuild");
+
+      await page.mouse.up();
+      // Dispatch synthetic trailing click on refreshed button to verify zero accidental double-spend!
+      const afterPointerRelease = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const lvlAtUp = dbg.getState().game.equippedGear.weapon.lvl;
+        const btn = document.querySelector('#panel-scroll-body [data-enhance-slot="weapon"]');
+        if (btn) btn.click();
+        const lvlAfterTrailingClick = dbg.getState().game.equippedGear.weapon.lvl;
+        return {
+          lvlAtUp,
+          lvlAfterTrailingClick,
+          holdState: dbg.q6.getHoldProgressionState(),
+          statusHidden: document.getElementById("hold-progression-status").hidden
+        };
+      });
+      assert.equal(afterPointerRelease.holdState.active, false);
+      assert.equal(afterPointerRelease.holdState.lastStopReason, "released");
+      assert.equal(afterPointerRelease.statusHidden, true, "#hold-progression-status must hide on release");
+      assert.equal(afterPointerRelease.lvlAfterTrailingClick, afterPointerRelease.lvlAtUp, "Trailing synthetic click after long-press MUST be swallowed (zero double-spend)");
+
+      // 3. Pointer stop conditions: pointer_leave, pointer_cancel, window_blur, ui_closed
+      const stopMatrixChecks = {};
+      await page.evaluate(() => {
+        const g = window.__CHENYUAN_DEBUG__.getState().game;
+        g.equippedGear.weapon.lvl = 1;
+        g.stones = 2500;
+        window.__CHENYUAN_DEBUG__.renderDrawerContent();
+      });
+      // (a) pointer_leave
+      const boxA = await page.locator('#panel-scroll-body [data-enhance-slot="weapon"]').boundingBox();
+      await page.mouse.move(boxA.x + boxA.width / 2, boxA.y + boxA.height / 2);
+      await page.mouse.down();
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return h.active && h.didRepeat && h.steps >= 1;
+      }, null, { timeout: 3000 });
+      await page.mouse.move(20, 20);
+      await page.waitForFunction(() => !window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().active, null, { timeout: 3000 });
+      await page.mouse.up();
+      stopMatrixChecks.pointerLeave = await page.evaluate(() => window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().lastStopReason);
+
+      // (b) pointer_cancel
+      const boxB = await page.locator('#panel-scroll-body [data-enhance-slot="weapon"]').boundingBox();
+      await page.mouse.move(boxB.x + boxB.width / 2, boxB.y + boxB.height / 2);
+      await page.mouse.down();
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return h.active && h.didRepeat && h.steps >= 1;
+      }, null, { timeout: 3000 });
+      await page.evaluate(() => window.dispatchEvent(new PointerEvent("pointercancel", { bubbles: true })));
+      await page.waitForFunction(() => !window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().active, null, { timeout: 3000 });
+      await page.mouse.up();
+      stopMatrixChecks.pointerCancel = await page.evaluate(() => window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().lastStopReason);
+
+      // (c) window_blur
+      await page.evaluate(() => {
+        const g = window.__CHENYUAN_DEBUG__.getState().game;
+        g.equippedGear.weapon.lvl = 1;
+        g.stones = 2500;
+        window.__CHENYUAN_DEBUG__.renderDrawerContent();
+      });
+      const boxC = await page.locator('#panel-scroll-body [data-enhance-slot="weapon"]').boundingBox();
+      await page.mouse.move(boxC.x + boxC.width / 2, boxC.y + boxC.height / 2);
+      await page.mouse.down();
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return h.active && h.didRepeat && h.steps >= 1;
+      }, null, { timeout: 3000 });
+      await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+      await page.waitForFunction(() => !window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().active, null, { timeout: 3000 });
+      await page.mouse.up();
+      stopMatrixChecks.windowBlur = await page.evaluate(() => window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().lastStopReason);
+
+      // (d) ui_closed (tab switch / closeDrawer)
+      const boxD = await page.locator('#panel-scroll-body [data-enhance-slot="weapon"]').boundingBox();
+      await page.mouse.move(boxD.x + boxD.width / 2, boxD.y + boxD.height / 2);
+      await page.mouse.down();
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return h.active && h.didRepeat && h.steps >= 1;
+      }, null, { timeout: 3000 });
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.closeDrawer());
+      await page.waitForFunction(() => !window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().active, null, { timeout: 3000 });
+      await page.mouse.up();
+      stopMatrixChecks.uiClosed = await page.evaluate(() => window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().lastStopReason);
+
+      assert.equal(stopMatrixChecks.pointerLeave, "pointer_leave");
+      assert.equal(stopMatrixChecks.pointerCancel, "pointer_cancel");
+      assert.equal(stopMatrixChecks.windowBlur, "window_blur");
+      assert.equal(stopMatrixChecks.uiClosed, "ui_closed");
+
+      // 4. Max level (+10) auto-stop, insufficient stones auto-stop, and keyboard Space/Enter parity with focus retention
+      await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        g.stones = 5000;
+        g.equippedGear.weapon.lvl = 8;
+        dbg.toggleDrawer("cultivate");
+      });
+      await page.waitForSelector('#panel-scroll-body [data-enhance-slot="weapon"]');
+      await page.focus('#panel-scroll-body [data-enhance-slot="weapon"]');
+      await page.keyboard.down("Enter");
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return !h.active && h.lastStopReason === "max_level";
+      }, null, { timeout: 3000 });
+      await page.keyboard.up("Enter");
+      const maxLvlRes = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        return {
+          lvl: dbg.getState().game.equippedGear.weapon.lvl,
+          hold: dbg.q6.getHoldProgressionState(),
+          focusedSlot: document.activeElement ? document.activeElement.getAttribute("data-enhance-slot") : null
+        };
+      });
+      assert.equal(maxLvlRes.lvl, 10, "Keyboard Enter hold must enhance weapon up to max +10");
+      assert.equal(maxLvlRes.hold.active, false);
+      assert.equal(maxLvlRes.hold.lastStopReason, "max_level");
+      assert.equal(maxLvlRes.focusedSlot, "weapon", "Keyboard hold must preserve focus on refreshed enhance button");
+
+      // Keyboard Space short tap (<380ms) = exact 1 step; then insufficient stones stop
+      await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        g.equippedGear.weapon.lvl = 0;
+        const cost0 = dbg.getGearEnhanceCost(g, g.equippedGear.weapon);
+        const cost1 = dbg.getGearEnhanceCost(g, Object.assign({}, g.equippedGear.weapon, { lvl: 1 }));
+        g.stones = cost0 + cost1 + 5; // enough for 1 short tap + 1 hold step, then insufficient!
+        dbg.renderDrawerContent();
+      });
+      await page.focus('#panel-scroll-body [data-enhance-slot="weapon"]');
+      await page.keyboard.press("Space");
+      await page.waitForTimeout(60);
+      assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.equippedGear.weapon.lvl), 1, "Keyboard Space quick tap must execute exact +1 step");
+      await page.keyboard.down("Space");
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return !h.active && h.lastStopReason === "insufficient_stones";
+      }, null, { timeout: 3000 });
+      await page.keyboard.up("Space");
+      const insuffRes = await page.evaluate(() => ({
+        lvl: window.__CHENYUAN_DEBUG__.getState().game.equippedGear.weapon.lvl,
+        hold: window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState()
+      }));
+      assert.equal(insuffRes.lvl, 2, "Hold must stop cleanly once stones run out");
+      assert.equal(insuffRes.hold.lastStopReason, "insufficient_stones");
+
+      // 5. Alchemy long-press: missing materials stop (NEVER auto-buy, NEVER pop buy-confirm modal), lifespan 100% guard, save_failed atomic rollback
+      await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        g.stones = 1000;
+        g.inventory.herb = 4; // healing requires herb: 2 -> enough for exact 2 crafts!
+        g.inventory.healing_pill = 0;
+        g.elapsedMonths = 12;
+        dbg.toggleDrawer("alchemy");
+      });
+      await page.waitForSelector('#panel-scroll-body [data-quick-craft="healing"]');
+      const alchHintTxt = await page.textContent('[data-hold-hint="alchemy_healing"]');
+      assert.ok(alchHintTxt.includes("长按连炼") && alchHintTxt.includes("石") && alchHintTxt.includes("月"), `Expected alchemy per-step cost prompt, got: ${alchHintTxt}`);
+
+      const healLoc = page.locator('#panel-scroll-body [data-quick-craft="healing"]');
+      await healLoc.scrollIntoViewIfNeeded();
+      const healBox = await healLoc.boundingBox();
+      await page.mouse.move(healBox.x + healBox.width / 2, healBox.y + healBox.height / 2);
+      await page.mouse.down();
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return !h.active && h.lastStopReason === "missing_materials";
+      }, null, { timeout: 3000 });
+      await page.mouse.up();
+      const missingMatRes = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        return {
+          herb: g.inventory.herb,
+          pills: g.inventory.healing_pill,
+          stones: g.stones,
+          drawerOpen: dbg.getState().drawerOpen,
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          hold: dbg.q6.getHoldProgressionState(),
+          warnHint: document.querySelector('[data-hold-hint="alchemy_healing"]')?.textContent || ""
+        };
+      });
+      assert.equal(missingMatRes.drawerOpen, true, "Drawer must remain open during alchemy hold");
+      assert.equal(missingMatRes.herb, 0, "Should consume all 4 herbs across 2 crafts");
+      assert.ok(missingMatRes.pills >= 2, "Should craft 2 batches of healing pills");
+      assert.equal(missingMatRes.modalOpen, false, "Long-press hitting missing mats MUST NEVER pop buy-confirm modal");
+      assert.equal(missingMatRes.hold.lastStopReason, "missing_materials", "Long-press must stop with missing_materials without auto-buying");
+      assert.ok(missingMatRes.warnHint.includes("不支持长按"), "Missing-material recipe must clearly indicate hold is unsupported");
+
+      // Regression (>=950ms hold): holding when ALREADY missing mats (no DOM rebuild) past 380+400ms MUST swallow trailing click on release;
+      // and an immediate fresh short click right after release MUST open buy-confirm modal with zero cooldown!
+      const stonesBeforeMissingHold = missingMatRes.stones;
+      await healLoc.scrollIntoViewIfNeeded();
+      const healBox2 = await healLoc.boundingBox();
+      await page.mouse.move(healBox2.x + healBox2.width / 2, healBox2.y + healBox2.height / 2);
+      const missingDownAt = Date.now();
+      await page.mouse.down();
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return !h.active && h.didRepeat && h.lastStopReason === "missing_materials";
+      }, null, { timeout: 3000 });
+      const missingElapsed = Date.now() - missingDownAt;
+      if (missingElapsed < 950) await page.waitForTimeout(950 - missingElapsed);
+      await page.mouse.up();
+      await page.waitForTimeout(60);
+      const alreadyMissingHold = await page.evaluate(() => ({
+        drawerOpen: window.__CHENYUAN_DEBUG__.getState().drawerOpen,
+        stones: window.__CHENYUAN_DEBUG__.getState().game.stones,
+        modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+        hasBuyConfirmBtn: Boolean(document.querySelector("#btn-confirm-alchemy-buy")),
+        reason: window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState().lastStopReason
+      }));
+      assert.equal(alreadyMissingHold.drawerOpen, true, "Drawer must remain open after >=950ms hold on missing-material recipe");
+      assert.equal(alreadyMissingHold.stones, stonesBeforeMissingHold, "Holding a missing-material recipe for >=950ms must deduct 0 stones");
+      assert.equal(alreadyMissingHold.modalOpen, false, "Releasing >=950ms hold on missing-material recipe must NOT open buy modal");
+      assert.equal(alreadyMissingHold.hasBuyConfirmBtn, false, "#btn-confirm-alchemy-buy must remain absent after >=950ms missing-material hold");
+      assert.equal(alreadyMissingHold.reason, "missing_materials");
+
+      // Immediate fresh short click (NO cooldown sleep) on missing-material recipe MUST still open explicit buy-confirm modal!
+      await healLoc.scrollIntoViewIfNeeded();
+      await healLoc.click();
+      await page.waitForSelector("#modal-backdrop.open #btn-confirm-alchemy-buy");
+      await page.evaluate(() => window.__CHENYUAN_DEBUG__.closeModal());
+
+      // Lifespan exhaustion guard during alchemy hold (step 1 succeeds, step 2 blocked)
+      await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        g.stones = 1000;
+        g.inventory.herb = 20;
+        g.inventory.healing_pill = 0;
+        const lf = dbg.getLifespanInfo(g);
+        // Leave 4 months before 100% exhaustion: step 1 (+3m) succeeds, step 2 (+3m -> would exceed maxMonths) must be blocked!
+        g.elapsedMonths = Math.max(0, lf.maxMonths - (g.startAgeMonths || 216) - 4);
+        dbg.renderDrawerContent();
+      });
+      await healLoc.scrollIntoViewIfNeeded();
+      const healBox3 = await healLoc.boundingBox();
+      await page.mouse.move(healBox3.x + healBox3.width / 2, healBox3.y + healBox3.height / 2);
+      await page.mouse.down();
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return !h.active && h.lastStopReason === "lifespan_guard";
+      }, null, { timeout: 3000 });
+      await page.mouse.up();
+      const lfGuardRes = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        const lfAfter = dbg.getLifespanInfo(g);
+        return {
+          pills: g.inventory.healing_pill,
+          isExhausted: lfAfter.isExhausted,
+          remainMonths: lfAfter.remainMonths,
+          reason: dbg.q6.getHoldProgressionState().lastStopReason
+        };
+      });
+      assert.ok(lfGuardRes.pills >= 1, "First safe alchemy step before exhaustion should succeed");
+      assert.equal(lfGuardRes.isExhausted, false, "Lifespan guard must stop BEFORE crossing 100% exhaustion");
+      assert.equal(lfGuardRes.remainMonths, 1, "Expected exactly 1 month remaining after stopping before exhausting step");
+      assert.equal(lfGuardRes.reason, "lifespan_guard");
+
+      // Regression (>=950ms hold): ALREADY lifespan-guarded recipe (remainMonths === 2, recipe costs 3 months, no DOM rebuild)
+      // Holding >=950ms and releasing MUST swallow trailing click and craft 0 pills (never cross 100% exhaustion)!
+      await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        g.stones = 1000;
+        g.inventory.herb = 20;
+        g.inventory.healing_pill = 0;
+        const lf = dbg.getLifespanInfo(g);
+        g.elapsedMonths = Math.max(0, lf.maxMonths - (g.startAgeMonths || 216) - 2);
+        dbg.renderDrawerContent();
+      });
+      await healLoc.scrollIntoViewIfNeeded();
+      const healBox4 = await healLoc.boundingBox();
+      await page.mouse.move(healBox4.x + healBox4.width / 2, healBox4.y + healBox4.height / 2);
+      const lfDownAt = Date.now();
+      await page.mouse.down();
+      await page.waitForFunction(() => {
+        const h = window.__CHENYUAN_DEBUG__.q6.getHoldProgressionState();
+        return !h.active && h.didRepeat && h.lastStopReason === "lifespan_guard";
+      }, null, { timeout: 3000 });
+      const lfElapsed = Date.now() - lfDownAt;
+      if (lfElapsed < 950) await page.waitForTimeout(950 - lfElapsed);
+      await page.mouse.up();
+      await page.waitForTimeout(60);
+      const alreadyLfGuardRes = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        const lfAfter = dbg.getLifespanInfo(g);
+        return {
+          pills: g.inventory.healing_pill,
+          stones: g.stones,
+          herb: g.inventory.herb,
+          isExhausted: lfAfter.isExhausted,
+          remainMonths: lfAfter.remainMonths,
+          reason: dbg.q6.getHoldProgressionState().lastStopReason
+        };
+      });
+      assert.equal(alreadyLfGuardRes.reason, "lifespan_guard");
+      assert.equal(alreadyLfGuardRes.pills, 0, "Releasing >=950ms hold on lifespan-guarded recipe must craft 0 pills");
+      assert.equal(alreadyLfGuardRes.stones, 1000, "Releasing >=950ms hold on lifespan-guarded recipe must spend 0 stones");
+      assert.equal(alreadyLfGuardRes.herb, 20, "Releasing >=950ms hold on lifespan-guarded recipe must consume 0 herbs");
+      assert.equal(alreadyLfGuardRes.isExhausted, false, "Releasing >=950ms hold on lifespan-guarded recipe must NOT push player to 100% exhaustion");
+      assert.equal(alreadyLfGuardRes.remainMonths, 2, "Expected remainMonths to stay untouched at 2");
+
+      // Save write failure (QuotaExceededError) atomic rollback for BOTH single/hold enhance AND single/hold alchemy
+      const saveFailRes = await page.evaluate(() => {
+        const dbg = window.__CHENYUAN_DEBUG__;
+        const g = dbg.getState().game;
+        g.stones = 800;
+        g.equippedGear.weapon.lvl = 2;
+        g.inventory.herb = 10;
+        g.inventory.healing_pill = 3;
+        g.elapsedMonths = 20;
+        const snap = {
+          stones: g.stones,
+          lvl: g.equippedGear.weapon.lvl,
+          herb: g.inventory.herb,
+          pills: g.inventory.healing_pill,
+          elapsedMonths: g.elapsedMonths
+        };
+        const origSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function () {
+          const err = new Error("quota");
+          err.name = "QuotaExceededError";
+          throw err;
+        };
+        let enhFail;
+        let craftFail;
+        try {
+          enhFail = dbg.q6.executeSingleGearEnhance("weapon", { silentToast: true, fromHold: true });
+          craftFail = dbg.q6.executeSingleAlchemyCraft("healing", { silentToast: true, fromHold: true });
+        } finally {
+          Storage.prototype.setItem = origSet;
+        }
+        const unchanged = (
+          g.stones === snap.stones &&
+          g.equippedGear.weapon.lvl === snap.lvl &&
+          g.inventory.herb === snap.herb &&
+          g.inventory.healing_pill === snap.pills &&
+          g.elapsedMonths === snap.elapsedMonths
+        );
+        dbg.closeDrawer();
+        return { enhFail, craftFail, unchanged };
+      });
+      assert.equal(saveFailRes.enhFail.ok, false);
+      assert.equal(saveFailRes.enhFail.rolledBack, true);
+      assert.equal(saveFailRes.enhFail.stopReason, "save_failed");
+      assert.equal(saveFailRes.craftFail.ok, false);
+      assert.equal(saveFailRes.craftFail.rolledBack, true);
+      assert.equal(saveFailRes.craftFail.stopReason, "save_failed");
+      assert.equal(saveFailRes.unchanged, true, "Save failure during single/hold enhance or alchemy must atomically roll back all state");
     } finally {
       await ctx.close();
     }
@@ -15203,6 +15966,8 @@ try {
           ar.spatialRifts = [{ x: 700, y: 450, life: 5, __r6b3Leak: true }];
           ar.bossDomain = { x: 700, y: 450, life: 5, __r6b3Leak: true };
           ar.reversedDomainTimer = 4;
+          ar.bossBeams = [{ x: 700, y: 450, len: 500, angle: 0, t: 0.1, dur: 1.5, width: 32, dmg: 40, __r6b3Leak: true }];
+          ar.shockRings = [{ x: 700, y: 450, r: 20, maxR: 260, spd: 180, hitPlayer: false, __r6b3Leak: true }];
         };
         const countLeaks = () => {
           const ar = s.arena;
@@ -15215,7 +15980,8 @@ try {
             + (ar.sanqingState && (ar.sanqingState.active || ar.sanqingState.life > 0) ? 1 : 0)
             + cntArr(ar.sanqingEchoQueue) + (ar.shanheDomain ? 1 : 0) + (ar.warshipStrike ? 1 : 0)
             + (ar.astralForm ? 1 : 0) + (ar.mountState ? 1 : 0) + (ar.pillAcolyte ? 1 : 0)
-            + cntArr(ar.spatialRifts) + (ar.bossDomain ? 1 : 0) + (ar.reversedDomainTimer > 0 ? 1 : 0);
+            + cntArr(ar.spatialRifts) + (ar.bossDomain ? 1 : 0) + (ar.reversedDomainTimer > 0 ? 1 : 0)
+            + cntArr(ar.bossBeams) + cntArr(ar.shockRings);
         };
         const results = {};
         api.enterSanctumHub(); seedAll23(); api.enterSanctumHub(); results.sanctumToSanctum = countLeaks();
@@ -15230,6 +15996,7 @@ try {
         api.initArenaStage(1, false); seedAll23(); v22.launchCustomSeedEncounter();
         results.campToWorkshop = countLeaks();
         results.workshopAstral = s.arena.astralEnergy;
+        results.workshopHits = s.arena.customSeedRun ? s.arena.customSeedRun.hitsTaken : -1;
         api.initArenaStage(1, false); seedAll23(); api.startLiveTribulation({ confirmed: true, mode: "defiant" });
         results.campToTrib = countLeaks();
         window.__CHENYUAN_DEBUG__.setCelestialTimePhase(1, true);
@@ -15249,11 +16016,12 @@ try {
         return results;
       });
       for (const key of ["sanctumToSanctum", "campToSanctum", "campToStage0", "campToRush", "campToCloud", "campToSpire", "campToSect", "campToWorkshop", "campToTrib", "spireFloor2Leaks"]) {
-        assert.equal(r6b3Res[key], 0, `R6B-3 (${key}): 0 leaked transient combat/overdrive entities`);
+        assert.equal(r6b3Res[key], 0, `R6B-3/R8B-1 (${key}): 0 leaked transient combat/overdrive/beam/ring entities`);
       }
       assert.ok(r6b3Res.sectFreeAllies >= 1, "R6B-3: Sect Defense keeps fresh free ally after purging prior leaked allies");
       assert.equal(r6b3Res.workshopAstral, 100, "R6B-3: Custom Workshop keeps astralEnergy=100 after purge");
-      assert.equal(r6b3Res.tribHpAfter1s, 150, "R6B-3: 0 leaked heal in Hardcore Tribulation from Campaign combat");
+      assert.equal(r6b3Res.workshopHits, 0, "R8B-1: Custom Workshop hitsTaken remains 0 with beams/rings purged");
+      assert.equal(r6b3Res.tribHpAfter1s, 150, "R6B-3/R8B-1: 0 leaked heal/beam damage in Hardcore Tribulation from Campaign combat");
       assert.equal(r6b3Res.spireFloor, 2, "R6B-3: Spire advanced cleanly to Floor 2");
       assert.ok(r6b3Res.spireCurioKept >= 1, "R6B-3: Spire Floor 1->2 preserves selected curio stacks");
 
@@ -15298,6 +16066,284 @@ try {
       assert.ok(r6b4Norm.q0.includes("+30%") && r6b4Norm.q0.includes("三星共鸣"), `R6B-4: qinglan_vein synergy badge shows +30% 三星共鸣, got: ${r6b4Norm.q0}`);
       assert.ok(r6b4Norm.q1.includes("+15%"), `R6B-4: qingyun_peak synergy badge shows +15%, got: ${r6b4Norm.q1}`);
       assert.equal(r6b4Norm.bankedStones, 8, `R6B-4: live combat expedition tick awards 8 stones (+30% of 18*0.35), got ${r6b4Norm.bankedStones}`);
+
+      // H.9 Round 9 Convergence: DEFECT-R8-A1, PR #33 D08 Practice/Tribulation/Inline-Error Guards, R8B-2, R8B-3, DEFECT-R8-A2
+      // H.9a DEFECT-R8-A1: #hud-save-alert rewrite & hide while #jade-panel drawerOpen === true keeps focus off BODY
+      await page1.evaluate((mk) => {
+        const api = window.__CHENYUAN_DEBUG__;
+        api.enterSanctumHub();
+        api.saveGame({ forceOverwrite: true });
+        api.toggleDrawer("cultivate");
+        window.__r9PrevMetaRaw = localStorage.getItem(mk);
+        localStorage.setItem(mk, "{corrupt_meta_r9_a1");
+        window.dispatchEvent(new StorageEvent("storage", { key: mk, newValue: "{corrupt_meta_r9_a1" }));
+      }, META_KEY);
+      await page1.waitForSelector('#hud-save-alert [data-action="copy-corrupt-meta-raw"]', { state: "visible" });
+      await page1.click('#hud-save-alert [data-action="copy-corrupt-meta-raw"]');
+      const r8a1Res = await page1.evaluate(({ sk, mk }) => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const alertEl = document.getElementById("hud-save-alert");
+        const panelEl = document.getElementById("jade-panel");
+        const origSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+          return origSet.call(this, k, v);
+        };
+        try {
+          api.saveGame({ userInitiated: true });
+        } finally {
+          Storage.prototype.setItem = origSet;
+        }
+        const afterRewrite = {
+          isBody: document.activeElement === document.body,
+          inAlert: Boolean(alertEl && alertEl.contains(document.activeElement)),
+          drawerOpen: api.getState().drawerOpen
+        };
+        const prevObj = Object.assign({}, api.getMetaState(), { metaTabId: "tab_r9_recover", metaRev: (api.getMetaState().metaRev || 1) + 1 });
+        delete window.__r9PrevMetaRaw;
+        const validMeta = JSON.stringify(prevObj);
+        localStorage.setItem(mk, validMeta);
+        window.dispatchEvent(new StorageEvent("storage", { key: mk, newValue: validMeta }));
+        api.saveGame({ userInitiated: true });
+        const afterHide = {
+          alertDisplay: alertEl ? alertEl.style.display : "",
+          isBody: document.activeElement === document.body,
+          inDrawer: Boolean(panelEl && panelEl.contains(document.activeElement))
+        };
+        api.closeDrawer();
+        return { afterRewrite, afterHide };
+      }, { sk: STORAGE_KEY, mk: META_KEY });
+      assert.equal(r8a1Res.afterRewrite.drawerOpen, true, "DEFECT-R8-A1: drawer stays open during alert rewrite");
+      assert.equal(r8a1Res.afterRewrite.isBody, false, "DEFECT-R8-A1: applyAlert rewrite while drawer open must not drop focus to BODY");
+      assert.equal(r8a1Res.afterRewrite.inAlert, true, "DEFECT-R8-A1: applyAlert rewrite preserves focus inside #hud-save-alert");
+      assert.equal(r8a1Res.afterHide.alertDisplay, "none", "DEFECT-R8-A1: recovered alert hides cleanly");
+      assert.equal(r8a1Res.afterHide.isBody, false, "DEFECT-R8-A1: hideAlert while drawer open must not drop focus to BODY");
+      assert.equal(r8a1Res.afterHide.inDrawer, true, "DEFECT-R8-A1: hideAlert while drawer open restores focus inside #jade-panel");
+
+      // H.9b PR #33 D08 Tribulation & Practice Guards + #stage-sweep-error-msg inline alert
+      await page1.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        s.game.realm = "spirit";
+        s.game.xp = api.REALMS.spirit.xpCap;
+        s.game.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
+        s.game.stageStars = { 0: 3, 1: 3 };
+        s.game.stageSweepState = {};
+        s.game.stones = 600;
+        s.game.inventory.herb = 10;
+        s.game.inventory.healing_pill = 0;
+        if (!s.game.equippedGear.weapon) s.game.equippedGear.weapon = api.rollGearItem(1, 2, "weapon");
+        s.game.equippedGear.weapon.lvl = 1;
+        api.enterSanctumHub();
+        api.saveGame({ forceOverwrite: true });
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        s.arena.tribulation.strikes = [];
+        s.arena.tribulation.cooldown = 99;
+        api.toggleDrawer("cultivate");
+      });
+      await page1.waitForSelector('#jade-panel [data-enhance-slot="weapon"]');
+      await page1.focus('#jade-panel [data-enhance-slot="weapon"]');
+      await page1.keyboard.down("Space");
+      await page1.keyboard.up("Space");
+      const d08GuardRes = await page1.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        const tribHoldActive = api.q6.getHoldProgressionState().active;
+        const tribEnh = api.q6.executeSingleGearEnhance("weapon");
+        const tribCraft = api.q6.executeSingleAlchemyCraft("healing");
+        const tribSweepOpen = api.q6.openStageSweepConfirmModal(0);
+        const tribSweepExec = api.q6.executeStageSweep(0);
+        const tribUnchanged = s.game.stones === 600 && s.game.equippedGear.weapon.lvl === 1 && s.game.inventory.healing_pill === 0 && !(s.game.stageSweepState && s.game.stageSweepState["0"]);
+        s.arena.tribulation = null;
+        api.closeDrawer();
+
+        api.startBossRushGauntlet(6);
+        const pracEnh = api.q6.executeSingleGearEnhance("weapon");
+        const pracCraft = api.q6.executeSingleAlchemyCraft("healing");
+        const pracSweepOpen = api.q6.openStageSweepConfirmModal(0);
+        const pracSweepExec = api.q6.executeStageSweep(0);
+        const pracUnchanged = s.game.stones === 600 && s.game.equippedGear.weapon.lvl === 1 && s.game.inventory.healing_pill === 0 && !(s.game.stageSweepState && s.game.stageSweepState["0"]);
+        api.enterSanctumHub();
+        return { tribHoldActive, tribEnh, tribCraft, tribSweepOpen, tribSweepExec, tribUnchanged, pracEnh, pracCraft, pracSweepOpen, pracSweepExec, pracUnchanged };
+      });
+      assert.equal(d08GuardRes.tribHoldActive, false, "D08 Guard: hold enhance must not start during Live Tribulation");
+      assert.equal(d08GuardRes.tribEnh.stopReason, "tribulation", "D08 Guard: executeSingleGearEnhance blocked in Live Tribulation");
+      assert.equal(d08GuardRes.tribCraft.stopReason, "tribulation", "D08 Guard: executeSingleAlchemyCraft blocked in Live Tribulation");
+      assert.equal(d08GuardRes.tribSweepOpen, false, "D08 Guard: openStageSweepConfirmModal blocked in Live Tribulation");
+      assert.equal(d08GuardRes.tribSweepExec.reason, "tribulation", "D08 Guard: executeStageSweep blocked in Live Tribulation");
+      assert.equal(d08GuardRes.tribUnchanged, true, "D08 Guard: 0 state mutation during Live Tribulation");
+      assert.equal(d08GuardRes.pracEnh.stopReason, "practice_mode", "D08 Guard: executeSingleGearEnhance blocked in Practice Mode");
+      assert.equal(d08GuardRes.pracCraft.stopReason, "practice_mode", "D08 Guard: executeSingleAlchemyCraft blocked in Practice Mode");
+      assert.equal(d08GuardRes.pracSweepOpen, false, "D08 Guard: openStageSweepConfirmModal blocked in Practice Mode");
+      assert.equal(d08GuardRes.pracSweepExec.reason, "practice_mode", "D08 Guard: executeStageSweep blocked in Practice Mode");
+      assert.equal(d08GuardRes.pracUnchanged, true, "D08 Guard: 0 state mutation during Practice Mode");
+
+      await page1.evaluate((sk) => {
+        const api = window.__CHENYUAN_DEBUG__;
+        api.q6.openStageSweepConfirmModal(0);
+        window.__r9OrigSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new Error('SecurityError <span data-unescaped-marker="r9_sweep_err">X</span>');
+          return window.__r9OrigSet.call(this, k, v);
+        };
+      }, STORAGE_KEY);
+      await page1.waitForSelector("#modal-backdrop.open #btn-confirm-stage-sweep");
+      await page1.click("#btn-confirm-stage-sweep");
+      const sweepErrRes = await page1.evaluate(() => {
+        Storage.prototype.setItem = window.__r9OrigSet;
+        delete window.__r9OrigSet;
+        const api = window.__CHENYUAN_DEBUG__;
+        const g = api.getState().game;
+        const el = document.getElementById("stage-sweep-error-msg");
+        const rect = el ? el.getBoundingClientRect() : null;
+        const res = {
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          role: el ? el.getAttribute("role") : null,
+          visible: Boolean(el && getComputedStyle(el).display !== "none" && rect && rect.width > 0 && rect.height > 0),
+          text: el ? (el.textContent || "") : "",
+          unescapedCount: document.querySelectorAll("[data-unescaped-marker]").length,
+          focusIsBody: document.activeElement === document.body,
+          stones: g.stones,
+          used0: (g.stageSweepState && g.stageSweepState["0"] && g.stageSweepState["0"].usedToday) || 0
+        };
+        api.closeModal();
+        return res;
+      });
+      assert.equal(sweepErrRes.modalOpen, true, "D08 Rollback: stage sweep modal stays open on save failure");
+      assert.equal(sweepErrRes.role, "alert", "D08 Rollback: #stage-sweep-error-msg has role='alert'");
+      assert.equal(sweepErrRes.visible, true, "D08 Rollback: #stage-sweep-error-msg visibly rendered");
+      assert.ok(sweepErrRes.text.includes('data-unescaped-marker="r9_sweep_err"'), "D08 Rollback: inert marker escaped literally via textContent");
+      assert.equal(sweepErrRes.unescapedCount, 0, "D08 Rollback: zero unescaped DOM markers");
+      assert.equal(sweepErrRes.focusIsBody, false, "D08 Rollback: focus stays inside modal off BODY");
+      assert.equal(sweepErrRes.stones, 600, "D08 Rollback: stones restored on sweep save failure");
+      assert.equal(sweepErrRes.used0, 0, "D08 Rollback: sweep quota restored on sweep save failure");
+
+      // H.9c R8B-2 & R8B-3: bladeClash, titanDualClash & titanClimbCine state + DOM overlay purge across KeyH, Spire & return-title-safe
+      await page1.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        s.game.seenCutscenes = Object.assign({}, s.game.seenCutscenes, { enter_terrace: true });
+        api.initArenaStage(4, false);
+        const foe = s.arena.enemies[0] || api.spawnSingleEnemy("trial_gate", 900, 450, 1, true);
+        api.startBladeClash(foe, true);
+        api.focusBattlefield();
+      });
+      await page1.keyboard.press("KeyH");
+      const r8b23Res = await page1.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        const afterBladeHub = {
+          clash: s.arena.bladeClash,
+          hud: document.getElementById("blade-clash-hud")?.classList.contains("active"),
+          lb: document.body.classList.contains("letterbox-active")
+        };
+        api.initArenaStage(4, false);
+        const foe2 = s.arena.enemies[0] || api.spawnSingleEnemy("trial_gate", 900, 450, 1, true);
+        api.startBladeClash(foe2, true);
+        s.arena.swordIntent = 0;
+        api.startCelestialSpireRun(1);
+        api.stepArena(0.05);
+        const afterBladeSpire = {
+          clash: s.arena.bladeClash,
+          hud: document.getElementById("blade-clash-hud")?.classList.contains("active"),
+          lb: document.body.classList.contains("letterbox-active"),
+          intent: s.arena.swordIntent
+        };
+        api.startColossalTitanRaid();
+        const titan1 = s.arena.enemies[0];
+        api.triggerTitanClimbFinisher(titan1);
+        api.focusBattlefield();
+        return { afterBladeHub, afterBladeSpire };
+      });
+      assert.equal(r8b23Res.afterBladeHub.clash, null, "R8B-2: KeyH clears arena.bladeClash");
+      assert.equal(r8b23Res.afterBladeHub.hud, false, "R8B-2: KeyH removes #blade-clash-hud.active");
+      assert.equal(r8b23Res.afterBladeHub.lb, false, "R8B-2: KeyH removes body.letterbox-active");
+      assert.equal(r8b23Res.afterBladeSpire.clash, null, "R8B-2: Spire entry clears arena.bladeClash");
+      assert.equal(r8b23Res.afterBladeSpire.hud, false, "R8B-2: Spire entry removes #blade-clash-hud.active");
+      assert.equal(r8b23Res.afterBladeSpire.lb, false, "R8B-2: Spire entry removes body.letterbox-active");
+      assert.equal(r8b23Res.afterBladeSpire.intent, 0, "R8B-2: Spire entry grants 0 phantom swordIntent from prior clash");
+
+      await page1.keyboard.press("KeyH");
+      const r8b3Hub = await page1.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        const res = {
+          climb: s.arena.titanClimbCine,
+          lbt: document.getElementById("cinema-letterbox-top")?.classList.contains("open"),
+          lbb: document.getElementById("cinema-letterbox-bot")?.classList.contains("open"),
+          meteors: (s.arena.meteorBursts || []).length
+        };
+        // Prepare ascensions >= 1 for DEFECT-R8-A2 after return-title-safe
+        const m = api.getMetaState();
+        m.ascensions = Math.max(1, m.ascensions || 0);
+        api.saveMeta();
+        api.saveGame({ forceOverwrite: true });
+        api.startColossalTitanRaid();
+        api.triggerTitanVsTitanClash(s.arena.enemies[0]);
+        return res;
+      });
+      assert.equal(r8b3Hub.climb, null, "R8B-3: KeyH clears arena.titanClimbCine");
+      assert.equal(r8b3Hub.lbt, false, "R8B-3: KeyH removes #cinema-letterbox-top.open");
+      assert.equal(r8b3Hub.lbb, false, "R8B-3: KeyH removes #cinema-letterbox-bot.open");
+      assert.equal(r8b3Hub.meteors, 0, "R8B-3: KeyH purges titan climb meteorBursts");
+
+      await page1.click("#btn-open-settings");
+      await page1.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+      await page1.click('[data-sys-tab="controls"]');
+      await page1.waitForSelector('#modal-backdrop.open [data-action="return-title-safe"]');
+      await page1.click('[data-action="return-title-safe"]');
+      await page1.waitForFunction(() => document.getElementById("welcome-screen")?.style.display !== "none");
+      const r8b3Title = await page1.evaluate(() => {
+        const s = window.__CHENYUAN_DEBUG__.getState();
+        return {
+          dual: s.arena.titanDualClash,
+          climb: s.arena.titanClimbCine,
+          hud: document.getElementById("blade-clash-hud")?.classList.contains("active"),
+          lbt: document.getElementById("cinema-letterbox-top")?.classList.contains("open"),
+          lbb: document.getElementById("cinema-letterbox-bot")?.classList.contains("open")
+        };
+      });
+      assert.equal(r8b3Title.dual, null, "R8B-3: return-title-safe clears arena.titanDualClash");
+      assert.equal(r8b3Title.climb, null, "R8B-3: return-title-safe clears arena.titanClimbCine");
+      assert.equal(r8b3Title.hud, false, "R8B-3: return-title-safe removes #blade-clash-hud.active");
+      assert.equal(r8b3Title.lbt, false, "R8B-3: return-title-safe removes #cinema-letterbox-top.open");
+      assert.equal(r8b3Title.lbb, false, "R8B-3: return-title-safe removes #cinema-letterbox-bot.open");
+
+      // H.9d DEFECT-R8-A2: renderWelcomeScreen() preserves focus on [data-perk], [data-calamity-tier], and cross-tab STORAGE_KEY deletion
+      const originExpanded = await page1.evaluate(() => Boolean(document.querySelector('#welcome-perk-grid [data-perk="medicine_sage"]')?.offsetParent));
+      if (!originExpanded) await page1.click("#btn-toggle-origin");
+      await page1.waitForSelector('#welcome-perk-grid [data-perk="medicine_sage"]', { state: "visible" });
+      await page1.focus('#welcome-perk-grid [data-perk="medicine_sage"]');
+      await page1.keyboard.press("Enter");
+      const afterPerkFocus = await page1.evaluate(() => ({
+        isBody: document.activeElement === document.body,
+        perk: document.activeElement?.getAttribute?.("data-perk") || ""
+      }));
+      assert.equal(afterPerkFocus.isBody, false, "DEFECT-R8-A2: [data-perk] Enter must not drop focus to BODY");
+      assert.equal(afterPerkFocus.perk, "medicine_sage", "DEFECT-R8-A2: focus stays on recreated [data-perk='medicine_sage']");
+
+      await page1.focus('#welcome-calamity-box [data-calamity-tier="1"]');
+      await page1.keyboard.press("Enter");
+      const afterCalFocus = await page1.evaluate(() => ({
+        isBody: document.activeElement === document.body,
+        tier: document.activeElement?.getAttribute?.("data-calamity-tier") || ""
+      }));
+      assert.equal(afterCalFocus.isBody, false, "DEFECT-R8-A2: [data-calamity-tier] Enter must not drop focus to BODY");
+      assert.equal(afterCalFocus.tier, "1", "DEFECT-R8-A2: focus stays on recreated [data-calamity-tier='1']");
+
+      await page1.focus("#btn-continue-save");
+      const afterCrossTabDel = await page1.evaluate((sk) => {
+        localStorage.removeItem(sk);
+        window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: null }));
+        return {
+          continueDisplay: document.getElementById("btn-continue-save")?.style.display || "",
+          isBody: document.activeElement === document.body,
+          activeId: document.activeElement?.id || ""
+        };
+      }, STORAGE_KEY);
+      assert.equal(afterCrossTabDel.continueDisplay, "none", "DEFECT-R8-A2: #btn-continue-save hides on cross-tab delete");
+      assert.equal(afterCrossTabDel.isBody, false, "DEFECT-R8-A2: cross-tab STORAGE_KEY delete must not drop focus to BODY");
+      assert.equal(afterCrossTabDel.activeId, "btn-start-new", "DEFECT-R8-A2: focus falls back cleanly to #btn-start-new");
     } finally {
       await ctx.close();
     }

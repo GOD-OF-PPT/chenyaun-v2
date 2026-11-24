@@ -2665,6 +2665,8 @@ export const tests = [
           ar.spatialRifts = [{ x: 700, y: 450, life: 5, __r6b3Leak: true }];
           ar.bossDomain = { x: 700, y: 450, life: 5, __r6b3Leak: true };
           ar.reversedDomainTimer = 4;
+          ar.bossBeams = [{ x: 700, y: 450, len: 500, angle: 0, t: 0.1, dur: 1.5, width: 32, dmg: 40, __r6b3Leak: true }];
+          ar.shockRings = [{ x: 700, y: 450, r: 20, maxR: 260, spd: 180, hitPlayer: false, __r6b3Leak: true }];
         };
         const countLeaks = () => {
           const ar = s.arena;
@@ -2677,7 +2679,8 @@ export const tests = [
             + (ar.sanqingState && (ar.sanqingState.active || ar.sanqingState.life > 0) ? 1 : 0)
             + cntArr(ar.sanqingEchoQueue) + (ar.shanheDomain ? 1 : 0) + (ar.warshipStrike ? 1 : 0)
             + (ar.astralForm ? 1 : 0) + (ar.mountState ? 1 : 0) + (ar.pillAcolyte ? 1 : 0)
-            + cntArr(ar.spatialRifts) + (ar.bossDomain ? 1 : 0) + (ar.reversedDomainTimer > 0 ? 1 : 0);
+            + cntArr(ar.spatialRifts) + (ar.bossDomain ? 1 : 0) + (ar.reversedDomainTimer > 0 ? 1 : 0)
+            + cntArr(ar.bossBeams) + cntArr(ar.shockRings);
         };
         const leaks = {};
         api.enterSanctumHub(); seedAll23(); api.enterSanctumHub(); leaks.sanctum = countLeaks();
@@ -2712,12 +2715,230 @@ export const tests = [
         return { leaks, spireFloor, arrStar0: nArr.stageStars[0], q0, bankedStones: s.game.expeditions.bankedStones };
       });
       for (const [k, v] of Object.entries(e2eR6b34.leaks)) {
-        assert.equal(v, 0, `R6B-3 E2E (${k}): 0 leaked combat/overdrive entities`);
+        assert.equal(v, 0, `R6B-3/R8B-1 E2E (${k}): 0 leaked combat/overdrive/beam/ring entities`);
       }
       assert.equal(e2eR6b34.spireFloor, 2, "R6B-3 E2E: Spire Floor 1->2 transition clean");
       assert.equal(e2eR6b34.arrStar0, 3, "R6B-4 E2E: legacy array stageStars preserved on normalizeLoadedGame");
       assert.ok(e2eR6b34.q0.includes("+30%") && e2eR6b34.q0.includes("三星共鸣"), `R6B-4 E2E: qinglan_vein shows +30% 三星共鸣, got: ${e2eR6b34.q0}`);
       assert.equal(e2eR6b34.bankedStones, 8, `R6B-4 E2E: expedition combat tick awards 8 stones, got ${e2eR6b34.bankedStones}`);
+
+      // 5g. Round 9 Convergence: DEFECT-R8-A1, PR #33 D08 Practice/Tribulation/Inline-Error Guards, R8B-2, R8B-3, DEFECT-R8-A2
+      await page.evaluate((mk) => {
+        const api = window.__CHENYUAN_DEBUG__;
+        api.enterSanctumHub();
+        api.saveGame({ forceOverwrite: true });
+        api.toggleDrawer("cultivate");
+        window.__e2eR9MetaRaw = localStorage.getItem(mk);
+        localStorage.setItem(mk, "{corrupt_meta_e2e_r9");
+        window.dispatchEvent(new StorageEvent("storage", { key: mk, newValue: "{corrupt_meta_e2e_r9" }));
+      }, META_KEY);
+      await page.waitForSelector('#hud-save-alert [data-action="copy-corrupt-meta-raw"]', { state: "visible" });
+      await page.click('#hud-save-alert [data-action="copy-corrupt-meta-raw"]');
+      const e2eR8a1 = await page.evaluate(({ sk, mk }) => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const alertEl = document.getElementById("hud-save-alert");
+        const panelEl = document.getElementById("jade-panel");
+        const origSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+          return origSet.call(this, k, v);
+        };
+        try {
+          api.saveGame({ userInitiated: true });
+        } finally {
+          Storage.prototype.setItem = origSet;
+        }
+        const afterRewrite = { isBody: document.activeElement === document.body, inAlert: Boolean(alertEl && alertEl.contains(document.activeElement)) };
+        const prevObj = Object.assign({}, api.getMetaState(), { metaTabId: "tab_r9_e2e_recover", metaRev: (api.getMetaState().metaRev || 1) + 1 });
+        delete window.__e2eR9MetaRaw;
+        const validMeta = JSON.stringify(prevObj);
+        localStorage.setItem(mk, validMeta);
+        window.dispatchEvent(new StorageEvent("storage", { key: mk, newValue: validMeta }));
+        api.saveGame({ userInitiated: true });
+        const afterHide = { display: alertEl ? alertEl.style.display : "", isBody: document.activeElement === document.body, inDrawer: Boolean(panelEl && panelEl.contains(document.activeElement)) };
+        api.closeDrawer();
+        return { afterRewrite, afterHide };
+      }, { sk: STORAGE_KEY, mk: META_KEY });
+      assert.equal(e2eR8a1.afterRewrite.isBody, false, "DEFECT-R8-A1 E2E: alert rewrite with drawer open keeps focus off BODY");
+      assert.equal(e2eR8a1.afterRewrite.inAlert, true, "DEFECT-R8-A1 E2E: alert rewrite keeps focus in #hud-save-alert");
+      assert.equal(e2eR8a1.afterHide.display, "none", "DEFECT-R8-A1 E2E: recovered alert hides");
+      assert.equal(e2eR8a1.afterHide.isBody, false, "DEFECT-R8-A1 E2E: alert hide with drawer open keeps focus off BODY");
+      assert.equal(e2eR8a1.afterHide.inDrawer, true, "DEFECT-R8-A1 E2E: alert hide restores focus to #jade-panel");
+
+      // D08 Tribulation & Practice Guards + #stage-sweep-error-msg
+      const e2eD08 = await page.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        s.game.realm = "spirit";
+        s.game.xp = api.REALMS.spirit.xpCap;
+        s.game.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true, 4: true };
+        s.game.stageStars = { 0: 3, 1: 3 };
+        s.game.stageSweepState = {};
+        s.game.stones = 600;
+        s.game.inventory.herb = 10;
+        s.game.inventory.healing_pill = 0;
+        if (!s.game.equippedGear.weapon) s.game.equippedGear.weapon = api.rollGearItem(1, 2, "weapon");
+        s.game.equippedGear.weapon.lvl = 1;
+        api.enterSanctumHub();
+        api.saveGame({ forceOverwrite: true });
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        const tribEnh = api.q6.executeSingleGearEnhance("weapon");
+        const tribCraft = api.q6.executeSingleAlchemyCraft("healing");
+        const tribSweepOpen = api.q6.openStageSweepConfirmModal(0);
+        const tribSweepExec = api.q6.executeStageSweep(0);
+        s.arena.tribulation = null;
+        api.startBossRushGauntlet(6);
+        const pracEnh = api.q6.executeSingleGearEnhance("weapon");
+        const pracCraft = api.q6.executeSingleAlchemyCraft("healing");
+        const pracSweepOpen = api.q6.openStageSweepConfirmModal(0);
+        const pracSweepExec = api.q6.executeStageSweep(0);
+        api.enterSanctumHub();
+        return {
+          tribEnh: tribEnh.stopReason,
+          tribCraft: tribCraft.stopReason,
+          tribSweepOpen,
+          tribSweepExec: tribSweepExec.reason,
+          pracEnh: pracEnh.stopReason,
+          pracCraft: pracCraft.stopReason,
+          pracSweepOpen,
+          pracSweepExec: pracSweepExec.reason,
+          unchanged: s.game.stones === 600 && s.game.equippedGear.weapon.lvl === 1 && s.game.inventory.healing_pill === 0
+        };
+      });
+      assert.equal(e2eD08.tribEnh, "tribulation", "D08 E2E: single enhance blocked in tribulation");
+      assert.equal(e2eD08.tribCraft, "tribulation", "D08 E2E: single alchemy blocked in tribulation");
+      assert.equal(e2eD08.tribSweepOpen, false, "D08 E2E: sweep modal blocked in tribulation");
+      assert.equal(e2eD08.tribSweepExec, "tribulation", "D08 E2E: sweep execute blocked in tribulation");
+      assert.equal(e2eD08.pracEnh, "practice_mode", "D08 E2E: single enhance blocked in practice");
+      assert.equal(e2eD08.pracCraft, "practice_mode", "D08 E2E: single alchemy blocked in practice");
+      assert.equal(e2eD08.pracSweepOpen, false, "D08 E2E: sweep modal blocked in practice");
+      assert.equal(e2eD08.pracSweepExec, "practice_mode", "D08 E2E: sweep execute blocked in practice");
+      assert.equal(e2eD08.unchanged, true, "D08 E2E: zero state mutation under tribulation/practice guards");
+
+      await page.evaluate((sk) => {
+        const api = window.__CHENYUAN_DEBUG__;
+        api.q6.openStageSweepConfirmModal(0);
+        window.__e2eR9OrigSet = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new Error('SecurityError <span data-unescaped-marker="e2e_r9_sweep">X</span>');
+          return window.__e2eR9OrigSet.call(this, k, v);
+        };
+      }, STORAGE_KEY);
+      await page.waitForSelector("#modal-backdrop.open #btn-confirm-stage-sweep");
+      await page.click("#btn-confirm-stage-sweep");
+      const e2eSweepErr = await page.evaluate(() => {
+        Storage.prototype.setItem = window.__e2eR9OrigSet;
+        delete window.__e2eR9OrigSet;
+        const el = document.getElementById("stage-sweep-error-msg");
+        const rect = el ? el.getBoundingClientRect() : null;
+        const api = window.__CHENYUAN_DEBUG__;
+        const g = api.getState().game;
+        const out = {
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          role: el?.getAttribute("role"),
+          visible: Boolean(el && getComputedStyle(el).display !== "none" && rect && rect.width > 0 && rect.height > 0),
+          text: el?.textContent || "",
+          unescapedCount: document.querySelectorAll("[data-unescaped-marker]").length,
+          focusIsBody: document.activeElement === document.body,
+          stones: g.stones
+        };
+        api.closeModal();
+        return out;
+      });
+      assert.equal(e2eSweepErr.modalOpen, true, "D08 E2E: sweep modal stays open on save failure");
+      assert.equal(e2eSweepErr.role, "alert", "D08 E2E: #stage-sweep-error-msg role='alert'");
+      assert.equal(e2eSweepErr.visible, true, "D08 E2E: #stage-sweep-error-msg visibly rendered");
+      assert.ok(e2eSweepErr.text.includes('data-unescaped-marker="e2e_r9_sweep"'), "D08 E2E: marker escaped literally");
+      assert.equal(e2eSweepErr.unescapedCount, 0, "D08 E2E: zero unescaped DOM markers");
+      assert.equal(e2eSweepErr.focusIsBody, false, "D08 E2E: focus stays off BODY");
+      assert.equal(e2eSweepErr.stones, 600, "D08 E2E: stones rolled back on sweep write failure");
+
+      // R8B-2 & R8B-3: bladeClash, titanDualClash, titanClimbCine overlay & state cleanup + DEFECT-R8-A2 welcome focus
+      await page.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        s.game.seenCutscenes = Object.assign({}, s.game.seenCutscenes, { enter_terrace: true });
+        api.initArenaStage(4, false);
+        const foe = s.arena.enemies[0] || api.spawnSingleEnemy("trial_gate", 900, 450, 1, true);
+        api.startBladeClash(foe, true);
+        api.focusBattlefield();
+      });
+      await page.keyboard.press("KeyH");
+      const e2eR8b2 = await page.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        const hub = { clash: s.arena.bladeClash, hud: document.getElementById("blade-clash-hud")?.classList.contains("active"), lb: document.body.classList.contains("letterbox-active") };
+        api.initArenaStage(4, false);
+        const foe = s.arena.enemies[0] || api.spawnSingleEnemy("trial_gate", 900, 450, 1, true);
+        api.startBladeClash(foe, true);
+        api.startCelestialSpireRun(1);
+        const spire = { clash: s.arena.bladeClash, hud: document.getElementById("blade-clash-hud")?.classList.contains("active"), lb: document.body.classList.contains("letterbox-active") };
+        api.startColossalTitanRaid();
+        api.triggerTitanClimbFinisher(s.arena.enemies[0]);
+        api.focusBattlefield();
+        return { hub, spire };
+      });
+      assert.equal(e2eR8b2.hub.clash, null, "R8B-2 E2E: KeyH clears bladeClash");
+      assert.equal(e2eR8b2.hub.hud, false, "R8B-2 E2E: KeyH removes #blade-clash-hud.active");
+      assert.equal(e2eR8b2.hub.lb, false, "R8B-2 E2E: KeyH removes body.letterbox-active");
+      assert.equal(e2eR8b2.spire.clash, null, "R8B-2 E2E: Spire clears bladeClash");
+      assert.equal(e2eR8b2.spire.hud, false, "R8B-2 E2E: Spire removes #blade-clash-hud.active");
+      assert.equal(e2eR8b2.spire.lb, false, "R8B-2 E2E: Spire removes body.letterbox-active");
+
+      await page.keyboard.press("KeyH");
+      const e2eR8b3Hub = await page.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        const res = { climb: s.arena.titanClimbCine, lbt: document.getElementById("cinema-letterbox-top")?.classList.contains("open"), lbb: document.getElementById("cinema-letterbox-bot")?.classList.contains("open") };
+        const m = api.getMetaState();
+        m.ascensions = Math.max(1, m.ascensions || 0);
+        api.saveMeta();
+        api.saveGame({ forceOverwrite: true });
+        api.startColossalTitanRaid();
+        api.triggerTitanVsTitanClash(s.arena.enemies[0]);
+        return res;
+      });
+      assert.equal(e2eR8b3Hub.climb, null, "R8B-3 E2E: KeyH clears titanClimbCine");
+      assert.equal(e2eR8b3Hub.lbt, false, "R8B-3 E2E: KeyH removes #cinema-letterbox-top.open");
+      assert.equal(e2eR8b3Hub.lbb, false, "R8B-3 E2E: KeyH removes #cinema-letterbox-bot.open");
+
+      await page.click("#btn-open-settings");
+      await page.waitForSelector('#modal-backdrop.open [data-sys-tab="controls"]');
+      await page.click('[data-sys-tab="controls"]');
+      await page.waitForSelector('#modal-backdrop.open [data-action="return-title-safe"]');
+      await page.click('[data-action="return-title-safe"]');
+      await page.waitForFunction(() => document.getElementById("welcome-screen")?.style.display !== "none");
+      const e2eR8b3Title = await page.evaluate(() => {
+        const s = window.__CHENYUAN_DEBUG__.getState();
+        return {
+          dual: s.arena.titanDualClash,
+          hud: document.getElementById("blade-clash-hud")?.classList.contains("active"),
+          lbt: document.getElementById("cinema-letterbox-top")?.classList.contains("open"),
+          lbb: document.getElementById("cinema-letterbox-bot")?.classList.contains("open")
+        };
+      });
+      assert.equal(e2eR8b3Title.dual, null, "R8B-3 E2E: return-title-safe clears titanDualClash");
+      assert.equal(e2eR8b3Title.hud, false, "R8B-3 E2E: return-title-safe removes #blade-clash-hud.active");
+      assert.equal(e2eR8b3Title.lbt, false, "R8B-3 E2E: return-title-safe removes #cinema-letterbox-top.open");
+      assert.equal(e2eR8b3Title.lbb, false, "R8B-3 E2E: return-title-safe removes #cinema-letterbox-bot.open");
+
+      const e2eOriginOpen = await page.evaluate(() => Boolean(document.querySelector('#welcome-perk-grid [data-perk="medicine_sage"]')?.offsetParent));
+      if (!e2eOriginOpen) await page.click("#btn-toggle-origin");
+      await page.waitForSelector('#welcome-perk-grid [data-perk="medicine_sage"]', { state: "visible" });
+      await page.focus('#welcome-perk-grid [data-perk="medicine_sage"]');
+      await page.keyboard.press("Enter");
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute?.("data-perk") || ""), "medicine_sage", "DEFECT-R8-A2 E2E: [data-perk] Enter preserves focus");
+      await page.focus('#welcome-calamity-box [data-calamity-tier="1"]');
+      await page.keyboard.press("Enter");
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute?.("data-calamity-tier") || ""), "1", "DEFECT-R8-A2 E2E: [data-calamity-tier] Enter preserves focus");
+      await page.focus("#btn-continue-save");
+      const e2eDelFocus = await page.evaluate((sk) => {
+        localStorage.removeItem(sk);
+        window.dispatchEvent(new StorageEvent("storage", { key: sk, newValue: null }));
+        return { isBody: document.activeElement === document.body, id: document.activeElement?.id || "" };
+      }, STORAGE_KEY);
+      assert.equal(e2eDelFocus.isBody, false, "DEFECT-R8-A2 E2E: cross-tab delete keeps focus off BODY");
+      assert.equal(e2eDelFocus.id, "btn-start-new", "DEFECT-R8-A2 E2E: cross-tab delete falls back to #btn-start-new");
     }
   }
 ];

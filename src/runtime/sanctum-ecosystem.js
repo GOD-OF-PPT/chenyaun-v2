@@ -348,7 +348,7 @@
     arena.tribulation = null;
     arena.sectDefense = null;
     arena.cloudFlight = null;
-    arena.bladeClash = null;
+    clearCinematicClashOverlays();
     resetStageTransitionState();
     resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
     resetRuntimeCombatOverrides();

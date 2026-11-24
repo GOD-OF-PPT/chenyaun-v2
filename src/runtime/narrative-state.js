@@ -466,7 +466,10 @@
     pointer.worldActive = false;
     pointer.moveTarget = null;
   }
-  window.addEventListener("blur", clearTransientInputs);
+  window.addEventListener("blur", () => {
+    clearTransientInputs();
+    if (typeof stopHoldProgression === "function") stopHoldProgression("window_blur");
+  });
 
   let pendingCompareGear = null;
   let activeRunBoonChoices = [];

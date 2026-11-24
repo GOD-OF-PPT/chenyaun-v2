@@ -254,6 +254,15 @@ test("getExpeditionNodeStageSynergy supports plain-object runtime stageStars, le
     assert.equal(r.stars, 0);
   }
 
+  const inheritedBossProto = Object.create({ 0: true });
+  const bossProtoRes = getExpeditionNodeStageSynergy(
+    makeCleanGame({ stageStars: {}, defeatedStageBosses: inheritedBossProto }),
+    "qinglan_vein"
+  );
+  assert.equal(bossProtoRes.mult, 1.0);
+  assert.equal(bossProtoRes.tier, "base");
+  assert.equal(bossProtoRes.stars, 0);
+
   const clampedHigh = getExpeditionNodeStageSynergy(
     makeCleanGame({ stageStars: { 0: 99 }, defeatedStageBosses: {} }),
     "qinglan_vein"

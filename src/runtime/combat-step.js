@@ -2693,7 +2693,7 @@
       arena.sectDefense = null;
       arena.cloudFlight = null;
       arena.customSeedRun = null;
-      arena.bladeClash = null;
+      clearCinematicClashOverlays();
       if (wasPractice || practiceFormalSnapshot) {
         endPracticeModeIsolation();
       } else {

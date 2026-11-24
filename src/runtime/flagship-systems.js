@@ -1853,6 +1853,21 @@
     return true;
   }
 
+  function clearCinematicClashOverlays() {
+    arena.bladeClash = null;
+    arena.titanDualClash = null;
+    arena.titanClimbCine = null;
+    if (typeof document !== "undefined") {
+      if (document.body) document.body.classList.remove("letterbox-active");
+      const clashHud = document.getElementById("blade-clash-hud");
+      if (clashHud) clashHud.classList.remove("active");
+      const lbTop = document.getElementById("cinema-letterbox-top");
+      if (lbTop) lbTop.classList.remove("open");
+      const lbBot = document.getElementById("cinema-letterbox-bot");
+      if (lbBot) lbBot.classList.remove("open");
+    }
+  }
+
   function purgeTransientCombatEntities(opts = {}) {
     const clearPlayerBuffs = Boolean(opts && opts.clearPlayerBuffs);
     const clearOverdriveCds = Boolean(opts && opts.clearOverdriveCds);
@@ -1895,6 +1910,11 @@
     arena.meteorBursts = [];
     arena.bossDomain = null;
     arena.reversedDomainTimer = 0;
+    // R8B-1 / R8B-2 / R8B-3: Purge enraged boss beams, shock rings, and active blade/titan clash & climb cinematic overlays
+    arena.bossBeams = [];
+    arena.shockRings = [];
+    clearCinematicClashOverlays();
+    if (typeof stopHoldProgression === "function") stopHoldProgression("scene_transition");
     if (clearPlayerBuffs && arena.player) {
       arena.player.invuln = 0;
       arena.player.shieldHp = 0;

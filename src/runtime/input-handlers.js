@@ -26,6 +26,16 @@
       if (ev.code === "Escape") {
         if (modalCloseable) {
           ev.preventDefault();
+          if (activeModalKind === "stage_sweep" && pendingStageSweep && pendingStageSweep.origin === "world_map") {
+            const mapNid = pendingStageSweep.mapNodeId;
+            pendingStageSweep = null;
+            openWorldMapModal(mapNid);
+            const mapSweepBtn = document.getElementById("btn-map-sweep-stage") || document.getElementById("btn-map-enter-node");
+            if (mapSweepBtn && isElementFocusable(mapSweepBtn)) {
+              try { mapSweepBtn.focus({ preventScroll: true }); } catch (e) {}
+            }
+            return;
+          }
           craftMinigame.open = false;
           closeModal();
         }
@@ -105,6 +115,7 @@
     // 4. Drawer open: trap Tab/Shift+Tab, allow Escape & alchemy Space; block all background global shortcuts
     if (drawerOpen) {
       if (ev.code === "Tab") {
+        if (holdProgression.active) stopHoldProgression("ui_closed");
         trapFocusInContainer(ev, document.getElementById("jade-panel"));
         return;
       }
@@ -117,6 +128,19 @@
         ev.preventDefault();
         strikeFurnaceNeedle();
         return;
+      }
+      if ((ev.code === "Space" || ev.code === "Enter") && !furnaceGame.active && !isTypingTarget(ev.target)) {
+        const aeHold = document.activeElement;
+        if (aeHold && !aeHold.disabled && aeHold.closest && aeHold.closest("#jade-panel") &&
+            (aeHold.hasAttribute("data-enhance-slot") || aeHold.hasAttribute("data-quick-craft"))) {
+          ev.preventDefault();
+          if (!ev.repeat) {
+            const hKind = aeHold.hasAttribute("data-enhance-slot") ? "enhance" : "alchemy";
+            const hKey = hKind === "enhance" ? aeHold.getAttribute("data-enhance-slot") : aeHold.getAttribute("data-quick-craft");
+            startHoldProgression({ kind: hKind, key: hKey, inputType: "keyboard", keyCode: ev.code });
+          }
+          return;
+        }
       }
       return;
     }
@@ -281,7 +305,45 @@
     showToast(`战斗中 · 再按一次打开【${label}】`, { tier: 1, key: `arm_${code}`, throttleMs: 1200 });
     return false;
   }
-  window.addEventListener("keyup", (ev) => { keysDown[ev.code] = false; });
+  window.addEventListener("keyup", (ev) => {
+    keysDown[ev.code] = false;
+    if (holdProgression.active && holdProgression.inputType === "keyboard" && ev.code === holdProgression.keyCode) {
+      const wasRepeat = holdProgression.didRepeat;
+      const hKind = holdProgression.kind;
+      const hKey = holdProgression.key;
+      stopHoldProgression("released");
+      if (!wasRepeat) {
+        if (hKind === "enhance") {
+          executeSingleGearEnhance(hKey, { silentToast: false, fromHold: false });
+          const refBtn = getHoldTargetButton("enhance", hKey);
+          if (refBtn && isElementFocusable(refBtn)) {
+            try { refBtn.focus({ preventScroll: true }); } catch (e) {}
+          }
+        } else if (hKind === "alchemy") {
+          if (!guardNotInTribulation("丹道炼制") || !guardNotPracticeMode("丹道炼制")) return;
+          const rec = RECIPES[hKey];
+          if (rec) {
+            if (rec.reqCauldronLv && getSanctumLevel(game, "cauldron") < rec.reqCauldronLv) {
+              showToast(`需将洞府【紫微丹鼎】升至 Lv.${rec.reqCauldronLv} 方可炼制！`);
+            } else {
+              const bd = computeRecipeCostBreakdown(game, rec);
+              if (game.stones < bd.totalStoneCost) {
+                showToast(`灵石不足（共需 ${bd.totalStoneCost} 灵石${bd.hasMissing ? `，含购入缺料 ${bd.matBuyCost} 灵石` : ""}）`);
+              } else if (bd.hasMissing) {
+                openAlchemyBuyConfirmModal(rec.id, "quick");
+              } else {
+                executeAlchemyQuickCraft(rec.id);
+                const refBtn = getHoldTargetButton("alchemy", hKey);
+                if (refBtn && isElementFocusable(refBtn)) {
+                  try { refBtn.focus({ preventScroll: true }); } catch (e) {}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
 
   window.addEventListener("contextmenu", (ev) => {
     if (ev.target && ev.target.id === "fx-canvas") {
@@ -293,6 +355,7 @@
 
   document.addEventListener("pointermove", (ev) => {
     pointer.x = ev.clientX; pointer.y = ev.clientY;
+    checkHoldPointerBounds(ev.clientX, ev.clientY);
     if (photoMode.active && photoMode.dragging) {
       photoMode.panX = Math.max(-460, Math.min(460, ev.clientX - photoMode.dragStartX));
       photoMode.panY = Math.max(-320, Math.min(320, ev.clientY - photoMode.dragStartY));
@@ -320,8 +383,22 @@
 
   document.addEventListener("pointerdown", (ev) => {
     Sound.ensure();
+    if (ev.button === 0) clearSuppressClick();
     pointer.x = ev.clientX; pointer.y = ev.clientY;
     if (cutscene.active) return;
+    if (ev.button === 0 && drawerOpen) {
+      const bdHold = document.getElementById("modal-backdrop");
+      if (!(bdHold && bdHold.classList.contains("open"))) {
+        const pelHold = (ev.target && ev.target.nodeType === 1) ? ev.target : (ev.target && ev.target.parentElement ? ev.target.parentElement : null);
+        const holdBtn = pelHold ? pelHold.closest("#jade-panel [data-enhance-slot], #jade-panel [data-quick-craft]") : null;
+        if (holdBtn && !holdBtn.disabled) {
+          const hKind = holdBtn.hasAttribute("data-enhance-slot") ? "enhance" : "alchemy";
+          const hKey = hKind === "enhance" ? holdBtn.getAttribute("data-enhance-slot") : holdBtn.getAttribute("data-quick-craft");
+          startHoldProgression({ kind: hKind, key: hKey, inputType: "pointer", pointerId: ev.pointerId, pointerX: ev.clientX, pointerY: ev.clientY });
+          return;
+        }
+      }
+    }
     const isCanvas = ev.target && ev.target.id === "fx-canvas";
     if (isCanvas) {
       const pav = document.getElementById("pavilion-popover");
@@ -391,12 +468,23 @@
     }
   });
 
-  window.addEventListener("pointerup", () => {
+  window.addEventListener("pointerup", (ev) => {
+    if (holdProgression.active && holdProgression.inputType === "pointer") {
+      stopHoldProgression("released");
+    }
+    releaseSuppressClickForPointer(ev && ev.pointerId != null ? ev.pointerId : null, false);
     photoMode.dragging = false;
     if (pointer.down && pointer.worldActive && pointer.holdTime > 0.25) {
       releaseChargedSwordVolley();
     }
     pointer.down = false; pointer.holdTime = 0; pointer.worldActive = false;
+  });
+
+  window.addEventListener("pointercancel", (ev) => {
+    if (holdProgression.active && holdProgression.inputType === "pointer") {
+      stopHoldProgression("pointer_cancel");
+    }
+    releaseSuppressClickForPointer(ev && ev.pointerId != null ? ev.pointerId : null, true);
   });
 
   document.addEventListener("click", (ev) => {
@@ -1417,7 +1505,7 @@
       arena.tribulation = null;
       arena.sectDefense = null;
       arena.cloudFlight = null;
-      arena.bladeClash = null;
+      clearCinematicClashOverlays();
       resetStageTransitionState();
       resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
       resetRuntimeCombatOverrides();
@@ -1610,7 +1698,7 @@
       arena.tribulation = null;
       arena.sectDefense = null;
       arena.cloudFlight = null;
-      arena.bladeClash = null;
+      clearCinematicClashOverlays();
       resetStageTransitionState();
       resetPhotoModeOverlay({ resetCamera: true, skipCalmReeval: true });
       resetRuntimeCombatOverrides();
@@ -2765,20 +2853,8 @@
     if (t.hasAttribute("data-enhance-slot")) {
       if (!guardNotPracticeMode("神兵淬火强化")) return;
       const sl = t.getAttribute("data-enhance-slot");
-      const eq = game && game.equippedGear ? game.equippedGear[sl] : null;
-      if (!eq) return;
-      if ((eq.lvl || 0) >= 10) { showToast("该仙装已淬火至圆满 +10！"); return; }
-      const cost = getGearEnhanceCost(game, eq);
-      if (game.stones < cost) { showToast(`淬火需 ${cost} 灵石`); return; }
-      const beforeStats = getCombatStats(game);
-      game.stones -= cost;
-      eq.lvl = (eq.lvl || 0) + 1;
-      if (game.goalStats) game.goalStats.craftOrLoot = (game.goalStats.craftOrLoot || 0) + 1;
-      Sound.clang(1.35, 0.14);
-      Sound.fanfare();
-      showToast(`淬火功成！【${eq.name} +${eq.lvl}】基础属性大幅跃升！`);
-      recordVol1PrepUpgradeDelta(beforeStats, `${eq.name} +${eq.lvl}`);
-      saveGame(); updateHud(); renderDrawerContent();
+      if (consumeSuppressedClick("enhance", sl)) return;
+      executeSingleGearEnhance(sl, { silentToast: false, fromHold: false });
       return;
     }
     if (t.hasAttribute("data-reforge-slot")) {
@@ -3155,6 +3231,77 @@
       }
       return;
     }
+    // D08 (R3-F07): Stage Sweep Entry & Explicit Confirmation Handlers
+    if (t.hasAttribute("data-open-stage-sweep")) {
+      const stgIdx = Number(t.getAttribute("data-open-stage-sweep"));
+      const origin = t.getAttribute("data-sweep-origin") || (drawerOpen ? "drawer" : "other");
+      openStageSweepConfirmModal(stgIdx, { origin, mapNodeId: selectedWorldMapNodeId });
+      return;
+    }
+    if (t.getAttribute("data-action") === "cancel-stage-sweep") {
+      const req = pendingStageSweep;
+      pendingStageSweep = null;
+      if (req && req.origin === "world_map") {
+        openWorldMapModal(req.mapNodeId);
+        const mapSweepBtn = document.getElementById("btn-map-sweep-stage") || document.getElementById("btn-map-enter-node");
+        if (mapSweepBtn && isElementFocusable(mapSweepBtn)) {
+          try { mapSweepBtn.focus({ preventScroll: true }); } catch (e) {}
+        }
+      } else {
+        closeModal();
+      }
+      return;
+    }
+    if (t.getAttribute("data-action") === "confirm-stage-sweep") {
+      const req = pendingStageSweep;
+      if (!req || !Number.isInteger(req.stageIdx)) return;
+      const res = executeStageSweep(req.stageIdx);
+      if (res && res.ok) {
+        pendingStageSweep = null;
+        if (req.origin === "world_map") {
+          openWorldMapModal(req.mapNodeId);
+          const mapSweepBtn = document.getElementById("btn-map-sweep-stage") || document.getElementById("btn-map-enter-node");
+          if (mapSweepBtn && isElementFocusable(mapSweepBtn)) {
+            try { mapSweepBtn.focus({ preventScroll: true }); } catch (e) {}
+          }
+        } else {
+          const panel = document.getElementById("jade-panel");
+          if (drawerOpen && panel) {
+            const refreshed = panel.querySelector(`[data-open-stage-sweep="${req.stageIdx}"]`) || panel.querySelector(`[data-warp-stage="${req.stageIdx}"]`);
+            if (refreshed && isElementFocusable(refreshed)) lastModalTriggerEl = refreshed;
+          }
+          closeModal();
+        }
+      } else {
+        const errEl = document.getElementById("stage-sweep-error-msg");
+        if (errEl) {
+          let errMsg = (res && res.reasonText) ? `⚠ ${res.reasonText}` : "⚠ 秘境扫荡未能完成，未扣除扫荡次数";
+          if (res && res.reason === "save_failed") {
+            const detail = (storageWriteError && storageWriteError.message)
+              ? storageWriteError.message
+              : (storageReadError && storageReadError.reason)
+                ? storageReadError.reason
+                : saveReadOnlyMode
+                  ? "当前处于只读观览态"
+                  : saveConflictState
+                    ? "存在未处理的多标签页存档冲突"
+                    : "本地存档写入失败";
+            errMsg = `⚠ 存档写入失败：${detail}（已原子回滚本次扫荡，未扣除扫荡次数）`;
+          } else if (res && res.reason === "tribulation") {
+            errMsg = "⚡ 正在九霄紫霄雷劫渡劫中，无法进行秘境扫荡！";
+          } else if (res && res.reason === "practice_mode") {
+            errMsg = "⚔ 演武练习模式不产出正式奖励，禁止进行秘境扫荡！";
+          }
+          errEl.textContent = errMsg;
+          errEl.style.display = "block";
+        }
+        const modalBox = document.getElementById("modal-content");
+        if (modalBox && document.getElementById("modal-backdrop")?.classList.contains("open") && (document.activeElement === document.body || !isElementFocusable(document.activeElement))) {
+          focusDialogSafely(modalBox);
+        }
+      }
+      return;
+    }
     if (t.hasAttribute("data-destiny-fruit")) {
       const fid = t.getAttribute("data-destiny-fruit");
       const df = hasOwn(DESTINY_FRUITS, fid) ? DESTINY_FRUITS[fid] : null;
@@ -3404,6 +3551,7 @@
       if (!guardNotInTribulation("丹道炼制")) return;
       if (!guardNotPracticeMode("丹道炼制")) return;
       const recId = t.getAttribute("data-quick-craft");
+      if (consumeSuppressedClick("alchemy", recId)) return;
       const rec = RECIPES[recId];
       if (!rec) return;
       if (rec.reqCauldronLv && getSanctumLevel(game, "cauldron") < rec.reqCauldronLv) {
