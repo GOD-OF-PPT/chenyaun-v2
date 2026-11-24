@@ -44,8 +44,8 @@ npm run test:e2e
 ```
 
 - **纯规则单元测试（`npm run test:unit`）**：基于 Node 内置 `node:test` 运行 `tests/unit/*.test.mjs`（7 个测试文件覆盖属性账本、战斗数学与 45% 单击上限、1,000 次种子装备滚落预算与保底、经济防套利与寿元阈值、劫火与仙榜评分评级、存档封装与 CRDT 合并、构建/VM 规则一致性及负向构建校验）。
-- **回归套件（`npm run test:regression`）**：自动起停本地静态 HTTP 服务，在独立的 1440×900 浏览器上下文中运行 **M1–M4 + P1–P5 + R2–R7 + Q0–Q5 + T5 共 82 项回归测试**。默认在单条失败后继续执行全部套件并输出 `schemaVersion: 2` 汇总报告（及失败截图），要求 0 个控制台或页面运行时错误。
-- **E2E 验收与白盒对抗加固套件（`npm run test:e2e`）**：按 Tier 1–5 运行 **共 68 项端到端测试**（Tier 1–4 黑盒验收 56 项：Tier 1 独立功能 31 项、Tier 2 边界与存档五场景 12 项、Tier 3 跨系统组合 10 项、Tier 4 玩家完整旅程 3 项；外加 Tier 5 白盒对抗加固 12 项），详见 [TEST_INFRA.md](TEST_INFRA.md) 与 [TEST_READY.md](TEST_READY.md)。
+- **回归套件（`npm run test:regression`）**：自动起停本地静态 HTTP 服务，在独立的 1440×900 浏览器上下文中运行 **M1–M4 + P1–P5 + R2–R7 + Q0–Q5 + T5 共 83 项回归测试**。默认在单条失败后继续执行全部套件并输出 `schemaVersion: 2` 汇总报告（及失败截图），要求 0 个控制台或页面运行时错误。
+- **E2E 验收与白盒对抗加固套件（`npm run test:e2e`）**：按 Tier 1–5 运行 **共 69 项端到端测试**（Tier 1–4 黑盒验收 56 项：Tier 1 独立功能 31 项、Tier 2 边界与存档五场景 12 项、Tier 3 跨系统组合 10 项、Tier 4 玩家完整旅程 3 项；外加 Tier 5 白盒对抗加固 13 项），详见 [TEST_INFRA.md](TEST_INFRA.md) 与 [TEST_READY.md](TEST_READY.md)。
 - **无头数值与经济审计（Node VM）**：
   ```sh
   node scripts/eval-combat-matrix.mjs --seed 20261124   # 6境界×3装等×2流派×4策略×5遭遇（84 组战斗评测矩阵）

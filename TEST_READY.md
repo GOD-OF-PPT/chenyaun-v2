@@ -1,16 +1,16 @@
 # E2E Acceptance Suite Ready (`TEST_READY.md`)
 
 - **Restored In**: `codex/q0-infra-and-tests` (F04, extracted read-only from `origin/codex/e2e-suite` @ `34f6dd52` and statically audited against M2–M6 `web/public/playable-v2.html`)
-- **Latest Full-Pass Verification**: `codex/adversarial-hardening` (M7b Round 3, merged `origin/main` PR #24 Q3 F19–F23 @ `fc9004fa` & PR #26 Q4 F24–F29 @ `4b86533c`, fixing all 19 Round 1 defects `A-1..A-11`/`B-1..B-8`, 13 Round 2 defects `R2A-1..R2A-6`/`R2B-1..R2B-6`/`DEFECT-R1-2A/2B/2C`, and 12 Round 3 defects `R3A-1..R3A-5`/`DEFECT-R2-2A/2B/2C`/`R3B-1..R3B-5` + PR #26 sandbox-exit save guard & `DOC-1`, and encoding permanent Tier 5 regression `T5-1..T5-9` & E2E `E2E-T5-01..12`)
-- **Runner Command**: `npm ci && npm run test:e2e`
+- **Latest Full-Pass Verification**: `codex/adversarial-hardening` (M7b Round 4, merged `origin/main` PR #24 Q3 F19–F23 @ `fc9004fa`, PR #26 Q4 F24–F29 @ `4b86533c`, & PR #27 Q5 F30–F33 modular source @ `df5efdab`, fixing all 19 Round 1 defects `A-1..A-11`/`B-1..B-8`, 13 Round 2 defects `R2A-1..R2A-6`/`R2B-1..R2B-6`/`DEFECT-R1-2A/2B/2C`, 12 Round 3 defects `R3A-1..R3A-5`/`DEFECT-R2-2A/2B/2C`/`R3B-1..R3B-5` + PR #26 sandbox-exit guard & `DOC-1`, and 6 Round 4 defects `R4A-1`/`DEFECT-R3-2A`, `R4A-2`, `R4A-3`, `R4B-1`, `R4B-2`, `R4B-3`, and encoding permanent Tier 5 regression `T5-1..T5-10` & E2E `E2E-T5-01..13`)
+- **Runner Command**: `npm ci && npm run build:check && npm run test:unit && npm run test:e2e`
 - **Scoped Runs**:
   - Single tier: `npm run test:e2e -- --tier 1` (supports `1`, `2`, `3`, `4`, `5`, comma-separated e.g. `1,2`, or `all`)
   - Filtered run: `npm run test:e2e -- --filter <substring|/regex/i>`
   - JSON report: `npm run test:e2e -- --report <file>`
 - **Environment**: Built-in cached static HTTP server (`web/public`, `127.0.0.1` ephemeral port), `1440×900` desktop Chromium/Chrome (`CHROMIUM_PATH` fallback `/usr/bin/chromium`, `/usr/bin/chromium-browser`, `/usr/bin/google-chrome`), fresh isolated `BrowserContext` per test, strict `0` `console.error` / `pageerror` gate.
-- **Current Verification Status (M7b Round 3 — 100% PASS)**: Full 1440×900 desktop Chrome/Chromium automated verification completed post-PR #26 (`4b86533c`) merge and M7b Round 3 hardening: **68/68 E2E PASS (0 FAIL, 0 runtime errors)** across Tier 1→5, and **79/79 Regression PASS (0 FAIL, 0 runtime errors)** (`vm.Script` inline JS syntax check, single `arena.paused =` writer at L19301, `art:manifest:check`, `audit-economy.mjs` 0 violations, 12 `.mjs` `node --check`, byte-for-byte immutability of all 70 `origin/main` regression suites & 56 Tier 1–4 E2E tests, and 8 CLI exit-code-`2` guards PASS). Per user directive (`ORIGINAL_REQUEST.md`), no separate manual smoke test was run; static HTTP end-user verification is fulfilled by the automated 1440×900 isolated-context suites. Historical pre-M2 baseline (`29daf69`), M7a (`2b1ca3a`), M7b Round 1, and M7b Round 2 records are preserved below.
+- **Current Verification Status (M7b Round 4 — 100% PASS)**: Full 1440×900 desktop Chrome/Chromium automated verification completed post-PR #27 (`df5efdab`) modular-source merge and M7b Round 4 hardening: **`npm run build:check` PASS** (`sha256=ad370b98d9d9`), **27/27 Pure Node Unit Tests PASS (0 FAIL)**, **69/69 E2E PASS (0 FAIL, 0 runtime errors)** across Tier 1→5, and **83/83 Regression PASS (0 FAIL, 0 runtime errors)** (`vm.Script` inline JS syntax check, single `arena.paused =` writer at `src/runtime/main.js:12927` / `web/public/playable-v2.html:20083`, `art:manifest:check`, `audit-economy.mjs --seed 20261124` 0 violations, `eval-combat-matrix.mjs --seed 20261124` 84 scenarios / 0 outliers, 29 `.mjs` `node --check`, byte-for-byte immutability of all 73 `origin/main` regression suites & 56 Tier 1–4 E2E tests, and 8 CLI exit-code-`2` guards PASS). Per user directive (`ORIGINAL_REQUEST.md`), no separate manual smoke test was run; static HTTP end-user verification is fulfilled by the automated 1440×900 isolated-context suites. Historical pre-M2 baseline (`29daf69`), M7a (`2b1ca3a`), and M7b Round 1–3 records are preserved below.
 
-## Tier Breakdown (68 Tests Total)
+## Tier Breakdown (69 Tests Total)
 
 | Tier | File | Test Count | Focus |
 |---|---|---|---|
@@ -18,7 +18,7 @@
 | Tier 2 | `tests/e2e/tiers/tier2-boundaries.mjs` | 12 | Opaque-box boundary & corner cases, including all 5 mandatory save scenarios (fresh start, legacy `eb0ea67` resume/migration, reload, `QuotaExceededError`, multi-tab contention) |
 | Tier 3 | `tests/e2e/tiers/tier3-combinations.mjs` | 10 | Opaque-box cross-feature pairwise combinations |
 | Tier 4 | `tests/e2e/tiers/tier4-journeys.mjs` | 3 | Opaque-box real-world end-user gameplay journeys |
-| Tier 5 | `tests/e2e/tiers/tier5-adversarial.mjs` | 12 | White-box adversarial hardening (`E2E-T5-01..E2E-T5-12`) covering all 19 Round 1 (`A-1..A-11`, `B-1..B-8`), 13 Round 2 (`R2A-1..R2A-6`, `R2B-1..R2B-6`, `DEFECT-R1-2A/2B/2C`), and 12 Round 3 (`R3A-1..R3A-5`, `DEFECT-R2-2A/2B/2C`, `R3B-1..R3B-5` + PR #26 sandbox-exit guard) defects |
+| Tier 5 | `tests/e2e/tiers/tier5-adversarial.mjs` | 13 | White-box adversarial hardening (`E2E-T5-01..E2E-T5-13`) covering all 19 Round 1 (`A-1..A-11`, `B-1..B-8`), 13 Round 2 (`R2A-1..R2A-6`, `R2B-1..R2B-6`, `DEFECT-R1-2A/2B/2C`), 12 Round 3 (`R3A-1..R3A-5`, `DEFECT-R2-2A/2B/2C`, `R3B-1..R3B-5` + PR #26 sandbox-exit guard), and 6 Round 4 (`R4A-1`/`DEFECT-R3-2A`, `R4A-2`, `R4A-3`, `R4B-1`, `R4B-2`, `R4B-3`) defects |
 
 ## Feature Inventory Coverage Matrix (`PROJECT.md § Feature Inventory`)
 
@@ -57,7 +57,36 @@
 | **G11b** 数据清理 | M6 | `E2E-T1-30` | — | — | `E2E-T4-03` |
 | **G12** 闭关吸附掉落 | M6 | `E2E-T1-31` | — | `E2E-T3-10` | — |
 
-## Latest Post-M7b Round 3 Tier 5 Adversarial Hardening Verification Results (100% PASS)
+## Latest Post-M7b Round 4 Tier 5 Adversarial Hardening Verification Results (100% PASS)
+
+- **Branch / Base**: `codex/adversarial-hardening` (M7b Round 4, merged `origin/main` PR #27 Q5 F30–F33 modular source @ `df5efdab` via `e0c41814` with 100% lossless 170/170 hunk port onto `src/{styles/main.css,state/save-rules.mjs,runtime/main.js}` + deterministic `npm run build`; closes all 6 Round 3 Gate findings `R4A-1`/`DEFECT-R3-2A`, `R4A-2`, `R4A-3`, `R4B-1`, `R4B-2`, `R4B-3` in `src/runtime/main.js` + regenerated `web/public/playable-v2.html`; keeps all 73 pre-existing `origin/main` regression suites `M1-1..R7-3 + Q3-1..Q3-5 + Q4-1..Q4-5 + Q5-1..Q5-3`, runner tail, all 27 unit tests, all 56 Tier 1–4 E2E tests, and all PR #27 build/config/rules/assets/CI files byte-for-byte untouched, and permanently encodes `T5-1..T5-10` & `E2E-T5-01..E2E-T5-13`)
+- **Verified At (UTC)**: `2026-11-24T11:52:24Z`–`12:15:57Z` (full 83/83 regression, ordered Tier 1→5 E2E, combined 69/69 E2E, and post-final-edit static/build:check/unit/economy/combat-matrix/immutability/CLI gates on final code)
+- **Browser & Toolchain**: `/usr/bin/google-chrome` (`Google Chrome 158.0.8127.36`, Chromium-based; `CHROMIUM_PATH` unset → `/usr/bin/google-chrome` fallback; Chrome 158 vs upstream Chromium honestly noted per `PROJECT.md`), Node.js `v22.23.5`, `playwright-core@1.65.1`, viewport `1440×900`, fresh isolated `BrowserContext` per suite/test
+- **Runtime errors (`console.error` / `pageerror`)**: **0** across all 83 regression suites, all ordered Tier 1–5 E2E runs, and the combined 69/69 E2E run
+- **Verification Scope Note**: Per user directive (`ORIGINAL_REQUEST.md`), no separate manual smoke test was executed; all static HTTP player-interaction verification is performed via the automated 1440×900 Playwright regression & E2E suites.
+- **Build, Unit, Static, Economy, Combat Matrix, Immutability & Provenance Gates (`12:15:45Z`–`12:15:57Z`)**:
+  - `npm run build:check` → PASS (`8590100 bytes, 115 WebP assets, 9 ESM modules, sha256=ad370b98d9d9`, byte-for-byte parity, exit `0`)
+  - `npm run test:unit` → **27/27 PASS, 0 FAIL** (`2448ms`, 7 test files including exact 382 `V18–V25` keys, `__CHENYUAN_DEBUG__`, VM rule parity, `save-rules.test.mjs`, and negative build guards, exit `0`)
+  - Inline `<script>` syntax validation (`vm.Script`) → PASS (`VM_SCRIPT_OK scripts=1`, single `arena.paused = pauseTokens.size > 0;` writer at `src/runtime/main.js:12927` & `web/public/playable-v2.html:20083`, exit `0`)
+  - `node --check` across all 29 `.mjs` files under `scripts/`, `src/`, & `tests/` → PASS (`ALL_MJS_NODE_CHECK_OK count=29`)
+  - `npm run art:manifest:check` → PASS (`115 inline assets, 11 disk files, 1 other inline asset`, exit `0`)
+  - `node scripts/audit-economy.mjs --seed 20261124` → PASS (`passed: true, violations: []`, exit `0`)
+  - `node scripts/eval-combat-matrix.mjs --seed 20261124` → PASS (`totalScenarios: 84, allGearBudgetOk: true, bossWinRate: 1, outliers: []`, exit `0`)
+  - Byte-for-byte immutability vs `origin/main` (`df5efdab`) → `PRE73_MATCH: true` (`5be3a02cc7b188ff4c3fb8889b6d08724241053b3e694a1a6b777cdf92152af1`), `TAIL_MATCH: true` (`a681001f00882f2f85b3b81f658927bbceac32f54025498c25d1ccc87f710656`), `PRESERVED_ZERO_DIFF_LINES=0` across `.github/**`, `package*.json`, `scripts/{build-playable,art-manifest,audit-economy,eval-combat-matrix}.mjs`, `docs/**`, `src/{template.html,markup,assets,config,rules,runtime/{preamble,debug-facade,boot}.js}`, `tests/unit/**`, `tests/e2e/lib/**`, and `tests/e2e/tiers/tier[1-4]-*.mjs`
+  - CLI exit-code-`2` guard checks (`--tier 0`, `--tier 6`, `--tier foo`, `--tier 1,6`, `--unknown-flag`, `--filter`, `--report`, `--tier`) → all 8 exit `2`; `--help` exits `0`
+- **Regression Suite**:
+  - **Full 83-suite run (`npm run test:regression -- --report <scratch>/reg.json`, `11:52:24Z`–`12:02:06Z`)**: `83/83 PASS` (`Q5-1..Q5-3` `1800ms`/`5640ms`/`2357ms`; `T5-1..T5-10` `6389ms`/`8289ms`/`16259ms`/`6835ms`/`7668ms`/`15260ms`/`6650ms`/`19048ms`/`3150ms`/`8060ms`), `0 FAIL`, `0 ERROR`, `0 SKIPPED`, `runtimeErrors=0`, `durationMs=581066` (`schemaVersion: 2`, Chrome `158.0.8127.36`, `1440×900`, exit code `0`)
+  - **Coverage**: `M1-1..M4-4` (19) + `P1-1..P5-1` (5) + `R2-1..R2-7` (7) + `R3-1..R6-3` (13) + `Q0-1..Q2-5` (13) + `R7-1..R7-3` (3) + `Q3-1..Q3-5` (5) + `Q4-1..Q4-5` (5) + `Q5-1..Q5-3` (3) + `T5-1..T5-10` (10)
+- **E2E Ordered Tier-by-Tier Verification (`npm run test:e2e -- --tier <1|2|3|4|5>`, `12:02:20Z`–`12:08:50Z`)**:
+  - **Tier 1** (`--tier 1`, `12:02:20Z`–`12:04:43Z`): `31/31 PASS`, `0 FAIL`, `runtimeErrors=0` (`elapsed=141297ms`, tests `140790ms`, exit `0`)
+  - **Tier 2** (`--tier 2`, `12:04:43Z`–`12:05:35Z`): `12/12 PASS`, `0 FAIL`, `runtimeErrors=0` (`elapsed=51693ms`, tests `51163ms`, exit `0`)
+  - **Tier 3** (`--tier 3`, `12:05:35Z`–`12:06:41Z`): `10/10 PASS`, `0 FAIL`, `runtimeErrors=0` (`elapsed=64322ms`, tests `63770ms`, exit `0`)
+  - **Tier 4** (`--tier 4`, `12:06:41Z`–`12:07:02Z`): `3/3 PASS`, `0 FAIL`, `runtimeErrors=0` (`elapsed=20395ms`, tests `19909ms`, exit `0`)
+  - **Tier 5** (`--tier 5`, `12:07:02Z`–`12:08:50Z`): `13/13 PASS`, `0 FAIL`, `runtimeErrors=0` (`elapsed=107491ms`, tests `107006ms`, exit `0`)
+- **E2E Combined Run (`npm run test:e2e -- --report <scratch>/e2e.json`, `12:09:01Z`–`12:15:28Z`)**:
+  - **Total**: `69/69 PASS`, `0 FAIL`, `runtimeErrors=0`, `durationMs=385431` (`schemaVersion: 1`, Tier 1 `141763ms`, Tier 2 `51638ms`, Tier 3 `62850ms`, Tier 4 `19140ms`, Tier 5 `109484ms`, exit code `0`)
+
+## Prior M7b Round 3 Tier 5 Adversarial Hardening Verification Results (100% PASS)
 
 - **Branch / Base**: `codex/adversarial-hardening` (M7b Round 3, merged `origin/main` PR #24 Q3 F19–F23 @ `fc9004fa` & PR #26 Q4 F24–F29 @ `4b86533c` via `bc9689e`; closes all 12 Round 2 Gate findings `R3A-1..R3A-5`, `DEFECT-R2-2A/2B/2C`, `R3B-1..R3B-5`, PR #26 `initArenaStage({ skipSave: true })` sandbox-exit conflict guard, and `DOC-1`; keeps all 70 pre-existing `origin/main` regression suites `M1-1..R7-3 + Q3-1..Q3-5 + Q4-1..Q4-5` and all 56 pre-existing Tier 1–4 E2E tests byte-for-byte untouched, and permanently encodes `T5-1..T5-9` & `E2E-T5-01..E2E-T5-12`)
 - **Verified At (UTC)**: `2026-11-24T09:24:48Z`–`09:51:48Z` (static/immutability/economy/CLI gates, full 79/79 regression, ordered Tier 1→5 E2E, and combined 68/68 E2E on final post-edit code)

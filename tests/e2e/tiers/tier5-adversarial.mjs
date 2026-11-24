@@ -1546,5 +1546,336 @@ export const tests = [
       assert.equal(r3b345.leakedProps, 0, "R3B-5: Sect Defense purges mixed_ward Dojo props");
       assert.equal(r3b345.intentDefense, 0, "R3B-4: Sect Defense resets Dojo swordIntent");
     }
+  },
+
+  // ==================== E2E-T5-13: Round 4 Convergence Gate (R4A-1/DEFECT-R3-2A + R4A-2/3 + R4B-1/2/3) ====================
+  {
+    id: "E2E-T5-13",
+    title: "R4A-1..R4A-3 & R4B-1..R4B-3: Atomic Practice Quota overwrite, #welcome-screen Tab trap, Dojo .expanded cleanup, trial/stele tribulation guards, Dojo overdrive purge & Hardcore tribShield bypass",
+    features: ["DEFECT-R3-2A", "R4A-1", "R4A-2", "R4A-3", "R4B-1", "R4B-2", "R4B-3", "T2", "T6", "G4"],
+    async fn(env) {
+      // 1. R4A-2: #welcome-screen Tab / Shift+Tab focus trap & occluded HUD click guards
+      const p1 = await env.openPage("t5-13-p1");
+      await env.gotoWelcome(p1);
+      await p1.waitForSelector("#btn-start-new", { state: "visible" });
+      await p1.focus("#btn-start-new");
+      const welcomeTabs = [];
+      for (let i = 0; i < 8; i++) {
+        await p1.keyboard.press("Tab");
+        welcomeTabs.push(await p1.evaluate(() => {
+          const ws = document.getElementById("welcome-screen");
+          return Boolean(ws && document.activeElement && ws.contains(document.activeElement));
+        }));
+      }
+      assert.equal(welcomeTabs.every(Boolean), true, "R4A-2: Tab must remain strictly trapped inside #welcome-screen");
+      await p1.focus("#btn-start-new");
+      await p1.keyboard.press("Shift+Tab");
+      const shiftWrappedInWelcome = await p1.evaluate(() => {
+        const ws = document.getElementById("welcome-screen");
+        return Boolean(ws && document.activeElement && ws.contains(document.activeElement));
+      });
+      assert.equal(shiftWrappedInWelcome, true, "R4A-2: Shift+Tab must wrap strictly inside #welcome-screen");
+
+      const occludedRes = await p1.evaluate(() => {
+        ["#btn-open-profile", "#btn-open-settings", "#btn-pavilion-menu", "#btn-goals-modal", "#btn-world-map", "#btn-sanctum-hub"].forEach(sel => {
+          const el = document.querySelector(sel);
+          if (el) el.click();
+        });
+        return {
+          drawerOpen: document.getElementById("jade-panel").classList.contains("drawer-open"),
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          pavOpen: document.getElementById("pavilion-popover").classList.contains("open"),
+          pauseLen: window.__CHENYUAN_V25__.getPauseTokens().length
+        };
+      });
+      assert.equal(occludedRes.drawerOpen, false, "R4A-2: Occluded #btn-open-profile blocked on #welcome-screen");
+      assert.equal(occludedRes.modalOpen, false, "R4A-2: Occluded #btn-open-settings blocked on #welcome-screen");
+      assert.equal(occludedRes.pavOpen, false, "R4A-2: Occluded #btn-pavilion-menu blocked on #welcome-screen");
+      assert.equal(occludedRes.pauseLen, 0, "R4A-2: 0 pauseTokens leaked on #welcome-screen");
+
+      // Start fresh game on p1
+      await env.startFreshGame(p1, "四轮收敛终测");
+
+      // 2. R4A-1 / DEFECT-R3-2A: Atomic Practice overwrite-with-current-save under QuotaExceededError (retry + stay-readonly-save)
+      await p1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        s.game.realm = "nascent";
+        s.game.stones = 2500;
+        s.game.inventory.spirit_pill = 3;
+        api.enterSanctumHub();
+        api.saveGame();
+        api.startBossRushGauntlet(7);
+        s.game.inventory.spirit_pill = 2;
+      });
+      const p2 = await env.openPage("t5-13-p2");
+      await env.gotoWelcome(p2);
+      await p2.waitForSelector("#btn-continue-save", { state: "visible" });
+      await p2.click("#btn-continue-save");
+      await p2.waitForFunction(() => document.getElementById("welcome-screen").style.display === "none");
+      await p2.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        api.getState().game.stones = 9999;
+        api.saveGame();
+      });
+      await waitForCrossTabConflict(p1);
+
+      await p1.evaluate((sk) => {
+        window.__e2eOrigSetItem = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+          return window.__e2eOrigSetItem.call(this, k, v);
+        };
+      }, STORAGE_KEY);
+      await p1.click('[data-action="overwrite-with-current-save"]');
+      const quotaRollback = await p1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        return {
+          modalOpen: document.getElementById("modal-backdrop").classList.contains("open"),
+          isPractice: api.isPracticeModeActive(),
+          sanctumMode: s.arena.sanctumMode,
+          bossRushActive: Boolean(s.arena.bossRush && s.arena.bossRush.active),
+          writeErr: api.getPersistenceState().storageWriteError?.message || "",
+          focusIsBody: document.activeElement === document.body
+        };
+      });
+      assert.equal(quotaRollback.modalOpen, true, "R4A-1: Modal stays open on QuotaExceededError");
+      assert.equal(quotaRollback.isPractice, true, "R4A-1: Practice Mode atomically rolled back");
+      assert.equal(quotaRollback.sanctumMode, false, "R4A-1: sanctumMode stays false on QuotaExceededError");
+      assert.equal(quotaRollback.bossRushActive, true, "R4A-1: Boss Rush Practice stays intact");
+      assert.ok(quotaRollback.writeErr.includes("QuotaExceededError"), "R4A-1: Explicit QuotaExceededError message recorded");
+      assert.equal(quotaRollback.focusIsBody, false, "R4A-1: Focus stays off BODY");
+
+      // Retry after quota clears -> pristine formal snapshot written & clean Sanctum Hub
+      await p1.evaluate(() => {
+        if (window.__e2eOrigSetItem) {
+          Storage.prototype.setItem = window.__e2eOrigSetItem;
+          delete window.__e2eOrigSetItem;
+        }
+      });
+      await p1.click('[data-action="overwrite-with-current-save"]');
+      await p1.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+      const retryOk = await p1.evaluate((sk) => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        const disk = JSON.parse(localStorage.getItem(sk) || "null");
+        return {
+          isPractice: api.isPracticeModeActive(),
+          sanctumMode: s.arena.sanctumMode,
+          nonDummyEnemies: s.arena.enemies.filter(e => !e.isDummy).length,
+          propsCount: s.arena.props.length,
+          dojoActive: document.getElementById("dojo-control-bar").classList.contains("active"),
+          diskStones: disk?.game?.stones,
+          diskPill: disk?.game?.inventory?.spirit_pill
+        };
+      }, STORAGE_KEY);
+      assert.equal(retryOk.isPractice, false, "R4A-1 Retry: Exited Practice Mode");
+      assert.equal(retryOk.sanctumMode, true, "R4A-1 Retry: Landed cleanly in Sanctum Hub");
+      assert.equal(retryOk.nonDummyEnemies, 0, "R4A-1 Retry: 0 stranded Practice bosses in Sanctum Hub");
+      assert.ok(retryOk.propsCount >= 4, "R4A-1 Retry: Full Sanctum props present");
+      assert.equal(retryOk.dojoActive, true, "R4A-1 Retry: Dojo control bar active");
+      assert.equal(retryOk.diskStones, 2500, "R4A-1 Retry: Formal stones restored on disk");
+      assert.equal(retryOk.diskPill, 3, "R4A-1 Retry: Formal pills restored on disk");
+
+      // Second QuotaExceededError -> stay-readonly-save -> Practice coherent & KeyH exits cleanly
+      await p1.evaluate(() => { window.__CHENYUAN_V25__.startBossRushGauntlet(7); });
+      await p2.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        api.getState().game.stones = 7777;
+        api.saveGame({ forceOverwrite: true });
+      });
+      await waitForCrossTabConflict(p1);
+      await p1.evaluate((sk) => {
+        window.__e2eOrigSetItem = Storage.prototype.setItem;
+        Storage.prototype.setItem = function(k, v) {
+          if (k === sk) throw new DOMException("Quota exceeded", "QuotaExceededError");
+          return window.__e2eOrigSetItem.call(this, k, v);
+        };
+      }, STORAGE_KEY);
+      await p1.click('[data-action="overwrite-with-current-save"]');
+      await p1.click('[data-action="stay-readonly-save"]');
+      await p1.waitForFunction(() => !document.getElementById("modal-backdrop").classList.contains("open"));
+      const roState = await p1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        if (window.__e2eOrigSetItem) {
+          Storage.prototype.setItem = window.__e2eOrigSetItem;
+          delete window.__e2eOrigSetItem;
+        }
+        return {
+          isPractice: api.isPracticeModeActive(),
+          sanctumMode: s.arena.sanctumMode,
+          bossRushActive: Boolean(s.arena.bossRush && s.arena.bossRush.active)
+        };
+      });
+      assert.equal(roState.isPractice, true, "R4A-1 ReadOnly: Practice Mode stays intact");
+      assert.equal(roState.sanctumMode, false, "R4A-1 ReadOnly: No stranded boss in Sanctum");
+      assert.equal(roState.bossRushActive, true, "R4A-1 ReadOnly: Boss Rush stays coherent");
+      await p1.evaluate(() => { window.__CHENYUAN_V25__.focusBattlefield(); });
+      await p1.keyboard.press("KeyH");
+      const keyHExit = await p1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const s = api.getState();
+        api.saveGame({ forceOverwrite: true, userInitiated: true });
+        return {
+          isPractice: api.isPracticeModeActive(),
+          sanctumMode: s.arena.sanctumMode,
+          nonDummyEnemies: s.arena.enemies.filter(e => !e.isDummy).length,
+          dojoActive: document.getElementById("dojo-control-bar").classList.contains("active")
+        };
+      });
+      assert.equal(keyHExit.isPractice, false, "R4A-1 KeyH: Exited Practice cleanly");
+      assert.equal(keyHExit.sanctumMode, true, "R4A-1 KeyH: Entered Sanctum cleanly");
+      assert.equal(keyHExit.nonDummyEnemies, 0, "R4A-1 KeyH: 0 stranded bosses");
+      assert.equal(keyHExit.dojoActive, true, "R4A-1 KeyH: Dojo bar active");
+      await p2.close();
+
+      // 3. R4A-3: Leaving Sanctum via initArenaStage & Custom Seed clears #dojo-control-bar.expanded; Unlock Card Escape unaffected
+      await p1.focus("#btn-toggle-dojo-bar");
+      await p1.keyboard.press("Enter");
+      await p1.waitForFunction(() => document.getElementById("dojo-control-bar").classList.contains("expanded"));
+      const r4a3 = await p1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        api.initArenaStage(0, false);
+        const db = document.getElementById("dojo-control-bar");
+        const afterStage = { active: db.classList.contains("active"), expanded: db.classList.contains("expanded") };
+        api.enterSanctumHub();
+        db.classList.add("expanded");
+        window.__CHENYUAN_V22__.launchCustomSeedEncounter();
+        const afterWorkshop = { active: db.classList.contains("active"), expanded: db.classList.contains("expanded") };
+        api.initArenaStage(0, false);
+        const s = api.getState();
+        s.arena.enemies = [];
+        s.game.realm = "qi";
+        s.game.seenUnlockIds = [];
+        api.queueNewUnlockCardsForState(s.game);
+        api.flushNewUnlockCard();
+        db.classList.add("expanded");
+        api.focusBattlefield();
+        return { afterStage, afterWorkshop };
+      });
+      assert.equal(r4a3.afterStage.active, false, "R4A-3: initArenaStage clears .active");
+      assert.equal(r4a3.afterStage.expanded, false, "R4A-3: initArenaStage clears .expanded");
+      assert.equal(r4a3.afterWorkshop.active, false, "R4A-3: Custom Workshop clears .active");
+      assert.equal(r4a3.afterWorkshop.expanded, false, "R4A-3: Custom Workshop clears .expanded");
+      await p1.keyboard.press("Escape");
+      const cardAfterEsc = await p1.evaluate(() => {
+        document.getElementById("dojo-control-bar").classList.remove("expanded");
+        return window.__CHENYUAN_V25__.getActiveUnlockCardId();
+      });
+      assert.equal(cardAfterEsc, null, "R4A-3: 1st Escape dismisses visible Unlock Card without being stolen by hidden Dojo bar");
+
+      // 4. R4B-1 + R4B-2 + R4B-3: Trial-mode tribulation block, stele guards, Sanctum overdrive purge & Hardcore tribShield bypass
+      const r4bAll = await p1.evaluate(() => {
+        const api = window.__CHENYUAN_V25__;
+        const v22 = window.__CHENYUAN_V22__;
+        const v24 = window.__CHENYUAN_V24__;
+        const s = api.getState();
+        s.game.realm = "nascent";
+        s.game.xp = api.REALMS.nascent.xpCap;
+        s.game.defeatedStageBosses = { 0: true, 1: true, 2: true, 3: true };
+        s.game.inventory.foundation_pill = 2;
+        s.game.tribShield = 2;
+        s.game.gourd.soaks = ["iron_lotus", "samadhi_fire", "wind_feather", "crimson_vine"];
+
+        // R4B-1: Trials block Live Tribulation
+        api.startSectDefenseSiege();
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        const tribInSect = Boolean(s.arena.tribulation);
+        api.startCloudSeaAerialStage();
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        const tribInCloud = Boolean(s.arena.tribulation);
+        api.startBossRushGauntlet(1);
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        const tribInRush = Boolean(s.arena.tribulation);
+        api.startCelestialSpireRun(1);
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        const tribInSpire = Boolean(s.arena.tribulation);
+
+        // R4B-2: Buff up in Sanctum Dojo -> transition to Boss Rush 1 & Hardcore Tribulation
+        const buffSanctum = () => {
+          api.enterSanctumHub();
+          s.arena.astralEnergy = 100;
+          s.game.mp = 999;
+          s.game.hp = 50;
+          s.game.gourd.charges = 5;
+          api.useQuickHealingPill();
+          const refillDojoBtn = document.querySelector('[data-dojo-act="refill-training"]');
+          if (refillDojoBtn) refillDojoBtn.click();
+          v24.triggerSanqingTriClones();
+          v24.castShanheShejiDomain();
+          v22.triggerAstralGiantForm();
+          s.arena.player.invuln = 1.2;
+          s.arena.player.shieldHp = 220;
+          s.arena.pillAcolyte = { x: s.arena.player.x, y: s.arena.player.y, life: 10 };
+        };
+        buffSanctum();
+        api.startBossRushGauntlet(1);
+        const rushPurged = {
+          astralEnergy: s.arena.astralEnergy,
+          astralForm: Boolean(s.arena.astralForm),
+          sanqing: v24.getState().sanqing.active,
+          shanhe: Boolean(s.arena.shanheDomain),
+          invuln: s.arena.player.invuln,
+          shieldHp: s.arena.player.shieldHp,
+          hyperArmor: s.arena.player.hyperArmorTimer,
+          samadhi: s.arena.player.samadhiFireReady
+        };
+
+        buffSanctum();
+        api.startLiveTribulation({ confirmed: true, mode: "defiant" });
+        const tribPurgedInvuln = s.arena.player.invuln;
+        const tribPurgedShield = s.arena.player.shieldHp;
+
+        // R4B-1 mid-tribulation encounter_stele & boon_stele guards
+        const p = s.arena.player;
+        const encProp = { id: "e2e_enc", kind: "encounter_stele", name: "奇遇碑", x: p.x, y: p.y, r: 60 };
+        const boonProp = { id: "e2e_boon", kind: "boon_stele", nodeId: "n0_0", name: "道韵碑", x: p.x, y: p.y, r: 60 };
+        s.arena.props.push(encProp, boonProp);
+        [encProp, boonProp].forEach(pr => {
+          s.arena.nearbyProp = pr;
+          const btn = document.getElementById("btn-prop-interact");
+          if (btn) { btn.style.display = "inline-flex"; btn.click(); }
+        });
+        api.openEncounterModal(0);
+        api.openRunBoonDraftModal("n0_0", false);
+        const modalAfterSteles = document.getElementById("modal-backdrop").classList.contains("open");
+
+        // R4B-3: Breakthrough pill blocked mid-tribulation & Hardcore bolt bypasses pre-existing tribShield
+        api.consumeInventoryItem("foundation_pill");
+        const pillsAfterBlocked = s.game.inventory.foundation_pill;
+        s.game.hp = 500;
+        const hpBeforeBolt = s.game.hp;
+        s.arena.tribulation.strikes = [{ x: p.x, y: p.y, r: 72, t: 0.99, hit: false, parried: false }];
+        api.stepArena(0.05);
+        const hpAfterBolt = s.game.hp;
+        const shieldAfterBolt = s.game.tribShield;
+        s.arena.tribulation = null;
+        return {
+          tribInSect, tribInCloud, tribInRush, tribInSpire,
+          rushPurged, tribPurgedInvuln, tribPurgedShield,
+          modalAfterSteles, pillsAfterBlocked, hpBeforeBolt, hpAfterBolt, shieldAfterBolt
+        };
+      });
+      assert.equal(r4bAll.tribInSect, false, "R4B-1: Sect Defense blocks tribulation");
+      assert.equal(r4bAll.tribInCloud, false, "R4B-1: Cloud Sea blocks tribulation");
+      assert.equal(r4bAll.tribInRush, false, "R4B-1: Boss Rush blocks tribulation");
+      assert.equal(r4bAll.tribInSpire, false, "R4B-1: Celestial Spire blocks tribulation");
+      assert.equal(r4bAll.rushPurged.astralEnergy, 0, "R4B-2: Boss Rush 1 purges astralEnergy");
+      assert.equal(r4bAll.rushPurged.astralForm, false, "R4B-2: Boss Rush 1 purges astralForm");
+      assert.equal(r4bAll.rushPurged.sanqing, false, "R4B-2: Boss Rush 1 purges sanqingState");
+      assert.equal(r4bAll.rushPurged.shanhe, false, "R4B-2: Boss Rush 1 purges shanheDomain");
+      assert.equal(r4bAll.rushPurged.invuln, 0, "R4B-2: Boss Rush 1 purges invuln");
+      assert.equal(r4bAll.rushPurged.shieldHp, 0, "R4B-2: Boss Rush 1 purges shieldHp");
+      assert.equal(r4bAll.rushPurged.hyperArmor, 0, "R4B-2: Boss Rush 1 purges hyperArmorTimer");
+      assert.equal(r4bAll.rushPurged.samadhi, false, "R4B-2: Boss Rush 1 purges samadhiFireReady");
+      assert.equal(r4bAll.tribPurgedInvuln, 0, "R4B-2: Hardcore Tribulation purges Sanctum invuln");
+      assert.equal(r4bAll.tribPurgedShield, 0, "R4B-2: Hardcore Tribulation purges Sanctum shieldHp");
+      assert.equal(r4bAll.modalAfterSteles, false, "R4B-1: encounter_stele & boon_stele blocked mid-tribulation");
+      assert.equal(r4bAll.pillsAfterBlocked, 2, "R4B-3: Breakthrough pill consumption blocked mid-tribulation");
+      assert.ok(r4bAll.hpAfterBolt < r4bAll.hpBeforeBolt, "R4B-3: Hardcore Defiant bolt bypasses game.tribShield");
+      assert.equal(r4bAll.shieldAfterBolt, 2, "R4B-3: Pre-existing game.tribShield preserved untouched in Hardcore mode");
+    }
   }
 ];

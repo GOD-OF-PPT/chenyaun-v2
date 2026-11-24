@@ -4565,18 +4565,53 @@
       }
     }
     // R3B-3: Purge any runtime combat overdrive (astralEnergy, astralForm, sanqingState, shanheDomain, soak timers) gained in Practice Mode!
-    if (!sandboxMode && typeof resetRuntimeCombatOverrides === "function") {
+    if (!sandboxMode && !(opts && opts.skipResetOverrides) && typeof resetRuntimeCombatOverrides === "function") {
       resetRuntimeCombatOverrides();
     }
     return true;
   }
 
   function resetSanctumDojoCombatGauges() {
+    // R4B-2: Purge ALL temporary Sanctum Dojo overdrive & Gourd soak/shield/invuln buffs when leaving Sanctum Hub,
+    // without altering legitimate persistent formal preferences (coop2P, playableCharId, weaponForm, weaponPosture).
     arena.swordIntent = 0;
     arena.bondSynergy = 0;
     arena.reversedDomainTimer = 0;
     arena.styleScore = 0;
     arena.comboCount = 0;
+    arena.astralEnergy = 0;
+    arena.astralForm = null;
+    const sq = ensureSanqingState();
+    sq.active = false;
+    sq.life = 0;
+    sq.swapUsed = false;
+    if (Array.isArray(sq.clones)) {
+      sq.clones.forEach(cl => { if (cl) cl.lungeT = 0; });
+    }
+    arena.sanqingEchoQueue = [];
+    arena.sanqingCd = 0;
+    arena.shanheDomain = null;
+    arena.shanheCd = 0;
+    arena.warshipStrike = null;
+    arena.warshipCd = 0;
+    arena.mountState = null;
+    arena.pillAcolyte = null;
+    arena.spatialRifts = [];
+    if (arena.player) {
+      arena.player.invuln = 0;
+      arena.player.shieldHp = 0;
+      arena.player.hyperArmorTimer = 0;
+      arena.player.samadhiFireReady = false;
+      arena.player.gourdHasteTimer = 0;
+      arena.player.gourdCritTimer = 0;
+      arena.player.petBuffTimer = 0;
+      arena.player.boonOverloadTimer = 0;
+      arena.player.guardShieldCd = 0;
+      arena.player.zenStacks = 0;
+    }
+    if (typeof syncV23EpochDock === "function") syncV23EpochDock();
+    if (typeof syncV24GenesisDock === "function") syncV24GenesisDock();
+    if (typeof syncV22TacticalDock === "function") syncV22TacticalDock();
     if (typeof updateCooldownMasks === "function") updateCooldownMasks();
   }
 
@@ -4603,6 +4638,31 @@
       throttleMs: 1200
     });
     return false;
+  }
+
+  function guardNotInActiveTrialForTribulation() {
+    // R4B-1: Prevent concurrent Live Tribulation inside active trial modes (Sect Defense / Cloud Sea / Boss Rush / Spire / Workshop)
+    if (arena.sectDefense && arena.sectDefense.active) {
+      showToast("⚠ 正在进行【护山大阵守卫战】，无法中途引动天劫！请先完成或撤离守卫战。");
+      return false;
+    }
+    if (arena.cloudFlight && arena.cloudFlight.active) {
+      showToast("⚠ 正在进行【九霄云海空战】，无法中途引动天劫！请先完成或撤离空战。");
+      return false;
+    }
+    if (arena.bossRush && arena.bossRush.active) {
+      showToast("⚠ 正在进行【万剑冢连战】，无法中途引动天劫！请先完成或退出试炼。");
+      return false;
+    }
+    if (arena.celestialSpire && arena.celestialSpire.active) {
+      showToast("⚠ 正在进行【太虚登仙台】试炼，无法中途引动天劫！请先完成或退出试炼。");
+      return false;
+    }
+    if (arena.customSeedRun && arena.customSeedRun.active) {
+      showToast("⚠ 正在进行【造化种子工坊】演武，无法引动天劫！请先按 H 返回听雨洞府。");
+      return false;
+    }
+    return true;
   }
 
   function guardNotPracticeMode(actionLabel = "此项正式养成") {
@@ -4746,8 +4806,7 @@
     if (isPractice) {
       showToast(`🎯 万剑冢练习模式（自第 ${clampedStart} 阵跳关）：本局不发奖励、不计评级与纪录！`);
     }
-    const dojoBar = document.getElementById("dojo-control-bar");
-    if (dojoBar) { dojoBar.classList.remove("active"); dojoBar.classList.remove("expanded"); }
+    hideDojoControlBar();
     const recapCard = document.getElementById("stage-recap-card");
     if (recapCard) recapCard.classList.remove("open");
 
@@ -5357,8 +5416,7 @@
     arena.waterPools = [];
     arena.fireZones = [];
     resetSanctumDojoCombatGauges();
-    const dojoBar = document.getElementById("dojo-control-bar");
-    if (dojoBar) { dojoBar.classList.remove("active"); dojoBar.classList.remove("expanded"); }
+    hideDojoControlBar();
 
     const sb = getSanctumBonuses(game);
     const corePos = clampToPlaza(w * 0.50, h * 0.52, w, h);
@@ -5802,8 +5860,7 @@
     resetEncounterTelemetry();
     arena.nearbyProp = null;
     renderPropInteractHud();
-    const dojoBar = document.getElementById("dojo-control-bar");
-    if (dojoBar) { dojoBar.classList.remove("active"); dojoBar.classList.remove("expanded"); }
+    hideDojoControlBar();
 
     arena.enemies = [];
     arena.projectiles = [];
@@ -6243,8 +6300,7 @@
     resetEncounterTelemetry();
     arena.nearbyProp = null;
     renderPropInteractHud();
-    const dojoBar = document.getElementById("dojo-control-bar");
-    if (dojoBar) { dojoBar.classList.remove("active"); dojoBar.classList.remove("expanded"); }
+    hideDojoControlBar();
 
     arena.celestialSpire = {
       active: true,
@@ -7394,8 +7450,7 @@
       practiceMode: true,
       bonusCurios: wsBonusCurioId ? { [wsBonusCurioId]: 2 } : {}
     };
-    const dojoBar = document.getElementById("dojo-control-bar");
-    if (dojoBar) dojoBar.classList.remove("active");
+    hideDojoControlBar();
 
     // Apply selected affixes
     arena.rushAffixes = [];
@@ -16226,6 +16281,8 @@
       dojoBar.classList.add("active");
       dojoBar.classList.remove("expanded");
     }
+    const dojoCaret = document.getElementById("lbl-dojo-caret");
+    if (dojoCaret) dojoCaret.textContent = "▾";
     const recapCard = document.getElementById("stage-recap-card");
     if (recapCard) recapCard.classList.remove("open");
     Sound.qiOrb(3);
@@ -16329,8 +16386,7 @@
     if (game) refillImmortalGourd();
     arena.camFocusT = 0;
     arena.tribulation = null;
-    const dojoBar = document.getElementById("dojo-control-bar");
-    if (dojoBar) dojoBar.classList.remove("active");
+    hideDojoControlBar();
     syncDojoTrainingHudVisibility();
     const recapCard = document.getElementById("stage-recap-card");
     if (recapCard) recapCard.classList.remove("open");
@@ -16453,6 +16509,7 @@
 
   function openRunBoonDraftModal(sourceNodeId = null, isReroll = false) {
     if (!game) return;
+    if (!guardNotInTribulation("秘境道韵")) return;
     const pool = RUN_BOONS.filter(b => !arena.runBoons.includes(b.id));
     if (!pool.length) {
       showToast("本趟秘境已悟全阶道韵！");
@@ -18555,6 +18612,7 @@
       return;
     }
     if (it.kind === "breakthrough") {
+      if (!guardNotInTribulation("渡劫中服破境丹")) return;
       if (!guardNotPracticeMode("正式服丹成长")) return;
       game.inventory[itemId] -= 1;
       const r = REALMS[game.realm];
@@ -18593,6 +18651,7 @@
   function openTribulationPrepModal() {
     if (!game || arena.tribulation) return;
     if (!guardNotPracticeMode("渡劫破境")) return;
+    if (!guardNotInActiveTrialForTribulation()) return;
     const r = REALMS[game.realm];
     if (game.realm === "ascended") { openEndingModal(); return; }
     const bossGate = getBreakthroughBossGate(game);
@@ -18736,6 +18795,7 @@
   function startLiveTribulation(opts = {}) {
     if (!game || arena.tribulation) return;
     if (!guardNotPracticeMode("渡劫破境")) return;
+    if (!guardNotInActiveTrialForTribulation()) return;
     const r = REALMS[game.realm];
     if (game.realm === "ascended") { openEndingModal(); return; }
     const bossGate = getBreakthroughBossGate(game);
@@ -18775,13 +18835,7 @@
     arena.sanctumMode = false;
     arena.bladeClash = null;
     if (wasSanctum) resetSanctumDojoCombatGauges();
-    const dojoBarTrib = document.getElementById("dojo-control-bar");
-    if (dojoBarTrib) {
-      dojoBarTrib.classList.remove("active");
-      dojoBarTrib.classList.remove("expanded");
-    }
-    const caretTrib = document.getElementById("lbl-dojo-caret");
-    if (caretTrib) caretTrib.textContent = "▾";
+    hideDojoControlBar();
     arena.enemies = arena.enemies.filter(e => !e.isDummy);
     arena.props = arena.props.filter(pr => !pr.isDojoProp && !pr.isDummy && !(wasSanctum || (pr.id && (pr.id.startsWith("hub_") || pr.id.startsWith("sanctum_") || pr.id === "cauldron_main"))));
     if (arena.nearbyProp && !arena.props.includes(arena.nearbyProp)) {
@@ -19141,6 +19195,7 @@
 
   function openEncounterModal(forcedSecretIdx = null) {
     if (!game) return;
+    if (!guardNotInTribulation("上古奇遇")) return;
     if (forcedSecretIdx === null && getNextAvailableKarmaDilemma(game) && ((game.karmaEventsDone || 0) < 2 || Math.random() < 0.65)) {
       openKarmaDilemmaModal();
       return;
@@ -20821,7 +20876,7 @@
           addDecal(s.x, s.y, 0, 52, "scorch");
           arena.slashes.push({ x: s.x, y: s.y, r: s.r, ang: 0, t: 0, color: "#d6b4ff", rain: true });
           if (!s.parried && p.invuln <= 0 && Math.hypot(p.x - s.x, p.y - s.y) < s.r - 8) {
-            if ((game.tribShield || 0) > 0) {
+            if (!tb.hardcore && (game.tribShield || 0) > 0) {
               game.tribShield -= 1;
               addFloat(`护脉丹障抵御天雷！（余 ${game.tribShield} 层）`, p.x, p.y - 40, "#ffe28a", 18, true);
               updateHud();
@@ -21519,6 +21574,7 @@
     const p = arena.player;
 
     if (pr.kind === "pedestal") {
+      if (!guardNotInTribulation("古莲抉择")) return false;
       activatePedestalChoice(pr);
     } else if (pr.kind === "branch_portal") {
       if (!guardNotInTribulation("秘境分支传送")) return false;
@@ -21530,8 +21586,10 @@
     } else if (pr.kind === "merchant_npc") {
       toggleDrawer("bag");
     } else if (pr.kind === "sanctum_upgrade") {
+      if (!guardNotInTribulation("洞府建筑升阶")) return false;
       openSanctumUpgradeModal();
     } else if (pr.kind === "companion_npc") {
+      if (!guardNotInTribulation("故人交互")) return false;
       if (pr.npcId && NPC_META[pr.npcId]) openCompanionInteractModal(pr.npcId);
       else toggleDrawer("story");
     } else if (pr.kind === "bounty_board") {
@@ -21541,8 +21599,10 @@
     } else if (pr.kind === "taixu_craft_forge") {
       openTaixuCraftMinigameModal("forge");
     } else if (pr.kind === "sect_defense_trigger") {
+      if (!guardNotInTribulation("护山大阵守卫战")) return false;
       startSectDefenseSiege();
     } else if (pr.kind === "encounter_stele") {
+      if (!guardNotInTribulation("上古奇遇碑")) return false;
       Sound.fanfare();
       arena.props.splice(idx, 1);
       openEncounterModal();
@@ -21656,8 +21716,10 @@
       arena.props.splice(idx, 1);
       spawnCurrentWave();
     } else if (pr.kind === "ascend_gate") {
+      if (!guardNotInTribulation("九霄仙门")) return false;
       triggerAscendGateAction();
     } else if (pr.kind === "boon_stele") {
+      if (!guardNotInTribulation("秘境道韵碑")) return false;
       openRunBoonDraftModal(pr.nodeId || null, false);
     } else if (pr.kind === "map_node_gate") {
       if (!guardNotInTribulation("秘境星图")) return false;
@@ -25512,6 +25574,21 @@
     if (pavBtn) pavBtn.classList.remove("open");
   }
 
+  function hideDojoControlBar() {
+    const db = document.getElementById("dojo-control-bar");
+    if (db) {
+      db.classList.remove("active");
+      db.classList.remove("expanded");
+    }
+    const caret = document.getElementById("lbl-dojo-caret");
+    if (caret) caret.textContent = "▾";
+  }
+
+  function isWelcomeScreenVisible() {
+    const ws = document.getElementById("welcome-screen");
+    return Boolean(ws && ws.style.display !== "none");
+  }
+
   function trapFocusInContainer(ev, container) {
     if (!container) return;
     const list = getFocusableElements(container);
@@ -25784,6 +25861,7 @@
   }
 
   function toggleDrawer(tab) {
+    if (!game || isWelcomeScreenVisible()) return;
     if (cutscene.active) {
       focusDialogSafely(document.getElementById("story-dialogue-bar"));
       return;
@@ -27534,6 +27612,7 @@
 
   // Complete Game System Center: Compendium + Claimable Achievements + Controls/Save + Presets!
   function openSettingsModal() {
+    if (!game || isWelcomeScreenVisible()) return;
     const seenE = metaState.seenEnemies || [];
     const seenL = metaState.seenLaws || [];
     const totalColl = Object.keys(ENEMIES).length + Object.keys(DAO_LAWS).length;
@@ -28025,6 +28104,15 @@
       return;
     }
 
+    // 2b. R4A-2: Trap Tab/Shift+Tab strictly inside #welcome-screen when visible (and no modal is open)
+    const wsFocus = document.getElementById("welcome-screen");
+    if (wsFocus && wsFocus.style.display !== "none") {
+      if (ev.code === "Tab") {
+        trapFocusInContainer(ev, wsFocus);
+        return;
+      }
+    }
+
     // 3. Cutscene overlay
     if (cutscene.active) {
       if (ev.code === "Tab") {
@@ -28141,9 +28229,9 @@
       }
       return;
     }
-    // R3A-5: Escape dismisses expanded Sanctum Dojo control bar and restores focus to #btn-toggle-dojo-bar
+    // R3A-5 + R4A-3: Escape dismisses expanded & active Sanctum Dojo control bar and restores focus to #btn-toggle-dojo-bar
     const dojoBarEsc = document.getElementById("dojo-control-bar");
-    if (!onWelcomeKey && ev.code === "Escape" && dojoBarEsc && dojoBarEsc.classList.contains("expanded")) {
+    if (!onWelcomeKey && ev.code === "Escape" && dojoBarEsc && dojoBarEsc.classList.contains("active") && dojoBarEsc.classList.contains("expanded")) {
       ev.preventDefault();
       dojoBarEsc.classList.remove("expanded");
       const caretEsc = document.getElementById("lbl-dojo-caret");
@@ -29222,9 +29310,24 @@
       const modalBackdrop = document.getElementById("modal-backdrop");
       const isModalOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
       const shouldCloseModal = isModalOpen && (activeModalKind === "save_conflict" || activeModalKind === "save_corrupt");
-      // R3A-1: If invoked while in Practice Mode, cleanly exit Practice Mode & restore the pristine formal snapshot BEFORE forced overwrite!
+      // R3A-1 + R4A-1/DEFECT-R3-2A: If invoked while in Practice Mode, atomically restore formal snapshot for overwrite,
+      // and roll back full Practice state if saveGame() fails (e.g., QuotaExceededError / SecurityError)!
       const wasPractice = isPracticeModeActive() || !!practiceFormalSnapshot;
+      let prevPracticeRollback = null;
       if (wasPractice) {
+        prevPracticeRollback = {
+          bossRush: arena.bossRush,
+          celestialSpire: arena.celestialSpire,
+          customSeedRun: arena.customSeedRun,
+          stageIdx: arena.stageIdx,
+          stanceIdx: arena.stanceIdx,
+          towerMode: arena.towerMode,
+          sanctumMode: arena.sanctumMode,
+          practiceSnap: practiceFormalSnapshot ? JSON.parse(JSON.stringify(practiceFormalSnapshot)) : null,
+          practiceGame: game ? JSON.parse(JSON.stringify(game)) : null,
+          practiceMeta: JSON.parse(JSON.stringify(ensureMetaState())),
+          lastSavedPayloadChecksum
+        };
         const snapRef = practiceFormalSnapshot;
         arena.bossRush = null;
         arena.celestialSpire = null;
@@ -29235,11 +29338,14 @@
           arena.towerMode = !!snapRef.towerMode;
           arena.sanctumMode = !!snapRef.sanctumMode;
         }
-        endPracticeModeIsolation();
+        endPracticeModeIsolation({ skipResetOverrides: true });
       }
       const savedOk = saveGame({ forceOverwrite: true, userInitiated: true });
       if (savedOk) {
         saveAlertDismissed = false;
+        if (wasPractice && !sandboxMode && typeof resetRuntimeCombatOverrides === "function") {
+          resetRuntimeCombatOverrides();
+        }
         if (shouldCloseModal) closeModal();
         if (wasPractice) {
           enterSanctumHub({ skipSave: true });
@@ -29255,6 +29361,31 @@
           }
         }
       } else {
+        if (wasPractice && prevPracticeRollback) {
+          arena.bossRush = prevPracticeRollback.bossRush;
+          arena.celestialSpire = prevPracticeRollback.celestialSpire;
+          arena.customSeedRun = prevPracticeRollback.customSeedRun;
+          arena.stageIdx = prevPracticeRollback.stageIdx;
+          arena.stanceIdx = prevPracticeRollback.stanceIdx;
+          arena.towerMode = prevPracticeRollback.towerMode;
+          arena.sanctumMode = prevPracticeRollback.sanctumMode;
+          practiceFormalSnapshot = prevPracticeRollback.practiceSnap;
+          if (prevPracticeRollback.practiceGame) {
+            const restoredPractice = normalizeLoadedGame(prevPracticeRollback.practiceGame);
+            if (game && typeof game === "object") {
+              Object.keys(game).forEach(k => { if (!(k in restoredPractice)) delete game[k]; });
+              Object.assign(game, restoredPractice);
+            } else {
+              game = restoredPractice;
+            }
+          }
+          if (prevPracticeRollback.practiceMeta) {
+            Object.keys(metaState).forEach(k => { if (!(k in prevPracticeRollback.practiceMeta)) delete metaState[k]; });
+            safeAssignPlain(metaState, prevPracticeRollback.practiceMeta);
+            ensureMetaState();
+          }
+          lastSavedPayloadChecksum = prevPracticeRollback.lastSavedPayloadChecksum;
+        }
         saveReadOnlyMode = prevReadOnly;
         saveConflictState = prevConflict;
         saveAlertDismissed = false;
@@ -29262,7 +29393,7 @@
         renderHudSaveAlert();
         const modalStillOpen = Boolean(modalBackdrop && modalBackdrop.classList.contains("open"));
         if (modalStillOpen) {
-          if (document.activeElement === document.body) {
+          if (document.activeElement === document.body || !isElementFocusable(document.activeElement)) {
             focusDialogSafely(document.getElementById("modal-content") || modalBackdrop);
           }
         } else {
@@ -29320,6 +29451,7 @@
       if (ws) ws.style.display = "flex";
       renderWelcomeScreen();
       closePavilionPopover();
+      hideDojoControlBar();
       closeModal();
       closeDrawer();
       syncPendingRewardsBadge();
@@ -29640,6 +29772,7 @@
     }
 
     if (t.id === "btn-sanctum-hub" || t.getAttribute("data-action") === "enter-sanctum") {
+      if (!game || isWelcomeScreenVisible()) return;
       if (!guardNotInTribulation("往返洞府与秘境")) return;
       closeModal();
       closeDrawer();
@@ -30241,6 +30374,10 @@
     }
     const dActVal = t.getAttribute("data-action");
     if (dActVal === "toggle-pavilion") {
+      if (!game || isWelcomeScreenVisible()) {
+        closePavilionPopover();
+        return;
+      }
       const tipEl = document.getElementById("ling-tooltip");
       if (tipEl) tipEl.style.display = "none";
       const pav = document.getElementById("pavilion-popover");
@@ -30638,12 +30775,14 @@
       return;
     }
     if (t.id === "btn-toggle-qt") {
+      if (!game || isWelcomeScreenVisible()) return;
       questHudCollapsed = !questHudCollapsed;
       t.textContent = questHudCollapsed ? "▸" : "▾";
       renderQuestTrackerHud();
       return;
     }
     if (t.id === "btn-goals-modal" || t.id === "btn-open-goals-hdr") {
+      if (!game || isWelcomeScreenVisible()) return;
       openObjectivesModal();
       return;
     }
@@ -30710,7 +30849,11 @@
       }
       return;
     }
-    if (t.id === "btn-world-map" || t.getAttribute("data-action") === "open-world-map") { openWorldMapModal(); return; }
+    if (t.id === "btn-world-map" || t.getAttribute("data-action") === "open-world-map") {
+      if (!game || isWelcomeScreenVisible()) return;
+      openWorldMapModal();
+      return;
+    }
     if (t.getAttribute("data-action") === "open-bounties") { openObjectivesModal("bounties"); return; }
     if (t.getAttribute("data-action") === "open-expedition-sandbox") { openExpeditionSandboxModal(); return; }
     if (t.getAttribute("data-action") === "open-boss-rush") { openBossRushModal(); return; }
@@ -30933,6 +31076,7 @@
       return;
     }
     if (t.hasAttribute("data-enc-id")) {
+      if (!guardNotInTribulation("上古奇遇抉择")) return;
       const eid = t.getAttribute("data-enc-id");
       const oid = t.getAttribute("data-enc-opt");
       const karmaMode = t.getAttribute("data-enc-karma");
@@ -31021,8 +31165,8 @@
       updateHud();
       return;
     }
-    if (t.id === "btn-open-settings") { openSettingsModal(); return; }
-    if (t.id === "btn-open-profile") { toggleDrawer("cultivate"); return; }
+    if (t.id === "btn-open-settings") { if (!game || isWelcomeScreenVisible()) return; openSettingsModal(); return; }
+    if (t.id === "btn-open-profile") { if (!game || isWelcomeScreenVisible()) return; toggleDrawer("cultivate"); return; }
     if (t.id === "btn-quick-map") {
       if (!game) return;
       if (!guardNotInTribulation("太虚锁妖古塔")) return;
