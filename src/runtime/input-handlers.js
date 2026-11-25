@@ -1,6 +1,7 @@
   // ==================== 12. INPUTS & MAIN 60FPS LOOP ====================
   window.addEventListener("keydown", (ev) => {
     GamepadSystem.setMode("kb");
+    if (!ev.repeat && ev.code) physicalKeysDown.add(ev.code);
 
     // 1. Keybind rebind capture mode (must work inside Settings modal, Escape cancels capture without closing modal)
     if (rebindListeningAction) {
@@ -46,6 +47,24 @@
         strikeTaixuCraftMinigame(false);
         return;
       }
+      // GAP-15 / UX-06: Space (一闪) must NEVER trigger auto-focused modal buttons outside the craft minigame
+      if (!craftMinigame.open && ev.code === "Space" && !isTypingTarget(ev.target)) {
+        ev.preventDefault();
+        return;
+      }
+      // Require held combat keys to be released & respect 400ms choice-modal Enter guard
+      if ((ev.code === "Enter" || ev.code === "NumpadEnter") && !isTypingTarget(ev.target)) {
+        const guardedModalNow = Boolean(
+          ev.repeat ||
+          (modalInputGuard.heldKeysUntilRelease && modalInputGuard.heldKeysUntilRelease.has(ev.code)) ||
+          (modalInputGuard.guardUntil && performance.now() < modalInputGuard.guardUntil)
+        );
+        if (guardedModalNow) {
+          ev.preventDefault();
+          return;
+        }
+        modalInputGuard.heldKeysUntilRelease.add(ev.code);
+      }
       return;
     }
 
@@ -58,22 +77,35 @@
       }
     }
 
-    // 3. Cutscene overlay
+    // 3. Cutscene overlay (GAP-15 / UX-06: only Enter or click advances; Space & KeyE never confirm; 400ms + release guard)
     if (cutscene.active) {
       if (ev.code === "Tab") {
         trapFocusInContainer(ev, document.getElementById("story-dialogue-bar"));
         return;
       }
+      if (ev.code === "Space" || ev.code === "KeyE") {
+        ev.preventDefault();
+        return;
+      }
       const curLine = cutscene.lines && cutscene.lines[cutscene.idx];
       const hasChoices = !!(curLine && curLine.choices && curLine.choices.length);
-      if (!hasChoices && (ev.code === "Space" || ev.code === "Enter")) {
-        ev.preventDefault();
-        const ae = document.activeElement;
-        if (ae && ae.id === "btn-dlg-skip") {
-          advanceCutscene(true);
-        } else {
-          advanceCutscene(false);
+      if (ev.code === "Enter" || ev.code === "NumpadEnter") {
+        if (isCutsceneInputGuarded(ev.code, ev.repeat)) {
+          ev.preventDefault();
+          return;
         }
+        if (!hasChoices) {
+          ev.preventDefault();
+          cutscene.heldKeysUntilRelease.add(ev.code);
+          const ae = document.activeElement;
+          if (ae && ae.id === "btn-dlg-skip") {
+            advanceCutscene(true);
+          } else {
+            advanceCutscene(false);
+          }
+          return;
+        }
+        cutscene.heldKeysUntilRelease.add(ev.code);
         return;
       }
       if (ev.code === "Escape") {
@@ -86,6 +118,7 @@
           focusDialogSafely(document.getElementById("story-dialogue-bar"));
           return;
         }
+        if (ev.repeat || (cutscene.heldKeysUntilRelease && cutscene.heldKeysUntilRelease.has(ev.code))) return;
         advanceCutscene(true);
         return;
       }
@@ -214,6 +247,11 @@
     const aeTag = ae && ae.tagName;
     const aeIsRoleButton = !!(ae && typeof ae.getAttribute === "function" && ae.getAttribute("role") === "button");
     const aeIsNativeInteractive = Boolean(aeTag && /^(BUTTON|A|SUMMARY)$/i.test(aeTag));
+    const aeInFloatingActionCard = Boolean(ae && ae.closest && ae.closest("#hud-save-alert, #gear-compare-card, #new-unlock-card, #prop-interact-hud"));
+    if (aeInFloatingActionCard && ev.code === "Space") {
+      ev.preventDefault();
+      return;
+    }
     if (aeIsRoleButton && (ev.code === "Enter" || ev.code === "Space")) {
       ev.preventDefault();
       if (typeof ae.click === "function") ae.click();
@@ -237,9 +275,10 @@
       return;
     }
 
-    if (ev.code === "Enter" && arena.nearbyProp) {
+    if ((ev.code === "Enter" || ev.code === "NumpadEnter") && arena.nearbyProp) {
       if (!aeIsRoleButton && (!aeTag || !/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/i.test(aeTag))) {
         ev.preventDefault();
+        if (ev.repeat || (cutscene.heldKeysUntilRelease && cutscene.heldKeysUntilRelease.has(ev.code))) return;
         interactWithProp(arena.nearbyProp);
         return;
       }
@@ -307,6 +346,20 @@
   }
   window.addEventListener("keyup", (ev) => {
     keysDown[ev.code] = false;
+    if (ev.code) {
+      physicalKeysDown.delete(ev.code);
+      if (cutscene.heldKeysUntilRelease) cutscene.heldKeysUntilRelease.delete(ev.code);
+      if (modalInputGuard && modalInputGuard.heldKeysUntilRelease) modalInputGuard.heldKeysUntilRelease.delete(ev.code);
+    }
+    if (ev.code === "Space" && !isTypingTarget(ev.target)) {
+      const bdUp = document.getElementById("modal-backdrop");
+      const modalOpenUp = Boolean(bdUp && bdUp.classList.contains("open"));
+      const aeUp = document.activeElement;
+      const aeInFloatCard = Boolean(aeUp && aeUp.closest && aeUp.closest("#hud-save-alert, #gear-compare-card, #new-unlock-card, #prop-interact-hud"));
+      if (cutscene.active || (modalOpenUp && !craftMinigame.open) || aeInFloatCard) {
+        ev.preventDefault();
+      }
+    }
     if (holdProgression.active && holdProgression.inputType === "keyboard" && ev.code === holdProgression.keyCode) {
       const wasRepeat = holdProgression.didRepeat;
       const hKind = holdProgression.kind;
@@ -401,6 +454,7 @@
     }
     const isCanvas = ev.target && ev.target.id === "fx-canvas";
     if (isCanvas) {
+      if (ev.button === 0 || ev.button === 2) lastCanvasCombatClickAt = performance.now();
       const pav = document.getElementById("pavilion-popover");
       const pavBtn = document.getElementById("btn-pavilion-menu");
       if (pav && pav.classList.contains("open")) {
@@ -491,6 +545,11 @@
     const cel = (ev.target && ev.target.nodeType === 1) ? ev.target : (ev.target && ev.target.parentElement ? ev.target.parentElement : null);
     const t = cel ? cel.closest('button, [role="button"]') : null;
     if (!t || t.disabled) return;
+    if (t.closest && t.closest("#modal-content") && !t.hasAttribute("data-modal-close")) {
+      if (modalInputGuard.clickGuardUntil && performance.now() < modalInputGuard.clickGuardUntil) {
+        return;
+      }
+    }
     if (t.closest && t.closest("#pavilion-popover")) {
       const pav = document.getElementById("pavilion-popover");
       const pavBtn = document.getElementById("btn-pavilion-menu");
@@ -505,7 +564,11 @@
       }
     }
 
-    if (t.id === "btn-dlg-next") { advanceCutscene(false); return; }
+    if (t.id === "btn-dlg-next") {
+      if (isCutsceneInputGuarded()) return;
+      advanceCutscene(false);
+      return;
+    }
     if (t.id === "btn-dlg-skip") { advanceCutscene(true); return; }
 
     if (t.id === "btn-toggle-origin") { document.getElementById("title-custom-drawer").classList.toggle("open"); return; }
@@ -1874,6 +1937,7 @@
       return;
     }
     if (t.hasAttribute("data-story-bar-id")) {
+      if (isCutsceneInputGuarded()) return;
       resolveStoryChoice(t.getAttribute("data-story-bar-id"), t.getAttribute("data-story-bar-opt"), true);
       return;
     }
@@ -3514,12 +3578,28 @@
     }
     if (t.id === "btn-toggle-bgm") {
       Sound.bgmEnabled = !Sound.bgmEnabled;
-      t.classList.toggle("active", Sound.bgmEnabled);
+      syncAudioToggleUi();
+      const res = saveAudioPrefs({ notifyOnError: true });
+      if (res.ok) {
+        showToast(Sound.bgmEnabled ? "🎵 已开启古琴仙乐" : "🎵 已关闭古琴仙乐", {
+          tier: 1,
+          key: "audio_bgm_toggle",
+          throttleMs: 250
+        });
+      }
       return;
     }
     if (t.id === "btn-mute-audio") {
-      Sound.muted = !Sound.muted;
-      t.classList.toggle("active", Sound.muted);
+      Sound.setMuted(!Sound.muted);
+      syncAudioToggleUi();
+      const res = saveAudioPrefs({ notifyOnError: true });
+      if (res.ok) {
+        showToast(Sound.muted ? "🔇 已静音全部声音" : "🔊 已恢复全部声音", {
+          tier: 1,
+          key: "audio_mute_toggle",
+          throttleMs: 250
+        });
+      }
       return;
     }
 

@@ -1948,7 +1948,7 @@
           </button>
         ` : ""}
       </div>
-    `, false);
+    `, false, { kind: "encounter" });
   }
 
   function isAllDaoLawsCollected(g) {

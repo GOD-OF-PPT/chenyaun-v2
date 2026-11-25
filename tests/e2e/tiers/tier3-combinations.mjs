@@ -273,7 +273,7 @@ export const tests = [
           v25.damageEnemy(boss, 999, false);
         }
       });
-      await page.waitForTimeout(750);
+      await page.waitForSelector("#story-dialogue-bar.open", { timeout: 3000 }).catch(() => null);
       const dlgOpen = await page.evaluate(() => !!document.querySelector("#story-dialogue-bar.open"));
       assert.equal(dlgOpen, true, "Defeating stage 0 boss must trigger clear_stage0 cutscene");
     }

@@ -36,10 +36,19 @@
   function updateComboRankSeal() {
     const seal = document.getElementById("combo-rank-seal");
     if (!seal) return;
-    if ((arena.comboCount < 2 && (arena.styleScore || 0) < 40) || drawerOpen) {
-      seal.classList.remove("active", "rank-s");
+    if (cutscene.active || drawerOpen || (arena.comboCount < 2 && (arena.styleScore || 0) < 40)) {
+      seal.classList.remove("active", "rank-s", "settling");
       return;
     }
+    if (typeof isClearSettling === "function" && isClearSettling()) {
+      if (typeof isReducedMotionActive === "function" && isReducedMotionActive()) {
+        seal.classList.remove("active", "rank-s", "settling");
+      } else if (seal.classList.contains("active")) {
+        seal.classList.add("settling");
+      }
+      return;
+    }
+    seal.classList.remove("settling");
     seal.classList.add("active");
     const sp = getStyleRankSpec(arena.styleScore || 0);
     seal.classList.toggle("rank-s", sp.rank === "S");
@@ -353,7 +362,7 @@
     else if (arena.domain) subTag.textContent = `☯ 太虚剑域 ${arena.domain.life.toFixed(1)}s`;
     else if (arena.player.meditating) subTag.textContent = lf.xpEfficiencyMult < 1 ? `☯ 周天吐纳 (${xpPct}% · 效率${Math.round(lf.xpEfficiencyMult * 100)}% · 每3秒耗1月寿元)` : `☯ 周天吐纳 (${xpPct}% · 每3秒耗1月寿元)`;
     else if (arena.towerMode) subTag.textContent = hostiles > 0 ? `余妖 ×${hostiles}` : "点击/Enter 进下一层";
-    else if (arena.stageIdx === 0 && !game.openingChoice) subTag.textContent = hostiles > 0 ? `救沈清禾 (${hostiles})` : "点击/Enter 择玉莲仙缘";
+    else if (arena.stageIdx === 0 && !game.openingChoice) subTag.textContent = hostiles > 0 ? `救沈清禾 (${hostiles})` : arena.props.some(x => x.kind === "pedestal") ? "点击/Enter 择玉莲仙缘" : "妖狼既退";
     else if (arena.props.some(x => x.kind === "ascend_gate")) subTag.textContent = game.realm === "spirit" ? "点击/Enter 叩九霄仙门" : "点击/Enter 登九霄化神台";
     else if (arena.props.some(x => x.kind === "portal")) subTag.textContent = "点击/Enter 启下卷传送阵";
     else if (selectableHud.length > 0) subTag.textContent = "本层已清 · 按 9 择路";
@@ -802,6 +811,28 @@
     } catch (e) {}
   }
 
+  const GUARDED_CHOICE_MODAL_KINDS = new Set([
+    "defeat",
+    "gear_overflow",
+    "destiny_fruit",
+    "iconic_draft",
+    "soul_unlock",
+    "lifespan_exhausted",
+    "save_conflict",
+    "volume_recap",
+    "ending",
+    "spire_curio",
+    "run_boon",
+    "encounter",
+    "pet_skill_choice"
+  ]);
+  const modalInputGuard = {
+    guardUntil: 0,
+    clickGuardUntil: 0,
+    heldKeysUntilRelease: new Set(),
+    guardedKind: ""
+  };
+
   function openModal(html, closeable = true, opts = {}) {
     const modalKind = (opts && opts.kind) || "";
     const nextPri = hasOwn(MODAL_PRIORITY, modalKind) ? MODAL_PRIORITY[modalKind] : MODAL_PRIORITY.default;
@@ -846,6 +877,19 @@
     }
 
     if (typeof stopHoldProgression === "function") stopHoldProgression("ui_closed");
+    if (typeof captureHeldKeysInto === "function") {
+      captureHeldKeysInto(modalInputGuard.heldKeysUntilRelease);
+    }
+    const nowModal = performance.now();
+    if (GUARDED_CHOICE_MODAL_KINDS.has(modalKind)) {
+      modalInputGuard.guardUntil = nowModal + DIALOGUE_INPUT_GUARD_MS;
+      modalInputGuard.clickGuardUntil = (nowModal - (lastCanvasCombatClickAt || 0) <= 350) ? (nowModal + DIALOGUE_INPUT_GUARD_MS) : 0;
+      modalInputGuard.guardedKind = modalKind;
+    } else {
+      modalInputGuard.guardUntil = 0;
+      modalInputGuard.clickGuardUntil = 0;
+      modalInputGuard.guardedKind = "";
+    }
     clearTransientInputs();
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
@@ -891,6 +935,10 @@
   }
   function closeModal() {
     clearTransientInputs();
+    modalInputGuard.guardUntil = 0;
+    modalInputGuard.clickGuardUntil = 0;
+    modalInputGuard.guardedKind = "";
+    modalInputGuard.heldKeysUntilRelease.clear();
     craftMinigame.open = false;
     rebindListeningAction = null;
     pendingCloudImport = null;

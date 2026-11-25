@@ -596,7 +596,9 @@
     lines: [],
     idx: 0,
     onFinish: null,
-    triggerEl: null
+    triggerEl: null,
+    inputGuardUntil: 0,
+    heldKeysUntilRelease: new Set()
   };
 
   // Live Flame-Control Alchemy Minigame State

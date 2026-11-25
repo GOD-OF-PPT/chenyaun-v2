@@ -448,8 +448,16 @@
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.68);
     backdrop-filter: blur(6px);
     transform-origin: right center;
+    transition: opacity 0.36s ease, transform 0.36s ease;
   }
   #combo-rank-seal.active { display: flex; }
+  #combo-rank-seal.settling {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.92);
+  }
+  html.reduced-motion #combo-rank-seal {
+    transition: none !important;
+  }
   .combo-tier-row { display: flex; align-items: baseline; gap: 8px; }
   .combo-tier-char {
     font-family: var(--font-serif); font-size: 24px; font-weight: 900; letter-spacing: 2px;
@@ -648,6 +656,7 @@
   .dlg-speaker-name { font-family: var(--font-serif); font-size: 16px; font-weight: 900; color: var(--gold-bright); }
   .dlg-text { font-size: 13.5px; line-height: 1.55; color: #f2f7f5; font-family: var(--font-serif); }
   .dlg-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+  .dlg-actions button { white-space: nowrap; }
 
   /* Equipment Rarity Borders & Badges */
   .rarity-0 { border-color: rgba(195, 212, 208, 0.38) !important; }
@@ -2239,6 +2248,18 @@
     border-color: #70ffe6 !important;
     color: #80ffea !important;
     background: rgba(20, 62, 62, 0.9) !important;
+  }
+  .pavilion-item-btn.is-muted {
+    border-color: rgba(235, 168, 122, 0.42) !important;
+    color: rgba(212, 224, 220, 0.72) !important;
+    background: rgba(24, 20, 22, 0.86) !important;
+  }
+  .pav-state-tag {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 700;
+    opacity: 0.9;
+    white-space: nowrap;
   }
 
   .hud-tier-hidden { display: none !important; }
@@ -4212,8 +4233,8 @@
         <div class="pavilion-grid">
           <button type="button" id="btn-photo-mode" class="pavilion-item-btn" data-tip="太虚绘卷 · 自由摄影模式 (P)|冻结战斗定格画面并导出国风画卷"><svg class="svg-ico" style="width:13px;height:13px;color:var(--gold);" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/></svg><span>绘卷摄影</span></button>
           <button type="button" id="btn-toggle-telemetry" class="pavilion-item-btn" data-tip="3A动作遥测与判定框 (F3)|查看预输入链、秒伤与判定框线"><svg class="svg-ico" style="width:13px;height:13px;color:var(--jade);" viewBox="0 0 24 24"><path d="M4 19h16M7 15v-4M12 15V7M17 15v-6"/></svg><span>动作遥测</span></button>
-          <button type="button" id="btn-toggle-bgm" class="pavilion-item-btn active" data-tip="仙乐伴奏|开关国风古琴背景音乐"><svg class="svg-ico" style="width:13px;height:13px;color:var(--gold);" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span>古琴仙乐</span></button>
-          <button type="button" id="btn-mute-audio" class="pavilion-item-btn" data-tip="音效开关|开关剑鸣鼓点等战斗音效"><svg class="svg-ico" style="width:13px;height:13px;color:var(--jade);" aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><span>战斗音效</span></button>
+          <button type="button" id="btn-toggle-bgm" class="pavilion-item-btn active active-toggle" aria-pressed="true" data-tip="仙乐伴奏|开关国风古琴背景音乐"><svg class="svg-ico" style="width:13px;height:13px;color:var(--gold);" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span>古琴仙乐</span><small class="pav-state-tag" id="lbl-bgm-state">开</small></button>
+          <button type="button" id="btn-mute-audio" class="pavilion-item-btn active-toggle" aria-pressed="true" data-muted="false" data-tip="全部声音|总静音开关：一键静音或恢复全部仙乐与音效"><svg class="svg-ico" style="width:13px;height:13px;color:var(--jade);" aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg><span>全部声音</span><small class="pav-state-tag" id="lbl-mute-state">开</small></button>
         </div>
         <button type="button" id="btn-toggle-arcana-all" class="pavilion-item-btn" style="width:100%;justify-content:space-between;" data-action="toggle-arcana-all" data-tip="全神通演武沙盒开关|确认后进入独立隔离的演武沙盒体验全部系统与神通，绝不写入正式存档与元存档！">
           <span>🧪 全神通演武沙盒</span>
@@ -4513,7 +4534,7 @@
       <div id="dlg-choices-box" class="dlg-choices-row" style="display:none;"></div>
     </div>
     <div id="dlg-action-box" class="dlg-actions">
-      <button type="button" id="btn-dlg-next" class="btn-gold" style="padding:6px 14px;font-size:12px;">继续 ▸</button>
+      <button type="button" id="btn-dlg-next" class="btn-gold" style="padding:6px 14px;font-size:12px;">Enter 继续 ▸</button>
       <button type="button" id="btn-dlg-skip" class="btn-ghost" style="padding:4px 10px;font-size:11px;">跳过</button>
     </div>
   </div>
@@ -4856,6 +4877,8 @@ const ART = {
     ctx: null, muted: false, bgmEnabled: true, bgmStep: 0, noiseBuf: null,
     bgmFilter: null, bgmDuckGain: null, reverbNode: null, reverbWet: null,
     duckState: { active: false, hz: 18500, gain: 1.0, restoreTimer: null },
+    rainCtx: null, rainSrc: null, rainFilter: null, rainGain: null, rainBuf: null,
+    rainState: { level: "off", targetGain: 0, filterHz: 1450 },
     cueLog: [],
     lastCue: null,
     recordCue(cue, tier = "ui", meta = {}) {
@@ -5069,9 +5092,144 @@ const ART = {
         if (this.ctx && this.bgmFilter && this.bgmDuckGain) {
           const t2 = this.ctx.currentTime;
           this.bgmFilter.frequency.setTargetAtTime(18500, t2, 0.18);
-          this.bgmDuckGain.gain.setTargetAtTime(1.0, t2, 0.16);
+          this.bgmDuckGain.gain.setTargetAtTime(this.muted ? 0 : 1.0, t2, 0.16);
         }
       }, holdMs);
+    },
+    setMuted(nextMuted) {
+      this.muted = Boolean(nextMuted);
+      if (this.ctx) {
+        const now = this.ctx.currentTime;
+        if (this.muted) {
+          if (this.rainGain) {
+            this.rainGain.gain.cancelScheduledValues(now);
+            this.rainGain.gain.setValueAtTime(0, now);
+          }
+          if (this.bgmDuckGain) {
+            this.bgmDuckGain.gain.cancelScheduledValues(now);
+            this.bgmDuckGain.gain.setValueAtTime(0, now);
+          }
+          this.rainState.targetGain = 0;
+        } else {
+          if (this.bgmDuckGain) {
+            const targetBgm = this.duckState && this.duckState.active ? this.duckState.gain : 1.0;
+            this.bgmDuckGain.gain.cancelScheduledValues(now);
+            this.bgmDuckGain.gain.setTargetAtTime(targetBgm, now, 0.05);
+          }
+          if (this.rainState && this.rainState.level && this.rainState.level !== "off") {
+            this.syncRainAmbience(this.rainState.level, 0.25);
+          }
+        }
+      } else if (this.muted) {
+        this.rainState.targetGain = 0;
+      }
+      return this.muted;
+    },
+    ensureRainNodes() {
+      if (!this.ctx || this.ctx.state !== "running" || this.muted) return false;
+      if (this.rainCtx !== this.ctx) {
+        if (this.rainSrc) {
+          try { this.rainSrc.stop(); } catch (e) {}
+        }
+        this.rainCtx = this.ctx;
+        this.rainSrc = null;
+        this.rainFilter = null;
+        this.rainGain = null;
+        this.rainBuf = null;
+      }
+      if (this.rainSrc && this.rainFilter && this.rainGain) return true;
+      try {
+        const sr = this.ctx.sampleRate;
+        const len = Math.floor(sr * 2.0);
+        const buf = this.ctx.createBuffer(1, len, sr);
+        const data = buf.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0;
+        for (let i = 0; i < len; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.997 * b0 + white * 0.029;
+          b1 = 0.985 * b1 + white * 0.032;
+          b2 = 0.950 * b2 + white * 0.048;
+          data[i] = (b0 + b1 + b2 + white * 0.14) * 0.45;
+        }
+        // Smooth crossfade at loop seam so rain loop never clicks
+        const seam = Math.min(2048, Math.floor(len * 0.04));
+        for (let i = 0; i < seam; i++) {
+          const t = i / seam;
+          data[i] = data[i] * t + data[len - seam + i] * (1 - t);
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+        src.loop = true;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.frequency.value = 1450;
+        filter.Q.value = 0.65;
+        const g = this.ctx.createGain();
+        g.gain.value = 0;
+        src.connect(filter).connect(g).connect(this.ctx.destination);
+        src.start();
+        this.rainBuf = buf;
+        this.rainSrc = src;
+        this.rainFilter = filter;
+        this.rainGain = g;
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    syncRainAmbience(level = "off", rampSec = 0.35) {
+      const nextLevel = (level === "combat" || level === "calm") ? level : "off";
+      this.rainState.level = nextLevel;
+      const targetGain = nextLevel === "combat" ? 0.022 : nextLevel === "calm" ? 0.007 : 0;
+      const targetHz = nextLevel === "combat" ? 1550 : 820;
+      this.rainState.filterHz = targetHz;
+      if (this.muted) {
+        this.rainState.targetGain = 0;
+        if (this.ctx && this.rainCtx === this.ctx && this.rainGain) {
+          const now = this.ctx.currentTime;
+          this.rainGain.gain.cancelScheduledValues(now);
+          this.rainGain.gain.setTargetAtTime(0, now, 0.025);
+        }
+        return;
+      }
+      if (nextLevel === "off") {
+        this.rainState.targetGain = 0;
+        if (this.ctx && this.rainCtx === this.ctx && this.rainGain) {
+          const now = this.ctx.currentTime;
+          this.rainGain.gain.cancelScheduledValues(now);
+          if (rampSec <= 0) this.rainGain.gain.setValueAtTime(0, now);
+          else this.rainGain.gain.setTargetAtTime(0, now, Math.max(0.03, rampSec * 0.35));
+        }
+        return;
+      }
+      this.rainState.targetGain = targetGain;
+      if (!this.ctx || this.ctx.state !== "running") return;
+      if (!this.ensureRainNodes()) return;
+      const now = this.ctx.currentTime;
+      this.rainGain.gain.cancelScheduledValues(now);
+      this.rainFilter.frequency.cancelScheduledValues(now);
+      if (rampSec <= 0) {
+        this.rainGain.gain.setValueAtTime(targetGain, now);
+        this.rainFilter.frequency.setValueAtTime(targetHz, now);
+      } else {
+        const tau = Math.max(0.05, rampSec * 0.38);
+        this.rainGain.gain.setTargetAtTime(targetGain, now, tau);
+        this.rainFilter.frequency.setTargetAtTime(targetHz, now, tau);
+      }
+    },
+    settleRainAmbience(instant = false, durSec = 0.8) {
+      const hasRain = Boolean(
+        typeof arena !== "undefined" && arena && !arena.sanctumMode && (
+          (typeof STAGES !== "undefined" && STAGES[arena.stageIdx] && STAGES[arena.stageIdx].particleKind === "rain_mist") ||
+          (arena.bossDomain && arena.bossDomain.weather === "blood_rain")
+        )
+      );
+      if (hasRain) {
+        this.syncRainAmbience("calm", instant ? 0 : durSec);
+      }
+      if (!instant && !this.muted && this.ctx && this.ctx.state === "running") {
+        this.triggerDucking(1150, 0.52, Math.round(durSec * 1000) + 320);
+      }
     },
     pluck(freq = 392, dur = 0.36, vol = 0.085, type = "triangle", toBgmBus = false) {
       vol = vol * (this.stems ? this.stems.guqin : 1.0);
@@ -8682,7 +8840,9 @@ const ART = {
     lines: [],
     idx: 0,
     onFinish: null,
-    triggerEl: null
+    triggerEl: null,
+    inputGuardUntil: 0,
+    heldKeysUntilRelease: new Set()
   };
 
   // Live Flame-Control Alchemy Minigame State
@@ -9941,6 +10101,11 @@ const ART = {
         cutscene.triggerEl = null;
       }
     }
+    if (typeof captureHeldKeysInto === "function") {
+      captureHeldKeysInto(cutscene.heldKeysUntilRelease);
+    }
+    clearTransientInputs();
+    cutscene.inputGuardUntil = performance.now() + DIALOGUE_INPUT_GUARD_MS;
     cutscene.active = true;
     cutscene.lines = lines;
     cutscene.idx = 0;
@@ -9951,6 +10116,8 @@ const ART = {
       onFinish();
     } : null;
     if (!cutscenePauseToken) cutscenePauseToken = acquirePauseToken("cutscene", "dialogue");
+    if (typeof updateComboRankSeal === "function") updateComboRankSeal();
+    if (typeof renderQuestTracker === "function") renderQuestTracker();
     renderCutsceneStep();
   }
 
@@ -10084,6 +10251,8 @@ const ART = {
     if (!bar) return;
     if (!cutscene.active || cutscene.idx >= cutscene.lines.length) {
       cutscene.active = false;
+      cutscene.inputGuardUntil = 0;
+      if (cutscene.heldKeysUntilRelease) cutscene.heldKeysUntilRelease.clear();
       bar.classList.remove("open");
       if (document.activeElement && bar.contains(document.activeElement) && typeof document.activeElement.blur === "function") {
         try { document.activeElement.blur(); } catch (e) {}
@@ -10100,6 +10269,8 @@ const ART = {
       cutscene.triggerEl = null;
       if (cb) cb();
       renderOnboardingCoach();
+      if (typeof renderQuestTracker === "function") renderQuestTracker();
+      if (typeof updateComboRankSeal === "function") updateComboRankSeal();
       const modalNowOpen = !!(bd && bd.classList.contains("open"));
       if (!cutscene.active && !modalNowOpen && !drawerOpen) {
         restoreTriggerFocus(savedTrigger);
@@ -10118,6 +10289,10 @@ const ART = {
     const nextBtn = document.getElementById("btn-dlg-next");
     const skipBtn = document.getElementById("btn-dlg-skip");
     if (line.choices && line.choices.length && chBox) {
+      cutscene.inputGuardUntil = Math.max(cutscene.inputGuardUntil || 0, performance.now() + DIALOGUE_INPUT_GUARD_MS);
+      if (typeof captureHeldKeysInto === "function") {
+        captureHeldKeysInto(cutscene.heldKeysUntilRelease);
+      }
       chBox.style.display = "flex";
       chBox.innerHTML = line.choices.map(o => {
         const ok = canAffordStoryOpt(game, o);
@@ -10135,7 +10310,8 @@ const ART = {
       if (chBox) { chBox.innerHTML = ""; chBox.style.display = "none"; }
       if (nextBtn) {
         nextBtn.style.display = "inline-flex";
-        nextBtn.textContent = line.finalBtnLabel || (cutscene.idx >= cutscene.lines.length - 1 ? "拔剑启程 ▸" : "继续 ▸");
+        const rawLabel = line.finalBtnLabel || (cutscene.idx >= cutscene.lines.length - 1 ? "拔剑启程 ▸" : "继续 ▸");
+        nextBtn.textContent = `Enter ${rawLabel}`;
       }
       if (skipBtn) skipBtn.textContent = "跳过";
     }
@@ -10236,8 +10412,27 @@ const ART = {
     age_might: "icon_scroll", karma_resonance: "char_shen", destiny_eye: "item_rough_jade"
   };
 
+  const DIALOGUE_INPUT_GUARD_MS = 400;
+  const physicalKeysDown = new Set();
   const keysDown = {};
   const pointer = { x: 720, y: 450, down: false, holdTime: 0, worldActive: false, moveTarget: null };
+  let lastCanvasCombatClickAt = 0;
+
+  function captureHeldKeysInto(targetSet) {
+    if (!targetSet || typeof targetSet.add !== "function") return;
+    targetSet.clear();
+    physicalKeysDown.forEach(code => targetSet.add(code));
+    Object.keys(keysDown).forEach(code => {
+      if (keysDown[code]) targetSet.add(code);
+    });
+  }
+
+  function isCutsceneInputGuarded(code = null, isRepeat = false) {
+    if (isRepeat) return true;
+    if (cutscene.inputGuardUntil && performance.now() < cutscene.inputGuardUntil) return true;
+    if (code && cutscene.heldKeysUntilRelease && cutscene.heldKeysUntilRelease.has(code)) return true;
+    return false;
+  }
 
   function clearTransientInputs() {
     Object.keys(keysDown).forEach(k => { keysDown[k] = false; });
@@ -10248,6 +10443,11 @@ const ART = {
   }
   window.addEventListener("blur", () => {
     clearTransientInputs();
+    physicalKeysDown.clear();
+    if (cutscene.heldKeysUntilRelease) cutscene.heldKeysUntilRelease.clear();
+    if (typeof modalInputGuard !== "undefined" && modalInputGuard && modalInputGuard.heldKeysUntilRelease) {
+      modalInputGuard.heldKeysUntilRelease.clear();
+    }
     if (typeof stopHoldProgression === "function") stopHoldProgression("window_blur");
   });
 
@@ -10373,8 +10573,15 @@ const ART = {
     tribulation: null,
     calmT: 0,
     calmFlushed: false,
-    pickupAgg: {}
+    pickupAgg: {},
+    clearSettle: null,
+    pendingClearSummary: null,
+    rainIntensity: 1.0
   };
+
+  function isClearSettling() {
+    return Boolean(arena && arena.clearSettle && arena.clearSettle.active);
+  }
 
   // ==================== V17 BOSS WEAKPOINT CORES, TRIAL AFFIXES & DUAL-POSTURE SPECS ====================
   const BOSS_WEAKPOINTS = {
@@ -14823,7 +15030,7 @@ const ART = {
           </button>
         `}
       </div>
-    `, false);
+    `, false, { kind: "spire_curio" });
   }
 
   function selectSpireCurioAndAdvance(curioId, gainLv = 1) {
@@ -15004,6 +15211,8 @@ const ART = {
   // --- [runtime] src/runtime/primordial-systems.js ---
   // ==================== V22 PRIMORDIAL FINALE MODULES ====================
   const STEMS_STORAGE_KEY = "chenyuan_stems_v22";
+  const AUDIO_PREFS_STORAGE_KEY = "chenyuan_audio_prefs_v1";
+  const DEFAULT_AUDIO_PREFS = { muted: false, bgmEnabled: true };
   function applySanitizedAudioStems(p) {
     if (!p || typeof p !== "object" || Array.isArray(p)) return;
     ["guqin", "chime", "drum", "blade", "reverb"].forEach(k => {
@@ -15012,18 +15221,98 @@ const ART = {
       }
     });
   }
-  function loadAudioStems() {
+  function syncAudioToggleUi() {
+    const bgmBtn = document.getElementById("btn-toggle-bgm");
+    if (bgmBtn) {
+      const bgmOn = Boolean(Sound.bgmEnabled);
+      bgmBtn.classList.toggle("active", bgmOn);
+      bgmBtn.classList.toggle("active-toggle", bgmOn);
+      bgmBtn.classList.toggle("is-muted", !bgmOn);
+      bgmBtn.setAttribute("aria-pressed", String(bgmOn));
+      const bgmLbl = document.getElementById("lbl-bgm-state");
+      if (bgmLbl) bgmLbl.textContent = bgmOn ? "开" : "关";
+    }
+    const muteBtn = document.getElementById("btn-mute-audio");
+    if (muteBtn) {
+      const soundOn = !Sound.muted;
+      muteBtn.classList.toggle("active-toggle", soundOn);
+      muteBtn.classList.toggle("is-muted", !soundOn);
+      muteBtn.setAttribute("aria-pressed", String(soundOn));
+      muteBtn.setAttribute("data-muted", String(Boolean(Sound.muted)));
+      const muteLbl = document.getElementById("lbl-mute-state");
+      if (muteLbl) muteLbl.textContent = soundOn ? "开" : "静音";
+    }
+  }
+  function loadAudioPrefs() {
+    Sound.setMuted(DEFAULT_AUDIO_PREFS.muted);
+    Sound.bgmEnabled = DEFAULT_AUDIO_PREFS.bgmEnabled;
     try {
-      const raw = localStorage.getItem(STEMS_STORAGE_KEY);
-      if (raw) {
-        applySanitizedAudioStems(JSON.parse(raw));
+      const legacyRaw = localStorage.getItem(STEMS_STORAGE_KEY);
+      if (legacyRaw) {
+        applySanitizedAudioStems(JSON.parse(legacyRaw));
       }
     } catch (e) {}
+    try {
+      const raw = localStorage.getItem(AUDIO_PREFS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          if (hasOwn(parsed, "stems")) applySanitizedAudioStems(parsed.stems);
+          if (hasOwn(parsed, "muted") && typeof parsed.muted === "boolean") {
+            Sound.setMuted(parsed.muted);
+          }
+          if (hasOwn(parsed, "bgmEnabled") && typeof parsed.bgmEnabled === "boolean") {
+            Sound.bgmEnabled = parsed.bgmEnabled;
+          }
+        }
+      }
+    } catch (e) {}
+    syncAudioToggleUi();
+  }
+  function saveAudioPrefs({ notifyOnError = true } = {}) {
+    const stemsCopy = {
+      guqin: Sound.stems.guqin,
+      chime: Sound.stems.chime,
+      drum: Sound.stems.drum,
+      blade: Sound.stems.blade,
+      reverb: Sound.stems.reverb
+    };
+    const payload = {
+      version: 1,
+      muted: Boolean(Sound.muted),
+      bgmEnabled: Boolean(Sound.bgmEnabled),
+      stems: stemsCopy
+    };
+    let prefsErr = null;
+    try {
+      localStorage.setItem(AUDIO_PREFS_STORAGE_KEY, JSON.stringify(payload));
+    } catch (e) {
+      prefsErr = e;
+    }
+    try {
+      localStorage.setItem(STEMS_STORAGE_KEY, JSON.stringify(stemsCopy));
+    } catch (e) {
+      if (!prefsErr) prefsErr = e;
+    }
+    if (prefsErr) {
+      if (notifyOnError && typeof showToast === "function") {
+        showToast("⚠ 音频偏好写入失败（本地存储受限），仅当前会话生效，不影响游戏存档。", {
+          tier: 1,
+          key: "audio_prefs_write_fail",
+          throttleMs: 2500
+        });
+      }
+      return { ok: false, error: prefsErr };
+    }
+    return { ok: true };
+  }
+  function loadAudioStems() {
+    loadAudioPrefs();
   }
   function saveAudioStems() {
-    try { localStorage.setItem(STEMS_STORAGE_KEY, JSON.stringify(Sound.stems)); } catch (e) {}
+    return saveAudioPrefs({ notifyOnError: true });
   }
-  loadAudioStems();
+  loadAudioPrefs();
 
   // 1. Mythic Mounts (`山海灵骑 · 三大太古神兽`)
   const MYTHIC_MOUNTS = {
@@ -17907,7 +18196,7 @@ const ART = {
       practiceFormalSnapshot = null;
       clearTransientChoiceQueues();
       saveA11ySettings();
-      try { localStorage.setItem(STEMS_STORAGE_KEY, JSON.stringify(Sound.stems)); } catch (e) {}
+      saveAudioPrefs({ notifyOnError: false });
       syncFlyingSwords();
       syncTagTeamHud();
       syncV22TacticalDock();
@@ -21576,14 +21865,21 @@ const ART = {
     let fy = isBannerFloat ? ((arena.player ? arena.player.y : y) - 76) : y;
 
     if (isBannerFloat) {
-      let activeBanners = 0;
-      for (let fi = arena.floats.length - 1; fi >= 0; fi--) {
-        const fl = arena.floats[fi];
-        if (fl.isBannerFloat && fl.age < 1.1) {
-          fl.y -= 28;
-          activeBanners++;
-          if (activeBanners >= 3) {
-            fl.age = Math.max(fl.age, (fl.ttl || 1.2) - 0.14);
+      if (typeof isClearSettling === "function" && isClearSettling()) {
+        // During clear settle, merge/keep strictly at most 1 banner line
+        for (let fi = arena.floats.length - 1; fi >= 0; fi--) {
+          if (arena.floats[fi] && arena.floats[fi].isBannerFloat) arena.floats.splice(fi, 1);
+        }
+      } else {
+        let activeBanners = 0;
+        for (let fi = arena.floats.length - 1; fi >= 0; fi--) {
+          const fl = arena.floats[fi];
+          if (fl.isBannerFloat && fl.age < 1.1) {
+            fl.y -= 28;
+            activeBanners++;
+            if (activeBanners >= 3) {
+              fl.age = Math.max(fl.age, (fl.ttl || 1.2) - 0.14);
+            }
           }
         }
       }
@@ -21605,13 +21901,21 @@ const ART = {
     if (arena.particles && arena.particles.length > 160) {
       arena.particles.splice(0, arena.particles.length - 160);
     }
+    const settlingNow = Boolean(typeof isClearSettling === "function" && isClearSettling());
+    const remSettle = settlingNow && arena.clearSettle
+      ? Math.max(0.15, (arena.clearSettle.dur || 0.8) - (arena.clearSettle.elapsed || 0) - 0.06)
+      : ttl;
     arena.floats.push({
       isBannerFloat,
       isPerilous,
+      settling: settlingNow,
+      settleStartAlpha: 1.0,
+      settleElapsed: 0,
+      settleDur: settlingNow ? Math.min(remSettle, isBannerFloat ? 0.65 : 0.45) : 0,
       text, x: fx, y: fy,
       vx: isBannerFloat ? 0 : ((fx - x) * 0.015),
       vy: isBannerFloat ? -0.58 : (isCrit ? -1.42 : -1.05),
-      alpha: 1.0, age: 0, ttl, color, size, isCrit
+      alpha: 1.0, age: 0, ttl: settlingNow ? remSettle : ttl, color, size, isCrit
     });
     if (arena.floats.length > 26) arena.floats.shift();
   }
@@ -21919,11 +22223,201 @@ const ART = {
     syncPendingRewardsBadge();
   }
 
+  function clearCombatOverlaysAndResetCombo({ clearToasts = false, resetCombo = true, clearSettle = true } = {}) {
+    arena.floats = [];
+    arena.pickupAgg = {};
+    arena.radialBurst = null;
+    arena.flash = 0;
+    arena.shake = 0;
+    arena.impactFrames = 0;
+    arena.hitStop = 0;
+    if (arena.player && Array.isArray(arena.player.afterimages)) {
+      arena.player.afterimages = [];
+    }
+    if (Array.isArray(arena.distortionRings)) arena.distortionRings = [];
+    if (Array.isArray(arena.clashVfxList)) arena.clashVfxList = [];
+    if (Array.isArray(arena.soulAvatars)) arena.soulAvatars = [];
+    if (Array.isArray(arena.switchVfxList)) arena.switchVfxList = [];
+
+    if (execStampTimer) {
+      clearTimeout(execStampTimer);
+      execStampTimer = null;
+    }
+    const stampEl = document.getElementById("execution-stamp-overlay");
+    if (stampEl) stampEl.classList.remove("slam");
+
+    if (relicToastTimer) {
+      clearTimeout(relicToastTimer);
+      relicToastTimer = null;
+    }
+    const dharmaEl = document.getElementById("relic-dharma-toast");
+    if (dharmaEl) dharmaEl.classList.remove("active");
+
+    if (cutinTimer) {
+      clearTimeout(cutinTimer);
+      cutinTimer = null;
+    }
+    const cutinEl = document.getElementById("boss-cutin-banner");
+    if (cutinEl) cutinEl.classList.remove("show");
+
+    if (typeof clearCinematicClashOverlays === "function") clearCinematicClashOverlays();
+
+    if (clearSettle) {
+      arena.clearSettle = null;
+      arena.pendingClearSummary = null;
+    }
+    if (resetCombo) {
+      arena.comboCount = 0;
+      arena.comboTimer = 0;
+      arena.styleScore = 0;
+      arena.styleDecayTimer = 0;
+      arena.recentMoveHistory = [];
+      const seal = document.getElementById("combo-rank-seal");
+      if (seal) seal.classList.remove("active", "rank-s", "settling");
+      if (typeof updateComboRankSeal === "function") updateComboRankSeal();
+    }
+    if (clearToasts) {
+      const tc = document.getElementById("toast-container");
+      if (tc) tc.innerHTML = "";
+    }
+  }
+
+  function captureClearSummarySnapshot() {
+    const combo = Math.max(Math.floor(num(arena.comboCount, 0)), Math.floor(num(arena.maxStageCombo, 0)));
+    const styleScore = Math.max(0, num(arena.styleScore, 0));
+    const hasRank = arena.comboCount >= 2 || styleScore >= 40;
+    const rankSpec = hasRank && typeof getStyleRankSpec === "function" ? getStyleRankSpec(styleScore) : null;
+    const readyBounties = (game && typeof SECT_BOUNTY_CHAINS !== "undefined" && typeof getBountySpec === "function")
+      ? SECT_BOUNTY_CHAINS.map(c => getBountySpec(game, c)).filter(b => b && b.ready)
+      : [];
+    return {
+      rank: rankSpec ? rankSpec.rank : null,
+      rankTitle: rankSpec ? rankSpec.title : "",
+      combo: Math.max(1, combo),
+      bounties: readyBounties.map(b => ({ title: b.title, stones: b.stones, slot: b.slot }))
+    };
+  }
+
+  function emitPostDialogueClearSummary(summary) {
+    if (!summary) return false;
+    const parts = [];
+    if (summary.rank) {
+      parts.push(`评级 ${summary.rank}（${summary.rankTitle} ×${summary.combo}）`);
+    }
+    if (Array.isArray(summary.bounties) && summary.bounties.length > 0) {
+      const firstB = summary.bounties[0];
+      const extra = summary.bounties.length > 1 ? ` 等${summary.bounties.length}项` : "";
+      parts.push(`悬赏功成：${firstB.title}${extra}（目标可领 +${firstB.stones}石）`);
+    }
+    if (!parts.length) return false;
+    return showToast(`✦ 战果汇总：${parts.join(" ｜ ")}`, {
+      tier: 1,
+      key: "post_dialogue_clear_summary",
+      throttleMs: 200,
+      ttl: 3400
+    });
+  }
+
+  function beginClearSettle({ durSec = 0.8, bannerText = "", onDone = null } = {}) {
+    const summary = captureClearSummarySnapshot();
+    arena.pendingClearSummary = summary;
+    const rm = typeof isReducedMotionActive === "function" && isReducedMotionActive();
+    const seal = document.getElementById("combo-rank-seal");
+
+    if (rm || durSec <= 0) {
+      arena.rainIntensity = 0.55;
+      if (typeof Sound !== "undefined" && typeof Sound.settleRainAmbience === "function") {
+        Sound.settleRainAmbience(true, 0);
+      }
+      clearCombatOverlaysAndResetCombo({ clearToasts: false, resetCombo: true, clearSettle: false });
+      arena.clearSettle = null;
+      if (typeof renderQuestTracker === "function") renderQuestTracker();
+      if (typeof onDone === "function") onDone(summary);
+      return;
+    }
+
+    // Non-reducedMotion: ~0.8s settle phase (fade floats, collapse banners to 1 line, fold combo seal, soften rain)
+    const existingBanners = arena.floats.filter(f => f && f.isBannerFloat);
+    const mergedText = bannerText || (existingBanners.length ? existingBanners[existingBanners.length - 1].text : "");
+    const nonBanners = arena.floats.filter(f => f && !f.isBannerFloat);
+    const settleBannerDur = Math.min(durSec * 0.88, 0.70);
+    const settleDmgDur = Math.min(durSec * 0.65, 0.52);
+
+    for (const f of nonBanners) {
+      f.settling = true;
+      f.settleStartAlpha = Math.max(0.15, Math.min(1, f.alpha || 1));
+      f.settleElapsed = 0;
+      f.settleDur = settleDmgDur;
+      f.vx = (f.vx || 0) * 0.35;
+      f.vy = Math.min(f.vy || -0.6, -0.45);
+    }
+    arena.floats = nonBanners;
+    if (mergedText) {
+      const cv = document.getElementById("fx-canvas");
+      const px = arena.player ? arena.player.x : (((cv && cv.width) || 1440) * 0.5);
+      const py = arena.player ? arena.player.y : (((cv && cv.height) || 900) * 0.54);
+      arena.floats.push({
+        isBannerFloat: true,
+        isPerilous: false,
+        settling: true,
+        settleStartAlpha: 1.0,
+        settleElapsed: 0,
+        settleDur: settleBannerDur,
+        text: mergedText,
+        x: px,
+        y: py - 82,
+        vx: 0,
+        vy: -0.32,
+        alpha: 1.0,
+        age: 0,
+        ttl: settleBannerDur,
+        color: "#ffe8a6",
+        size: 18,
+        isCrit: false
+      });
+    }
+
+    arena.pickupAgg = {};
+    arena.radialBurst = null;
+    arena.hitStop = 0;
+    if (execStampTimer) {
+      clearTimeout(execStampTimer);
+      execStampTimer = null;
+    }
+    const stampEl = document.getElementById("execution-stamp-overlay");
+    if (stampEl) stampEl.classList.remove("slam");
+    if (relicToastTimer) {
+      clearTimeout(relicToastTimer);
+      relicToastTimer = null;
+    }
+    const dharmaEl = document.getElementById("relic-dharma-toast");
+    if (dharmaEl) dharmaEl.classList.remove("active");
+
+    if (seal && seal.classList.contains("active")) {
+      seal.classList.add("settling");
+    }
+    if (typeof Sound !== "undefined" && typeof Sound.settleRainAmbience === "function") {
+      Sound.settleRainAmbience(false, durSec);
+    }
+
+    arena.clearSettle = {
+      active: true,
+      elapsed: 0,
+      dur: durSec,
+      stageEpoch: arena.stageEpoch,
+      summary,
+      onDone: typeof onDone === "function" ? onDone : null
+    };
+    if (typeof renderQuestTracker === "function") renderQuestTracker();
+  }
+
   function resetStageTransitionState() {
     const wasCutscene = cutscene.active;
     cutscene.active = false;
     cutscene.onFinish = null;
     cutscene.triggerEl = null;
+    cutscene.inputGuardUntil = 0;
+    if (cutscene.heldKeysUntilRelease) cutscene.heldKeysUntilRelease.clear();
     const dlgBar = document.getElementById("story-dialogue-bar");
     if (dlgBar) {
       if (document.activeElement && dlgBar.contains(document.activeElement) && typeof document.activeElement.blur === "function") {
@@ -21955,6 +22449,11 @@ const ART = {
     }
     const rcc = document.getElementById("region-cinema-card");
     if (rcc) rcc.classList.remove("show");
+    clearCombatOverlaysAndResetCombo({ clearToasts: true, resetCombo: true, clearSettle: true });
+    arena.rainIntensity = 1.0;
+    if (typeof Sound !== "undefined" && typeof Sound.syncRainAmbience === "function") {
+      Sound.syncRainAmbience("off", isReducedMotionActive() ? 0 : 0.25);
+    }
     arena.stageClearHandledEpoch = -1;
     arena.stageClearPending = false;
     pendingVolumeRecapOnDismiss = null;
@@ -24431,7 +24930,8 @@ const ART = {
 
     // Row 2: During prologue keep single-objective focus; after prologue show ready bounty, 3-Star strip, or top Sanctum bounty
     const isPrologueFocus = !game.openingChoice && rankOf(game.realm) < 1;
-    const readyBounty = SECT_BOUNTY_CHAINS.map(c => getBountySpec(game, c)).find(b => b.ready);
+    const hideBountyForDialogue = Boolean(cutscene.active || (typeof isClearSettling === "function" && isClearSettling()));
+    const readyBounty = hideBountyForDialogue ? null : SECT_BOUNTY_CHAINS.map(c => getBountySpec(game, c)).find(b => b.ready);
     if (readyBounty) {
       rows.push(`
         <button type="button" class="qt-goal-row claim-ready" data-claim-bounty="${readyBounty.slot}">
@@ -24697,7 +25197,7 @@ const ART = {
     const ws = document.getElementById("welcome-screen");
     if (ws && ws.style.display !== "none") return false;
     if (arena.tribulation || arena.defeatPending || cutscene.active) return false;
-    if (arena.stageClearPending || pendingVolumeRecapOnDismiss || deferredVolumeRecapModal || arena.waveTransitioning) return false;
+    if (arena.stageClearPending || pendingVolumeRecapOnDismiss || deferredVolumeRecapModal || arena.waveTransitioning || isClearSettling()) return false;
     if (arena.cloudFlight && arena.cloudFlight.active) return false;
     if (arena.sectDefense && arena.sectDefense.active) return false;
     const hasAnyAliveEnemy = Array.isArray(arena.enemies) && arena.enemies.some(e => e && e.hp > 0);
@@ -24765,6 +25265,7 @@ const ART = {
       (bd && bd.classList.contains("open")) ||
       drawerOpen ||
       cutscene.active ||
+      isClearSettling() ||
       photoMode.active ||
       saveConflictState ||
       storageReadError ||
@@ -25414,7 +25915,7 @@ const ART = {
           ? `<button type="button" class="btn-jade" data-action="reroll-run-boon">天机换韵（免费剩余 ${arena.boonRerollsLeft} 次）</button>`
           : `<button type="button" class="btn-ghost" data-modal-close="1">暂缓稍后择取</button>`}
       </div>
-    `, true);
+    `, true, { kind: "run_boon" });
   }
 
   function applyPickedRunBoon(boonId) {
@@ -25598,6 +26099,8 @@ const ART = {
     arena.fireZones = [];
     arena.frostPools = [];
     arena.nearbyProp = null;
+    clearCombatOverlaysAndResetCombo({ clearToasts: false, resetCombo: true, clearSettle: true });
+    arena.rainIntensity = 1.0;
     renderPropInteractHud();
     const startPos = clampToPlaza(w * 0.31, h * 0.54, w, h);
     arena.player.x = startPos.x;
@@ -25922,12 +26425,15 @@ const ART = {
         spawnStageClearPortals(stageIdx, clearPayload);
         updateHud();
       };
+      const clearSummary = arena.pendingClearSummary;
+      arena.pendingClearSummary = null;
       playCutscene(`clear_stage${stageIdx}`, () => {
         if (!game || arena.stageEpoch !== clearEpoch || !isNormalCampaignStage()) {
           arena.stageClearPending = false;
           return;
         }
         saveGame();
+        emitPostDialogueClearSummary(clearSummary);
         openVolumeEndRecapModal(stageIdx, clearPayload, finalize);
       });
       updateHud();
@@ -28183,7 +28689,7 @@ const ART = {
           </button>
         ` : ""}
       </div>
-    `, false);
+    `, false, { kind: "encounter" });
   }
 
   function isAllDaoLawsCollected(g) {
@@ -28918,22 +29424,53 @@ const ART = {
         const shenProp = arena.props.find(p => p.id === "shen_rescue" && !p.rescued);
         if (shenProp) {
           shenProp.rescued = true;
-          shenProp.bubble = "多谢拔剑相救！点击或按 Enter 于玉莲台择一谢礼：";
+          shenProp.bubble = "";
+          arena.waveTransitioning = true;
           Sound.fanfare();
-          const canvas = document.getElementById("fx-canvas");
-          const w = canvas.width || 1440, h = canvas.height || 900;
-          const p1 = clampToPlaza(w * 0.55, h * 0.62, w, h);
-          const p2 = clampToPlaza(w * 0.69, h * 0.62, w, h);
-          arena.props.push({
-            id: "ped_shen", kind: "pedestal", choice: "help", art: "item_lotus", onLotus: true,
-            name: "青莲灵契", badge: "点击/Enter 立得青莲药师袍(+34血+4减伤) · 下战按 R 唤沈清禾助阵", x: p1.x, y: p1.y, r: 42, progress: 0
+          const rescueEpoch = arena.stageEpoch;
+          const spawnProloguePedestals = (summary) => {
+            if (!game || arena.stageEpoch !== rescueEpoch || arena.sanctumMode) return;
+            arena.waveTransitioning = false;
+            const propNow = arena.props.find(p => p.id === "shen_rescue");
+            if (propNow) {
+              propNow.bubble = "多谢拔剑相救！点击或按 Enter 于玉莲台择一谢礼：";
+            }
+            if (!game.openingChoice && !arena.props.some(p => p.kind === "pedestal")) {
+              const canvas = document.getElementById("fx-canvas");
+              const w = (canvas && canvas.width) || window.innerWidth || 1440;
+              const h = (canvas && canvas.height) || window.innerHeight || 900;
+              const p1 = clampToPlaza(w * 0.55, h * 0.62, w, h);
+              const p2 = clampToPlaza(w * 0.69, h * 0.62, w, h);
+              const pedGuardUntil = performance.now() + DIALOGUE_INPUT_GUARD_MS;
+              arena.props.push({
+                id: "ped_shen", kind: "pedestal", choice: "help", art: "item_lotus", onLotus: true,
+                name: "青莲灵契", badge: "点击/Enter 立得青莲药师袍(+34血+4减伤) · 下战按 R 唤沈清禾助阵",
+                x: p1.x, y: p1.y, r: 42, progress: 0, guardUntil: pedGuardUntil
+              });
+              arena.props.push({
+                id: "ped_sword", kind: "pedestal", choice: "trade", art: "relic_frost_sword", onLotus: true,
+                name: "惊鸿剑诀", badge: "点击/Enter 立得飞剑 +1 + 惊鸿青霜剑(+10攻+4%暴) · 对比换装",
+                x: p2.x, y: p2.y, r: 42, progress: 0, guardUntil: pedGuardUntil
+              });
+            }
+            arena.pendingClearSummary = null;
+            emitPostDialogueClearSummary(summary);
+            updateHud();
+            if (typeof renderQuestTracker === "function") renderQuestTracker();
+          };
+          beginClearSettle({
+            durSec: 0.8,
+            bannerText: "✦ 妖狼既退 · 剑意归鞘",
+            onDone: (summary) => {
+              if (!game || arena.stageEpoch !== rescueEpoch || arena.sanctumMode) {
+                arena.waveTransitioning = false;
+                return;
+              }
+              playCutscene("prologue_rescue", () => {
+                spawnProloguePedestals(summary);
+              });
+            }
           });
-          arena.props.push({
-            id: "ped_sword", kind: "pedestal", choice: "trade", art: "relic_frost_sword", onLotus: true,
-            name: "惊鸿剑诀", badge: "点击/Enter 立得飞剑 +1 + 惊鸿青霜剑(+10攻+4%暴) · 对比换装", x: p2.x, y: p2.y, r: 42, progress: 0
-          });
-          // Trigger Prologue Portrait Cutscene!
-          playCutscene("prologue_rescue");
         } else if (arena.dungeonMap) {
           const dm = arena.dungeonMap;
           const curNode = dm.nodes[dm.currentNodeId];
@@ -28946,26 +29483,42 @@ const ART = {
               spawnMapExitGateAndBoon();
             }, 460);
           } else {
-            // Layer 4 Chapter Boss Cleared -> Chapter Victory & Continuous Next-Chapter Portal!
+            // Layer 4 Chapter Boss Cleared -> 0.8s Settle -> clear_stage* Cutscene -> Volume Recap & Portals
             if (curNode && !dm.clearedIds.includes(curNode.id)) dm.clearedIds.push(curNode.id);
             arena.waveTransitioning = true;
             arena.waveIdx = 5;
             const curEpoch = arena.stageEpoch;
-            setTimeout(() => {
-              if (!game || arena.stageEpoch !== curEpoch) return;
-              if (arena.enemies.filter(x => !x.isTreasure).length === 0) spawnCurrentWave();
-              else arena.waveTransitioning = false;
-            }, 580);
+            beginClearSettle({
+              durSec: 0.8,
+              bannerText: "✦ 妖王伏诛 · 残片既碎",
+              onDone: () => {
+                if (!game || arena.stageEpoch !== curEpoch) return;
+                if (arena.enemies.filter(x => !x.isTreasure).length === 0) spawnCurrentWave();
+                else arena.waveTransitioning = false;
+              }
+            });
           }
         } else {
           arena.waveTransitioning = true;
           arena.waveIdx += 1;
           const curEpoch = arena.stageEpoch;
-          setTimeout(() => {
-            if (!game || arena.stageEpoch !== curEpoch) return;
-            if (arena.enemies.filter(x => !x.isTreasure).length === 0) spawnCurrentWave();
-            else arena.waveTransitioning = false;
-          }, 650);
+          if (arena.waveIdx > 4) {
+            beginClearSettle({
+              durSec: 0.8,
+              bannerText: "✦ 妖王伏诛 · 残片既碎",
+              onDone: () => {
+                if (!game || arena.stageEpoch !== curEpoch) return;
+                if (arena.enemies.filter(x => !x.isTreasure).length === 0) spawnCurrentWave();
+                else arena.waveTransitioning = false;
+              }
+            });
+          } else {
+            setTimeout(() => {
+              if (!game || arena.stageEpoch !== curEpoch) return;
+              if (arena.enemies.filter(x => !x.isTreasure).length === 0) spawnCurrentWave();
+              else arena.waveTransitioning = false;
+            }, 650);
+          }
         }
       }
     }
@@ -29025,6 +29578,26 @@ const ART = {
     if (stepTitanDualClash(dt)) { updateBossBannerAndRecallOrb(); updateComboRankSeal(); return; }
     if (stepTitanClimbCinematic(dt)) { updateBossBannerAndRecallOrb(); updateComboRankSeal(); return; }
     if (stepRavineGlide(dt)) { updateComboRankSeal(); return; }
+    if (arena.clearSettle && arena.clearSettle.active) {
+      const cs = arena.clearSettle;
+      if (cs.stageEpoch !== arena.stageEpoch) {
+        arena.clearSettle = null;
+      } else {
+        if (isReducedMotionActive()) cs.elapsed = cs.dur;
+        else cs.elapsed += dt;
+        const prog = Math.min(1, cs.elapsed / Math.max(0.05, cs.dur));
+        arena.rainIntensity = 1.0 - 0.45 * prog;
+        if (cs.elapsed >= cs.dur) {
+          const doneCb = cs.onDone;
+          const doneSummary = cs.summary;
+          arena.clearSettle = null;
+          arena.rainIntensity = 0.55;
+          clearCombatOverlaysAndResetCombo({ clearToasts: false, resetCombo: true, clearSettle: false });
+          if (doneCb) doneCb(doneSummary);
+          if (cutscene.active || arena.paused) return;
+        }
+      }
+    }
     if (arena.hitStop > 0) {
       if (isReducedMotionActive() || a11ySettings.hitStopScale <= 0.02) arena.hitStop = 0;
       else { arena.hitStop -= dt / a11ySettings.hitStopScale; if (arena.hitStop > 0) return; }
@@ -30492,6 +31065,17 @@ const ART = {
     }
     for (let i = arena.floats.length - 1; i >= 0; i--) {
       const f = arena.floats[i];
+      if (f.settling) {
+        f.settleElapsed = (f.settleElapsed || 0) + dt;
+        const sDur = Math.max(0.05, f.settleDur || 0.55);
+        const sProg = Math.min(1, f.settleElapsed / sDur);
+        f.x += (f.vx || 0) * (1 - sProg * 0.6);
+        f.y += (f.vy || -0.4) * (1 - sProg * 0.5);
+        const startA = f.settleStartAlpha != null ? f.settleStartAlpha : 1.0;
+        f.alpha = startA * (1 - sProg);
+        if (sProg >= 1 || f.alpha <= 0.01) arena.floats.splice(i, 1);
+        continue;
+      }
       const ttl = f.ttl || 1.0;
       f.age += dt;
       const damp = Math.max(0.22, 1 - (f.age / ttl) * 0.72);
@@ -30580,6 +31164,7 @@ const ART = {
 
   function interactWithProp(pr) {
     if (!game || !pr) return false;
+    if (pr.guardUntil && performance.now() < pr.guardUntil) return false;
     const idx = arena.props.indexOf(pr);
     if (idx < 0) return false;
     const st = getCombatStats(game);
@@ -33797,14 +34382,19 @@ const ART = {
     // AAA Multi-Biome Climate: Bamboo Rain + Puddle Ripples, Cold-Pond Blizzard, Cloud-Sea Plumes & Boss Domain Sky!
     const domWeather = arena.bossDomain ? arena.bossDomain.weather : null;
     if ((stg.particleKind === "rain_mist" || domWeather === "blood_rain") && !rm) {
-      ctx.strokeStyle = domWeather === "blood_rain" ? "rgba(255, 110, 110, 0.30)" : "rgba(185, 230, 240, 0.26)";
+      const rainScale = typeof arena.rainIntensity === "number" ? Math.max(0.25, Math.min(1.0, arena.rainIntensity)) : 1.0;
+      const rainAlpha = (domWeather === "blood_rain" ? 0.30 : 0.26) * rainScale;
+      const rainDy = 0.014 * (0.62 + 0.38 * rainScale);
+      ctx.strokeStyle = domWeather === "blood_rain"
+        ? `rgba(255, 110, 110, ${rainAlpha.toFixed(3)})`
+        : `rgba(185, 230, 240, ${rainAlpha.toFixed(3)})`;
       ctx.lineWidth = 1.15;
       const rainStep = degLvl >= 1 ? 2 : 1;
       for (let ri = 0; ri < rainDrops.length; ri += rainStep) {
         const r = rainDrops[ri];
-        r.y += 0.014; r.x -= 0.0025;
+        r.y += rainDy; r.x -= 0.0025 * (0.65 + 0.35 * rainScale);
         if (r.y > 1) {
-          if (Math.random() < 0.08 && arena.ripples.length < 16) {
+          if (Math.random() < 0.08 * rainScale && arena.ripples.length < 16) {
             addRipple(r.x * w, (0.35 + Math.random() * 0.45) * h, 16, domWeather === "blood_rain" ? "rgba(255,110,110,0.28)" : "rgba(165,235,245,0.24)");
           }
           r.y = 0; r.x = Math.random();
@@ -34118,10 +34708,19 @@ const ART = {
   function updateComboRankSeal() {
     const seal = document.getElementById("combo-rank-seal");
     if (!seal) return;
-    if ((arena.comboCount < 2 && (arena.styleScore || 0) < 40) || drawerOpen) {
-      seal.classList.remove("active", "rank-s");
+    if (cutscene.active || drawerOpen || (arena.comboCount < 2 && (arena.styleScore || 0) < 40)) {
+      seal.classList.remove("active", "rank-s", "settling");
       return;
     }
+    if (typeof isClearSettling === "function" && isClearSettling()) {
+      if (typeof isReducedMotionActive === "function" && isReducedMotionActive()) {
+        seal.classList.remove("active", "rank-s", "settling");
+      } else if (seal.classList.contains("active")) {
+        seal.classList.add("settling");
+      }
+      return;
+    }
+    seal.classList.remove("settling");
     seal.classList.add("active");
     const sp = getStyleRankSpec(arena.styleScore || 0);
     seal.classList.toggle("rank-s", sp.rank === "S");
@@ -34435,7 +35034,7 @@ const ART = {
     else if (arena.domain) subTag.textContent = `☯ 太虚剑域 ${arena.domain.life.toFixed(1)}s`;
     else if (arena.player.meditating) subTag.textContent = lf.xpEfficiencyMult < 1 ? `☯ 周天吐纳 (${xpPct}% · 效率${Math.round(lf.xpEfficiencyMult * 100)}% · 每3秒耗1月寿元)` : `☯ 周天吐纳 (${xpPct}% · 每3秒耗1月寿元)`;
     else if (arena.towerMode) subTag.textContent = hostiles > 0 ? `余妖 ×${hostiles}` : "点击/Enter 进下一层";
-    else if (arena.stageIdx === 0 && !game.openingChoice) subTag.textContent = hostiles > 0 ? `救沈清禾 (${hostiles})` : "点击/Enter 择玉莲仙缘";
+    else if (arena.stageIdx === 0 && !game.openingChoice) subTag.textContent = hostiles > 0 ? `救沈清禾 (${hostiles})` : arena.props.some(x => x.kind === "pedestal") ? "点击/Enter 择玉莲仙缘" : "妖狼既退";
     else if (arena.props.some(x => x.kind === "ascend_gate")) subTag.textContent = game.realm === "spirit" ? "点击/Enter 叩九霄仙门" : "点击/Enter 登九霄化神台";
     else if (arena.props.some(x => x.kind === "portal")) subTag.textContent = "点击/Enter 启下卷传送阵";
     else if (selectableHud.length > 0) subTag.textContent = "本层已清 · 按 9 择路";
@@ -34884,6 +35483,28 @@ const ART = {
     } catch (e) {}
   }
 
+  const GUARDED_CHOICE_MODAL_KINDS = new Set([
+    "defeat",
+    "gear_overflow",
+    "destiny_fruit",
+    "iconic_draft",
+    "soul_unlock",
+    "lifespan_exhausted",
+    "save_conflict",
+    "volume_recap",
+    "ending",
+    "spire_curio",
+    "run_boon",
+    "encounter",
+    "pet_skill_choice"
+  ]);
+  const modalInputGuard = {
+    guardUntil: 0,
+    clickGuardUntil: 0,
+    heldKeysUntilRelease: new Set(),
+    guardedKind: ""
+  };
+
   function openModal(html, closeable = true, opts = {}) {
     const modalKind = (opts && opts.kind) || "";
     const nextPri = hasOwn(MODAL_PRIORITY, modalKind) ? MODAL_PRIORITY[modalKind] : MODAL_PRIORITY.default;
@@ -34928,6 +35549,19 @@ const ART = {
     }
 
     if (typeof stopHoldProgression === "function") stopHoldProgression("ui_closed");
+    if (typeof captureHeldKeysInto === "function") {
+      captureHeldKeysInto(modalInputGuard.heldKeysUntilRelease);
+    }
+    const nowModal = performance.now();
+    if (GUARDED_CHOICE_MODAL_KINDS.has(modalKind)) {
+      modalInputGuard.guardUntil = nowModal + DIALOGUE_INPUT_GUARD_MS;
+      modalInputGuard.clickGuardUntil = (nowModal - (lastCanvasCombatClickAt || 0) <= 350) ? (nowModal + DIALOGUE_INPUT_GUARD_MS) : 0;
+      modalInputGuard.guardedKind = modalKind;
+    } else {
+      modalInputGuard.guardUntil = 0;
+      modalInputGuard.clickGuardUntil = 0;
+      modalInputGuard.guardedKind = "";
+    }
     clearTransientInputs();
     const tipEl = document.getElementById("ling-tooltip");
     if (tipEl) tipEl.style.display = "none";
@@ -34973,6 +35607,10 @@ const ART = {
   }
   function closeModal() {
     clearTransientInputs();
+    modalInputGuard.guardUntil = 0;
+    modalInputGuard.clickGuardUntil = 0;
+    modalInputGuard.guardedKind = "";
+    modalInputGuard.heldKeysUntilRelease.clear();
     craftMinigame.open = false;
     rebindListeningAction = null;
     pendingCloudImport = null;
@@ -38097,6 +38735,7 @@ const ART = {
   // ==================== 12. INPUTS & MAIN 60FPS LOOP ====================
   window.addEventListener("keydown", (ev) => {
     GamepadSystem.setMode("kb");
+    if (!ev.repeat && ev.code) physicalKeysDown.add(ev.code);
 
     // 1. Keybind rebind capture mode (must work inside Settings modal, Escape cancels capture without closing modal)
     if (rebindListeningAction) {
@@ -38142,6 +38781,24 @@ const ART = {
         strikeTaixuCraftMinigame(false);
         return;
       }
+      // GAP-15 / UX-06: Space (一闪) must NEVER trigger auto-focused modal buttons outside the craft minigame
+      if (!craftMinigame.open && ev.code === "Space" && !isTypingTarget(ev.target)) {
+        ev.preventDefault();
+        return;
+      }
+      // Require held combat keys to be released & respect 400ms choice-modal Enter guard
+      if ((ev.code === "Enter" || ev.code === "NumpadEnter") && !isTypingTarget(ev.target)) {
+        const guardedModalNow = Boolean(
+          ev.repeat ||
+          (modalInputGuard.heldKeysUntilRelease && modalInputGuard.heldKeysUntilRelease.has(ev.code)) ||
+          (modalInputGuard.guardUntil && performance.now() < modalInputGuard.guardUntil)
+        );
+        if (guardedModalNow) {
+          ev.preventDefault();
+          return;
+        }
+        modalInputGuard.heldKeysUntilRelease.add(ev.code);
+      }
       return;
     }
 
@@ -38154,22 +38811,35 @@ const ART = {
       }
     }
 
-    // 3. Cutscene overlay
+    // 3. Cutscene overlay (GAP-15 / UX-06: only Enter or click advances; Space & KeyE never confirm; 400ms + release guard)
     if (cutscene.active) {
       if (ev.code === "Tab") {
         trapFocusInContainer(ev, document.getElementById("story-dialogue-bar"));
         return;
       }
+      if (ev.code === "Space" || ev.code === "KeyE") {
+        ev.preventDefault();
+        return;
+      }
       const curLine = cutscene.lines && cutscene.lines[cutscene.idx];
       const hasChoices = !!(curLine && curLine.choices && curLine.choices.length);
-      if (!hasChoices && (ev.code === "Space" || ev.code === "Enter")) {
-        ev.preventDefault();
-        const ae = document.activeElement;
-        if (ae && ae.id === "btn-dlg-skip") {
-          advanceCutscene(true);
-        } else {
-          advanceCutscene(false);
+      if (ev.code === "Enter" || ev.code === "NumpadEnter") {
+        if (isCutsceneInputGuarded(ev.code, ev.repeat)) {
+          ev.preventDefault();
+          return;
         }
+        if (!hasChoices) {
+          ev.preventDefault();
+          cutscene.heldKeysUntilRelease.add(ev.code);
+          const ae = document.activeElement;
+          if (ae && ae.id === "btn-dlg-skip") {
+            advanceCutscene(true);
+          } else {
+            advanceCutscene(false);
+          }
+          return;
+        }
+        cutscene.heldKeysUntilRelease.add(ev.code);
         return;
       }
       if (ev.code === "Escape") {
@@ -38182,6 +38852,7 @@ const ART = {
           focusDialogSafely(document.getElementById("story-dialogue-bar"));
           return;
         }
+        if (ev.repeat || (cutscene.heldKeysUntilRelease && cutscene.heldKeysUntilRelease.has(ev.code))) return;
         advanceCutscene(true);
         return;
       }
@@ -38310,6 +38981,11 @@ const ART = {
     const aeTag = ae && ae.tagName;
     const aeIsRoleButton = !!(ae && typeof ae.getAttribute === "function" && ae.getAttribute("role") === "button");
     const aeIsNativeInteractive = Boolean(aeTag && /^(BUTTON|A|SUMMARY)$/i.test(aeTag));
+    const aeInFloatingActionCard = Boolean(ae && ae.closest && ae.closest("#hud-save-alert, #gear-compare-card, #new-unlock-card, #prop-interact-hud"));
+    if (aeInFloatingActionCard && ev.code === "Space") {
+      ev.preventDefault();
+      return;
+    }
     if (aeIsRoleButton && (ev.code === "Enter" || ev.code === "Space")) {
       ev.preventDefault();
       if (typeof ae.click === "function") ae.click();
@@ -38333,9 +39009,10 @@ const ART = {
       return;
     }
 
-    if (ev.code === "Enter" && arena.nearbyProp) {
+    if ((ev.code === "Enter" || ev.code === "NumpadEnter") && arena.nearbyProp) {
       if (!aeIsRoleButton && (!aeTag || !/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/i.test(aeTag))) {
         ev.preventDefault();
+        if (ev.repeat || (cutscene.heldKeysUntilRelease && cutscene.heldKeysUntilRelease.has(ev.code))) return;
         interactWithProp(arena.nearbyProp);
         return;
       }
@@ -38403,6 +39080,20 @@ const ART = {
   }
   window.addEventListener("keyup", (ev) => {
     keysDown[ev.code] = false;
+    if (ev.code) {
+      physicalKeysDown.delete(ev.code);
+      if (cutscene.heldKeysUntilRelease) cutscene.heldKeysUntilRelease.delete(ev.code);
+      if (modalInputGuard && modalInputGuard.heldKeysUntilRelease) modalInputGuard.heldKeysUntilRelease.delete(ev.code);
+    }
+    if (ev.code === "Space" && !isTypingTarget(ev.target)) {
+      const bdUp = document.getElementById("modal-backdrop");
+      const modalOpenUp = Boolean(bdUp && bdUp.classList.contains("open"));
+      const aeUp = document.activeElement;
+      const aeInFloatCard = Boolean(aeUp && aeUp.closest && aeUp.closest("#hud-save-alert, #gear-compare-card, #new-unlock-card, #prop-interact-hud"));
+      if (cutscene.active || (modalOpenUp && !craftMinigame.open) || aeInFloatCard) {
+        ev.preventDefault();
+      }
+    }
     if (holdProgression.active && holdProgression.inputType === "keyboard" && ev.code === holdProgression.keyCode) {
       const wasRepeat = holdProgression.didRepeat;
       const hKind = holdProgression.kind;
@@ -38497,6 +39188,7 @@ const ART = {
     }
     const isCanvas = ev.target && ev.target.id === "fx-canvas";
     if (isCanvas) {
+      if (ev.button === 0 || ev.button === 2) lastCanvasCombatClickAt = performance.now();
       const pav = document.getElementById("pavilion-popover");
       const pavBtn = document.getElementById("btn-pavilion-menu");
       if (pav && pav.classList.contains("open")) {
@@ -38587,6 +39279,11 @@ const ART = {
     const cel = (ev.target && ev.target.nodeType === 1) ? ev.target : (ev.target && ev.target.parentElement ? ev.target.parentElement : null);
     const t = cel ? cel.closest('button, [role="button"]') : null;
     if (!t || t.disabled) return;
+    if (t.closest && t.closest("#modal-content") && !t.hasAttribute("data-modal-close")) {
+      if (modalInputGuard.clickGuardUntil && performance.now() < modalInputGuard.clickGuardUntil) {
+        return;
+      }
+    }
     if (t.closest && t.closest("#pavilion-popover")) {
       const pav = document.getElementById("pavilion-popover");
       const pavBtn = document.getElementById("btn-pavilion-menu");
@@ -38601,7 +39298,11 @@ const ART = {
       }
     }
 
-    if (t.id === "btn-dlg-next") { advanceCutscene(false); return; }
+    if (t.id === "btn-dlg-next") {
+      if (isCutsceneInputGuarded()) return;
+      advanceCutscene(false);
+      return;
+    }
     if (t.id === "btn-dlg-skip") { advanceCutscene(true); return; }
 
     if (t.id === "btn-toggle-origin") { document.getElementById("title-custom-drawer").classList.toggle("open"); return; }
@@ -39970,6 +40671,7 @@ const ART = {
       return;
     }
     if (t.hasAttribute("data-story-bar-id")) {
+      if (isCutsceneInputGuarded()) return;
       resolveStoryChoice(t.getAttribute("data-story-bar-id"), t.getAttribute("data-story-bar-opt"), true);
       return;
     }
@@ -41610,12 +42312,28 @@ const ART = {
     }
     if (t.id === "btn-toggle-bgm") {
       Sound.bgmEnabled = !Sound.bgmEnabled;
-      t.classList.toggle("active", Sound.bgmEnabled);
+      syncAudioToggleUi();
+      const res = saveAudioPrefs({ notifyOnError: true });
+      if (res.ok) {
+        showToast(Sound.bgmEnabled ? "🎵 已开启古琴仙乐" : "🎵 已关闭古琴仙乐", {
+          tier: 1,
+          key: "audio_bgm_toggle",
+          throttleMs: 250
+        });
+      }
       return;
     }
     if (t.id === "btn-mute-audio") {
-      Sound.muted = !Sound.muted;
-      t.classList.toggle("active", Sound.muted);
+      Sound.setMuted(!Sound.muted);
+      syncAudioToggleUi();
+      const res = saveAudioPrefs({ notifyOnError: true });
+      if (res.ok) {
+        showToast(Sound.muted ? "🔇 已静音全部声音" : "🔊 已恢复全部声音", {
+          tier: 1,
+          key: "audio_mute_toggle",
+          throttleMs: 250
+        });
+      }
       return;
     }
 
@@ -41892,8 +42610,22 @@ const ART = {
   // --- [runtime] src/runtime/main.js ---
   // ==================== 13. MAIN 60FPS RUNTIME LOOP SHELL ====================
   setInterval(() => {
-    if (game && !arena.paused && document.getElementById("welcome-screen").style.display === "none") {
+    const onWelcome = !game || document.getElementById("welcome-screen").style.display !== "none";
+    if (!onWelcome && !arena.paused) {
       Sound.tickBgm(arena.enemies.length > 0);
+      if (typeof isClearSettling !== "function" || !isClearSettling()) {
+        const stg = arena.sanctumMode ? STAGES[1] : arena.towerMode ? STAGES[3] : STAGES[arena.stageIdx];
+        const domWeather = arena.bossDomain ? arena.bossDomain.weather : null;
+        const isRainy = Boolean(!arena.sanctumMode && ((stg && stg.particleKind === "rain_mist") || domWeather === "blood_rain"));
+        Sound.syncRainAmbience(isRainy ? (arena.enemies.length > 0 ? "combat" : "calm") : "off", 0.45);
+      }
+    } else if (!onWelcome && cutscene.active && !arena.sanctumMode) {
+      const stg = arena.towerMode ? STAGES[3] : STAGES[arena.stageIdx];
+      const domWeather = arena.bossDomain ? arena.bossDomain.weather : null;
+      const isRainy = Boolean((stg && stg.particleKind === "rain_mist") || domWeather === "blood_rain");
+      Sound.syncRainAmbience(isRainy ? "calm" : "off", 0.45);
+    } else if (onWelcome) {
+      Sound.syncRainAmbience("off", 0.25);
     }
   }, 620);
 
@@ -42460,6 +43192,7 @@ const ART = {
   };
   window.addEventListener("load", () => {
     preloadSprites();
+    if (typeof syncAudioToggleUi === "function") syncAudioToggleUi();
     document.body.setAttribute('data-celestial-phase', getCurrentCelestialPhase().id);
     resizeCanvas();
     initAmbientEcosystem();

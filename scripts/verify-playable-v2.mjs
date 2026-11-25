@@ -1186,10 +1186,10 @@ try {
     });
     await page.waitForTimeout(180);
     await page.click('[data-play-story-bar="lu_intro"]');
-    await page.waitForTimeout(180);
+    await page.waitForTimeout(440);
     assert.equal(await page.locator("#dlg-choices-box .dlg-choice-btn").count(), 2);
     await page.click('[data-story-bar-id="lu_intro"][data-story-bar-opt="ambition"]');
-    await page.waitForTimeout(160);
+    await page.waitForTimeout(440);
     assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().game.stones), 240);
     await page.click("#btn-dlg-next");
     await page.waitForTimeout(120);
@@ -5500,7 +5500,7 @@ try {
     assert.equal(focusAfterMouseSkip.tabindex, "-1", "#visual-stage must have tabindex=-1");
     assert.equal(focusAfterMouseSkip.activeId, "visual-stage", `Mouse skip of opening_scroll must focus #visual-stage, got: ${focusAfterMouseSkip.activeId}`);
 
-    // 2. Dismiss cutscene via keyboard Space -> focus also lands on #visual-stage
+    // 2. GAP-15 / UX-06: Space must NOT advance dialogue; Enter (after 400ms guard) dismisses cutscene & returns focus to #visual-stage
     await page.evaluate(() => {
       const api = window.__CHENYUAN_DEBUG__;
       const g = api.getState().game;
@@ -5508,14 +5508,22 @@ try {
       api.playCutscene("opening_scroll");
     });
     await page.waitForSelector("#story-dialogue-bar.open");
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(60);
+    assert.equal(
+      await page.evaluate(() => Boolean(document.getElementById("story-dialogue-bar")?.classList.contains("open"))),
+      true,
+      "Space must NOT dismiss cutscene (GAP-15 / UX-06)"
+    );
+    await page.waitForTimeout(380);
     for (let i = 0; i < 12; i++) {
       const open = await page.evaluate(() => document.getElementById("story-dialogue-bar")?.classList.contains("open"));
       if (!open) break;
-      await page.keyboard.press("Space");
-      await page.waitForTimeout(40);
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(60);
     }
-    const focusAfterKbSpace = await page.evaluate(() => document.activeElement?.id || "");
-    assert.equal(focusAfterKbSpace, "visual-stage", `Keyboard Space finish of cutscene must focus #visual-stage, got: ${focusAfterKbSpace}`);
+    const focusAfterKbEnter = await page.evaluate(() => document.activeElement?.id || "");
+    assert.equal(focusAfterKbEnter, "visual-stage", `Keyboard Enter finish of cutscene must focus #visual-stage, got: ${focusAfterKbEnter}`);
 
     // 3. Enter near interactive prop interacts with prop instead of opening Settings
     await page.evaluate(() => {
@@ -9928,8 +9936,8 @@ try {
 
     const { ctx, page } = await startCleanGamePage(browser, "Q4-5", false);
     try {
-      // 2. Prologue -> Pedestal choice ("trade" string signature) -> Layer 0 Mortal clean wolves (0 tactical squad, 0 locked-key hint)
-      const vol1Flow = await page.evaluate(() => {
+      // 2. Prologue -> 0.8s clear settle -> prologue_rescue dialogue -> Pedestal choice ("trade" string signature) -> Layer 0 Mortal clean wolves
+      const preRescue = await page.evaluate(() => {
         const api = window.__CHENYUAN_DEBUG__;
         const s = api.getState();
         const phaseStart = api.getVol1JourneyPhase();
@@ -9939,13 +9947,26 @@ try {
           const rect = el.getBoundingClientRect();
           return cs.display !== "none" && cs.visibility !== "hidden" && Number(cs.opacity) > 0 && rect.width > 2 && rect.height > 2;
         }).length;
-        // Defeat the 3 prologue wolves to rescue Shen Qinghe & spawn both pedestals
+        // Defeat the 3 prologue wolves to trigger 0.8s clear settle -> prologue_rescue dialogue
         s.arena.enemies.slice().forEach(e => {
           e.hp = 1;
           api.damageEnemy(e, 500, true, 50, 0, 2, true);
         });
-        const skipDlg = document.getElementById("btn-dlg-skip");
-        if (skipDlg && document.getElementById("story-dialogue-bar")?.classList.contains("open")) skipDlg.click();
+        return { phaseStart, visibleHudBtns };
+      });
+      await page.waitForSelector("#story-dialogue-bar.open", { timeout: 3000 });
+      const pedestalsDuringDialogue = await page.evaluate(() =>
+        window.__CHENYUAN_DEBUG__.getState().arena.props.filter(pr => pr.kind === "pedestal").length
+      );
+      assert.equal(pedestalsDuringDialogue, 0, "GAP-16: Pedestals must NOT spawn before prologue_rescue dialogue finishes");
+      await page.click("#btn-dlg-skip");
+      await page.waitForFunction(() => !document.getElementById("story-dialogue-bar")?.classList.contains("open"), { timeout: 2000 });
+
+      const vol1Flow = await page.evaluate((pre) => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        const phaseStart = pre.phaseStart;
+        const visibleHudBtns = pre.visibleHudBtns;
         const phaseAfterRescue = api.getVol1JourneyPhase();
         const pedBadges = s.arena.props.filter(pr => pr.kind === "pedestal").map(pr => pr.badge || "");
         // Accept string signature on activatePedestalChoice
@@ -10039,9 +10060,9 @@ try {
           sawGold,
           sawPeril
         };
-      });
+      }, preRescue);
 
-      // Wait for real 580ms boss clear timer (preserving E2E-T4-01 timing!)
+      // Wait for real 0.8s clear settle & boss clear persistence
       await page.waitForFunction(() => window.__CHENYUAN_DEBUG__.isStageBossDefeated(window.__CHENYUAN_DEBUG__.getState().game, 0), { timeout: 2500 });
       const tribFlow = await page.evaluate(() => {
         const api = window.__CHENYUAN_DEBUG__;
