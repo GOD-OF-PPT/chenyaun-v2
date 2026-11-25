@@ -1,0 +1,54 @@
+{
+  "steps": [
+    {
+      "k": "afterPrologue",
+      "v": {
+        "dlg": null,
+        "quest": "破庙拔剑：退群狼救沈清禾并择定玉莲台仙缘",
+        "hp": "100/100"
+      }
+    },
+    {
+      "k": "heldLmbOnly",
+      "v": {
+        "ms": 31981,
+        "firstDlg": null,
+        "hp": "0/100",
+        "combo": "凡剑试锋 C"
+      }
+    },
+    {
+      "k": "canvasClickAdvancesDialogue",
+      "v": {
+        "changed": false,
+        "before": null,
+        "after": null
+      }
+    },
+    {
+      "k": "hubClickErr",
+      "v": "TimeoutError: elementHandle.click: Timeout 2000ms exceeded.\nCall log:\n  - attempting click action\n    2 × waiting for el"
+    },
+    {
+      "k": "afterHubClick",
+      "v": {
+        "stage": "青岚破庙石坪",
+        "dlg": null,
+        "quest": "破庙拔剑：退群狼救沈清禾并择定玉莲台仙缘"
+      }
+    },
+    {
+      "k": "reloadContinueVisible",
+      "v": true
+    },
+    {
+      "k": "afterReload",
+      "v": {
+        "stage": "青岚破庙石坪",
+        "dlg": null,
+        "quest": "破庙拔剑：退群狼救沈清禾并择定玉莲台仙缘"
+      }
+    }
+  ],
+  "errors": []
+}
