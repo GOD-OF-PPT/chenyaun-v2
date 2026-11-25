@@ -809,6 +809,144 @@ export const tests = [
       await page.evaluate(() => { window.__CHENYUAN_DEBUG__.getState().arena.player.shieldHp = 0; });
       for (let i = 0; i < 4; i++) await page.keyboard.press("Backslash");
       assert.equal(await page.evaluate(() => window.__CHENYUAN_DEBUG__.getState().arena.player.shieldHp), 0, "Spamming \\ cannot refresh Righteous dawn shield during cooldown (B-7)");
+
+      // Permanent regression lock (Run 45516569752): Wall-Splat frost_crystal/fire_brazier prop-shatter
+      // & 2P rescue multi-kill inside one stepArena tick must never throw TypeError on arena.enemies splice
+      const frostRes = await page.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        s.game.realm = "golden";
+        api.initArenaStage(1, false);
+        s.game.hp = Math.max(200, s.game.hp || 200);
+        s.arena.tribulation = null;
+        s.arena.hitStop = 0;
+        s.arena.witchTime = 0;
+        s.arena.domain = null;
+        s.arena.defeatPending = null;
+        let prop = s.arena.props.find(pr => pr.kind === "frost_crystal" && pr.destructible);
+        if (!prop) {
+          prop = {
+            id: "t508_frost_crystal", kind: "frost_crystal", destructible: true, art: "prop_frost_crystal",
+            name: "玄冰灵晶簇", badge: "击碎冻结群妖", x: 680, y: 500, r: 34, hp: 1, maxHp: 100, hitFlash: 0
+          };
+          s.arena.props.push(prop);
+        } else {
+          prop.hp = 1;
+        }
+        const propId = prop.id;
+        s.arena.enemies.length = 0;
+        api.spawnSingleEnemy("wolf", prop.x + 260, prop.y, 1.0, false, "frost_survivor");
+        api.spawnSingleEnemy("wolf", prop.x + 24, prop.y, 1.0, false, "frost_vic_1");
+        api.spawnSingleEnemy("wolf", prop.x, prop.y + 24, 1.0, false, "frost_vic_2");
+        api.spawnSingleEnemy("wolf", prop.x - 24, prop.y + 18, 1.0, false, "frost_vic_3");
+        api.spawnSingleEnemy("wolf", prop.x - 24, prop.y, 1.0, false, "frost_splat_trigger");
+        const surv = s.arena.enemies[0];
+        surv.hp = 50000; surv.maxHp = 50000; surv.hitFlash = 0.5; surv.wallSplatCd = 0; surv.kx = 0; surv.ky = 0;
+        for (let i = 1; i < s.arena.enemies.length; i++) {
+          const vic = s.arena.enemies[i];
+          vic.hp = 1; vic.maxHp = 20; vic.wallSplatCd = 0; vic.flinchTimer = 0; vic.kx = 0; vic.ky = 0;
+        }
+        const trigger = s.arena.enemies[s.arena.enemies.length - 1];
+        trigger.kx = 14; trigger.ky = 0;
+        api.stepArena(1 / 60);
+        s.arena.hitStop = 0;
+        api.stepArena(1 / 60);
+        return {
+          propRemoved: !s.arena.props.some(pr => pr.id === propId),
+          remaining: s.arena.enemies.length,
+          survivorAlive: s.arena.enemies.includes(surv),
+          survivorHitFlash: surv.hitFlash
+        };
+      });
+      assert.equal(frostRes.propRemoved, true, "Wall-Splat knockback must shatter destructible frost_crystal prop");
+      assert.equal(frostRes.remaining, 1, "frost_crystal shatter must kill all 4 low-HP enemies in one tick without splice crash");
+      assert.equal(frostRes.survivorAlive, true, "Surviving high-HP enemy must remain intact after multi-kill splice");
+      assert.ok(frostRes.survivorHitFlash < 0.5, "Enemy loop must still step index-0 survivor after multi-kill splice");
+
+      const fireRes = await page.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        s.arena.hitStop = 0;
+        let prop = s.arena.props.find(pr => pr.kind === "fire_brazier" && pr.destructible);
+        if (!prop) {
+          prop = {
+            id: "t508_fire_brazier", kind: "fire_brazier", destructible: true, art: "furnace",
+            name: "丹火赤铜炉", badge: "击碎燃起丹炎火海", x: 740, y: 460, r: 34, hp: 1, maxHp: 100, hitFlash: 0
+          };
+          s.arena.props.push(prop);
+        } else {
+          prop.hp = 1;
+        }
+        const propId = prop.id;
+        s.arena.enemies.length = 0;
+        api.spawnSingleEnemy("wolf", prop.x - 260, prop.y, 1.0, false, "fire_survivor");
+        api.spawnSingleEnemy("wolf", prop.x + 20, prop.y, 1.0, false, "fire_vic_1");
+        api.spawnSingleEnemy("wolf", prop.x, prop.y - 20, 1.0, false, "fire_vic_2");
+        api.spawnSingleEnemy("wolf", prop.x - 24, prop.y, 1.0, false, "fire_splat_trigger");
+        const surv = s.arena.enemies[0];
+        surv.hp = 50000; surv.maxHp = 50000; surv.hitFlash = 0.5; surv.wallSplatCd = 0; surv.kx = 0; surv.ky = 0;
+        for (let i = 1; i < s.arena.enemies.length; i++) {
+          const vic = s.arena.enemies[i];
+          vic.hp = 1; vic.maxHp = 20; vic.wallSplatCd = 0; vic.flinchTimer = 0; vic.kx = 0; vic.ky = 0;
+        }
+        const trigger = s.arena.enemies[s.arena.enemies.length - 1];
+        trigger.kx = 14; trigger.ky = 0;
+        api.stepArena(1 / 60);
+        s.arena.hitStop = 0;
+        api.stepArena(1 / 60);
+        return {
+          propRemoved: !s.arena.props.some(pr => pr.id === propId),
+          remaining: s.arena.enemies.length,
+          survivorAlive: s.arena.enemies.includes(surv),
+          survivorHitFlash: surv.hitFlash
+        };
+      });
+      assert.equal(fireRes.propRemoved, true, "Wall-Splat knockback must shatter destructible fire_brazier prop");
+      assert.equal(fireRes.remaining, 1, "fire_brazier shatter must kill all 3 low-HP enemies in one tick without splice crash");
+      assert.equal(fireRes.survivorAlive, true, "Surviving high-HP enemy must remain intact after fire_brazier multi-kill splice");
+      assert.ok(fireRes.survivorHitFlash < 0.5, "Enemy loop must still step index-0 survivor after fire_brazier splice");
+
+      const rescueRes = await page.evaluate(() => {
+        const api = window.__CHENYUAN_DEBUG__;
+        const s = api.getState();
+        s.game.realm = "golden";
+        s.game.aids = { shen: true, pei: false, lu: false, yan: false };
+        s.game.bondTiers = { shen: 1, pei: 0, lu: 0, yan: 0 };
+        api.toggleLocalCoop2P(true);
+        if (s.coop2P) { s.coop2P.downed = false; s.coop2P.rescueCd = 0; }
+        s.game.hp = 1;
+        s.arena.player.shieldHp = 0;
+        s.arena.player.invuln = 0;
+        s.arena.hitStop = 0;
+        s.arena.witchTime = 0;
+        s.arena.domain = null;
+        const p = s.arena.player;
+        s.arena.enemies.length = 0;
+        api.spawnSingleEnemy("wolf", p.x > 720 ? p.x - 280 : p.x + 280, p.y, 1.0, false, "rescue_survivor");
+        api.spawnSingleEnemy("wolf", p.x + 28, p.y, 1.0, false, "rescue_vic_1");
+        api.spawnSingleEnemy("wolf", p.x - 28, p.y, 1.0, false, "rescue_vic_2");
+        api.spawnSingleEnemy("wolf", p.x + 10, p.y, 1.0, false, "rescue_attacker");
+        const surv = s.arena.enemies[0];
+        surv.hp = 50000; surv.maxHp = 50000; surv.hitFlash = 0.5; surv.kx = 0; surv.ky = 0;
+        for (let i = 1; i < s.arena.enemies.length; i++) {
+          const vic = s.arena.enemies[i];
+          vic.hp = 1; vic.maxHp = 20; vic.flinchTimer = 0; vic.kx = 0; vic.ky = 0;
+        }
+        const atk = s.arena.enemies[s.arena.enemies.length - 1];
+        atk.attackType = "slam"; atk.state = "windup"; atk.timer = 0.001;
+        atk.perilous = false; atk.grabWindup = false; atk.lowSweepWindup = false; atk.enraged = false; atk.heavy = 50;
+        api.stepArena(1 / 60);
+        return {
+          hpAfter: s.game.hp,
+          remaining: s.arena.enemies.length,
+          survivorAlive: s.arena.enemies.includes(surv),
+          survivorHitFlash: surv.hitFlash
+        };
+      });
+      assert.ok(rescueRes.hpAfter > 1, "2P Co-Op rescue must save player from lethal enemy slam during enemy loop");
+      assert.equal(rescueRes.remaining, 1, "2P Co-Op rescue AoE must kill all 3 nearby low-HP enemies without splice crash");
+      assert.equal(rescueRes.survivorAlive, true, "Distant survivor must remain intact after 2P rescue multi-kill splice");
+      assert.ok(rescueRes.survivorHitFlash < 0.5, "Enemy loop must still step index-0 survivor after 2P rescue splice");
     }
   },
 

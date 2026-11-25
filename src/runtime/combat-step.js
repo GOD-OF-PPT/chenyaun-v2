@@ -1596,8 +1596,10 @@
       if (arena.tribulation && tb.boltsLeft <= 0 && tb.strikes.length === 0) completeLiveTribulation();
     }
 
-    for (let ei = arena.enemies.length - 1; ei >= 0; ei--) {
-      const e = arena.enemies[ei];
+    const enemiesSnap = arena.enemies.slice();
+    for (let ei = enemiesSnap.length - 1; ei >= 0; ei--) {
+      const e = enemiesSnap[ei];
+      if (!e || !arena.enemies.includes(e)) continue;
       if (e.hitFlash > 0) e.hitFlash -= dt;
       if (e.chillTimer > 0) e.chillTimer = Math.max(0, e.chillTimer - dt);
       if (e.burnTimer > 0) e.burnTimer = Math.max(0, e.burnTimer - dt);
@@ -1632,7 +1634,10 @@
             const splatDmg = Math.max(8, Math.round(st.atk * 1.05));
             e.hp = Math.max(1, e.hp - splatDmg);
             recordDamageTelemetry(splatDmg, "combo_morph");
-            if (hitProp && hitProp.destructible) damageBattleProp(hitProp, st.atk * 1.2);
+            if (hitProp && hitProp.destructible) {
+              damageBattleProp(hitProp, st.atk * 1.2);
+              if (!arena.enemies.includes(e)) continue;
+            }
             addFloat("💥 破壁崩震 · 浮空追击！", testClamp.x, testClamp.y - e.r - 32, "#ffd97d", 19, true);
           }
         }
@@ -1662,7 +1667,10 @@
         if (Math.abs(cp.x - e.x) > 0.5) e.vx *= -1;
         if (Math.abs(cp.y - e.y) > 0.5) e.vy *= -1;
         e.x = cp.x; e.y = cp.y;
-        if (e.timer <= 0) arena.enemies.splice(ei, 1);
+        if (e.timer <= 0) {
+          const curIdx = arena.enemies.indexOf(e);
+          if (curIdx >= 0) arena.enemies.splice(curIdx, 1);
+        }
         continue;
       }
 
@@ -1674,8 +1682,14 @@
         continue;
       }
       const witchMult = arena.witchTime > 0 ? 0.28 : 1.0;
-      if (e.isTitan) { stepColossalTitanAI(e, dt, w, h); }
-      if (e.isInnerDemon) stepInnerDemonAI(e, dt, w, h);
+      if (e.isTitan) {
+        stepColossalTitanAI(e, dt, w, h);
+        if (!arena.enemies.includes(e)) continue;
+      }
+      if (e.isInnerDemon) {
+        stepInnerDemonAI(e, dt, w, h);
+        if (!arena.enemies.includes(e)) continue;
+      }
       const rushSpdMult = (arena.bossRush && arena.bossRush.active && arena.rushAffixes.includes("rush_haste")) ? 1.25 : 1.0;
       const pactSpdMult = (hasPact(game, "swift_windup") ? 1.20 : 1.0) * rushSpdMult * ((e.hexBuffTimer || 0) > 0 ? 1.22 : 1.0);
       if (e.hexBuffTimer > 0) e.hexBuffTimer = Math.max(0, e.hexBuffTimer - dt);
@@ -1717,6 +1731,7 @@
             if (Math.hypot(p.x - e.x, p.y - e.y) < e.r + 56 && (p.z || 0) < 18) {
               hurtPlayer(Math.round(e.atk * 1.18), { sourceName: e.name || "影袭刺客", moveName: "影袭背刺", isHeavy: false });
               addFloat("🗡 影袭背刺!", p.x, p.y - 46, "#ff7875", 15, true);
+              if (!arena.enemies.includes(e)) continue;
             }
             e.flankCd = 4.2 + Math.random() * 1.2;
           }
@@ -1828,6 +1843,7 @@
             if (Math.hypot(p.x - e.x, (p.y - (e.y + 14)) / 0.56) <= (e.r + 58) && (p.z || 0) < 20) {
               hurtPlayer(Math.round(e.heavy * 1.15), { sourceName: e.name || "镇守妖王", moveName: "暗金夺命投", isHeavy: true });
               addFloat("⚠ 被夺命投技擒中！(下次迎击触发拼刀)", p.x, p.y - 54, "#ffae33", 15, true);
+              if (!arena.enemies.includes(e)) continue;
             }
             enterEnemyRecover(e, e.enraged ? 0.40 : 0.50);
           } else if (e.lowSweepWindup) {
@@ -1860,6 +1876,7 @@
               arena.shockRings.push({ x: e.x, y: e.y + atkSpec.originYOff, r: 22, maxR: e.partSevered ? 135 : 310, spd: 205, hitPlayer: false, color: "#ffb142", sourceName: e.name || "守山石卫" });
               if (p.invuln <= 0 && Math.hypot(p.x - e.x, (p.y - (e.y + atkSpec.originYOff)) / atkSpec.ellY) <= atkSpec.r) {
                 hurtPlayer(e.heavy, { sourceName: e.name || "守山石卫", moveName: "陨岳重击", isHeavy: true });
+                if (!arena.enemies.includes(e)) continue;
               }
             } else if (e.id === "serpent") {
               if (!e.partSevered) arena.frostPools.push({ x: e.aimX, y: e.aimY, r: 92, life: 5.5 });
@@ -1884,7 +1901,10 @@
             } else {
               arena.skyBolts.push({ x: e.aimX, y: e.aimY, t: 0, color: "#ff7875" });
               arena.shockRings.push({ x: e.aimX, y: e.aimY, r: 18, maxR: 220, spd: 190, hitPlayer: false, color: "#d69eff", sourceName: e.name || "天门道影" });
-              if (p.invuln <= 0 && Math.hypot(p.x - e.aimX, (p.y - e.aimY) / 0.56) <= 76) hurtPlayer(e.heavy, { sourceName: e.name || "天门道影", moveName: "九霄天雷", isHeavy: true });
+              if (p.invuln <= 0 && Math.hypot(p.x - e.aimX, (p.y - e.aimY) / 0.56) <= 76) {
+                hurtPlayer(e.heavy, { sourceName: e.name || "天门道影", moveName: "九霄天雷", isHeavy: true });
+                if (!arena.enemies.includes(e)) continue;
+              }
             }
             e.perilous = false;
             enterEnemyRecover(e, e.enraged ? 0.42 : 0.54);
@@ -1913,6 +1933,7 @@
             const isoDist = Math.hypot(p.x - e.x, (p.y - (e.y + sSpec.originYOff)) / sSpec.ellY);
             if (p.invuln <= 0 && isoDist <= sSpec.r) {
               hurtPlayer(e.heavy, { sourceName: e.name || "妖兽", moveName: "重劈震地", isHeavy: true });
+              if (!arena.enemies.includes(e)) continue;
             }
             if (e.enraged) {
               for (let k = 0; k < 6; k++) {
@@ -1964,6 +1985,7 @@
           if (inCorridor && nearBody) {
             e.lungeHitDone = true;
             hurtPlayer(e.heavy, { sourceName: e.name || "妖兽", moveName: "疾冲扑咬", isHeavy: true });
+            if (!arena.enemies.includes(e)) continue;
             e.timer = 0;
             if (e.mech === "drain") e.hp = Math.min(e.maxHp, e.hp + Math.round(e.maxHp * 0.08));
           }
