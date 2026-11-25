@@ -118,7 +118,7 @@
           focusDialogSafely(document.getElementById("story-dialogue-bar"));
           return;
         }
-        if (isCutsceneInputGuarded(ev.code, ev.repeat)) return;
+        if (ev.repeat || (cutscene.heldKeysUntilRelease && cutscene.heldKeysUntilRelease.has(ev.code))) return;
         advanceCutscene(true);
         return;
       }

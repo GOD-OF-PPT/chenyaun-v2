@@ -859,14 +859,15 @@ export const tests = [
           v25.damageEnemy(boss, 999, false);
         }
       });
-      await page.waitForTimeout(750);
+      await page.waitForSelector("#story-dialogue-bar.open", { timeout: 3000 }).catch(() => null);
 
       const dlgOpen = await page.evaluate(() =>
         !!document.querySelector("#story-dialogue-bar.open")
       );
       assert.equal(dlgOpen, true, "Defeating stage 0 boss must open #story-dialogue-bar for clear_stage0 cutscene");
 
-      // Advance dialogue to reach volume-end recap card
+      // Wait past 400ms UX-06 anti-misclick guard, then advance dialogue to reach volume-end recap card
+      await page.waitForTimeout(430);
       for (let i = 0; i < 8; i++) {
         const next = await page.$("#btn-dlg-next");
         if (next && await next.isVisible()) {
