@@ -824,6 +824,7 @@ export const tests = [
       await page1.evaluate(() => {
         const api = window.__CHENYUAN_DEBUG__;
         api.getState().game.realm = "spirit";
+        api.enterSanctumHub({ skipSave: true });
         api.saveGame();
       });
 
@@ -887,6 +888,7 @@ export const tests = [
       await page3.goto(env.baseUrl, { waitUntil: "domcontentloaded" });
       await page3.evaluate(() => localStorage.clear());
       await env.startFreshGame(page3, "焦点叠层");
+      await page3.evaluate(() => { window.__CHENYUAN_DEBUG__.enterSanctumHub(); });
       // R2A-6: Pavilion popover over open drawer -> Tab stays inside popover, Escape closes popover first
       await openNavTab(page3, "cultivate");
       await page3.click("#btn-pavilion-menu");
