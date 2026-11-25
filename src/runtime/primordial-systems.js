@@ -1,5 +1,7 @@
   // ==================== V22 PRIMORDIAL FINALE MODULES ====================
   const STEMS_STORAGE_KEY = "chenyuan_stems_v22";
+  const AUDIO_PREFS_STORAGE_KEY = "chenyuan_audio_prefs_v1";
+  const DEFAULT_AUDIO_PREFS = { muted: false, bgmEnabled: true };
   function applySanitizedAudioStems(p) {
     if (!p || typeof p !== "object" || Array.isArray(p)) return;
     ["guqin", "chime", "drum", "blade", "reverb"].forEach(k => {
@@ -8,18 +10,98 @@
       }
     });
   }
-  function loadAudioStems() {
+  function syncAudioToggleUi() {
+    const bgmBtn = document.getElementById("btn-toggle-bgm");
+    if (bgmBtn) {
+      const bgmOn = Boolean(Sound.bgmEnabled);
+      bgmBtn.classList.toggle("active", bgmOn);
+      bgmBtn.classList.toggle("active-toggle", bgmOn);
+      bgmBtn.classList.toggle("is-muted", !bgmOn);
+      bgmBtn.setAttribute("aria-pressed", String(bgmOn));
+      const bgmLbl = document.getElementById("lbl-bgm-state");
+      if (bgmLbl) bgmLbl.textContent = bgmOn ? "开" : "关";
+    }
+    const muteBtn = document.getElementById("btn-mute-audio");
+    if (muteBtn) {
+      const soundOn = !Sound.muted;
+      muteBtn.classList.toggle("active-toggle", soundOn);
+      muteBtn.classList.toggle("is-muted", !soundOn);
+      muteBtn.setAttribute("aria-pressed", String(soundOn));
+      muteBtn.setAttribute("data-muted", String(Boolean(Sound.muted)));
+      const muteLbl = document.getElementById("lbl-mute-state");
+      if (muteLbl) muteLbl.textContent = soundOn ? "开" : "静音";
+    }
+  }
+  function loadAudioPrefs() {
+    Sound.setMuted(DEFAULT_AUDIO_PREFS.muted);
+    Sound.bgmEnabled = DEFAULT_AUDIO_PREFS.bgmEnabled;
     try {
-      const raw = localStorage.getItem(STEMS_STORAGE_KEY);
-      if (raw) {
-        applySanitizedAudioStems(JSON.parse(raw));
+      const legacyRaw = localStorage.getItem(STEMS_STORAGE_KEY);
+      if (legacyRaw) {
+        applySanitizedAudioStems(JSON.parse(legacyRaw));
       }
     } catch (e) {}
+    try {
+      const raw = localStorage.getItem(AUDIO_PREFS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          if (hasOwn(parsed, "stems")) applySanitizedAudioStems(parsed.stems);
+          if (hasOwn(parsed, "muted") && typeof parsed.muted === "boolean") {
+            Sound.setMuted(parsed.muted);
+          }
+          if (hasOwn(parsed, "bgmEnabled") && typeof parsed.bgmEnabled === "boolean") {
+            Sound.bgmEnabled = parsed.bgmEnabled;
+          }
+        }
+      }
+    } catch (e) {}
+    syncAudioToggleUi();
+  }
+  function saveAudioPrefs({ notifyOnError = true } = {}) {
+    const stemsCopy = {
+      guqin: Sound.stems.guqin,
+      chime: Sound.stems.chime,
+      drum: Sound.stems.drum,
+      blade: Sound.stems.blade,
+      reverb: Sound.stems.reverb
+    };
+    const payload = {
+      version: 1,
+      muted: Boolean(Sound.muted),
+      bgmEnabled: Boolean(Sound.bgmEnabled),
+      stems: stemsCopy
+    };
+    let prefsErr = null;
+    try {
+      localStorage.setItem(AUDIO_PREFS_STORAGE_KEY, JSON.stringify(payload));
+    } catch (e) {
+      prefsErr = e;
+    }
+    try {
+      localStorage.setItem(STEMS_STORAGE_KEY, JSON.stringify(stemsCopy));
+    } catch (e) {
+      if (!prefsErr) prefsErr = e;
+    }
+    if (prefsErr) {
+      if (notifyOnError && typeof showToast === "function") {
+        showToast("⚠ 音频偏好写入失败（本地存储受限），仅当前会话生效，不影响游戏存档。", {
+          tier: 1,
+          key: "audio_prefs_write_fail",
+          throttleMs: 2500
+        });
+      }
+      return { ok: false, error: prefsErr };
+    }
+    return { ok: true };
+  }
+  function loadAudioStems() {
+    loadAudioPrefs();
   }
   function saveAudioStems() {
-    try { localStorage.setItem(STEMS_STORAGE_KEY, JSON.stringify(Sound.stems)); } catch (e) {}
+    return saveAudioPrefs({ notifyOnError: true });
   }
-  loadAudioStems();
+  loadAudioPrefs();
 
   // 1. Mythic Mounts (`山海灵骑 · 三大太古神兽`)
   const MYTHIC_MOUNTS = {

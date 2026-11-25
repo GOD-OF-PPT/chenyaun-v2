@@ -2646,14 +2646,19 @@
     // AAA Multi-Biome Climate: Bamboo Rain + Puddle Ripples, Cold-Pond Blizzard, Cloud-Sea Plumes & Boss Domain Sky!
     const domWeather = arena.bossDomain ? arena.bossDomain.weather : null;
     if ((stg.particleKind === "rain_mist" || domWeather === "blood_rain") && !rm) {
-      ctx.strokeStyle = domWeather === "blood_rain" ? "rgba(255, 110, 110, 0.30)" : "rgba(185, 230, 240, 0.26)";
+      const rainScale = typeof arena.rainIntensity === "number" ? Math.max(0.25, Math.min(1.0, arena.rainIntensity)) : 1.0;
+      const rainAlpha = (domWeather === "blood_rain" ? 0.30 : 0.26) * rainScale;
+      const rainDy = 0.014 * (0.62 + 0.38 * rainScale);
+      ctx.strokeStyle = domWeather === "blood_rain"
+        ? `rgba(255, 110, 110, ${rainAlpha.toFixed(3)})`
+        : `rgba(185, 230, 240, ${rainAlpha.toFixed(3)})`;
       ctx.lineWidth = 1.15;
       const rainStep = degLvl >= 1 ? 2 : 1;
       for (let ri = 0; ri < rainDrops.length; ri += rainStep) {
         const r = rainDrops[ri];
-        r.y += 0.014; r.x -= 0.0025;
+        r.y += rainDy; r.x -= 0.0025 * (0.65 + 0.35 * rainScale);
         if (r.y > 1) {
-          if (Math.random() < 0.08 && arena.ripples.length < 16) {
+          if (Math.random() < 0.08 * rainScale && arena.ripples.length < 16) {
             addRipple(r.x * w, (0.35 + Math.random() * 0.45) * h, 16, domWeather === "blood_rain" ? "rgba(255,110,110,0.28)" : "rgba(165,235,245,0.24)");
           }
           r.y = 0; r.x = Math.random();

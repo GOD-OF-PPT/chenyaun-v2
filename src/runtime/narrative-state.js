@@ -165,6 +165,11 @@
         cutscene.triggerEl = null;
       }
     }
+    if (typeof captureHeldKeysInto === "function") {
+      captureHeldKeysInto(cutscene.heldKeysUntilRelease);
+    }
+    clearTransientInputs();
+    cutscene.inputGuardUntil = performance.now() + DIALOGUE_INPUT_GUARD_MS;
     cutscene.active = true;
     cutscene.lines = lines;
     cutscene.idx = 0;
@@ -175,6 +180,8 @@
       onFinish();
     } : null;
     if (!cutscenePauseToken) cutscenePauseToken = acquirePauseToken("cutscene", "dialogue");
+    if (typeof updateComboRankSeal === "function") updateComboRankSeal();
+    if (typeof renderQuestTracker === "function") renderQuestTracker();
     renderCutsceneStep();
   }
 
@@ -308,6 +315,8 @@
     if (!bar) return;
     if (!cutscene.active || cutscene.idx >= cutscene.lines.length) {
       cutscene.active = false;
+      cutscene.inputGuardUntil = 0;
+      if (cutscene.heldKeysUntilRelease) cutscene.heldKeysUntilRelease.clear();
       bar.classList.remove("open");
       if (document.activeElement && bar.contains(document.activeElement) && typeof document.activeElement.blur === "function") {
         try { document.activeElement.blur(); } catch (e) {}
@@ -324,6 +333,8 @@
       cutscene.triggerEl = null;
       if (cb) cb();
       renderOnboardingCoach();
+      if (typeof renderQuestTracker === "function") renderQuestTracker();
+      if (typeof updateComboRankSeal === "function") updateComboRankSeal();
       const modalNowOpen = !!(bd && bd.classList.contains("open"));
       if (!cutscene.active && !modalNowOpen && !drawerOpen) {
         restoreTriggerFocus(savedTrigger);
@@ -342,6 +353,10 @@
     const nextBtn = document.getElementById("btn-dlg-next");
     const skipBtn = document.getElementById("btn-dlg-skip");
     if (line.choices && line.choices.length && chBox) {
+      cutscene.inputGuardUntil = Math.max(cutscene.inputGuardUntil || 0, performance.now() + DIALOGUE_INPUT_GUARD_MS);
+      if (typeof captureHeldKeysInto === "function") {
+        captureHeldKeysInto(cutscene.heldKeysUntilRelease);
+      }
       chBox.style.display = "flex";
       chBox.innerHTML = line.choices.map(o => {
         const ok = canAffordStoryOpt(game, o);
@@ -359,7 +374,8 @@
       if (chBox) { chBox.innerHTML = ""; chBox.style.display = "none"; }
       if (nextBtn) {
         nextBtn.style.display = "inline-flex";
-        nextBtn.textContent = line.finalBtnLabel || (cutscene.idx >= cutscene.lines.length - 1 ? "拔剑启程 ▸" : "继续 ▸");
+        const rawLabel = line.finalBtnLabel || (cutscene.idx >= cutscene.lines.length - 1 ? "拔剑启程 ▸" : "继续 ▸");
+        nextBtn.textContent = `Enter ${rawLabel}`;
       }
       if (skipBtn) skipBtn.textContent = "跳过";
     }
@@ -460,8 +476,27 @@
     age_might: "icon_scroll", karma_resonance: "char_shen", destiny_eye: "item_rough_jade"
   };
 
+  const DIALOGUE_INPUT_GUARD_MS = 400;
+  const physicalKeysDown = new Set();
   const keysDown = {};
   const pointer = { x: 720, y: 450, down: false, holdTime: 0, worldActive: false, moveTarget: null };
+  let lastCanvasCombatClickAt = 0;
+
+  function captureHeldKeysInto(targetSet) {
+    if (!targetSet || typeof targetSet.add !== "function") return;
+    targetSet.clear();
+    physicalKeysDown.forEach(code => targetSet.add(code));
+    Object.keys(keysDown).forEach(code => {
+      if (keysDown[code]) targetSet.add(code);
+    });
+  }
+
+  function isCutsceneInputGuarded(code = null, isRepeat = false) {
+    if (isRepeat) return true;
+    if (cutscene.inputGuardUntil && performance.now() < cutscene.inputGuardUntil) return true;
+    if (code && cutscene.heldKeysUntilRelease && cutscene.heldKeysUntilRelease.has(code)) return true;
+    return false;
+  }
 
   function clearTransientInputs() {
     Object.keys(keysDown).forEach(k => { keysDown[k] = false; });
@@ -472,6 +507,11 @@
   }
   window.addEventListener("blur", () => {
     clearTransientInputs();
+    physicalKeysDown.clear();
+    if (cutscene.heldKeysUntilRelease) cutscene.heldKeysUntilRelease.clear();
+    if (typeof modalInputGuard !== "undefined" && modalInputGuard && modalInputGuard.heldKeysUntilRelease) {
+      modalInputGuard.heldKeysUntilRelease.clear();
+    }
     if (typeof stopHoldProgression === "function") stopHoldProgression("window_blur");
   });
 
@@ -597,8 +637,15 @@
     tribulation: null,
     calmT: 0,
     calmFlushed: false,
-    pickupAgg: {}
+    pickupAgg: {},
+    clearSettle: null,
+    pendingClearSummary: null,
+    rainIntensity: 1.0
   };
+
+  function isClearSettling() {
+    return Boolean(arena && arena.clearSettle && arena.clearSettle.active);
+  }
 
   // ==================== V17 BOSS WEAKPOINT CORES, TRIAL AFFIXES & DUAL-POSTURE SPECS ====================
   const BOSS_WEAKPOINTS = {

@@ -507,14 +507,21 @@
     let fy = isBannerFloat ? ((arena.player ? arena.player.y : y) - 76) : y;
 
     if (isBannerFloat) {
-      let activeBanners = 0;
-      for (let fi = arena.floats.length - 1; fi >= 0; fi--) {
-        const fl = arena.floats[fi];
-        if (fl.isBannerFloat && fl.age < 1.1) {
-          fl.y -= 28;
-          activeBanners++;
-          if (activeBanners >= 3) {
-            fl.age = Math.max(fl.age, (fl.ttl || 1.2) - 0.14);
+      if (typeof isClearSettling === "function" && isClearSettling()) {
+        // During clear settle, merge/keep strictly at most 1 banner line
+        for (let fi = arena.floats.length - 1; fi >= 0; fi--) {
+          if (arena.floats[fi] && arena.floats[fi].isBannerFloat) arena.floats.splice(fi, 1);
+        }
+      } else {
+        let activeBanners = 0;
+        for (let fi = arena.floats.length - 1; fi >= 0; fi--) {
+          const fl = arena.floats[fi];
+          if (fl.isBannerFloat && fl.age < 1.1) {
+            fl.y -= 28;
+            activeBanners++;
+            if (activeBanners >= 3) {
+              fl.age = Math.max(fl.age, (fl.ttl || 1.2) - 0.14);
+            }
           }
         }
       }
@@ -536,13 +543,21 @@
     if (arena.particles && arena.particles.length > 160) {
       arena.particles.splice(0, arena.particles.length - 160);
     }
+    const settlingNow = Boolean(typeof isClearSettling === "function" && isClearSettling());
+    const remSettle = settlingNow && arena.clearSettle
+      ? Math.max(0.15, (arena.clearSettle.dur || 0.8) - (arena.clearSettle.elapsed || 0) - 0.06)
+      : ttl;
     arena.floats.push({
       isBannerFloat,
       isPerilous,
+      settling: settlingNow,
+      settleStartAlpha: 1.0,
+      settleElapsed: 0,
+      settleDur: settlingNow ? Math.min(remSettle, isBannerFloat ? 0.65 : 0.45) : 0,
       text, x: fx, y: fy,
       vx: isBannerFloat ? 0 : ((fx - x) * 0.015),
       vy: isBannerFloat ? -0.58 : (isCrit ? -1.42 : -1.05),
-      alpha: 1.0, age: 0, ttl, color, size, isCrit
+      alpha: 1.0, age: 0, ttl: settlingNow ? remSettle : ttl, color, size, isCrit
     });
     if (arena.floats.length > 26) arena.floats.shift();
   }
@@ -850,11 +865,201 @@
     syncPendingRewardsBadge();
   }
 
+  function clearCombatOverlaysAndResetCombo({ clearToasts = false, resetCombo = true, clearSettle = true } = {}) {
+    arena.floats = [];
+    arena.pickupAgg = {};
+    arena.radialBurst = null;
+    arena.flash = 0;
+    arena.shake = 0;
+    arena.impactFrames = 0;
+    arena.hitStop = 0;
+    if (arena.player && Array.isArray(arena.player.afterimages)) {
+      arena.player.afterimages = [];
+    }
+    if (Array.isArray(arena.distortionRings)) arena.distortionRings = [];
+    if (Array.isArray(arena.clashVfxList)) arena.clashVfxList = [];
+    if (Array.isArray(arena.soulAvatars)) arena.soulAvatars = [];
+    if (Array.isArray(arena.switchVfxList)) arena.switchVfxList = [];
+
+    if (execStampTimer) {
+      clearTimeout(execStampTimer);
+      execStampTimer = null;
+    }
+    const stampEl = document.getElementById("execution-stamp-overlay");
+    if (stampEl) stampEl.classList.remove("slam");
+
+    if (relicToastTimer) {
+      clearTimeout(relicToastTimer);
+      relicToastTimer = null;
+    }
+    const dharmaEl = document.getElementById("relic-dharma-toast");
+    if (dharmaEl) dharmaEl.classList.remove("active");
+
+    if (cutinTimer) {
+      clearTimeout(cutinTimer);
+      cutinTimer = null;
+    }
+    const cutinEl = document.getElementById("boss-cutin-banner");
+    if (cutinEl) cutinEl.classList.remove("show");
+
+    if (typeof clearCinematicClashOverlays === "function") clearCinematicClashOverlays();
+
+    if (clearSettle) {
+      arena.clearSettle = null;
+      arena.pendingClearSummary = null;
+    }
+    if (resetCombo) {
+      arena.comboCount = 0;
+      arena.comboTimer = 0;
+      arena.styleScore = 0;
+      arena.styleDecayTimer = 0;
+      arena.recentMoveHistory = [];
+      const seal = document.getElementById("combo-rank-seal");
+      if (seal) seal.classList.remove("active", "rank-s", "settling");
+      if (typeof updateComboRankSeal === "function") updateComboRankSeal();
+    }
+    if (clearToasts) {
+      const tc = document.getElementById("toast-container");
+      if (tc) tc.innerHTML = "";
+    }
+  }
+
+  function captureClearSummarySnapshot() {
+    const combo = Math.max(Math.floor(num(arena.comboCount, 0)), Math.floor(num(arena.maxStageCombo, 0)));
+    const styleScore = Math.max(0, num(arena.styleScore, 0));
+    const hasRank = arena.comboCount >= 2 || styleScore >= 40;
+    const rankSpec = hasRank && typeof getStyleRankSpec === "function" ? getStyleRankSpec(styleScore) : null;
+    const readyBounties = (game && typeof SECT_BOUNTY_CHAINS !== "undefined" && typeof getBountySpec === "function")
+      ? SECT_BOUNTY_CHAINS.map(c => getBountySpec(game, c)).filter(b => b && b.ready)
+      : [];
+    return {
+      rank: rankSpec ? rankSpec.rank : null,
+      rankTitle: rankSpec ? rankSpec.title : "",
+      combo: Math.max(1, combo),
+      bounties: readyBounties.map(b => ({ title: b.title, stones: b.stones, slot: b.slot }))
+    };
+  }
+
+  function emitPostDialogueClearSummary(summary) {
+    if (!summary) return false;
+    const parts = [];
+    if (summary.rank) {
+      parts.push(`评级 ${summary.rank}（${summary.rankTitle} ×${summary.combo}）`);
+    }
+    if (Array.isArray(summary.bounties) && summary.bounties.length > 0) {
+      const firstB = summary.bounties[0];
+      const extra = summary.bounties.length > 1 ? ` 等${summary.bounties.length}项` : "";
+      parts.push(`悬赏功成：${firstB.title}${extra}（目标可领 +${firstB.stones}石）`);
+    }
+    if (!parts.length) return false;
+    return showToast(`✦ 战果汇总：${parts.join(" ｜ ")}`, {
+      tier: 1,
+      key: "post_dialogue_clear_summary",
+      throttleMs: 200,
+      ttl: 3400
+    });
+  }
+
+  function beginClearSettle({ durSec = 0.8, bannerText = "", onDone = null } = {}) {
+    const summary = captureClearSummarySnapshot();
+    arena.pendingClearSummary = summary;
+    const rm = typeof isReducedMotionActive === "function" && isReducedMotionActive();
+    const seal = document.getElementById("combo-rank-seal");
+
+    if (rm || durSec <= 0) {
+      arena.rainIntensity = 0.55;
+      if (typeof Sound !== "undefined" && typeof Sound.settleRainAmbience === "function") {
+        Sound.settleRainAmbience(true, 0);
+      }
+      clearCombatOverlaysAndResetCombo({ clearToasts: false, resetCombo: true, clearSettle: false });
+      arena.clearSettle = null;
+      if (typeof renderQuestTracker === "function") renderQuestTracker();
+      if (typeof onDone === "function") onDone(summary);
+      return;
+    }
+
+    // Non-reducedMotion: ~0.8s settle phase (fade floats, collapse banners to 1 line, fold combo seal, soften rain)
+    const existingBanners = arena.floats.filter(f => f && f.isBannerFloat);
+    const mergedText = bannerText || (existingBanners.length ? existingBanners[existingBanners.length - 1].text : "");
+    const nonBanners = arena.floats.filter(f => f && !f.isBannerFloat);
+    const settleBannerDur = Math.min(durSec * 0.88, 0.70);
+    const settleDmgDur = Math.min(durSec * 0.65, 0.52);
+
+    for (const f of nonBanners) {
+      f.settling = true;
+      f.settleStartAlpha = Math.max(0.15, Math.min(1, f.alpha || 1));
+      f.settleElapsed = 0;
+      f.settleDur = settleDmgDur;
+      f.vx = (f.vx || 0) * 0.35;
+      f.vy = Math.min(f.vy || -0.6, -0.45);
+    }
+    arena.floats = nonBanners;
+    if (mergedText) {
+      const cv = document.getElementById("fx-canvas");
+      const px = arena.player ? arena.player.x : (((cv && cv.width) || 1440) * 0.5);
+      const py = arena.player ? arena.player.y : (((cv && cv.height) || 900) * 0.54);
+      arena.floats.push({
+        isBannerFloat: true,
+        isPerilous: false,
+        settling: true,
+        settleStartAlpha: 1.0,
+        settleElapsed: 0,
+        settleDur: settleBannerDur,
+        text: mergedText,
+        x: px,
+        y: py - 82,
+        vx: 0,
+        vy: -0.32,
+        alpha: 1.0,
+        age: 0,
+        ttl: settleBannerDur,
+        color: "#ffe8a6",
+        size: 18,
+        isCrit: false
+      });
+    }
+
+    arena.pickupAgg = {};
+    arena.radialBurst = null;
+    arena.hitStop = 0;
+    if (execStampTimer) {
+      clearTimeout(execStampTimer);
+      execStampTimer = null;
+    }
+    const stampEl = document.getElementById("execution-stamp-overlay");
+    if (stampEl) stampEl.classList.remove("slam");
+    if (relicToastTimer) {
+      clearTimeout(relicToastTimer);
+      relicToastTimer = null;
+    }
+    const dharmaEl = document.getElementById("relic-dharma-toast");
+    if (dharmaEl) dharmaEl.classList.remove("active");
+
+    if (seal && seal.classList.contains("active")) {
+      seal.classList.add("settling");
+    }
+    if (typeof Sound !== "undefined" && typeof Sound.settleRainAmbience === "function") {
+      Sound.settleRainAmbience(false, durSec);
+    }
+
+    arena.clearSettle = {
+      active: true,
+      elapsed: 0,
+      dur: durSec,
+      stageEpoch: arena.stageEpoch,
+      summary,
+      onDone: typeof onDone === "function" ? onDone : null
+    };
+    if (typeof renderQuestTracker === "function") renderQuestTracker();
+  }
+
   function resetStageTransitionState() {
     const wasCutscene = cutscene.active;
     cutscene.active = false;
     cutscene.onFinish = null;
     cutscene.triggerEl = null;
+    cutscene.inputGuardUntil = 0;
+    if (cutscene.heldKeysUntilRelease) cutscene.heldKeysUntilRelease.clear();
     const dlgBar = document.getElementById("story-dialogue-bar");
     if (dlgBar) {
       if (document.activeElement && dlgBar.contains(document.activeElement) && typeof document.activeElement.blur === "function") {
@@ -886,6 +1091,11 @@
     }
     const rcc = document.getElementById("region-cinema-card");
     if (rcc) rcc.classList.remove("show");
+    clearCombatOverlaysAndResetCombo({ clearToasts: true, resetCombo: true, clearSettle: true });
+    arena.rainIntensity = 1.0;
+    if (typeof Sound !== "undefined" && typeof Sound.syncRainAmbience === "function") {
+      Sound.syncRainAmbience("off", isReducedMotionActive() ? 0 : 0.25);
+    }
     arena.stageClearHandledEpoch = -1;
     arena.stageClearPending = false;
     pendingVolumeRecapOnDismiss = null;

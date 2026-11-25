@@ -634,22 +634,53 @@
         const shenProp = arena.props.find(p => p.id === "shen_rescue" && !p.rescued);
         if (shenProp) {
           shenProp.rescued = true;
-          shenProp.bubble = "多谢拔剑相救！点击或按 Enter 于玉莲台择一谢礼：";
+          shenProp.bubble = "";
+          arena.waveTransitioning = true;
           Sound.fanfare();
-          const canvas = document.getElementById("fx-canvas");
-          const w = canvas.width || 1440, h = canvas.height || 900;
-          const p1 = clampToPlaza(w * 0.55, h * 0.62, w, h);
-          const p2 = clampToPlaza(w * 0.69, h * 0.62, w, h);
-          arena.props.push({
-            id: "ped_shen", kind: "pedestal", choice: "help", art: "item_lotus", onLotus: true,
-            name: "青莲灵契", badge: "点击/Enter 立得青莲药师袍(+34血+4减伤) · 下战按 R 唤沈清禾助阵", x: p1.x, y: p1.y, r: 42, progress: 0
+          const rescueEpoch = arena.stageEpoch;
+          const spawnProloguePedestals = (summary) => {
+            if (!game || arena.stageEpoch !== rescueEpoch || arena.sanctumMode) return;
+            arena.waveTransitioning = false;
+            const propNow = arena.props.find(p => p.id === "shen_rescue");
+            if (propNow) {
+              propNow.bubble = "多谢拔剑相救！点击或按 Enter 于玉莲台择一谢礼：";
+            }
+            if (!game.openingChoice && !arena.props.some(p => p.kind === "pedestal")) {
+              const canvas = document.getElementById("fx-canvas");
+              const w = (canvas && canvas.width) || window.innerWidth || 1440;
+              const h = (canvas && canvas.height) || window.innerHeight || 900;
+              const p1 = clampToPlaza(w * 0.55, h * 0.62, w, h);
+              const p2 = clampToPlaza(w * 0.69, h * 0.62, w, h);
+              const pedGuardUntil = performance.now() + DIALOGUE_INPUT_GUARD_MS;
+              arena.props.push({
+                id: "ped_shen", kind: "pedestal", choice: "help", art: "item_lotus", onLotus: true,
+                name: "青莲灵契", badge: "点击/Enter 立得青莲药师袍(+34血+4减伤) · 下战按 R 唤沈清禾助阵",
+                x: p1.x, y: p1.y, r: 42, progress: 0, guardUntil: pedGuardUntil
+              });
+              arena.props.push({
+                id: "ped_sword", kind: "pedestal", choice: "trade", art: "relic_frost_sword", onLotus: true,
+                name: "惊鸿剑诀", badge: "点击/Enter 立得飞剑 +1 + 惊鸿青霜剑(+10攻+4%暴) · 对比换装",
+                x: p2.x, y: p2.y, r: 42, progress: 0, guardUntil: pedGuardUntil
+              });
+            }
+            arena.pendingClearSummary = null;
+            emitPostDialogueClearSummary(summary);
+            updateHud();
+            if (typeof renderQuestTracker === "function") renderQuestTracker();
+          };
+          beginClearSettle({
+            durSec: 0.8,
+            bannerText: "✦ 妖狼既退 · 剑意归鞘",
+            onDone: (summary) => {
+              if (!game || arena.stageEpoch !== rescueEpoch || arena.sanctumMode) {
+                arena.waveTransitioning = false;
+                return;
+              }
+              playCutscene("prologue_rescue", () => {
+                spawnProloguePedestals(summary);
+              });
+            }
           });
-          arena.props.push({
-            id: "ped_sword", kind: "pedestal", choice: "trade", art: "relic_frost_sword", onLotus: true,
-            name: "惊鸿剑诀", badge: "点击/Enter 立得飞剑 +1 + 惊鸿青霜剑(+10攻+4%暴) · 对比换装", x: p2.x, y: p2.y, r: 42, progress: 0
-          });
-          // Trigger Prologue Portrait Cutscene!
-          playCutscene("prologue_rescue");
         } else if (arena.dungeonMap) {
           const dm = arena.dungeonMap;
           const curNode = dm.nodes[dm.currentNodeId];
@@ -662,26 +693,42 @@
               spawnMapExitGateAndBoon();
             }, 460);
           } else {
-            // Layer 4 Chapter Boss Cleared -> Chapter Victory & Continuous Next-Chapter Portal!
+            // Layer 4 Chapter Boss Cleared -> 0.8s Settle -> clear_stage* Cutscene -> Volume Recap & Portals
             if (curNode && !dm.clearedIds.includes(curNode.id)) dm.clearedIds.push(curNode.id);
             arena.waveTransitioning = true;
             arena.waveIdx = 5;
             const curEpoch = arena.stageEpoch;
-            setTimeout(() => {
-              if (!game || arena.stageEpoch !== curEpoch) return;
-              if (arena.enemies.filter(x => !x.isTreasure).length === 0) spawnCurrentWave();
-              else arena.waveTransitioning = false;
-            }, 580);
+            beginClearSettle({
+              durSec: 0.8,
+              bannerText: "✦ 妖王伏诛 · 残片既碎",
+              onDone: () => {
+                if (!game || arena.stageEpoch !== curEpoch) return;
+                if (arena.enemies.filter(x => !x.isTreasure).length === 0) spawnCurrentWave();
+                else arena.waveTransitioning = false;
+              }
+            });
           }
         } else {
           arena.waveTransitioning = true;
           arena.waveIdx += 1;
           const curEpoch = arena.stageEpoch;
-          setTimeout(() => {
-            if (!game || arena.stageEpoch !== curEpoch) return;
-            if (arena.enemies.filter(x => !x.isTreasure).length === 0) spawnCurrentWave();
-            else arena.waveTransitioning = false;
-          }, 650);
+          if (arena.waveIdx > 4) {
+            beginClearSettle({
+              durSec: 0.8,
+              bannerText: "✦ 妖王伏诛 · 残片既碎",
+              onDone: () => {
+                if (!game || arena.stageEpoch !== curEpoch) return;
+                if (arena.enemies.filter(x => !x.isTreasure).length === 0) spawnCurrentWave();
+                else arena.waveTransitioning = false;
+              }
+            });
+          } else {
+            setTimeout(() => {
+              if (!game || arena.stageEpoch !== curEpoch) return;
+              if (arena.enemies.filter(x => !x.isTreasure).length === 0) spawnCurrentWave();
+              else arena.waveTransitioning = false;
+            }, 650);
+          }
         }
       }
     }
@@ -741,6 +788,26 @@
     if (stepTitanDualClash(dt)) { updateBossBannerAndRecallOrb(); updateComboRankSeal(); return; }
     if (stepTitanClimbCinematic(dt)) { updateBossBannerAndRecallOrb(); updateComboRankSeal(); return; }
     if (stepRavineGlide(dt)) { updateComboRankSeal(); return; }
+    if (arena.clearSettle && arena.clearSettle.active) {
+      const cs = arena.clearSettle;
+      if (cs.stageEpoch !== arena.stageEpoch) {
+        arena.clearSettle = null;
+      } else {
+        if (isReducedMotionActive()) cs.elapsed = cs.dur;
+        else cs.elapsed += dt;
+        const prog = Math.min(1, cs.elapsed / Math.max(0.05, cs.dur));
+        arena.rainIntensity = 1.0 - 0.45 * prog;
+        if (cs.elapsed >= cs.dur) {
+          const doneCb = cs.onDone;
+          const doneSummary = cs.summary;
+          arena.clearSettle = null;
+          arena.rainIntensity = 0.55;
+          clearCombatOverlaysAndResetCombo({ clearToasts: false, resetCombo: true, clearSettle: false });
+          if (doneCb) doneCb(doneSummary);
+          if (cutscene.active || arena.paused) return;
+        }
+      }
+    }
     if (arena.hitStop > 0) {
       if (isReducedMotionActive() || a11ySettings.hitStopScale <= 0.02) arena.hitStop = 0;
       else { arena.hitStop -= dt / a11ySettings.hitStopScale; if (arena.hitStop > 0) return; }
@@ -2208,6 +2275,17 @@
     }
     for (let i = arena.floats.length - 1; i >= 0; i--) {
       const f = arena.floats[i];
+      if (f.settling) {
+        f.settleElapsed = (f.settleElapsed || 0) + dt;
+        const sDur = Math.max(0.05, f.settleDur || 0.55);
+        const sProg = Math.min(1, f.settleElapsed / sDur);
+        f.x += (f.vx || 0) * (1 - sProg * 0.6);
+        f.y += (f.vy || -0.4) * (1 - sProg * 0.5);
+        const startA = f.settleStartAlpha != null ? f.settleStartAlpha : 1.0;
+        f.alpha = startA * (1 - sProg);
+        if (sProg >= 1 || f.alpha <= 0.01) arena.floats.splice(i, 1);
+        continue;
+      }
       const ttl = f.ttl || 1.0;
       f.age += dt;
       const damp = Math.max(0.22, 1 - (f.age / ttl) * 0.72);
@@ -2296,6 +2374,7 @@
 
   function interactWithProp(pr) {
     if (!game || !pr) return false;
+    if (pr.guardUntil && performance.now() < pr.guardUntil) return false;
     const idx = arena.props.indexOf(pr);
     if (idx < 0) return false;
     const st = getCombatStats(game);

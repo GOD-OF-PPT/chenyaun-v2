@@ -58,7 +58,7 @@
     const ws = document.getElementById("welcome-screen");
     if (ws && ws.style.display !== "none") return false;
     if (arena.tribulation || arena.defeatPending || cutscene.active) return false;
-    if (arena.stageClearPending || pendingVolumeRecapOnDismiss || deferredVolumeRecapModal || arena.waveTransitioning) return false;
+    if (arena.stageClearPending || pendingVolumeRecapOnDismiss || deferredVolumeRecapModal || arena.waveTransitioning || isClearSettling()) return false;
     if (arena.cloudFlight && arena.cloudFlight.active) return false;
     if (arena.sectDefense && arena.sectDefense.active) return false;
     const hasAnyAliveEnemy = Array.isArray(arena.enemies) && arena.enemies.some(e => e && e.hp > 0);
@@ -126,6 +126,7 @@
       (bd && bd.classList.contains("open")) ||
       drawerOpen ||
       cutscene.active ||
+      isClearSettling() ||
       photoMode.active ||
       saveConflictState ||
       storageReadError ||
@@ -775,7 +776,7 @@
           ? `<button type="button" class="btn-jade" data-action="reroll-run-boon">天机换韵（免费剩余 ${arena.boonRerollsLeft} 次）</button>`
           : `<button type="button" class="btn-ghost" data-modal-close="1">暂缓稍后择取</button>`}
       </div>
-    `, true);
+    `, true, { kind: "run_boon" });
   }
 
   function applyPickedRunBoon(boonId) {
@@ -959,6 +960,8 @@
     arena.fireZones = [];
     arena.frostPools = [];
     arena.nearbyProp = null;
+    clearCombatOverlaysAndResetCombo({ clearToasts: false, resetCombo: true, clearSettle: true });
+    arena.rainIntensity = 1.0;
     renderPropInteractHud();
     const startPos = clampToPlaza(w * 0.31, h * 0.54, w, h);
     arena.player.x = startPos.x;
@@ -1283,12 +1286,15 @@
         spawnStageClearPortals(stageIdx, clearPayload);
         updateHud();
       };
+      const clearSummary = arena.pendingClearSummary;
+      arena.pendingClearSummary = null;
       playCutscene(`clear_stage${stageIdx}`, () => {
         if (!game || arena.stageEpoch !== clearEpoch || !isNormalCampaignStage()) {
           arena.stageClearPending = false;
           return;
         }
         saveGame();
+        emitPostDialogueClearSummary(clearSummary);
         openVolumeEndRecapModal(stageIdx, clearPayload, finalize);
       });
       updateHud();

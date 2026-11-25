@@ -907,7 +907,7 @@
       practiceFormalSnapshot = null;
       clearTransientChoiceQueues();
       saveA11ySettings();
-      try { localStorage.setItem(STEMS_STORAGE_KEY, JSON.stringify(Sound.stems)); } catch (e) {}
+      saveAudioPrefs({ notifyOnError: false });
       syncFlyingSwords();
       syncTagTeamHud();
       syncV22TacticalDock();

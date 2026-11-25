@@ -1886,7 +1886,8 @@
 
     // Row 2: During prologue keep single-objective focus; after prologue show ready bounty, 3-Star strip, or top Sanctum bounty
     const isPrologueFocus = !game.openingChoice && rankOf(game.realm) < 1;
-    const readyBounty = SECT_BOUNTY_CHAINS.map(c => getBountySpec(game, c)).find(b => b.ready);
+    const hideBountyForDialogue = Boolean(cutscene.active || (typeof isClearSettling === "function" && isClearSettling()));
+    const readyBounty = hideBountyForDialogue ? null : SECT_BOUNTY_CHAINS.map(c => getBountySpec(game, c)).find(b => b.ready);
     if (readyBounty) {
       rows.push(`
         <button type="button" class="qt-goal-row claim-ready" data-claim-bounty="${readyBounty.slot}">

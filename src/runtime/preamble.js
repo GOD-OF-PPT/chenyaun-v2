@@ -9,6 +9,8 @@
     ctx: null, muted: false, bgmEnabled: true, bgmStep: 0, noiseBuf: null,
     bgmFilter: null, bgmDuckGain: null, reverbNode: null, reverbWet: null,
     duckState: { active: false, hz: 18500, gain: 1.0, restoreTimer: null },
+    rainCtx: null, rainSrc: null, rainFilter: null, rainGain: null, rainBuf: null,
+    rainState: { level: "off", targetGain: 0, filterHz: 1450 },
     cueLog: [],
     lastCue: null,
     recordCue(cue, tier = "ui", meta = {}) {
@@ -222,9 +224,144 @@
         if (this.ctx && this.bgmFilter && this.bgmDuckGain) {
           const t2 = this.ctx.currentTime;
           this.bgmFilter.frequency.setTargetAtTime(18500, t2, 0.18);
-          this.bgmDuckGain.gain.setTargetAtTime(1.0, t2, 0.16);
+          this.bgmDuckGain.gain.setTargetAtTime(this.muted ? 0 : 1.0, t2, 0.16);
         }
       }, holdMs);
+    },
+    setMuted(nextMuted) {
+      this.muted = Boolean(nextMuted);
+      if (this.ctx) {
+        const now = this.ctx.currentTime;
+        if (this.muted) {
+          if (this.rainGain) {
+            this.rainGain.gain.cancelScheduledValues(now);
+            this.rainGain.gain.setValueAtTime(0, now);
+          }
+          if (this.bgmDuckGain) {
+            this.bgmDuckGain.gain.cancelScheduledValues(now);
+            this.bgmDuckGain.gain.setValueAtTime(0, now);
+          }
+          this.rainState.targetGain = 0;
+        } else {
+          if (this.bgmDuckGain) {
+            const targetBgm = this.duckState && this.duckState.active ? this.duckState.gain : 1.0;
+            this.bgmDuckGain.gain.cancelScheduledValues(now);
+            this.bgmDuckGain.gain.setTargetAtTime(targetBgm, now, 0.05);
+          }
+          if (this.rainState && this.rainState.level && this.rainState.level !== "off") {
+            this.syncRainAmbience(this.rainState.level, 0.25);
+          }
+        }
+      } else if (this.muted) {
+        this.rainState.targetGain = 0;
+      }
+      return this.muted;
+    },
+    ensureRainNodes() {
+      if (!this.ctx || this.ctx.state !== "running" || this.muted) return false;
+      if (this.rainCtx !== this.ctx) {
+        if (this.rainSrc) {
+          try { this.rainSrc.stop(); } catch (e) {}
+        }
+        this.rainCtx = this.ctx;
+        this.rainSrc = null;
+        this.rainFilter = null;
+        this.rainGain = null;
+        this.rainBuf = null;
+      }
+      if (this.rainSrc && this.rainFilter && this.rainGain) return true;
+      try {
+        const sr = this.ctx.sampleRate;
+        const len = Math.floor(sr * 2.0);
+        const buf = this.ctx.createBuffer(1, len, sr);
+        const data = buf.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0;
+        for (let i = 0; i < len; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.997 * b0 + white * 0.029;
+          b1 = 0.985 * b1 + white * 0.032;
+          b2 = 0.950 * b2 + white * 0.048;
+          data[i] = (b0 + b1 + b2 + white * 0.14) * 0.45;
+        }
+        // Smooth crossfade at loop seam so rain loop never clicks
+        const seam = Math.min(2048, Math.floor(len * 0.04));
+        for (let i = 0; i < seam; i++) {
+          const t = i / seam;
+          data[i] = data[i] * t + data[len - seam + i] * (1 - t);
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+        src.loop = true;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.frequency.value = 1450;
+        filter.Q.value = 0.65;
+        const g = this.ctx.createGain();
+        g.gain.value = 0;
+        src.connect(filter).connect(g).connect(this.ctx.destination);
+        src.start();
+        this.rainBuf = buf;
+        this.rainSrc = src;
+        this.rainFilter = filter;
+        this.rainGain = g;
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    syncRainAmbience(level = "off", rampSec = 0.35) {
+      const nextLevel = (level === "combat" || level === "calm") ? level : "off";
+      this.rainState.level = nextLevel;
+      const targetGain = nextLevel === "combat" ? 0.022 : nextLevel === "calm" ? 0.007 : 0;
+      const targetHz = nextLevel === "combat" ? 1550 : 820;
+      this.rainState.filterHz = targetHz;
+      if (this.muted) {
+        this.rainState.targetGain = 0;
+        if (this.ctx && this.rainCtx === this.ctx && this.rainGain) {
+          const now = this.ctx.currentTime;
+          this.rainGain.gain.cancelScheduledValues(now);
+          this.rainGain.gain.setTargetAtTime(0, now, 0.025);
+        }
+        return;
+      }
+      if (nextLevel === "off") {
+        this.rainState.targetGain = 0;
+        if (this.ctx && this.rainCtx === this.ctx && this.rainGain) {
+          const now = this.ctx.currentTime;
+          this.rainGain.gain.cancelScheduledValues(now);
+          if (rampSec <= 0) this.rainGain.gain.setValueAtTime(0, now);
+          else this.rainGain.gain.setTargetAtTime(0, now, Math.max(0.03, rampSec * 0.35));
+        }
+        return;
+      }
+      this.rainState.targetGain = targetGain;
+      if (!this.ctx || this.ctx.state !== "running") return;
+      if (!this.ensureRainNodes()) return;
+      const now = this.ctx.currentTime;
+      this.rainGain.gain.cancelScheduledValues(now);
+      this.rainFilter.frequency.cancelScheduledValues(now);
+      if (rampSec <= 0) {
+        this.rainGain.gain.setValueAtTime(targetGain, now);
+        this.rainFilter.frequency.setValueAtTime(targetHz, now);
+      } else {
+        const tau = Math.max(0.05, rampSec * 0.38);
+        this.rainGain.gain.setTargetAtTime(targetGain, now, tau);
+        this.rainFilter.frequency.setTargetAtTime(targetHz, now, tau);
+      }
+    },
+    settleRainAmbience(instant = false, durSec = 0.8) {
+      const hasRain = Boolean(
+        typeof arena !== "undefined" && arena && !arena.sanctumMode && (
+          (typeof STAGES !== "undefined" && STAGES[arena.stageIdx] && STAGES[arena.stageIdx].particleKind === "rain_mist") ||
+          (arena.bossDomain && arena.bossDomain.weather === "blood_rain")
+        )
+      );
+      if (hasRain) {
+        this.syncRainAmbience("calm", instant ? 0 : durSec);
+      }
+      if (!instant && !this.muted && this.ctx && this.ctx.state === "running") {
+        this.triggerDucking(1150, 0.52, Math.round(durSec * 1000) + 320);
+      }
     },
     pluck(freq = 392, dur = 0.36, vol = 0.085, type = "triangle", toBgmBus = false) {
       vol = vol * (this.stems ? this.stems.guqin : 1.0);

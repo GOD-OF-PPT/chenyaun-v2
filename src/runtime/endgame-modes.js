@@ -1924,7 +1924,7 @@
           </button>
         `}
       </div>
-    `, false);
+    `, false, { kind: "spire_curio" });
   }
 
   function selectSpireCurioAndAdvance(curioId, gainLv = 1) {
