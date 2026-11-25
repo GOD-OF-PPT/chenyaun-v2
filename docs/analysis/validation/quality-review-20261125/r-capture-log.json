@@ -1,0 +1,282 @@
+{
+  "welcomeFonts": {
+    "10": {
+      "n": 23,
+      "sample": [
+        "#qt-overall-pct:12%",
+        "tag-key-cap:V",
+        "#btn-cycle-arsenal:飞剑",
+        "posture-key-pill:`",
+        "#posture-sub-txt:攻速+14% · 移速+10% ",
+        "skill-orb-lbl:剑气"
+      ]
+    },
+    "11": {
+      "n": 22,
+      "sample": [
+        "cinnabar-seal:尘缘仙印",
+        "#hud-realm:凡人",
+        "#hud-age-school:18岁 · 尚未择法",
+        "#btn-toggle-qt:▾",
+        "#karma-hud-icon:☯",
+        "#karma-hud-title:本真中正 · 0"
+      ]
+    },
+    "12": {
+      "n": 35,
+      "sample": [
+        "SPAN:凡人",
+        "I:→",
+        "SPAN:炼气",
+        "I:→",
+        "SPAN:筑基",
+        "I:→"
+      ]
+    },
+    "13": {
+      "n": 5,
+      "sample": [
+        "SPAN:御剑问道 · 炼丹铸器 · 渡劫",
+        "hud-stones-chip:◈ 55",
+        "#hud-stones:55",
+        "#lbl-arcana-toggle:太虚秘匣",
+        "#rc-poem:松风煮茗养剑魄 · 坐看云起炼金"
+      ]
+    },
+    "14": {
+      "n": 1,
+      "sample": [
+        "#posture-name-txt:青莲疾剑式"
+      ]
+    },
+    "15": {
+      "n": 1,
+      "sample": [
+        "#hud-name:顾长青"
+      ]
+    },
+    "18": {
+      "n": 1,
+      "sample": [
+        "#boss-cutin-name:寒潭玄蛇"
+      ]
+    },
+    "20": {
+      "n": 1,
+      "sample": [
+        "#btn-start-new:踏入山雨 · 开启新卷"
+      ]
+    },
+    "23": {
+      "n": 1,
+      "sample": [
+        "#style-ult-title:太虚万剑朝宗"
+      ]
+    },
+    "24": {
+      "n": 1,
+      "sample": [
+        "#rc-name:听雨洞府"
+      ]
+    },
+    "64": {
+      "n": 1,
+      "sample": [
+        "welcome-title:尘缘问道"
+      ]
+    }
+  },
+  "openingDialogue": [
+    "",
+    "",
+    "",
+    "",
+    ""
+  ],
+  "modalAfterDialogue": null,
+  "fieldTexts": "顾长青\n凡人\n寿 18/62载 · 飞剑×2 · 攻29\n100/100\n28/28\n0/60\n◈ 65\n问道目标\n3%\n▾\n📜 第一卷 · 主线道标\n引路 ▸\n破庙拔剑：退群狼救沈清禾并择定玉莲台仙缘\n青岚破庙石坪\n救沈清禾 (3)\n第一卷 · 山雨初鸣\n破庙拔剑：退群狼救沈清禾并择定玉莲台仙缘\n目标\n洞府\n仙阁 ▾\n1x\n2x\n4x\n卷轴\n入道 1/4 · 执剑破敌\nWASD 走位 · 左键连挥 3 剑驱使本命飞剑协同斩妖\n跳过\n左键\n剑气\n右键\n爆剑(1)\n空格\n一闪\nB\n吐纳\nQ\n葫5/5\n🧘\n洞府\n修行\n吐纳 · 功法 · 破境\n🎒\n行囊\n生平\n灵物 · 纪事 · 道果\n第一秘境\n青岚破庙\n山雨欲来风满袖 · 一剑惊鸿救故人\n☯ 本命法宝真形 · 太虚万剑归宗\n一剑诛邪\n镇守妖王\n寒潭玄蛇\n【护山金阵】重击或爆剑破除金盾！\n无上真传\n太虚万剑朝宗\n三十六天罡剑雨破界 · 万法归宗",
+  "fieldFonts": {
+    "10": {
+      "n": 9,
+      "sample": [
+        "#qt-overall-pct:3%",
+        "qt-action-pill:引路 ▸",
+        "skill-orb-lbl:剑气",
+        "#lbl-recall-marks:爆剑(1)",
+        "skill-orb-lbl:一闪",
+        "#lbl-meditate:吐纳"
+      ]
+    },
+    "11": {
+      "n": 16,
+      "sample": [
+        "#hud-realm:凡人",
+        "#hud-age-school:寿 18/62载 · 飞剑×2 ",
+        "#btn-toggle-qt:▾",
+        "qt-tag-main:📜 第一卷 · 主线道标",
+        "qt-desc-line:破庙拔剑：退群狼救沈清禾并择定玉",
+        "#wave-sub-tag:救沈清禾 (3)"
+      ]
+    },
+    "12": {
+      "n": 12,
+      "sample": [
+        "SPAN:问道目标",
+        "SPAN:目标",
+        "SPAN:洞府",
+        "SPAN:仙阁 ▾",
+        "#btn-speed-1:1x",
+        "#btn-speed-2:2x"
+      ]
+    },
+    "13": {
+      "n": 3,
+      "sample": [
+        "hud-stones-chip:◈ 65",
+        "#hud-stones:65",
+        "#rc-poem:山雨欲来风满袖 · 一剑惊鸿救故"
+      ]
+    },
+    "15": {
+      "n": 2,
+      "sample": [
+        "#hud-name:顾长青",
+        "#stage-title:青岚破庙石坪"
+      ]
+    },
+    "18": {
+      "n": 1,
+      "sample": [
+        "#boss-cutin-name:寒潭玄蛇"
+      ]
+    },
+    "23": {
+      "n": 1,
+      "sample": [
+        "#style-ult-title:太虚万剑朝宗"
+      ]
+    },
+    "24": {
+      "n": 1,
+      "sample": [
+        "#rc-name:青岚破庙"
+      ]
+    }
+  },
+  "toastSamples": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    []
+  ],
+  "hudAfterCombat": {
+    "name": "顾长青",
+    "realm": "凡人",
+    "stonesRaw": "87",
+    "stones": 87,
+    "hpRaw": "70/100",
+    "hpCur": 70,
+    "hpMax": 100,
+    "hpBarPct": 70,
+    "astralText": "★可降世!",
+    "soulName": "石卫印"
+  },
+  "onboardBefore": [],
+  "modalAfterHub": null,
+  "onboardInHub": [
+    "洞府最短整备",
+    "跳过"
+  ],
+  "hubFonts": {
+    "10": {
+      "n": 20,
+      "sample": [
+        "#qt-overall-pct:3%",
+        "qt-action-pill:引路 ▸",
+        "qt-action-pill:+65石!",
+        "style-move-tag:轻剑",
+        "style-move-tag:处决",
+        "style-move-tag:处决"
+      ]
+    },
+    "11": {
+      "n": 23,
+      "sample": [
+        "#hud-realm:凡人",
+        "#hud-age-school:寿 18/62载 · 飞剑×2 ",
+        "#btn-toggle-qt:▾",
+        "qt-tag-main:📜 第一卷 · 主线道标",
+        "qt-desc-line:破庙拔剑：退群狼救沈清禾并择定玉",
+        "qt-tag-sub:⚔ 悬赏功成"
+      ]
+    },
+    "12": {
+      "n": 18,
+      "sample": [
+        "SPAN:问道目标",
+        "SPAN:目标",
+        "SPAN:出征",
+        "SPAN:仙阁 ▾",
+        "#btn-speed-1:1x",
+        "#btn-speed-2:2x"
+      ]
+    },
+    "13": {
+      "n": 4,
+      "sample": [
+        "hud-stones-chip:◈ 87",
+        "#hud-stones:87",
+        "#rc-poem:松风煮茗养剑魄 · 坐看云起炼金",
+        "#dojo-hud-mode-name:演武训练 · 定身测伤桩"
+      ]
+    },
+    "14": {
+      "n": 1,
+      "sample": [
+        "#cd-recall:0.2"
+      ]
+    },
+    "15": {
+      "n": 2,
+      "sample": [
+        "#hud-name:顾长青",
+        "#stage-title:听雨洞府 · 仙门主城"
+      ]
+    },
+    "18": {
+      "n": 2,
+      "sample": [
+        "#combo-count-txt:×23",
+        "#boss-cutin-name:寒潭玄蛇"
+      ]
+    },
+    "23": {
+      "n": 1,
+      "sample": [
+        "#style-ult-title:太虚万剑朝宗"
+      ]
+    },
+    "24": {
+      "n": 2,
+      "sample": [
+        "#combo-tier-txt:太虚剑神 S",
+        "#rc-name:听雨洞府"
+      ]
+    }
+  },
+  "hubToasts": [],
+  "settingsControls": [
+    "photo-zoom-range:"
+  ],
+  "localStorageKeys": [
+    "chenyuan_wendao_v11_meta",
+    "chenyuan_wendao_v11_save"
+  ],
+  "errors": []
+}
